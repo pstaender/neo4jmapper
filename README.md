@@ -10,12 +10,13 @@ What if working with neo4j is as easy as working with mongodb in javascript? And
 
 Neo4jMapper brings basic object-mapping and comfortable query building to the neo4j user - for client- and serverside.
 
-** This is an early version; build for production in near future but not well tested in the wild, yet **
-** Currently tested with Neo4j v 
+**This is an early version; build for production in near future but not well tested in the wild, yet**
+
+**For now it's only working with Neo4j v1.8 & v1.9 (not 2.0, yet); there will be no support for earlier versions than v1.8**
 
 ## How to use
 
-```coffescript
+```coffeescript
 
   ## Initialization
   # Include the module
@@ -227,9 +228,7 @@ You can run tests in nodejs:
   > npm test
 ```
 
-or in the browser of your choice by opening the `examples/tests.html` file.
-
-** Please ensure that 
+or in the browser of your choice by opening the `examples/tests.html` file. You have to fill the `configForTest` values with your own parameters.
 
 ## LICENSE
 
