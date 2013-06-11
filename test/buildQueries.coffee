@@ -1,0 +1,174 @@
+if root?
+  # external modules
+  require('source-map-support').install()
+  expect        = require('expect.js')
+  Join          = require('join')
+  _             = require('underscore')
+
+  # load config
+  configForTest = require('./config')
+
+  # neo4j mapper modules
+  Neo4j         = require('../src/index.js')
+
+  # patter matching for objects we will need for the tests
+  {Graph,Node,helpers,client}  = new Neo4j(configForTest.neo4jURL)
+
+else if window?
+  # tests in browser
+  configForTest = _.extend({
+    doLog: false
+    wipeDatabase: false
+    neo4jURL: 'http://yourserver:0000/'
+  }, configForTest or {})
+  Join = window.Join
+  neo4jmapper = Neo4jMapper.init(configForTest.neo4jURL)
+  {Graph,Node,helpers,client} = neo4jmapper
+  Neo4j = Neo4jMapper.init
+
+client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
+
+_trim = (s) -> s.trim().replace(/\s+/g, ' ')
+
+describe 'Neo4jMapper (cypher queries)', ->
+
+    it 'expect to build various kind of queries', ->
+      node = new Node()
+      results = []
+      map =
+        "Node::findById(1)":
+          [
+             Node::findById(1),
+            'START n = node(1) RETURN n;'
+          ]
+        
+        "Node::findAll()":
+          [
+             Node::findAll(),
+            'START n = node(*) RETURN n;'
+          ]
+        
+        'Node::findOne()':
+          [
+             Node::findOne(),
+            'START n = node(*) RETURN n LIMIT 1;'
+          ]
+        
+        # "Node::findOne().where({name: 'Peter'}).orWhere({name: 'Thomas'})":
+        #   [
+        #     Node::findOne().where({name: 'Peter'}).orWhere({name: 'Thomas'}), null
+        #   ]
+
+        "Node::findAll().limit(10)":
+          [
+             Node::findAll().limit(10),
+            'START n = node(*) RETURN n LIMIT 10;'
+          ]
+        
+        "Node::findAll().skip(5)":
+          [
+             Node::findAll().skip(5),
+            'START n = node(*) RETURN n SKIP 5;'
+          ]
+        
+        "Node::findAll().orderBy('n.name', 'ASC')":
+          [
+             Node::findAll().orderBy('n.name', 'ASC'),
+            'START n = node(*) RETURN n ORDER BY n.name ASC;'
+          ]
+        
+        'Node::findAll().incomingRelationships()':
+          [
+             Node::findAll().incomingRelationships(),
+            'START a = node(*) MATCH (a)<-[r]-() RETURN r;'
+          ]
+        
+        'Node::findAll().outgoingRelationships()':
+          [
+             Node::findAll().outgoingRelationships(),
+            'START a = node(*) MATCH (a)-[r]->() RETURN r;'
+          ]
+
+        "Node::findAll().incomingRelationships()":
+          [
+             Node::findAll().incomingRelationships(),
+            'START a = node(*) MATCH (a)<-[r]-() RETURN r;'
+          ]
+        
+        "Node::findOne().outgoingRelationships(['know','like'])":
+          [
+             Node::findOne().outgoingRelationships(['know','like']),
+            'START a = node(*) MATCH (a)-[r:know|like]->() RETURN r LIMIT 1;'
+          ]
+
+        "Node::findOne().outgoingRelationshipsTo(2, ['know','like'])":
+          [
+             Node::findOne().outgoingRelationshipsTo(2, ['know','like']),
+            'START a = node(*), b = node(2) MATCH (a)-[r:know|like]->(b) RETURN r LIMIT 1;'
+          ]
+        
+        "Node::findAll().outgoingRelationships('know').distinct().count()":
+          [
+             Node::findAll().outgoingRelationships('know').distinct().count(),
+            'START a = node(*) MATCH (a)-[r:know]->() RETURN COUNT(DISTINCT *);'
+          ]
+        
+        "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'r.since': 'years' })":
+          [
+             Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'r.since': 'years' }),
+            'START a = node(*), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = \'years\' ) RETURN r;'
+          ]
+
+        "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
+          [
+             Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
+            "START a = node(*), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = 'years' ) RETURN r;"
+          ]
+        
+        "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy 'n.name', 'DESC', ->":
+          [
+             Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC'),
+            "START n = node(*) WHERE ( HAS (n.name) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+          ]
+        
+        "Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }":
+          [
+            Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }),
+            "START n = node(*) WHERE ( HAS (n.name) ) AND ( HAS (n.city) ) AND ( n.city = 'berlin' ) RETURN n LIMIT 1;"
+          ]
+
+        "Node::findOne().whereHasProperty('name').andWhere('name').andWhere([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ])":
+          [
+             Node::findOne().whereHasProperty('name').andWhere([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]),
+            "START n = node(*) WHERE ( HAS (n.name) ) AND ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( n.city = 'berlin' AND ( n.name = 'peter' AND NOT ( n.name = 'pedro' ) ) ) RETURN n LIMIT 1;"
+          ]
+        
+        "Node::findOne().whereNode([ { 'city': 'berlin' } , $and: [ { 'name': 'peter' }, $not: [ { 'name': 'pedro' } ] ] ])":
+          [
+            Node::findOne().where([ { 'city': 'berlin' } , $and: [ { 'name': 'peter' }, $not: [ { 'name': 'pedro' } ] ] ]),
+            "START n = node(*) WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( n.city = 'berlin' AND ( n.name = 'peter' AND NOT ( n.name = 'pedro' ) ) ) RETURN n LIMIT 1;"
+          ]
+        
+        "Node::findById(123).incomingRelationships().delete().toCypherQuery()":
+          [
+             Node::findById(123).incomingRelationships().delete(),
+            'START a = node(123) MATCH (a)<-[r]-() DELETE r;'
+          ]
+        
+        "Node::findById(123).allRelationships().delete()":
+          [
+             Node::findById(123).allRelationships().delete(),
+            'START n = node(123) MATCH n-[r]-() DELETE r;'
+          ]
+
+      for functionCall of map
+        todo = map[functionCall]
+        if todo?[2] is null
+          console.log 'pending '+functionCall+' ~> '+_trim(todo[0].toCypherQuery())
+        else if _.isArray(todo)
+          query = todo[0].toCypherQuery()
+          query = _trim(query);
+          throw Error("Error by building query #{functionCall} -> #{query}") if query isnt _trim(todo[1])
+          #expect(query).to.be.equal _trim(todo[1])
+        else
+          console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())

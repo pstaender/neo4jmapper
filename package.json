@@ -1,0 +1,37 @@
+{
+  "name": "neo4jmapper",
+  "description": "Neo4jMapper is a client and server-side object mapper for neo4j graphdatabases written in native JavaScript",
+  "version": "0.0.1",
+  "author": "Philipp Staender <philipp.staender@gmail.com>",
+  "homepage": "https://github.com/pstaender/neo4jmapper/",
+  "main": "./src/index",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com:pstaender/neo4jmapper"
+  },
+  "keywords": [
+    "neo4j",
+    "graphdatabase",
+    "orm"
+  ],
+  "scripts": {
+    "test": "coffee -mcb test/ && mocha; npm run clean",
+    "clean": "find test -name '*.map' -delete"
+  },
+  "devDependencies": {
+    "mocha": "~1.9",
+    "expect.js": "~0.2",
+    "should": "~1.2",
+    "source-map-support": "*",
+    "futures": "~2.3.1",
+    "jquery": "~1.8",
+    "join": "~2.3"
+  },
+  "dependencies": {
+    "underscore": "~1.4",
+    "bson": "*"
+  },
+  "licenses" : {
+    "type" : "GPL"
+  }
+}

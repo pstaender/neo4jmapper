@@ -1,0 +1,17 @@
+body {
+  background: #fff;
+  font-family: Lucida, 'Lucida Grande';
+  font-size: 12px;
+}
+textarea {
+  font-family: 'Menlo', Courier;
+  width: 50em;
+  margin: 0px auto;
+  font-size: 1em;
+  line-height: 1.3em;
+  height: 20em;
+  background: #f4f4f4;
+  border: 0;
+  box-shadow: 2px 2px 10px #ddd;
+  padding: 1em;
+}
