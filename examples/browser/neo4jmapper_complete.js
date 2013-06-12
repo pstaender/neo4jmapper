@@ -1086,7 +1086,7 @@
       
       // use the constructor function of the label if exists
       if (label) {
-        var __global__ = root || window; // nodejs or browser
+        var __global__ = (typeof window !== 'undefined') ? window : root;
         label = (typeof __global__[label] === 'function') ? __global__[label] : null;
       }
   
@@ -1348,7 +1348,7 @@
   
     Node.prototype.load = function(cb, options) {
       var self = this;
-      var __global__ = root || window;
+      var __global__ = (typeof window !== 'undefined') ? window : root;
       if (typeof option === 'undefined')
         options = {}
   

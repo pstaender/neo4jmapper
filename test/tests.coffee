@@ -297,7 +297,8 @@ doStart ->
                 Node::unregister_model('Person')
                 savedPerson.load (err, data) ->
                   expect(savedPerson.constructor_name).to.be.equal 'Node'
-                  root.Person = Person
+                  __global__ = if window? then window else root
+                  __global__.Person = Person
                   savedPerson.load (err, data) ->
                     expect(savedPerson.constructor_name).to.be.equal 'Person'
                     savedPerson.remove ->
