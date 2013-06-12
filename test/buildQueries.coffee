@@ -20,6 +20,7 @@ else if window?
     doLog: false
     wipeDatabase: false
     neo4jURL: 'http://yourserver:0000/'
+    startInstantly: false
   }, configForTest or {})
   Join = window.Join
   neo4jmapper = Neo4jMapper.init(configForTest.neo4jURL)

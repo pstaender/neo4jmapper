@@ -176,6 +176,14 @@ var neo4jmapper_helpers = {};
     return _.uniq(attributes);
   }
 
+  var constructorNameOfFunction = function(func) {
+    var name = func.constructor.toString().match(/^function\s(.+?)\(/)[1];
+    if (name === 'Function') {
+      name = func.toString().match(/^function\s(.+)\(/)[1]
+    }
+    return name;
+  }
+
   /* sprintf() for JavaScript 0.7-beta1
    * http://www.diveintojavascript.com/projects/javascript-sprintf
    *
@@ -729,7 +737,8 @@ var neo4jmapper_helpers = {};
     extractAttributesFromCondition: extractAttributesFromCondition,
     getIdFromObject: getIdFromObject,
     escapeString: escapeString,
-    sprintf: sprintf
+    sprintf: sprintf,
+    constructorNameOfFunction: constructorNameOfFunction
   };
 
 })();

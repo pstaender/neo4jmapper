@@ -10,9 +10,8 @@ What if working with neo4j is as easy as working with mongodb in javascript? And
 
 Neo4jMapper brings basic object-mapping and comfortable query building to the neo4j user - for client- and serverside.
 
-**This is an early version; build for production in near future but not well tested in the wild, yet**
-
-**For now it's only working with Neo4j v1.8 & v1.9 (not 2.0, yet); there will be no support for earlier versions than v1.8**
+**Beta status… not well tested in the wild, yet**
+**For now it's only working with Neo4j v1.8 - v2.0; there will be no support for earlier versions than v1.8**
 
 ## How to use
 
@@ -124,27 +123,28 @@ By default you should get clear and understandable error messages on wrong queri
 
 ```coffeescript
   Node::find().where "wontWork LIKE 'this'", (err) ->
-    # err will output s.th. like
-    # { name: 'QueryError',
-    #   message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN # n;"\n                                           ^',
-    #   exception: 'SyntaxException',
-    #   cypher: null,
-    #   stacktrace:
-    #    [ 'org.neo4j.cypher.internal.parser.v1_8.CypherParserImpl.parse(CypherParserImpl.scala:45)',
-    #      'org.neo4j.cypher.CypherParser.parse(CypherParser.scala:42)',
-    #      'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
-    #      'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
-    #      'org.neo4j.cypher.internal.LRUCache.getOrElseUpdate(LRUCache.scala:37)',
-    #      'org.neo4j.cypher.ExecutionEngine.prepare(ExecutionEngine.scala:67)',
-    #      'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:59)',
-    #      'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:63)',
-    #      'org.neo4j.cypher.javacompat.ExecutionEngine.execute(ExecutionEngine.java:79)',
-    #      'org.neo4j.server.rest.web.CypherService.cypher(CypherService.java:67)',
-    #      'java.lang.reflect.Method.invoke(Method.java:597)' ],
-    #   statusCode: 400,
-    #   method: 'POST',
-    #   url: 'http://localhost:7474/db/data/cypher',
-    #   data: '{"query":"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN n;","params":{}}' }
+    # err ~>
+    { name: 'QueryError',
+      message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN # n;"\n                                           ^',
+     exception: 'SyntaxException',
+     cypher: null,
+     stacktrace:
+      [ 'org.neo4j.cypher.internal.parser.v1_8.CypherParserImpl.parse(CypherParserImpl.scala:45)',
+        'org.neo4j.cypher.CypherParser.parse(CypherParser.scala:42)',
+        'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
+        'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
+        'org.neo4j.cypher.internal.LRUCache.getOrElseUpdate(LRUCache.scala:37)',
+        'org.neo4j.cypher.ExecutionEngine.prepare(ExecutionEngine.scala:67)',
+        'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:59)',
+        'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:63)',
+        'org.neo4j.cypher.javacompat.ExecutionEngine.execute(ExecutionEngine.java:79)',
+        'org.neo4j.server.rest.web.CypherService.cypher(CypherService.java:67)',
+        'java.lang.reflect.Method.invoke(Method.java:597)' ],
+     statusCode: 400,
+     method: 'POST',
+     url: 'http://localhost:7474/db/data/cypher',
+     data: '{"query":"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN n;","params":{}}'
+   }
 ```
 
 ### Inspect sended + received data
@@ -158,31 +158,32 @@ In case you want to inspect sended + received data and/or the process of mapping
   node = new Node()
   node.neo4jrestful.debug = true
   node.save (err, result, debug) ->
-    # debug will be s.th. like:
-    # { options: { type: 'POST', data: {}, no_processing: false, debug: true },
-    #   requested_url: 'http://localhost:7474/db/data/node',
-    #   type: 'POST',
-    #   data: '{}',
-    #   header:
-    #    { Accept: 'application/json',
-    #      'Content-Type': 'application/json' },
-    #   res:
-    #    { extensions: {},
-    #      paged_traverse: 'http://localhost:7474/db/data/node/607/paged/traverse/{returnType}{?pageSize,leaseTime}',
-    #      outgoing_relationships: 'http://localhost:7474/db/data/node/607/relationships/out',
-    #      traverse: 'http://localhost:7474/db/data/node/607/traverse/{returnType}',
-    #      all_typed_relationships: 'http://localhost:7474/db/data/node/607/relationships/all/{-list|&|types}',
-    #      property: 'http://localhost:7474/db/data/node/607/properties/{key}',
-    #      all_relationships: 'http://localhost:7474/db/data/node/607/relationships/all',
-    #      self: 'http://localhost:7474/db/data/node/607',
-    #      properties: 'http://localhost:7474/db/data/node/607/properties',
-    #      outgoing_typed_relationships: 'http://localhost:7474/db/data/node/607/relationships/out/{-list|&|types}',
-    #      incoming_relationships: 'http://localhost:7474/db/data/node/607/relationships/in',
-    #      incoming_typed_relationships: 'http://localhost:7474/db/data/node/607/relationships/in/{-list|&|types}',
-    #      create_relationship: 'http://localhost:7474/db/data/node/607/relationships',
-    #      data: {} },
-    #   status: 'success',
-    #   err: null }
+    # debug ~>
+      { options: { type: 'POST', data: {}, no_processing: false, debug: true },
+        requested_url: 'http://localhost:7474/db/data/node',
+        type: 'POST',
+        data: '{}',
+        header:
+         { Accept: 'application/json',
+           'Content-Type': 'application/json' },
+        res:
+         { extensions: {},
+           paged_traverse: 'http://localhost:7474/db/data/node/607/paged/traverse/{returnType}{?pageSize,leaseTime}',
+           outgoing_relationships: 'http://localhost:7474/db/data/node/607/relationships/out',
+           traverse: 'http://localhost:7474/db/data/node/607/traverse/{returnType}',
+           all_typed_relationships: 'http://localhost:7474/db/data/node/607/relationships/all/{-list|&|types}',
+           property: 'http://localhost:7474/db/data/node/607/properties/{key}',
+           all_relationships: 'http://localhost:7474/db/data/node/607/relationships/all',
+           self: 'http://localhost:7474/db/data/node/607',
+           properties: 'http://localhost:7474/db/data/node/607/properties',
+           outgoing_typed_relationships: 'http://localhost:7474/db/data/node/607/relationships/out/{-list|&|types}',
+           incoming_relationships: 'http://localhost:7474/db/data/node/607/relationships/in',
+           incoming_typed_relationships: 'http://localhost:7474/db/data/node/607/relationships/in/{-list|&|types}',
+           create_relationship: 'http://localhost:7474/db/data/node/607/relationships',
+           data: {} },
+        status: 'success',
+        err: null
+      }
 ```
 
 The debug object is always the third passed argument in the callback.
@@ -227,7 +228,7 @@ You can run tests in nodejs:
   > npm test
 ```
 
-or in the browser of your choice by opening the `examples/tests.html` file. You have to fill the `configForTest` values with your own parameters.
+or in the browser of your choice by opening the `examples/tests.html` file. You have to overwrite the `configForTest` values with your own config data.
 
 # Reference
 
@@ -239,7 +240,7 @@ Neo4jMapper is not a schema based mapper, but it includes some features which ar
 
 You can extend the Node object with an other object. There is no difference whether you use the `_.extend()` method of underscorejs, the class pattern of coffeescript or similar method to extend your "class" (I prefer the CoffeeScript way to keep the code more clean…).
 
-This feature only works with Neo4j v2+ because it' using the label feature.
+This feature only works with Neo4j v2+ because it makes use of the label feature.
 
 ```coffeescript
 

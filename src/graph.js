@@ -18,8 +18,6 @@ var initGraph = function(neo4jrestful) {
     this.about();
   }
 
-  Graph.prototype.version = null;
-  Graph.prototype.exact_version = null;
   Graph.prototype.info = null;
 
   /*
@@ -76,8 +74,6 @@ var initGraph = function(neo4jrestful) {
       return neo4jrestful.get('/db/data/', function(err, info){
         if (info) {
           self.info = info
-          self.version = Number(info.neo4j_version.replace(/^(\d+\.\d+)(.*)$/,'$1'));
-          self.exact_version = info.neo4j_version;
         }
         if (typeof cb === 'function')
           cb(err,info);

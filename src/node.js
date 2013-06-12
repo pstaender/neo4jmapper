@@ -16,7 +16,7 @@ var initNode = function(neo4jrestful) {
   }
 
   // we can only check for object type,
-  // better would be to check for constructor neo4restful
+  // better would be to check for constructor neo4jrestful
   if (_.isObject(neo4jrestful))
     _neo4jrestful = neo4jrestful;
 
@@ -58,11 +58,11 @@ var initNode = function(neo4jrestful) {
     this.fields = _.extend({}, Node.prototype.fields);
     this.is_instanced = true;
     // will be used for labels and classes
-    this.constructor_name = this.constructor.toString().match(/^function\s(.+?)\(/)[1] || 'Node';
-    this.constructor_name = this.constructor_name.toLowerCase();
+    this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
     // we will use a label by default if we have defined an inherited class of node
-    if ((this.constructor_name !== 'node')&&(this.constructor_name !== 'relationship')&&(this.constructor_name !== 'path'))
-      this.cypher.label = this.constructor_name;
+    if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
+      this.label = this.cypher.label = this.constructor_name;
+    }
   }
 
   Node.prototype.neo4jrestful = _neo4jrestful;
@@ -72,7 +72,7 @@ var initNode = function(neo4jrestful) {
     defaults: {},
     indexes: {}
   };
-  Node.prototype.label = null;
+  
   Node.prototype.uri = null;
   Node.prototype._response = null;
   Node.prototype._modified_query = false;
@@ -80,7 +80,13 @@ var initNode = function(neo4jrestful) {
   Node.prototype.is_persisted = false;
   Node.prototype.cypher = {};
   Node.prototype.is_instanced = null;
+  
+  Node.prototype.labels = null;
+  Node.prototype.label = null;
   Node.prototype.constructor_name = null;
+
+  Node.prototype.__models__ = {};
+
 
   Node.prototype.singleton = function(id) {
     var node = new Node({},id);
@@ -91,12 +97,89 @@ var initNode = function(neo4jrestful) {
     return node;
   }
 
+  Node.prototype.register_model = function(Class) {
+    var name = helpers.constructorNameOfFunction(Class);
+    Node.prototype.__models__[name] = Class;
+    return Node.prototype.__models__;
+  }
+
+  Node.prototype.unregister_model = function(Class) {
+    var name = (typeof Class === 'string') ? Class : helpers.constructorNameOfFunction(Class);
+    if (typeof Node.prototype.__models__[name] === 'function')
+      delete Node.prototype.__models__[name];
+    return Node.prototype.__models__;
+  }
+
   Node.prototype.copyTo = function(n) {
     n.id = this.id;
     n.data = _.extend(this.data);
     n.uri = this.uri;
     n._response = _.extend(this._response);
     return n;
+  }
+
+  Node.prototype.load = function(cb, options) {
+    var self = this;
+    var __global__ = root || window;
+    if (typeof option === 'undefined')
+      options = {}
+
+    options = _.extend({ data: false, labels: true, apply: true, reinstance: true}, options);
+
+    var self = this;
+    var jobsToDo = 0;
+    var jobsDone = 0;
+
+    var _when = function(err) {
+
+      // instance with label, if we have one label in the array
+      if ((self.labels)&&(self.labels.length === 1)&&(options.reinstance)) {
+        var label = (typeof options.reinstance === 'string') ? options.reinstance : self.labels[0];
+        var Class = null;
+        if (typeof Node.prototype.__models__[label] === 'function')
+          Class = Node.prototype.__models__[label];
+        else if (typeof __global__[label] === 'function')
+          Class = __global__[label];
+        else
+          Class = Node;
+        if (Class) {
+          var node = new Class();
+          node.populateWithDataFromResponse(self._response);
+          // apply everything on node object
+          if (options.apply)
+            self = _.extend(self, node);
+        }
+        // console.log('::',self);
+      }
+      cb(err || null,self);
+    } 
+    
+    if (this.hasId()) {
+      if ((options.labels)&&(this.neo4jrestful.version >= 2)) {
+        jobsToDo++;
+        this.requestLabels(function(err, labels) {
+          if ((labels)&&(options.apply))
+            self.labels = labels;
+          jobsDone++;
+          if (jobsDone >= jobsToDo)
+            _when(err);
+        });
+      }
+      if (options.data) {
+        jobsToDo++;
+        Node.prototype.findById(this.id,function(err, foundNode) {
+          if ((foundNode)&&(options.apply))
+            self.data = foundNode.data;
+          jobsDone++;
+          if (jobsDone >= jobsToDo)
+            _when(err);
+        });
+      }
+      if (jobsToDo === 0)
+        _when(null,null);
+    } else {
+      cb(Error('Only instanced Nodes can be (re)loaded'));
+    }
   }
 
   Node.prototype.resetQuery = function() {
@@ -214,36 +297,58 @@ var initNode = function(neo4jrestful) {
       return cb(Error('Singleton instances can not be persisted'), null);
     this._modified_query = false;
     this.applyDefaultValues();
-    // create (n:Person {name : "Bob the bat"})
-    var url = '/db/data/node';
-    var method = 'post';
-    if (this.hasId()) {
-      method = 'put';
-      url = '/db/data/node/'+this.id+'/properties';
-    } 
-    this.neo4jrestful[method](url, { data: this.flattenData() }, function(err, data, debug) {
-      if (err)
-        cb(err, data, debug);
-      else {
-        if (method==='post') {
-          // copy persisted data on initially instanced node
-          data.copyTo(self);
-        }
-        self.is_singleton = false;
-        self.is_instanced = true;
-        self.is_persisted = true;
-        // if we have defined fields to index
-        // we need to call the cb after indexing
-        if (self.hasFieldsToIndex())
-          return self.indexFields(function(){
-            if (debug)
-              debug.indexedFields = true;
-            cb(null, data, debug);
-          });
-        else
-          return cb(null, data, debug);
+    var method = null;
+
+    function _prepareData(err, data, debug) {
+      if (method==='create') {
+        // copy persisted data on initially instanced node
+        data.copyTo(self);
       }
-    });
+      self.is_singleton = false;
+      self.is_instanced = true;
+      self.is_persisted = true;
+      // if we have defined fields to index
+      // we need to call the cb after indexing
+      if (self.hasFieldsToIndex())
+        return self.indexFields(function(){
+          if (debug)
+            debug.indexedFields = true;
+          cb(null, data, debug);
+        });
+      else
+        return cb(null, data, debug);
+    }
+
+    function _onAfterSave(err, data, debug) {
+      var labels = self.labelsAsArray();
+      if ((typeof err !== 'undefined')&&(err !== null)) {
+        return cb(err, data, debug);
+      } else {
+        if (labels.length > 0) {
+          // we need to post the label in an extra reqiuest
+          // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
+          self.neo4jrestful.post('/db/data/node/'+data.id+'/labels', { data: labels }, function(labelError, notUseableData, debugLabel) {
+            // add label err if we have one
+            if (labelError)
+              err = (err) ? [ err, labelError ] : labelError;
+            // add debug label if we have one
+            if (debug)
+              debug = (debugLabel) ? [ debug, debugLabel ] : debug;
+            _prepareData(err, data, debug);
+          });
+        } else {
+          return _prepareData(err, data, debug);
+        }
+      }
+    }
+
+    if (this.hasId()) {
+      method = 'update';
+      this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, _onAfterSave);
+    } else {
+      method = 'create';      
+      this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, _onAfterSave);
+    }
   }
 
   Node.prototype.update = function(cb) {
@@ -974,6 +1079,22 @@ var initNode = function(neo4jrestful) {
     return this.createRelationship(options, cb);
   }
 
+  Node.prototype.requestLabels = function(cb) {
+    if ((this.hasId())&&(typeof cb === 'function')) {
+      this.neo4jrestful.get('/db/data/node/'+this.id+'/labels', cb);
+    }
+    return this;
+  }
+
+  Node.prototype.labelsAsArray = function() {
+    var labels = this.labels;
+    if (!_.isArray(labels))
+      labels = [];
+    if (this.label)
+      labels.push(this.label);
+    return _.uniq(labels);
+  }
+
   // TODO: autoindex? http://docs.neo4j.org/chunked/milestone/rest-api-configurable-auto-indexes.html
   Node.prototype.index = function(namespace, key, value, cb) {
     if (this.is_singleton)
@@ -1015,7 +1136,10 @@ var initNode = function(neo4jrestful) {
       // reset node, because it might be called from prototype
       // if we have only one return property, we resort this
       if ( (this.cypher.return_properties)&&(this.cypher.return_properties.length === 1) ) {
-        return this.neo4jrestful.query(cypher, function(err, data, debug) {
+        var options = {};
+        if (this.label)
+          options.label = this.label;
+        return this.neo4jrestful.query(cypher, options, function(err, data, debug) {
           if (err)
             return cb(err, data, debug);
           else {

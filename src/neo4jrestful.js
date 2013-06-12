@@ -98,6 +98,8 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype.baseUrl = null;
   Neo4jRestful.prototype.debug = null;
   Neo4jRestful.prototype._absoluteUrl = null;
+  Neo4jRestful.prototype.exact_version = null;
+  Neo4jRestful.prototype.version = null;
 
   Neo4jRestful.prototype._queue = {
     stack: null, // contains all queued requests
@@ -148,10 +150,15 @@ var initNeo4jRestful = function() {
       cache: false,
       timeout: timeout,
       success: function(res,status) {
-        if ((status === 'success')&&(res)&&(res.neo4j_version))
+        if ((status === 'success')&&(res)&&(res.neo4j_version)) {
+          // store version on restfule client
+          // TODO: currently it's also stored redundant in graph object -> only one version value should be used 
+          self.exact_version = res.neo4j_version;
+          self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
           cb(null, res.neo4j_version);
-        else
+        } else {
           cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url?"), null, null);
+        }
       },
       error: function(err) {
         cb(err, false, err.status);
@@ -189,6 +196,11 @@ var initNeo4jRestful = function() {
     var requestedUrl = this.absoluteUrl();
     var type = options.type;
     var data = options.data;
+    var label = null;
+    if (options.label) {
+      label = options.label;
+      delete options.label;
+    }
     // use copy of header, not reference
     var header = _.extend({},this.header);
     if ( (typeof data === 'object') && (data !== null) )
@@ -221,7 +233,8 @@ var initNeo4jRestful = function() {
       data: data,
       options: options,
       debug: debug,
-      url: url
+      url: url, 
+      label: label // will create an instance of the label if exists
     };
 
     if (!this.connection_established) {
@@ -291,6 +304,14 @@ var initNeo4jRestful = function() {
     var data = _options.data;
     var options = _options.options;
     var debug = _options.debug;
+    var label = _options.label || null;
+    
+    // use the constructor function of the label if exists
+    if (label) {
+      var __global__ = root || window; // nodejs or browser
+      label = (typeof __global__[label] === 'function') ? __global__[label] : null;
+    }
+
     jQuery.ajax({
       url: _options.requestedUrl,
       type: _options.type,
@@ -308,10 +329,10 @@ var initNeo4jRestful = function() {
             return cb(null, res, debug);
           if (_.isArray(res)) {
             for (var i=0; i < res.length; i++) {
-              res[i] = self.createObjectFromResponseData(res[i]);
+              res[i] = self.createObjectFromResponseData(res[i], label);
             }
           } else if (_.isObject(res)) {
-            res = self.createObjectFromResponseData(res);
+            res = self.createObjectFromResponseData(res, label);
           }
           cb(null, res, debug);
         } else {
@@ -386,12 +407,15 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.log = function(){ /* > /dev/null */ };
 
-  Neo4jRestful.prototype.createObjectFromResponseData = function(responseData) {
+  Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
     var uri = (responseData) ? responseData.self : null;
+    var useLabels = true;
+    if (typeof Class !== 'function')
+      Class = Node;
     if (uri) {
       if (/\/db\/data\/node\/[1-9]{1}[0-9]*\/*$/.test(uri)) {
-        // we have a node
-        var n = new Node();
+        // we have a node or an inheriated class
+        var n = new Class();
         n = n.populateWithDataFromResponse(responseData);
         return n;
       } else if (/\/db\/data\/relationship\/[1-9]{1}[0-9]*\/*$/.test(uri)) {
