@@ -10,22 +10,22 @@ What if working with neo4j is as easy as working with mongodb in javascript? And
 
 Neo4jMapper brings basic object-mapping and comfortable query building to the neo4j user - for client- and serverside.
 
-**Beta status… not well tested in the wild, yet**
-**For now it's only working with Neo4j v1.8 - v2.0; there will be no support for earlier versions than v1.8**
+**Beta status**
+
+It's working with Neo4j v1.8 - v2.0 (there will be no support for earlier versions than v1.8)
 
 ## How to use
 
+### Include files and establish db connection
+
 ```coffeescript
-
-  ## Initialization
-  # Include the module
-  # and instance a neo4j-db-connection
-
   Neo4j = require('neo4jmapper')
   {Graph,Node,Relationship}  = new Neo4j('http://localhost:7474')
+```
 
-  # You can make custom cypher queries
+### Custom cypher queries
 
+```coffeescript
   graph = new Graph()
   graph.query """
     START n = node(*)
@@ -33,9 +33,11 @@ Neo4jMapper brings basic object-mapping and comfortable query building to the ne
     RETURN n;
   """, (err, result) ->
     console.log err, result
+```
 
-  ## Create nodes
+### Create and save nodes
 
+```coffeescript
   alice = new Node()
   alice.data = {
     name: 'Alice',
@@ -43,29 +45,70 @@ Neo4jMapper brings basic object-mapping and comfortable query building to the ne
       values: 'are allowed'
     }
   }
-  alice.save (err, alice) ->
-    bob = new Node({ name: 'Bob' })
-    bob.save (err, bob) ->
+  alice.save (err, savedNode) ->
+```
 
-      # Connect Nodes in various kinds
+or by shorthand
 
-      alice.createRelationshipTo bob, 'knows', { since: 'years' }, ->
-        bob.createRelationshipTo alice, 'likes', { since: 'week' }, ->
-          console.log(alice.toObject())
-          console.log(bob.toObject())
+```coffeescript
+  bob = new Node name: 'Bob'
+  bob.save (err, savedNode) ->
+```
 
-  ## Advanced queries
-  # You can query nodes (relationships may follow) easily like as usual in other Object Mappers
+Define your own models with classes / object extension and enjoy label support:
 
+```coffeescript
+  class Person extends Node
+    fields:
+      defaults:
+        category: 'User'
+
+  alice = new Person name: 'Alice'
+  alice.save ->
+    alice.queryLabels (err, labels) -> # labels = [ 'Person' ]
+```
+
+You can convert any node to it's model if you have registered the model:
+
+```coffeescript
+  class Person extends Node
+    property_only_for_person: true
+  
+  Node::register_model(Person)
+  
+  alice = new Person({ name: 'Alice' }).save ->
+    alice.load -> # alice.property_only_for_person = true
+```
+
+### Connect Nodes in various kinds
+
+```coffeescript
+  alice.createRelationshipTo bob, 'knows', { since: 'years' }, ->
+    bob.createRelationshipTo alice, 'likes', { since: 'week' }, ->
+      console.log(alice.toObject())
+      console.log(bob.toObject())
+```
+
+### Advanced queries
+
+You can query nodes (relationships may follow) easily like as usual in other Object Mappers
+
+```coffeescript
   alice.incomingRelationshipsFrom(bob).where({'r.since': 'years'}).limit 1, ->
+```
 
-  # also with more customized queries in mongodb query style
+Also with more customized queries in mongodb query style
 
+```coffeescript
   Node::find().where(
     { $or : [
       { 'n.name': /alice/i },
       { 'n.name': /bob/i }
-    ] }).skip(2).limit(10).orderBy 'n.name', 'DESC', (err, result) ->
+    ] }
+  ).skip(2).limit(10).orderBy 'n.name', 'DESC', (err, result) ->
+```
+
+```coffeescript
   Node::findOne().whereNodeHasProperty('name').andWhereNode { 'city': 'berlin' },  (err, result) ->
 ```
 
@@ -86,7 +129,7 @@ Remove always means to remove the (one) instanced node or relationship we are wo
 ```coffeescript
   # Delete all nodes with the name `Bob`
   Node::find().andWhereNode({ name: "Bob"}).delete()
-  # ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
+  ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
   Node::findOne().whereNode { name: "Bob"}, (err, bob) ->
     # Remove Bob node (if found)
     if bob
@@ -110,9 +153,9 @@ Like in mongodb you can use **AND** + **OR** operators for your where queries, a
 
 ```coffeescript
   Node::find().whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]})
-  # ~> 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
+  ~> 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
   Node::findOne().where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ])
-  # ~> 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
+  ~> 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
 ```
 
 ## Debugging
@@ -124,27 +167,27 @@ By default you should get clear and understandable error messages on wrong queri
 ```coffeescript
   Node::find().where "wontWork LIKE 'this'", (err) ->
     # err ~>
-    { name: 'QueryError',
-      message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN # n;"\n                                           ^',
-     exception: 'SyntaxException',
-     cypher: null,
-     stacktrace:
-      [ 'org.neo4j.cypher.internal.parser.v1_8.CypherParserImpl.parse(CypherParserImpl.scala:45)',
-        'org.neo4j.cypher.CypherParser.parse(CypherParser.scala:42)',
-        'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
-        'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
-        'org.neo4j.cypher.internal.LRUCache.getOrElseUpdate(LRUCache.scala:37)',
-        'org.neo4j.cypher.ExecutionEngine.prepare(ExecutionEngine.scala:67)',
-        'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:59)',
-        'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:63)',
-        'org.neo4j.cypher.javacompat.ExecutionEngine.execute(ExecutionEngine.java:79)',
-        'org.neo4j.server.rest.web.CypherService.cypher(CypherService.java:67)',
-        'java.lang.reflect.Method.invoke(Method.java:597)' ],
-     statusCode: 400,
-     method: 'POST',
-     url: 'http://localhost:7474/db/data/cypher',
-     data: '{"query":"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN n;","params":{}}'
-   }
+      { name: 'QueryError',
+        message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN # n;"\n                                           ^',
+       exception: 'SyntaxException',
+       cypher: null,
+       stacktrace:
+        [ 'org.neo4j.cypher.internal.parser.v1_8.CypherParserImpl.parse(CypherParserImpl.scala:45)',
+          'org.neo4j.cypher.CypherParser.parse(CypherParser.scala:42)',
+          'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
+          'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
+          'org.neo4j.cypher.internal.LRUCache.getOrElseUpdate(LRUCache.scala:37)',
+          'org.neo4j.cypher.ExecutionEngine.prepare(ExecutionEngine.scala:67)',
+          'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:59)',
+          'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:63)',
+          'org.neo4j.cypher.javacompat.ExecutionEngine.execute(ExecutionEngine.java:79)',
+          'org.neo4j.server.rest.web.CypherService.cypher(CypherService.java:67)',
+          'java.lang.reflect.Method.invoke(Method.java:597)' ],
+       statusCode: 400,
+       method: 'POST',
+       url: 'http://localhost:7474/db/data/cypher',
+       data: '{"query":"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN n;","params":{}}'
+     }
 ```
 
 ### Inspect sended + received data
@@ -194,7 +237,7 @@ You can easiliy inspect the generated queries by invoking the `toCypherQuery()` 
 
 ```coffeescript
   Node::find().andWhereNode({ name: "Bob"}).delete().toCypherQuery()
-  # START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = 'Bob' ) DELETE n;
+  ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
 ```
 
 ## TODO
