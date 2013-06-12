@@ -65,6 +65,12 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node::findAll().limit(10),
             'START n = node(*) RETURN n LIMIT 10;'
           ]
+
+        "Node::findAll().match('n:Person')":
+          [
+             Node::findAll().match('n:Person'),
+            "MATCH n:Person RETURN n;"
+          ]
         
         "Node::findAll().skip(5)":
           [

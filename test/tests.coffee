@@ -304,6 +304,19 @@ doStart ->
                     savedPerson.remove ->
                       done()
 
+      if version < 2
+        it 'expect to find labeled nodes'
+      else
+        it 'expect to find labeled nodes', (done) ->
+          class Person extends Node
+          person = new Person({name: 'Dave'})
+          Node::findAll().match('n:Person').count (err, countBefore) ->
+            person.save ->
+              Node::findAll().match('n:Person').count (err, count) ->
+                expect(err).to.be null
+                expect(count).to.be.equal countBefore+1
+                done()
+
     describe 'index', ->
 
       it 'expect to index and get an indexed node', (done) ->
