@@ -197,8 +197,9 @@ var initNode = function(neo4jrestful) {
     var self = this;
     if (typeof this.onBeforeSave === 'function') {
       this.onBeforeSave(function(err) {
-        if (err)
-          cb(err);
+        // don't execute if an error is passed through
+        if ((typeof err !== 'undefined')&&(err !== null))
+          cb(err, null);
         else
           self.executeSave(cb);
       });
@@ -213,6 +214,7 @@ var initNode = function(neo4jrestful) {
       return cb(Error('Singleton instances can not be persisted'), null);
     this._modified_query = false;
     this.applyDefaultValues();
+    // create (n:Person {name : "Bob the bat"})
     var url = '/db/data/node';
     var method = 'post';
     if (this.hasId()) {
@@ -248,12 +250,6 @@ var initNode = function(neo4jrestful) {
     var self = this;
     if (this.hasId())
       this.save(cb);
-      // this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, function(err, data, debug) {
-      //   if (err)
-      //     return cb(err, data, debug);
-      //   else
-      //     return cb(null, self, debug);
-      // });
     else
       return cb(Error('You have to save() the node one time before you can perform an update'), null);
   }
@@ -350,6 +346,18 @@ var initNode = function(neo4jrestful) {
     } else {
       return cb(Error('Namespace, key, value and mandatory to find indexed nodes.'), null);
     }
+  }
+
+  Node.prototype.withLabel = function(label, cb) {
+    var self = this;
+    // return here if we have an instances node
+    if (self.hasId())
+      return Boolean((self.label) && (self.label.length >0));
+    if (typeof label !== 'string')
+      return this;
+    self._modified_query = true;
+    self.cypher.label = label;
+    return self.exec(cb);
   }
 
   Node.prototype.shortestPathTo = function(end, type, cb) {
@@ -814,6 +822,23 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.remove = function(cb) {
+    var self = this;
+    if (typeof this.onBeforeRemove === 'function') {
+      // execute hook
+      this.onBeforeRemove(function(err,data){
+        // don't execute if an error is passed through
+        if ((typeof err !== 'undefined')&&(err !== null))
+          cb(err, null);
+        else
+          self.execRemove(cb);
+      });
+    } else {
+      self.execRemove(cb);
+      return this;
+    }
+  }
+
+  Node.prototype.execRemove = function(cb) {
     if (this.is_singleton)
       return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced node."),null);
     if (this.hasId()) {

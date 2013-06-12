@@ -1,4 +1,4 @@
-## Neo4jMapper
+# Neo4jMapper
 
 [![Build Status](https://api.travis-ci.org/pstaender/neo4jmapper.png)](https://travis-ci.org/pstaender/neo4jmapper)
 
@@ -200,10 +200,9 @@ You can easiliy inspect the generated queries by invoking the `toCypherQuery()` 
 
 There are some steps to take, especially some methods for daily use are missing, yet. But the basic set of operations are already implemented and test proofed.
 
-  * Relationship: index, findById
-  * implement labels for neo4j 2.0
-  * make ready for clientside use
-  * complete tests
+  * Implement: relationship (index, findById)
+  * Implement labels for neo4j 2.0
+  * Complete missing tests
 
 ## Use on a console
 
@@ -229,6 +228,65 @@ You can run tests in nodejs:
 ```
 
 or in the browser of your choice by opening the `examples/tests.html` file. You have to fill the `configForTest` values with your own parameters.
+
+# Reference
+
+## Schema like behaviour
+
+Neo4jMapper is not a schema based mapper, but it includes some features which are similar to this.
+
+### Classes and inheritance
+
+You can extend the Node object with an other object. There is no difference whether you use the `_.extend()` method of underscorejs, the class pattern of coffeescript or similar method to extend your "class" (I prefer the CoffeeScript way to keep the code more clean…).
+
+This feature only works with Neo4j v2+ because it' using the label feature.
+
+```coffeescript
+
+  class Person extends Node
+
+    onBeforeSave: (next) ->
+      console.log('Do something before saving')
+      next()
+
+  alice = new Person({name: 'Alice'})
+  alice.save ->
+```
+
+### Default values and fields to index
+
+```coffeescript
+
+  class Person extends Node
+
+    fields: {
+      defaults: {
+        is_new: true
+      },
+      indexes: {
+        email: true
+      }
+    }
+```
+
+## Hooks
+
+### onBeforeSave
+
+```coffeescript
+  Node::onBeforeSave = (next) ->
+    # do s.th. before the node will be persisted
+    # is called before initially save and update
+    next()
+```
+
+### onBeforeRemove
+
+```coffeescript
+  Node::onBeforeRemove = (next) ->
+    # do s.th. before the node will be removed
+    next()
+```
 
 ## LICENSE
 

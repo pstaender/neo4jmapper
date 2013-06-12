@@ -222,6 +222,29 @@ describe 'Neo4jMapper', ->
                 expect(err).to.be null
                 done()
 
+    it 'expect to execute onBeforeSave hook if defined', (done) ->
+      n = new Node()
+      n.called_on_before_save = false
+      n.onBeforeSave = (next) ->
+        n.called_on_before_save = true
+        next()
+      n.save (err) ->
+        expect(err).to.be null
+        expect(n.called_on_before_save).to.be true
+        n.remove ->
+          done()
+
+    it 'expect to execute onBeforeRemove hook if defined', (done) ->
+      n = new Node()
+      n.called_on_before_remove = false
+      n.onBeforeRemove = (next) ->
+        n.called_on_before_remove = true
+        next()
+      n.save (err) ->
+        n.remove (err) ->
+          expect(err).to.be null
+          expect(n.called_on_before_remove).to.be true
+          done()
 
   describe 'index', ->
 

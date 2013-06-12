@@ -10,10 +10,6 @@ var bob = new Node({
   name: 'Bob'
 });
 
-Node.prototype.find().where("wontWork LIKE 'this'", function(err) {
-  console.log(err);
-});
-
 alice.save(function(err, alice){
   bob.save(function(err){
     alice.createRelationshipBetween(bob, 'knows', function(){
