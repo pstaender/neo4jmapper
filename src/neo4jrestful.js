@@ -196,11 +196,7 @@ var initNeo4jRestful = function() {
     var requestedUrl = this.absoluteUrl();
     var type = options.type;
     var data = options.data;
-    var label = null;
-    if (options.label) {
-      label = options.label;
-      delete options.label;
-    }
+
     // use copy of header, not reference
     var header = _.extend({},this.header);
     if ( (typeof data === 'object') && (data !== null) )
@@ -233,8 +229,7 @@ var initNeo4jRestful = function() {
       data: data,
       options: options,
       debug: debug,
-      url: url, 
-      label: label // will create an instance of the label if exists
+      url: url
     };
 
     if (!this.connection_established) {
@@ -304,13 +299,6 @@ var initNeo4jRestful = function() {
     var data = _options.data;
     var options = _options.options;
     var debug = _options.debug;
-    var label = _options.label || null;
-    
-    // use the constructor function of the label if exists
-    if (label) {
-      var __global__ = (typeof window !== 'undefined') ? window : root;
-      label = (typeof __global__[label] === 'function') ? __global__[label] : null;
-    }
 
     jQuery.ajax({
       url: _options.requestedUrl,
@@ -329,10 +317,10 @@ var initNeo4jRestful = function() {
             return cb(null, res, debug);
           if (_.isArray(res)) {
             for (var i=0; i < res.length; i++) {
-              res[i] = self.createObjectFromResponseData(res[i], label);
+              res[i] = self.createObjectFromResponseData(res[i]);
             }
           } else if (_.isObject(res)) {
-            res = self.createObjectFromResponseData(res, label);
+            res = self.createObjectFromResponseData(res);
           }
           cb(null, res, debug);
         } else {

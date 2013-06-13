@@ -417,6 +417,7 @@ var initNode = function(neo4jrestful) {
 
   Node.prototype.findById = function(id, cb) {;
     var self = this;
+    var constructor_name = self.constructor_name;
     if (!self.is_singleton)
       self = Node.prototype.singleton();
     self._modified_query = true;
@@ -582,11 +583,6 @@ var initNode = function(neo4jrestful) {
 
     var relationships = '';
 
-    // if ((this.neo4jrestful.version >= 2)&&(query.return_properties.length === 1)&&(/[nr]/.test(query.return_properties[0]))) {
-    //   // try adding labels if we have only n[ode] or r[elationship] as return propert
-    //   query.return_properties.push('labels(n)');
-    // }
-
     if ((query.return_properties)&&(query.return_properties.constructor === Array))
       query.return_properties = _.uniq(query.return_properties).join(', ')
 
@@ -628,6 +624,10 @@ var initNode = function(neo4jrestful) {
         matches = matches.match(/[\s\,]([a-z]+) \= /g);
         for (var i = 0; i < matches.length; i++) {
           query.return_properties.push(matches[i].replace(/^[\s\,]*([a-z]+).*$/i,'$1'));
+        }
+        if ((this.neo4jrestful.version >= 2)&&(query.return_properties.length === 1)&&(query.return_properties[0] === 'n')) {
+          // try adding labels if we have only n[node] as return propert
+          query.return_properties.push('labels(n)');
         }
         query.return_properties = query.return_properties.join(', ');
       }

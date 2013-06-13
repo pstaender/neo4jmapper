@@ -194,19 +194,6 @@ doStart ->
             n.exec ->
               done()
 
-      # it 'expect to remove a node including it\'s relationships', (done) ->
-      #   a = new Node(name: 'Alice')
-      #   b = new Node(name: 'Bob')
-      #   a.save -> b.save ->
-      #     id = a.id
-      #     a.createRelationshipBetween b, 'knows', ->
-      #       a.removeWithRelationships (err) ->
-      #         expect(err).to.be null
-      #         Node::findById id, (err, found) ->
-      #           # expect(err).to.be null
-      #           expect(found).to.be null
-      #           done()
-
       it 'expect to update a node', (done) ->
         n = new Node()
         n.data = {
@@ -256,7 +243,6 @@ doStart ->
     describe 'label nodes', ->
 
       if client.version < 2
-        console.log client.exact_version
         it 'expect to save labeled node and request label(s)'
       else
         it 'expect to save labeled node and request label(s)', (done) ->
@@ -303,6 +289,19 @@ doStart ->
                     expect(savedPerson.constructor_name).to.be.equal 'Person'
                     savedPerson.remove ->
                       done()
+
+      # if version < 2
+      #   it 'expect to find node including labels'
+      # else
+      #   it 'expect to find node including labels', (done) ->
+      #     class Person extends Node
+      #     Node::register_model(Person)
+      #     new Person({ name: 'Alice' }).save (err, alice) ->
+      #       Person::findById alice.id, (err, alice) ->
+      #         expect(alice.constructor_name).to.be.equal 'Person'
+      #         # expect(alice.labels.constructor).to.be Array
+      #         #console.log alice.constructor_name
+      #         done()
 
       if version < 2
         it 'expect to find labeled nodes'

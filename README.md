@@ -119,6 +119,7 @@ The query method names are heavily inspired by mongodb and mongoose - so if you 
   * find, findOne, findById, findByLabel
   * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhere, andWhereNode, …
   * whereHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …
+  * match
   * limit
   * skip
   * delete
