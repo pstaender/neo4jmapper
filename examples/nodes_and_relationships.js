@@ -1,7 +1,9 @@
 var Neo4j = require('../src')
   , neo4j = new Neo4j('http://localhost:7474')
   , Node  = neo4j.Node
-  , Graph = neo4j.Graph;
+  , Graph = neo4j.Graph
+  // underscore is used for extending
+  , _ = require('underscore');
 
 var alice = new Node({
   name: 'Alice'
@@ -9,6 +11,14 @@ var alice = new Node({
 var bob = new Node({
   name: 'Bob'
 });
+
+// var Movie = _.extend(Node, {
+//   fields: {
+//     defaults: {
+//       is_movie: true
+//     }
+//   }
+// });
 
 alice.save(function(err, alice){
   bob.save(function(err){

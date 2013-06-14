@@ -438,7 +438,7 @@ describe 'Neo4jMapper', ->
                       alice.removeWithRelationships -> bob.removeWithRelationships ->
                         done()
 
-    it 'expect to create a relationship from a node to another', (done) ->
+    it 'expect to create and get incoming, outgoing and bidirectional relationships between two nodes', (done) ->
       node = new Node()
       node.data.name = "Alice"
       node.save (err, a) ->
@@ -471,7 +471,16 @@ describe 'Neo4jMapper', ->
 
                   a.createRelationshipFrom b, 'LIKES', (err, result) ->
                     expect(err).to.be null
-                    done()
+                    # console.log b.allRelationships('LIKES').toCypherQuery()
+                    a.incomingRelationships 'LIKES', (err, result) ->
+                      expect(outgoingRelationships).to.have.length 1
+                      expect(err).to.be null
+                      a.createRelationshipBetween b, 'LIKES', (err, result) ->
+                        expect(err).to.be null
+                        a.allRelationships 'LIKES', (err, result) ->
+                          expect(err).to.be null
+                          expect(result).to.have.length 3
+                          done()
 
   describe 'path algorithms', ->
 

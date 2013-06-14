@@ -788,7 +788,6 @@ var initNode = function(neo4jrestful) {
     self._modified_query = true;
     if (typeof relation !== 'function') {
       self.cypher.relationship = relation;
-      
     } else {
       cb = relation;
     }
@@ -865,11 +864,17 @@ var initNode = function(neo4jrestful) {
     return self.allDirections(relation, cb);
   }
 
-  Node.prototype.allRelationships = function(cb) {
+  Node.prototype.allRelationships = function(relation, cb) {
     var self = this.singletonForQuery();
     var label = (this.cypher.label) ? ':'+this.cypher.label : '';
+    if (typeof relation === 'string') {
+      relation = ':'+relation;
+    } else {
+      cb = relation;
+      relation = '';
+    }
     self._modified_query = true;
-    self.cypher.match = 'n'+label+'-[r]-()';
+    self.cypher.match = 'n'+label+'-[r'+relation+']-()';
     self.cypher.return_properties = ['r'];
     self.exec(cb);
     return self;
