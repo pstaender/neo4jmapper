@@ -37,10 +37,15 @@ var initGraph = function(neo4jrestful) {
 
   Graph.prototype.countAllOfType = function(type, cb) {
     var query = '';
-    if (type === 'node')
+    if      (/^n(ode)*$/i.test(type))
       query = "START n=node(*) RETURN count(n);"
-    else if (type === 'relationship')
+    else if (/^r(elationship)*$/i.test(type))
       query = "START r=relationship(*) RETURN count(r);";
+    else if (type[0] === 'path')
+      query = "START p=path(*) RETURN count(p);"
+    else if (/^[nr]\:.+/.test(type))
+      // count labels
+      query = "MATCH "+type+" RETURN "+type[0]+";";
     else
       query = "START n=node(*) MATCH n-[r?]-() RETURN count(n), count(r);";
     return this.query(query,function(err,data){
@@ -64,6 +69,14 @@ var initGraph = function(neo4jrestful) {
 
   Graph.prototype.countAll = function(cb) {
     return this.countAllOfType('all', cb);
+  }
+
+  // Graph.prototype.countWithLabel = function() { }
+
+  Graph.prototype.indexLabel = function(label, field, cb) {
+    if ((!_.isString(label))&&(!_.isString(field)))
+      return cb(Error('label and field are mandatory arguments to create index on'))
+    this.query('CREATE INDEX ON :'+label+'('+field+');', cb);
   }
 
   Graph.prototype.about = function(cb) {

@@ -257,6 +257,8 @@ describe 'Neo4jMapper', ->
 
   describe 'classes and models', ->
 
+    # TODO: check that one node can have many labels
+
     it 'expect to register and unregister models for nodes', ->
       class Person extends Node
       Node::register_model(Person)
@@ -266,6 +268,66 @@ describe 'Neo4jMapper', ->
       Node::register_model(Person)
       Node::unregister_model('Person')
       expect(Node::registered_models()['Person']).to.be undefined
+
+    it 'expect to find corresponding node to each model', (done) ->
+      class Movie extends Node
+      Node::register_model(Movie)
+      Movie::findAll().count (err, countBefore) ->
+        expect(err).to.be null
+        expect(countBefore).to.be.a 'number'
+        lebowski = new Movie title: 'The Big Lebowski'
+        lebowski.save (err) ->
+          expect(err).to.be null
+          Movie::findAll().count (err, countNow) ->
+            expect(countBefore+1).to.be countNow
+            lebowski.remove ->
+              done()
+
+
+    it 'expect to autoindex models', (done) ->
+      # client.constructor::log = Graph::log = require('./log')
+      class Movie extends Node
+        fields:
+          indexes:
+            uid: true
+      Node::register_model(Movie)
+      deathAndMaiden = new Movie title: 'Death and the Maiden'
+      uid = new Date().getTime()
+      deathAndMaiden.data.uid = uid
+      deathAndMaiden.save (err) ->
+        expect(err).to.be null
+        Movie::findAll().where { uid: uid }, (err, found) ->
+          expect(err).to.be null
+          expect(found).to.have.length 1
+          expect(found[0].data.uid).to.be.equal uid
+          deathAndMaiden.remove ->
+            done()
+
+    it 'expect to det default values on models', (done) ->
+      # client.constructor::log = Graph::log = require('./log')
+      class Movie extends Node
+        fields:
+          indexes:
+            uid: true
+          defaults:
+            uid: -> new Date().getTime()
+            is_movie: true
+            director: 'Roman Polanski'
+      Node::register_model(Movie)
+      bitterMoon = new Movie title: 'Bitter Moon'
+      bitterMoon.save (err) ->
+        expect(err).to.be null
+        uid = bitterMoon.data.uid
+        expect(uid).to.be.a 'number'
+        Movie::findAll().where { uid: uid }, (err, found) ->
+          expect(err).to.be null
+          expect(found).to.have.length 1
+          expect(found[0].data.uid).to.be.equal uid
+          expect(found[0].data.title).to.be.equal 'Bitter Moon'
+          expect(found[0].data.is_movie).to.be true
+          expect(found[0].data.director).to.be.equal 'Roman Polanski'
+          bitterMoon.remove ->
+            done()
 
   describe 'label nodes', ->
 
@@ -297,22 +359,6 @@ describe 'Neo4jMapper', ->
         expect(person.label).to.be.equal 'Person'
         expect(savedPerson.label).to.be.equal 'Person'
         done()
-        # savedPerson.load (err, data) ->
-        #   expect(err).to.be null
-        #   expect(savedPerson.constructor_name).to.be.equal 'Node'
-        #   Node::register_model(Person)
-        #   savedPerson.load (err, data) ->
-        #     expect(err).to.be null
-        #     expect(savedPerson.constructor_name).to.be.equal 'Person'
-        #     Node::unregister_model('Person')
-        #     savedPerson.load (err, data) ->
-        #       expect(savedPerson.constructor_name).to.be.equal 'Node'
-        #       __global__ = if window? then window else root
-        #       __global__.Person = Person
-        #       savedPerson.load (err, data) ->
-        #         expect(savedPerson.constructor_name).to.be.equal 'Person'
-        #         savedPerson.remove ->
-        #           done()
 
     it 'expect to find node including labels', (done) ->
       class Person extends Node

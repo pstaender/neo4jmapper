@@ -56,7 +56,7 @@ var initNode = function(neo4jrestful) {
     if (id) {
       this.setUriById(id);
     }
-    this.fields = _.extend({}, Node.prototype.fields);
+    this.fields = _.extend({}, this.fields);
     this.labels = [];
     this.is_instanced = true;
     // will be used for labels and classes
@@ -88,6 +88,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.constructor_name = null;
 
   Node.prototype.__models__ = {};
+  Node.prototype.__already_initialized__ = false; // flag to avoid many initializations
 
   // you should **never** change this value
   // it's used to dictinct nodes and relationships
@@ -107,6 +108,39 @@ var initNode = function(neo4jrestful) {
     return node;
   }
 
+  Node.prototype.initialize = function(cb) {
+    var self = this;
+    if (typeof cb !== 'function')
+      cb = function() { /* /dev/null */ };
+    if (!this.__already_initialized__) {
+      if (typeof this.onBeforeInitialize === 'function')
+        return this.onBeforeInitialize(function(err){
+          self.onAfterInitialize(cb);
+        });
+      else
+        return self.onAfterInitialize(cb);
+    }
+  }
+
+  Node.prototype.onAfterInitialize = function(cb) {
+    var self = this;
+    this.__already_initialized__ = true;
+    // Index fields
+    var fieldsToIndex = this.fieldsToIndex();
+    // we create an object to get the label
+    var node = new this.constructor();
+    var label = node.label;
+    if ((label)&&(fieldsToIndex)) {
+      _.each(fieldsToIndex, function(toBeIndexed, field) {
+        if (toBeIndexed === true)
+          self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
+            // maybe better ways how to report if an error occurs
+            cb(err, result, debug);
+          });
+      });
+    }
+  }
+
   /*
    * Copys only the relevant data(s) of a node to another object
    */
@@ -123,9 +157,10 @@ var initNode = function(neo4jrestful) {
 
   // TODO: implement createByLabel(label)
 
-  Node.prototype.register_model = function(Class) {
+  Node.prototype.register_model = function(Class, cb) {
     var name = helpers.constructorNameOfFunction(Class);
     Node.prototype.__models__[name] = Class;
+    Class.prototype.initialize(cb);
     return Node.prototype.__models__;
   }
 
@@ -141,8 +176,9 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.registered_model = function(model) {
-    if (typeof model === 'function')
+    if (typeof model === 'function') {
       model = helpers.constructorNameOfFunction(model);
+    }
     return this.registered_models()[model] || null;
   }
 
@@ -195,9 +231,12 @@ var initNode = function(neo4jrestful) {
 
   Node.prototype.applyDefaultValues = function() {
     for (var key in this.fields.defaults) {
-      if (((typeof this.data[key] === 'undefined')||(this.data[key] === null))&&(typeof this.fields.defaults[key] === 'function'))
+      if (((typeof this.data[key] === 'undefined')||(this.data[key] === null))&&(typeof this.fields.defaults[key] !== 'undefined'))
         // set a default value by defined function
-        this.data[key] = this.fields.defaults[key](this);
+        if (typeof this.fields.defaults[key] === 'function')
+          this.data[key] = this.fields.defaults[key](this);
+        else
+          this.data[key] = this.fields.defaults[key];
     }
     return this;
   }
@@ -209,16 +248,23 @@ var initNode = function(neo4jrestful) {
       return null;
   }
 
+  Node.prototype.fieldsToIndex = function() {
+    return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? this.fields.indexes : null;
+  }
+
   Node.prototype.indexFields = function(cb) {
 
     if (this.hasFieldsToIndex()) {
       // var join = Join.create();
       var doneCount = 0;
-      var todoCount = Object.keys(this.fields.indexes).length;
-      for (var key in this.fields.indexes) {
+      var fieldsToIndex = this.fieldsToIndex();
+      var todoCount = 0;
+      // var max = Object.keys(fieldsToIndex).length;
+      for (var key in fieldsToIndex) {
         var namespace = this.fields.indexes[key];
         var value = this.data[key];
         if ((_.isString(namespace))&&(typeof value !== 'undefined')&&(value !== null)) {
+          todoCount++;
           this.index(namespace, key, value, function(err, data, debug){
             doneCount = doneCount+1;
             // done
@@ -227,6 +273,8 @@ var initNode = function(neo4jrestful) {
           });
         }
       }
+      if (todoCount === 0)
+        cb(null, doneCount);
     }
     return null;
   }
@@ -311,7 +359,7 @@ var initNode = function(neo4jrestful) {
       method = 'update';
       this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, _onAfterSave);
     } else {
-      method = 'create';      
+      method = 'create';   
       this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, _onAfterSave);
     }
   }
@@ -650,11 +698,11 @@ var initNode = function(neo4jrestful) {
     // Set a fallback to START n = node(*) 
     if ((!query.start)&&(!query.match)) {
       // query.start = 'n = node(*)';
-      // console.log(this.label, query.match, helpers.constructorNameOfFunction(this));
       query.start = this.__type_identifier__+' = '+this.__type__+'(*)';
-      if (this.label)
-        // e.g. ~> MATCH n:Person
-        query.match = this.__type_identifier__+':'+this.label;
+    }
+    if ((!query.match)&&(this.label)) {
+      // e.g. ~> MATCH n:Person
+      query.match = this.__type_identifier__+':'+this.label;
     }
 
     return query;

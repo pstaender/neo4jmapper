@@ -102,9 +102,13 @@ var neo4jmapper_helpers = {};
     if (_.isRegExp(value)) {
       var s = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
       return key+" =~ '"+s+"'";
-    } else {
-      return key+" = '"+escapeString(value)+"'";
     }
+    else if (_.isNumber(value))
+      return key+" = "+value;
+    else if (_.isBoolean(value))
+      return key+" = "+String(value);
+    else
+      return key+" = '"+escapeString(value)+"'";
   }
 
   /*
