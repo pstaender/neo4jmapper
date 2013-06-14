@@ -34,6 +34,8 @@ _trim = (s) -> s.trim().replace(/\s+/g, ' ')
 describe 'Neo4jMapper (cypher queries)', ->
 
     it 'expect to build various kind of queries', ->
+      class Actor extends Node
+      Node::register_model(Actor)
       node = new Node()
       results = []
       map =
@@ -60,6 +62,12 @@ describe 'Neo4jMapper (cypher queries)', ->
           [
              Node::findAll().match('n:Person'),
             "MATCH n:Person RETURN n;"
+          ]
+
+        "Actor::findAll()":
+          [
+             Actor::findAll(),
+            "START n = node(*) MATCH n:Actor RETURN n;"
           ]
         
         "Node::findAll().skip(5)":

@@ -133,7 +133,7 @@ describe 'Neo4jMapper', ->
           expect(found).to.be.an 'object'
           expect(found.id).to.be.equal id
           expect(found.data.title).to.be.equal node.data.title
-          found.remove ->
+          node.remove ->
             done()
 
     it 'expect to find one specific node by id', (done) ->
@@ -227,7 +227,8 @@ describe 'Neo4jMapper', ->
               expect(foundAgain.data.title).to.be found.data.title
               foundAgain.removeWithRelationships (err) ->
                 expect(err).to.be null
-                done()
+                n.remove ->
+                  done()
 
     it 'expect to execute onBeforeSave hook if defined', (done) ->
       n = new Node()
@@ -286,7 +287,8 @@ describe 'Neo4jMapper', ->
               article.requestLabels (err, labels) ->
                 expect(labels).to.have.length 1
                 expect(labels[0]).to.be.equal 'Article'
-                done()
+                article.remove ->
+                  done()
   
     it 'expect to find labeled node, with and without class', (done) ->
       class Person extends Node

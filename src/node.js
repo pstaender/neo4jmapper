@@ -98,23 +98,13 @@ var initNode = function(neo4jrestful) {
 
 
   Node.prototype.singleton = function(id) {
-    var node = new Node({},id);
+    var Class = this.constructor;
+    var node = new Class({},id);
     node.neo4jrestful = _neo4jrestful;
     node.resetQuery();
     node.is_singleton = true;
     node.resetQuery();
     return node;
-  }
-
-  Node.prototype.create = function(node, label) {
-    if (this.hasId())
-      throw Error('create() can be invoked from uninstanced/singleton Node object only')
-    if (typeof label === 'undefined')
-      label = helpers.constructorNameOfFunction(this);
-    var Class = (typeof this.registered_models()[label] !== 'undefined') ? this.registered_models()[label] : Node;
-    var labeledNode = new Class();
-    node.copyTo(labeledNode);
-    return labeledNode;
   }
 
   /*
@@ -148,6 +138,12 @@ var initNode = function(neo4jrestful) {
 
   Node.prototype.registered_models = function() {
     return Node.prototype.__models__;
+  }
+
+  Node.prototype.registered_model = function(model) {
+    if (typeof model === 'function')
+      model = helpers.constructorNameOfFunction(model);
+    return this.registered_models()[model] || null;
   }
 
   Node.prototype.resetQuery = function() {
@@ -361,7 +357,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.find = function(where, cb) {
     var self = this;
     if (!self.is_singleton)
-      self = Node.prototype.singleton();
+      self = this.singleton(undefined, this);
     self._modified_query = true;
     if (typeof where === 'string') {
       self.where(where);
@@ -391,7 +387,7 @@ var initNode = function(neo4jrestful) {
     } else {
       var self = this;
       if (!self.is_singleton)
-        self = Node.prototype.singleton();
+        self = this.singleton(undefined, this);
       self._modified_query = true;
       self.cypher._find_by_id = true;
       self.cypher.from = id;
@@ -408,7 +404,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.findByUniqueKeyValue = function(key, value, cb) {
     var self = this;
     if (!self.is_singleton)
-      self = Node.prototype.singleton();
+      self = this.singleton(undefined, this);
     if (typeof key !== 'string')
       key = 'id';
     if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
@@ -426,20 +422,19 @@ var initNode = function(neo4jrestful) {
           return cb(err, data, debug);
         if ((data)&&(data.data)) {
           if (data.data.length > 1) {
-            return cb(Error('Use findByUniqueKeyValue only to find unique and distinct key/values. But this result contains more than one node…'), null);
+            return cb(Error('Use findByUniqueKeyValue only to find unique and distinct key/values. But this result contains more than one node…'), data.data);
           }
           var resultData = data.data[0];
           // merge data (node-data + labels)
-          node = new Node();
-          node.populateWithDataFromResponse(resultData[0]);
+          // and transform singleton to an instanced node
+          self.populateWithDataFromResponse(resultData[0]);
+          self.is_singleton = null;
+          self.is_instanced = true;
           if (resultData[1])
-            node.setLabels(resultData[1]);
-          // create instance of label if we have a distinct
-          if ( (label) || (node.label) )
-            node = Node.prototype.create(node, label || node.label);
+            self.setLabels(resultData[1]);
         }
         if (typeof cb === 'function')
-          cb(err, node, debug);
+          cb(err, self, debug);
       });
     }
     return self;
@@ -451,7 +446,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.findAll = function(cb) {
     var self = this;
     if (!self.is_singleton)
-      self = Node.prototype.singleton();
+      self = this.singleton(undefined, this);
     self._modified_query = true;
     self.cypher.limit = null;
     self.cypher.return_properties = ['n'];
@@ -462,7 +457,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.findByIndex = function(namespace, key, value, cb) {
     var self = this;
     if (!self.is_singleton)
-      self = Node.prototype.singleton();
+      self = this.singleton(undefined, this);
     var values = {};
     if ((namespace)&&(key)&&(value)&&(typeof cb === 'function')) {
       // values = { key: value };
@@ -473,14 +468,14 @@ var initNode = function(neo4jrestful) {
     }
   }
 
-  Node.prototype.findByLabel = function(label, cb) {
-    var self = this;
-    if (!self.is_singleton)
-      self = Node.prototype.singleton();
-    self.cypher.label = label;
-    self.exec(cb);
-    return self;
-  }
+  // Node.prototype.findByLabel = function(label, cb) {
+  //   var self = this;
+  //   if (!self.is_singleton)
+  //     self = Node.prototype.singleton();
+  //   self.cypher.label = label;
+  //   self.exec(cb);
+  //   return self;
+  // }
 
   Node.prototype.withLabel = function(label, cb) {
     var self = this;
@@ -655,7 +650,11 @@ var initNode = function(neo4jrestful) {
     // Set a fallback to START n = node(*) 
     if ((!query.start)&&(!query.match)) {
       // query.start = 'n = node(*)';
+      // console.log(this.label, query.match, helpers.constructorNameOfFunction(this));
       query.start = this.__type_identifier__+' = '+this.__type__+'(*)';
+      if (this.label)
+        // e.g. ~> MATCH n:Person
+        query.match = this.__type_identifier__+':'+this.label;
     }
 
     return query;
