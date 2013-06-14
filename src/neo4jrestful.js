@@ -151,11 +151,10 @@ var initNeo4jRestful = function() {
       timeout: timeout,
       success: function(res,status) {
         if ((status === 'success')&&(res)&&(res.neo4j_version)) {
-          // store version on restfule client
-          // TODO: currently it's also stored redundant in graph object -> only one version value should be used 
           self.exact_version = res.neo4j_version;
           self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
-          cb(null, res.neo4j_version);
+          error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
+          cb(error, res.neo4j_version);
         } else {
           cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url?"), null, null);
         }

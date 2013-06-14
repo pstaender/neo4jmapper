@@ -37,11 +37,6 @@ describe 'Neo4jMapper (cypher queries)', ->
       node = new Node()
       results = []
       map =
-        "Node::findById(1)":
-          [
-             Node::findById(1),
-            'START n = node(1) RETURN n;'
-          ]
         
         "Node::findAll()":
           [
@@ -55,11 +50,6 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*) RETURN n LIMIT 1;'
           ]
         
-        # "Node::findOne().where({name: 'Peter'}).orWhere({name: 'Thomas'})":
-        #   [
-        #     Node::findOne().where({name: 'Peter'}).orWhere({name: 'Thomas'}), null
-        #   ]
-
         "Node::findAll().limit(10)":
           [
              Node::findAll().limit(10),

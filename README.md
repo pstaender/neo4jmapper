@@ -12,7 +12,7 @@ Neo4jMapper brings basic object-mapping and comfortable query building to the ne
 
 **Beta status**
 
-It's working with Neo4j v1.8 - v2.0 (there will be no support for earlier versions than v1.8)
+**Neo4jMapper works with Neo4j v2.0 and above** - there will be no support for earlier versions than v2 because the label feature is essential for the mapping.
 
 ## How to use
 
