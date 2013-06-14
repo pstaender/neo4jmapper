@@ -5,20 +5,44 @@ var Neo4j = require('../src')
   // underscore is used for extending
   , _ = require('underscore');
 
+
+/*
+ * Example #1
+ * Demonstrates how to extend Node Objects with custom Models
+ */
+
+function Movie() { };
+
+_.extend(Movie.prototype, Node.prototype, {
+  fields: {
+    defaults: {
+      is_movie: true
+    },
+    indexes: {}
+  }
+});
+
+pulpFiction = new Movie({
+  title: 'Pulp Fiction' 
+});
+
+pulpFiction.data.director = 'Quentin Tarantino';
+pulpFiction.data.year = 1994;
+pulpFiction.save(function(err,movie){
+  console.log('Created movie: ', movie.toObject());
+});
+
+/*
+ * EXAMPLE #2
+ * Demonstrates how to connect Nodes
+ */
+
 var alice = new Node({
   name: 'Alice'
 });
 var bob = new Node({
   name: 'Bob'
 });
-
-// var Movie = _.extend(Node, {
-//   fields: {
-//     defaults: {
-//       is_movie: true
-//     }
-//   }
-// });
 
 alice.save(function(err, alice){
   bob.save(function(err){
