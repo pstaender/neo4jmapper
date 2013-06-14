@@ -56,7 +56,11 @@ var initNode = function(neo4jrestful) {
     if (id) {
       this.setUriById(id);
     }
-    this.fields = _.extend({}, this.fields);
+    // nested objects must be extended nested
+    this.fields = _.extend({}, {
+      defaults: _.extend({}, this.fields.defaults),
+      indexes: _.extend({}, this.fields.indexes)
+    });
     this.labels = [];
     this.is_instanced = true;
     // will be used for labels and classes
@@ -1233,11 +1237,14 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.toObject = function() {
-    return {
+    var o = {
       id: this.id,
       data: _.extend(this.data),
       uri: this.uri
     };
+    if (this.label)
+      o.label = this.label;
+    return o;
   }
 
   /*

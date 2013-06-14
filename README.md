@@ -72,13 +72,56 @@ You can convert any node to it's model if you have registered the model:
 
 ```coffeescript
   class Person extends Node
+    
     property_only_for_person: true
+    
+    defaults:
+      is_confirmed: false
   
   Node::register_model(Person)
   
   alice = new Person({ name: 'Alice' }).save ->
     alice.load -> # alice.property_only_for_person = true
 ```
+
+To extend the Node object in JavaScript you have to use an extend method (this one is taken from the coffescript compiler). It should also work with similar working extend methods (e.g. backbonejs), but it's not tested with it, yet.
+
+```js
+  var Movie,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+  Movie = (function(_super) {
+
+    __extends(Movie, _super);
+
+    function Movie() {
+      return Movie.__super__.constructor.apply(this, arguments);
+    }
+
+    Movie.prototype.fields = {
+      defaults: {
+        is_movie: true
+      }
+    };
+
+    return Movie;
+
+  })(Node);
+
+  Node.prototype.register_model(Movie);
+
+  pulpFiction = new Movie({
+    title: 'Pulp Fiction' 
+  });
+
+  pulpFiction.data.director = 'Quentin Tarantino';
+  pulpFiction.data.year = 1994;
+  pulpFiction.save(function(err,movie){
+    console.log('Created movie: ', movie.toObject());
+  });
+```
+
 
 ### Connect Nodes in various kinds
 
@@ -307,9 +350,12 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
     fields: {
       defaults: {
         is_new: true
+        # default values will be generated with invoking this method (e.g. generating a timestamp)
+        uid: -> new Date().getTime()
       },
       indexes: {
-        email: true
+        email: true # will be autoindex
+        uid: 'my_person_index' # will be indexed on the legacy way with 'my_person_index' namespace 
       }
     }
 ```
@@ -330,6 +376,16 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
 ```coffeescript
   Node::onBeforeRemove = (next) ->
     # do s.th. before the node will be removed
+    next()
+```
+
+### onBeforeInitialize
+
+Is called when the model is registered. For instance, it's used to ensure autoindex.
+
+```coffeescript
+  Node::onBeforeInitialize = (next) ->
+    # do s.th. before the Model gets initialized
     next()
 ```
 

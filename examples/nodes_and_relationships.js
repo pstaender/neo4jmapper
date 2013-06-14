@@ -11,16 +11,30 @@ var Neo4j = require('../src')
  * Demonstrates how to extend Node Objects with custom Models
  */
 
-function Movie() { };
 
-_.extend(Movie.prototype, Node.prototype, {
-  fields: {
+var Movie,
+  __hasProp = {}.hasOwnProperty,
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+
+Movie = (function(_super) {
+
+  __extends(Movie, _super);
+
+  function Movie() {
+    return Movie.__super__.constructor.apply(this, arguments);
+  }
+
+  Movie.prototype.fields = {
     defaults: {
       is_movie: true
-    },
-    indexes: {}
-  }
-});
+    }
+  };
+
+  return Movie;
+
+})(Node);
+
+Node.prototype.register_model(Movie);
 
 pulpFiction = new Movie({
   title: 'Pulp Fiction' 
