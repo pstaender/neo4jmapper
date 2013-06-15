@@ -84,10 +84,6 @@ var initNeo4jRestful = function() {
     self.checkAvailability(function(err, isAvailable, debug) {
       self.connection_established = isAvailable;
     });
-    if ((!self.baseUrl)&&(_singleton_instance)) {
-      // return singleton (if exists) and if no url is given
-      this = _singleton_instance;
-    }
   }
 
   Neo4jRestful.prototype.options = null;
@@ -289,6 +285,72 @@ var initNeo4jRestful = function() {
     }
   }
 
+  Neo4jRestful.prototype.onSuccess = function(next, res, status, options) {
+    if (options.debug) {
+      options._debug.res = res;
+      options._debug.status = status;
+    }
+    if (status === 'success') {
+      if (options.no_processing)
+        return next(null, res, options._debug);
+      if (_.isArray(res)) {
+        for (var i=0; i < res.length; i++) {
+          res[i] = this.createObjectFromResponseData(res[i]);
+        }
+      } else if (_.isObject(res)) {
+        res = this.createObjectFromResponseData(res);
+      }
+      next(null, res, options._debug);
+    } else {
+      next(res, status, options._debug);
+    }
+  }
+
+  Neo4jRestful.prototype.onError = function(cb, err, res, options) {    
+    var self = this;
+    var statusCode = err.status;
+    var error = ( err && err.responseText ) ? Error(err.responseText) : err;
+    if (options.debug) {
+      options._debug.res = res;
+      options._debug.err = err;
+      options._debug.error = error;
+    }
+
+    try {
+      // try to extract the first <p> or <pre> from html body, else return error object for better debugging
+      if (jQuery(err.responseText).find('body pre:first, body p:first')[0])
+        error = new Error(jQuery(err.responseText).find('body pre:first, body p:first').text().trim());
+      else if (jQuery(err.responseText).text()) {
+        console.log(':)');
+        error = jQuery(err.responseText).text().trim();
+      } else {
+        error = err;
+      }
+
+      return cb(error,null, options._debug);
+    } catch(e) {
+      // ignore exception
+    }
+    // try to create a valuable error object from response
+    if ((err)&&(err.responseText)&&(typeof err.responseText === 'string')) {
+      try {
+        var err = JSON.parse(err.responseText);
+        var ErrorHandler = (/^(\/)*db\/data(\/)*$/.test(options.url)) ? CypherQueryError : QueryError;
+        err = new ErrorHandler(err.message, {
+          stacktrace: err.stacktrace,
+          exception: err.exception,
+          statusCode: statusCode,
+          url: options.url,
+          method: options.method,
+          data: data
+        });
+      } catch (e) {
+        self.log('**debug** Could not create/parse a valuable error object', e);
+      }
+    }
+    return cb(err, null, options._debug);
+  }
+
   Neo4jRestful.prototype.makeRequest = function(_options, cb) {
     _options = _.extend({
       cache: false,
@@ -297,72 +359,23 @@ var initNeo4jRestful = function() {
     var self = this;
     var data = _options.data;
     var options = _options.options;
-    var debug = _options.debug;
+    options.absolute_url = _options.requestedUrl;
+    options.url = _options.url;
+    options.method = _options.type;
+    options._debug = _options.debug;
 
     jQuery.ajax({
-      url: _options.requestedUrl,
-      type: _options.type,
+      url: options.absolute_url,
+      type: options.method,
       headers: this.header,
       data: data,
       cache: _options.cache,
       timeout: _options.timeout,
-      success: function(res,status,xhr) {
-        if (options.debug) {
-          debug.res = res;
-          debug.status = status;
-        }
-        if (status === 'success') {
-          if (options.no_processing)
-            return cb(null, res, debug);
-          if (_.isArray(res)) {
-            for (var i=0; i < res.length; i++) {
-              res[i] = self.createObjectFromResponseData(res[i]);
-            }
-          } else if (_.isObject(res)) {
-            res = self.createObjectFromResponseData(res);
-          }
-          cb(null, res, debug);
-        } else {
-          cb(res, status, debug);
-        }
+      success: function(res,status) {
+        self.onSuccess(cb, res, status, options);
       },
       error: function(err, res) {
-
-        var error = ( err && err.responseText ) ? Error(err.responseText) : err;
-        if (options.debug) {
-          debug.res = res;
-          debug.err = err;
-          debug.error = error;
-        }
-        try {
-          // try to extract the first <p> or <pre> from html body, else return error object for better debugging
-          if (jQuery(err.responseText).find('body pre:first, body p:first')[0])
-            error = new Error(jQuery(err.responseText).find('body pre:first, body p:first').text().trim());
-          else if (jQuery(err.responseText).text())
-            error = jQuery(err.responseText).text().trim()
-          else
-            error = err
-          return cb(error,null, debug);
-        } catch(e) {
-          // try to create a valuable error object from response
-          if ((err)&&(err.responseText)&&(typeof err.responseText === 'string')) {
-            try {
-              var result = JSON.parse(err.responseText);
-              var ErrorHandler = (/^(\/)*db\/data(\/)*$/.test(_options.url)) ? CypherQueryError : QueryError;
-              err = new ErrorHandler(result.message, {
-                stacktrace: result.stacktrace,
-                exception: result.exception,
-                statusCode: err.status,
-                url: _options.requestedUrl,
-                method: _options.type,
-                data: data
-              });
-            } catch (e) {
-              self.log('**debug** Could not create/parse a valuable error object', e);
-            }
-          }
-        }
-        return cb(err, null, debug);
+        self.onError(cb, err, res, options);
       }
     })
   }

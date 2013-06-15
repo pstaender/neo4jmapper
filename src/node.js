@@ -1441,12 +1441,14 @@ var initNode = function(neo4jrestful) {
         });
       } else {
         return this.neo4jrestful.query(cypher, cb);
-      }
-      
+      } 
     }
     return null;
   }
+
+
   return Node;
+
 }
 
 if (typeof window !== 'object') {
