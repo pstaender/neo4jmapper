@@ -153,7 +153,7 @@ var initNeo4jRestful = function() {
         if ((status === 'success')&&(res)&&(res.neo4j_version)) {
           self.exact_version = res.neo4j_version;
           self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
-          error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
+          var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
           cb(error, res.neo4j_version);
         } else {
           cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url?"), null, null);

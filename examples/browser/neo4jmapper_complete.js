@@ -128,9 +128,13 @@
       if (_.isRegExp(value)) {
         var s = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
         return key+" =~ '"+s+"'";
-      } else {
-        return key+" = '"+escapeString(value)+"'";
       }
+      else if (_.isNumber(value))
+        return key+" = "+value;
+      else if (_.isBoolean(value))
+        return key+" = "+String(value);
+      else
+        return key+" = '"+escapeString(value)+"'";
     }
   
     /*
@@ -929,11 +933,10 @@
         timeout: timeout,
         success: function(res,status) {
           if ((status === 'success')&&(res)&&(res.neo4j_version)) {
-            // store version on restfule client
-            // TODO: currently it's also stored redundant in graph object -> only one version value should be used 
             self.exact_version = res.neo4j_version;
             self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
-            cb(null, res.neo4j_version);
+            var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
+            cb(error, res.neo4j_version);
           } else {
             cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url?"), null, null);
           }
@@ -974,11 +977,7 @@
       var requestedUrl = this.absoluteUrl();
       var type = options.type;
       var data = options.data;
-      var label = null;
-      if (options.label) {
-        label = options.label;
-        delete options.label;
-      }
+  
       // use copy of header, not reference
       var header = _.extend({},this.header);
       if ( (typeof data === 'object') && (data !== null) )
@@ -1011,8 +1010,7 @@
         data: data,
         options: options,
         debug: debug,
-        url: url, 
-        label: label // will create an instance of the label if exists
+        url: url
       };
   
       if (!this.connection_established) {
@@ -1082,13 +1080,6 @@
       var data = _options.data;
       var options = _options.options;
       var debug = _options.debug;
-      var label = _options.label || null;
-      
-      // use the constructor function of the label if exists
-      if (label) {
-        var __global__ = (typeof window !== 'undefined') ? window : root;
-        label = (typeof __global__[label] === 'function') ? __global__[label] : null;
-      }
   
       jQuery.ajax({
         url: _options.requestedUrl,
@@ -1107,10 +1098,10 @@
               return cb(null, res, debug);
             if (_.isArray(res)) {
               for (var i=0; i < res.length; i++) {
-                res[i] = self.createObjectFromResponseData(res[i], label);
+                res[i] = self.createObjectFromResponseData(res[i]);
               }
             } else if (_.isObject(res)) {
-              res = self.createObjectFromResponseData(res, label);
+              res = self.createObjectFromResponseData(res);
             }
             cb(null, res, debug);
           } else {
@@ -1253,6 +1244,7 @@
       skip: '',
       sort: '',
       filter: '',
+      match: '',
       return_properties: [],
       where: [],
       // and_where: [],
@@ -1277,16 +1269,26 @@
      * Constructor
      */
     Node = function Node(data, id) {
+      // will be used for labels and classes
+      if (!this.constructor_name)
+        this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
+      this.init(data, id);
+    }
+  
+    Node.prototype.init = function(data, id) {
       this.id = id || null;
       this.data = _.extend(this.data, data);
       this.resetQuery();
       if (id) {
         this.setUriById(id);
       }
-      this.fields = _.extend({}, Node.prototype.fields);
+      // nested objects must be extended nestedly
+      this.fields = _.extend({}, {
+        defaults: _.extend({}, this.fields.defaults),
+        indexes: _.extend({}, this.fields.indexes)
+      });
+      this.labels = [];
       this.is_instanced = true;
-      // will be used for labels and classes
-      this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
       // we will use a label by default if we have defined an inherited class of node
       if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
         this.label = this.cypher.label = this.constructor_name;
@@ -1314,10 +1316,19 @@
     Node.prototype.constructor_name = null;
   
     Node.prototype.__models__ = {};
+    Node.prototype.__already_initialized__ = false; // flag to avoid many initializations
+  
+    // you should **never** change this value
+    // it's used to dictinct nodes and relationships
+    // many queries containg `node()` command will use this value
+    // e.g. n = node(*)
+    Node.prototype.__type__ = 'node';
+    Node.prototype.__type_identifier__ = 'n';
   
   
     Node.prototype.singleton = function(id) {
-      var node = new Node({},id);
+      var Class = this.constructor;
+      var node = new Class({},id);
       node.neo4jrestful = _neo4jrestful;
       node.resetQuery();
       node.is_singleton = true;
@@ -1325,9 +1336,59 @@
       return node;
     }
   
-    Node.prototype.register_model = function(Class) {
+    Node.prototype.initialize = function(cb) {
+      var self = this;
+      if (typeof cb !== 'function')
+        cb = function() { /* /dev/null */ };
+      if (!this.__already_initialized__) {
+        if (typeof this.onBeforeInitialize === 'function')
+          return this.onBeforeInitialize(function(err){
+            self.onAfterInitialize(cb);
+          });
+        else
+          return self.onAfterInitialize(cb);
+      }
+    }
+  
+    Node.prototype.onAfterInitialize = function(cb) {
+      var self = this;
+      this.__already_initialized__ = true;
+      // Index fields
+      var fieldsToIndex = this.fieldsToIndex();
+      // we create an object to get the label
+      var node = new this.constructor();
+      var label = node.label;
+      if ((label)&&(fieldsToIndex)) {
+        _.each(fieldsToIndex, function(toBeIndexed, field) {
+          if (toBeIndexed === true)
+            self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
+              // maybe better ways how to report if an error occurs
+              cb(err, result, debug);
+            });
+        });
+      }
+    }
+  
+    /*
+     * Copys only the relevant data(s) of a node to another object
+     */
+    Node.prototype.copyTo = function(n) {
+      n.id = this.id;
+      n.data   = _.extend(this.data);
+      n.labels = _.clone(this.labels);
+      if (this.label)
+        n.label  = this.label;
+      n.uri = this.uri;
+      n._response = _.extend(this._response);
+      return n;
+    }
+  
+    // TODO: implement createByLabel(label)
+  
+    Node.prototype.register_model = function(Class, cb) {
       var name = helpers.constructorNameOfFunction(Class);
       Node.prototype.__models__[name] = Class;
+      Class.prototype.initialize(cb);
       return Node.prototype.__models__;
     }
   
@@ -1338,76 +1399,15 @@
       return Node.prototype.__models__;
     }
   
-    Node.prototype.copyTo = function(n) {
-      n.id = this.id;
-      n.data = _.extend(this.data);
-      n.uri = this.uri;
-      n._response = _.extend(this._response);
-      return n;
+    Node.prototype.registered_models = function() {
+      return Node.prototype.__models__;
     }
   
-    Node.prototype.load = function(cb, options) {
-      var self = this;
-      var __global__ = (typeof window !== 'undefined') ? window : root;
-      if (typeof option === 'undefined')
-        options = {}
-  
-      options = _.extend({ data: false, labels: true, apply: true, reinstance: true}, options);
-  
-      var self = this;
-      var jobsToDo = 0;
-      var jobsDone = 0;
-  
-      var _when = function(err) {
-  
-        // instance with label, if we have one label in the array
-        if ((self.labels)&&(self.labels.length === 1)&&(options.reinstance)) {
-          var label = (typeof options.reinstance === 'string') ? options.reinstance : self.labels[0];
-          var Class = null;
-          if (typeof Node.prototype.__models__[label] === 'function')
-            Class = Node.prototype.__models__[label];
-          else if (typeof __global__[label] === 'function')
-            Class = __global__[label];
-          else
-            Class = Node;
-          if (Class) {
-            var node = new Class();
-            node.populateWithDataFromResponse(self._response);
-            // apply everything on node object
-            if (options.apply)
-              self = _.extend(self, node);
-          }
-          // console.log('::',self);
-        }
-        cb(err || null,self);
-      } 
-      
-      if (this.hasId()) {
-        if ((options.labels)&&(this.neo4jrestful.version >= 2)) {
-          jobsToDo++;
-          this.requestLabels(function(err, labels) {
-            if ((labels)&&(options.apply))
-              self.labels = labels;
-            jobsDone++;
-            if (jobsDone >= jobsToDo)
-              _when(err);
-          });
-        }
-        if (options.data) {
-          jobsToDo++;
-          Node.prototype.findById(this.id,function(err, foundNode) {
-            if ((foundNode)&&(options.apply))
-              self.data = foundNode.data;
-            jobsDone++;
-            if (jobsDone >= jobsToDo)
-              _when(err);
-          });
-        }
-        if (jobsToDo === 0)
-          _when(null,null);
-      } else {
-        cb(Error('Only instanced Nodes can be (re)loaded'));
+    Node.prototype.registered_model = function(model) {
+      if (typeof model === 'function') {
+        model = helpers.constructorNameOfFunction(model);
       }
+      return this.registered_models()[model] || null;
     }
   
     Node.prototype.resetQuery = function() {
@@ -1459,9 +1459,12 @@
   
     Node.prototype.applyDefaultValues = function() {
       for (var key in this.fields.defaults) {
-        if (((typeof this.data[key] === 'undefined')||(this.data[key] === null))&&(typeof this.fields.defaults[key] === 'function'))
+        if (((typeof this.data[key] === 'undefined')||(this.data[key] === null))&&(typeof this.fields.defaults[key] !== 'undefined'))
           // set a default value by defined function
-          this.data[key] = this.fields.defaults[key](this);
+          if (typeof this.fields.defaults[key] === 'function')
+            this.data[key] = this.fields.defaults[key](this);
+          else
+            this.data[key] = this.fields.defaults[key];
       }
       return this;
     }
@@ -1473,16 +1476,23 @@
         return null;
     }
   
+    Node.prototype.fieldsToIndex = function() {
+      return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? this.fields.indexes : null;
+    }
+  
     Node.prototype.indexFields = function(cb) {
   
       if (this.hasFieldsToIndex()) {
         // var join = Join.create();
         var doneCount = 0;
-        var todoCount = Object.keys(this.fields.indexes).length;
-        for (var key in this.fields.indexes) {
+        var fieldsToIndex = this.fieldsToIndex();
+        var todoCount = 0;
+        // var max = Object.keys(fieldsToIndex).length;
+        for (var key in fieldsToIndex) {
           var namespace = this.fields.indexes[key];
           var value = this.data[key];
           if ((_.isString(namespace))&&(typeof value !== 'undefined')&&(value !== null)) {
+            todoCount++;
             this.index(namespace, key, value, function(err, data, debug){
               doneCount = doneCount+1;
               // done
@@ -1491,6 +1501,8 @@
             });
           }
         }
+        if (todoCount === 0)
+          cb(null, doneCount);
       }
       return null;
     }
@@ -1531,6 +1543,7 @@
         if (method==='create') {
           // copy persisted data on initially instanced node
           data.copyTo(self);
+          data = self;
         }
         self.is_singleton = false;
         self.is_instanced = true;
@@ -1574,7 +1587,7 @@
         method = 'update';
         this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, _onAfterSave);
       } else {
-        method = 'create';      
+        method = 'create';   
         this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, _onAfterSave);
       }
     }
@@ -1620,12 +1633,12 @@
     Node.prototype.find = function(where, cb) {
       var self = this;
       if (!self.is_singleton)
-        self = Node.prototype.singleton();
+        self = this.singleton(undefined, this);
       self._modified_query = true;
       if (typeof where === 'string') {
         self.where(where);
         if (!self.cypher.start) {
-          self.cypher.start = 'n = node('+self._start_node_id('*')+')';
+          self.cypher.start = self.__type_identifier__+' = '+self.__type__+'('+self._start_node_id('*')+')';
         }
         self.exec(cb);
         return self;
@@ -1642,25 +1655,75 @@
       return self;
     }
   
-    Node.prototype.findById = function(id, cb) {;
+    Node.prototype.findById = function(id, cb) {
+      if (typeof cb === 'function') {
+        // we just look for a distinct node
+        // ~> so no query building, just in request
+        return this.findByUniqueKeyValue('id', id, cb);
+      } else {
+        var self = this;
+        if (!self.is_singleton)
+          self = this.singleton(undefined, this);
+        self._modified_query = true;
+        self.cypher._find_by_id = true;
+        self.cypher.from = id;
+        self.cypher.start = self.__type_identifier__+' = '+self.__type__+'('+id+')';
+        self.cypher.return_properties = ['n'];
+        self.exec(cb);
+  
+        return self;
+      }
+    }
+  
+    Node.prototype.findOneByUniqueKeyValue = Node.prototype.findByUniqueKeyValue;
+  
+    Node.prototype.findByUniqueKeyValue = function(key, value, cb) {
       var self = this;
       if (!self.is_singleton)
-        self = Node.prototype.singleton();
-      self._modified_query = true;
-      self.cypher._find_by_id = true;
-      self.cypher.from = id;
-      self.cypher.start = 'n = node('+id+')';
-      self.cypher.return_properties = ['n'];
-      self.exec(cb);
+        self = this.singleton(undefined, this);
+      if (typeof key !== 'string')
+        key = 'id';
+      if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
+        var label = (self.label) ? ':'+self.label : '';
+        var cypher = null;
+        if (key==='id') {
+          // we have to use the id method for the special key `id`
+          cypher = "MATCH n"+label+" WHERE id(n) = "+Number(value)+" RETURN n, labels(n), id(n);"
+        } else {
+          cypher = "MATCH n"+label+" WHERE n."+key+" = \""+helpers.escapeString(value)+"\" RETURN n, labels(n), id(n);"
+        }
+        self.neo4jrestful.query(cypher, function(err, data, debug) {
+          var node = null;
+          if ( (err) && (typeof cb === 'function') )
+            return cb(err, data, debug);
+          if ((data)&&(data.data)) {
+            if (data.data.length > 1) {
+              return cb(Error('Use findByUniqueKeyValue only to find unique and distinct key/values. But this result contains more than one node…'), data.data);
+            }
+            var resultData = data.data[0];
+            // merge data (node-data + labels)
+            // and transform singleton to an instanced node
+            self.populateWithDataFromResponse(resultData[0]);
+            self.is_singleton = null;
+            self.is_instanced = true;
+            if (resultData[1])
+              self.setLabels(resultData[1]);
+          }
+          if (typeof cb === 'function')
+            cb(err, self, debug);
+        });
+      }
       return self;
     }
+  
+    Node.prototype.findUnique = function(key, value, cb) { }
+    Node.prototype.findUniqueWithLabel = function(label, key, value) {}
   
     Node.prototype.findAll = function(cb) {
       var self = this;
       if (!self.is_singleton)
-        self = Node.prototype.singleton();
+        self = this.singleton(undefined, this);
       self._modified_query = true;
-      self.cypher.start = 'n = node(*)';
       self.cypher.limit = null;
       self.cypher.return_properties = ['n'];
       self.exec(cb);
@@ -1670,7 +1733,7 @@
     Node.prototype.findByIndex = function(namespace, key, value, cb) {
       var self = this;
       if (!self.is_singleton)
-        self = Node.prototype.singleton();
+        self = this.singleton(undefined, this);
       var values = {};
       if ((namespace)&&(key)&&(value)&&(typeof cb === 'function')) {
         // values = { key: value };
@@ -1681,16 +1744,28 @@
       }
     }
   
+    // Node.prototype.findByLabel = function(label, cb) {
+    //   var self = this;
+    //   if (!self.is_singleton)
+    //     self = Node.prototype.singleton();
+    //   self.cypher.label = label;
+    //   self.exec(cb);
+    //   return self;
+    // }
+  
     Node.prototype.withLabel = function(label, cb) {
       var self = this;
       // return here if we have an instances node
-      if (self.hasId())
-        return Boolean((self.label) && (self.label.length >0));
-      if (typeof label !== 'string')
-        return this;
+      if ( (self.hasId()) || (typeof label !== 'string') )
+        return self;
       self._modified_query = true;
       self.cypher.label = label;
-      return self.exec(cb);
+      self.exec(cb);
+      return self;
+    }
+  
+    Node.prototype.labelWith = function(name, cb) {
+  
     }
   
     Node.prototype.shortestPathTo = function(end, type, cb) {
@@ -1739,7 +1814,7 @@
         // RETURN p
         var type = (options.relationships.type) ? ':'+options.relationships.type : options.relationships.type;
         this.cypher.start = 'a = node('+start+'), b = node('+end+')';
-        this.cypher.match = 'MATCH p = '+options.algorithm+'(a-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-b)';
+        this.cypher.match = 'p = '+options.algorithm+'(a-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-b)';
         this.cypher.match = this.cypher.match.replace(/\[\:\*+/, '[*');
         this.cypher.return_properties = ['p'];
       }
@@ -1764,7 +1839,7 @@
         identifier = '*';
   
       if (!this.cypher.start) {
-        this.cypher.start = 'n = node(*)'; // all nodes by default
+        this.cypher.start = this.__type_identifier__+' = '+this.__type__+'(*)'; // all nodes by default
       }
       this.cypher.return_properties = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
       if (this.cypher._distinct)
@@ -1783,8 +1858,7 @@
   
     Node.prototype._prepareQuery = function() {
       var query = _.extend(this.cypher);
-  
-      var match = (query.match) ? query.match : '';
+      var label = (query.label) ? ':'+query.label : '';
   
       if (!query.start) {
         if (query.from > 0) {
@@ -1828,7 +1902,7 @@
             y = '->';
           }
         }
-        query.match = 'MATCH (a)'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'b' : '' )+')';
+        query.match = '(a'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'b' : '' )+')';
       }
       // guess return objects from start string if it's not set
       // e.g. START n = node(*), a = node(2) WHERE … RETURN (~>) n, a;
@@ -1841,20 +1915,44 @@
           for (var i = 0; i < matches.length; i++) {
             query.return_properties.push(matches[i].replace(/^[\s\,]*([a-z]+).*$/i,'$1'));
           }
+          if ((this.neo4jrestful.version >= 2)&&(query.return_properties.length === 1)&&(query.return_properties[0] === 'n')) {
+            // try adding labels if we have only n[node] as return propert
+            query.return_properties.push('labels(n)');
+          }
           query.return_properties = query.return_properties.join(', ');
         }
       }
+  
+      // Set a fallback to START n = node(*) 
+      if ((!query.start)&&(!query.match)) {
+        // query.start = 'n = node(*)';
+        query.start = this.__type_identifier__+' = '+this.__type__+'(*)';
+      }
+      if ((!query.match)&&(this.label)) {
+        // e.g. ~> MATCH n:Person
+        query.match = this.__type_identifier__+':'+this.label;
+      }
+  
       return query;
     }
   
     Node.prototype.toCypherQuery = function() {
       var query = this._prepareQuery();
       var template = "";
-      template += "START %(start)s ";
-      template += "%(match)s ";
-      template += "%(With)s ";
-      template += "%(where)s ";
-      template += "%(action)s %(return_properties)s %(order_by)s %(skip)s %(limit)s;";
+      if (query.start)
+        template += "START %(start)s ";
+      if (query.match)
+        template += "MATCH %(match)s ";
+        template += "%(With)s ";
+        template += "%(where)s ";
+        template += "%(action)s %(return_properties)s ";
+      if (query.order_by)
+        template += "ORDER BY %(order_by)s ";
+      if (query.skip)
+        template += "SKIP %(skip)s ";
+      if (query.limit)
+        template += "LIMIT %(limit)s";
+        template += ";";
   
       var cypher = helpers.sprintf(template, {
         start:              query.start,
@@ -1865,9 +1963,9 @@
         return_properties:  query.return_properties,
         where:              ((query.where)&&(query.where.length > 0)) ? 'WHERE '+query.where.join(' AND ') : '',
         to:                 '',
-        order_by:           (query.order_by) ? 'ORDER BY '+query.order_by+' '+query.order_direction : '',
-        limit:              (query.limit) ? 'LIMIT '+query.limit : '',
-        skip:               (query.skip) ? 'SKIP '+query.skip : ''  
+        order_by:           (query.order_by) ? query.order_by+' '+query.order_direction : '',
+        limit:              query.limit,
+        skip:               query.skip  
       })
       cypher = cypher.trim().replace(/\s+;$/,';');
       return cypher;
@@ -1918,7 +2016,6 @@
       self._modified_query = true;
       if (typeof relation !== 'function') {
         self.cypher.relationship = relation;
-        
       } else {
         cb = relation;
       }
@@ -1995,10 +2092,17 @@
       return self.allDirections(relation, cb);
     }
   
-    Node.prototype.allRelationships = function(cb) {
+    Node.prototype.allRelationships = function(relation, cb) {
       var self = this.singletonForQuery();
+      var label = (this.cypher.label) ? ':'+this.cypher.label : '';
+      if (typeof relation === 'string') {
+        relation = ':'+relation;
+      } else {
+        cb = relation;
+        relation = '';
+      }
       self._modified_query = true;
-      self.cypher.match = 'MATCH n-[r]-()';
+      self.cypher.match = 'n'+label+'-[r'+relation+']-()';
       self.cypher.return_properties = ['r'];
       self.exec(cb);
       return self;
@@ -2030,6 +2134,12 @@
       if (typeof direction === 'string')
         this.cypher.order_direction = direction;
       this.cypher.order_by = property;
+      this.exec(cb);
+      return this;
+    }
+  
+    Node.prototype.match = function(string, cb) {
+      this.cypher.match = string;
       this.exec(cb);
       return this;
     }
@@ -2314,6 +2424,17 @@
       return this;
     }
   
+    Node.prototype.setLabels = function(labels) {
+      if (_.isArray(labels)) {
+        this.labels = _.clone(labels);
+      }
+      // if we have only one label we set this to default label
+      if ((_.isArray(this.labels))&&(this.labels.length === 1)) {
+        this.label = this.labels[0];
+      }
+      return this.labels;
+    }
+  
     Node.prototype.labelsAsArray = function() {
       var labels = this.labels;
       if (!_.isArray(labels))
@@ -2340,11 +2461,14 @@
     }
   
     Node.prototype.toObject = function() {
-      return {
+      var o = {
         id: this.id,
         data: _.extend(this.data),
         uri: this.uri
       };
+      if (this.label)
+        o.label = this.label;
+      return o;
     }
   
     /*
@@ -2618,6 +2742,9 @@
     Relationship.prototype.cypher = {};
     Relationship.prototype.is_instanced = null;
   
+    Relationship.prototype.__type__ = 'relationship';
+    Relationship.prototype.__type_identifier__ = 'r';
+  
     Relationship.prototype.singleton = function() {
       var relationship = new Relationship();
       relationship.neo4jrestful = _neo4jrestful;
@@ -2818,10 +2945,15 @@
   
     Graph.prototype.countAllOfType = function(type, cb) {
       var query = '';
-      if (type === 'node')
+      if      (/^n(ode)*$/i.test(type))
         query = "START n=node(*) RETURN count(n);"
-      else if (type === 'relationship')
+      else if (/^r(elationship)*$/i.test(type))
         query = "START r=relationship(*) RETURN count(r);";
+      else if (type[0] === 'path')
+        query = "START p=path(*) RETURN count(p);"
+      else if (/^[nr]\:.+/.test(type))
+        // count labels
+        query = "MATCH "+type+" RETURN "+type[0]+";";
       else
         query = "START n=node(*) MATCH n-[r?]-() RETURN count(n), count(r);";
       return this.query(query,function(err,data){
@@ -2845,6 +2977,14 @@
   
     Graph.prototype.countAll = function(cb) {
       return this.countAllOfType('all', cb);
+    }
+  
+    // Graph.prototype.countWithLabel = function() { }
+  
+    Graph.prototype.indexLabel = function(label, field, cb) {
+      if ((!_.isString(label))&&(!_.isString(field)))
+        return cb(Error('label and field are mandatory arguments to create index on'))
+      this.query('CREATE INDEX ON :'+label+'('+field+');', cb);
     }
   
     Graph.prototype.about = function(cb) {
