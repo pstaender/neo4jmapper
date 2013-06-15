@@ -120,6 +120,31 @@ describe 'Neo4jMapper', ->
       expect(person.id).to.be null
       expect(person.cypher.label).to.be 'Person'
       expect(person.constructor_name).to.be 'Person'
+      # javascript
+      `var Movie = (function(Node) {
+
+      function Movie() {
+        // this is necessary to give the constructed node a name context
+        this.init.apply(this, arguments);
+      }
+      
+      _.extend(Movie.prototype, Node.prototype);
+      
+      Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
+
+      Movie.prototype.fields = {
+        defaults: {
+          genre: 'Blockbuster'
+        }
+      };
+      
+      return Movie;
+    })(Node)`
+      movie = new Movie()
+      expect(movie.label).to.be.equal 'Movie' 
+      expect(movie.constructor_name).to.be.equal 'Movie' 
+      expect(movie).to.be.an 'object'
+      expect(movie.id).to.be null
       done()
 
     it 'expect to create a node', (done) ->
@@ -337,6 +362,7 @@ describe 'Neo4jMapper', ->
       # node.neo4jrestful.debug = true
       node.save (err, person, debug) ->
         expect(err).to.be null
+        expect(person.label).to.be.equal 'Person'
         node.requestLabels (err, labels) ->
           expect(err).to.be null
           expect(labels).to.have.length 1
@@ -366,6 +392,7 @@ describe 'Neo4jMapper', ->
       new Person({ name: 'Alice' }).save (err, alice) ->
         Person::findById alice.id, (err, alice) ->
           expect(alice.constructor_name).to.be.equal 'Person'
+          expect(alice.label).to.be.equal 'Person'
           # expect(alice.labels.constructor).to.be Array
           #console.log alice.constructor_name
           done()
@@ -527,6 +554,26 @@ describe 'Neo4jMapper', ->
     it 'constructorNameOfFunction', ->
       node = new Node
       class Person extends Node
+      `var Movie = (function(Node) {
+
+      function Movie() {
+        // this is necessary to give the constructed node a name context
+        this.init.apply(this, arguments);
+      }
+      
+      _.extend(Movie.prototype, Node.prototype);
+      
+      Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
+
+      Movie.prototype.fields = {
+        defaults: {
+          genre: 'Blockbuster'
+        }
+      };
+      
+      return Movie;
+    })(Node)`
+      expect(helpers.constructorNameOfFunction(Movie)).to.be.equal 'Movie'
       expect(helpers.constructorNameOfFunction(Person)).to.be.equal 'Person'
       expect(helpers.constructorNameOfFunction(node)).to.be.equal 'Node'
 

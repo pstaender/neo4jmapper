@@ -84,30 +84,29 @@ You can convert any node to it's model if you have registered the model:
     alice.load -> # alice.property_only_for_person = true
 ```
 
-To extend the Node object in JavaScript you have to use an extend method (this one is taken from the coffescript compiler). It should also work with similar working extend methods (e.g. backbonejs), but it's not tested with it, yet.
+To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well.
 
 ```js
-  var Movie,
-    __hasProp = {}.hasOwnProperty,
-    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  var Movie = (function(Node) {
 
-  Movie = (function(_super) {
-
-    __extends(Movie, _super);
-
-    function Movie() {
-      return Movie.__super__.constructor.apply(this, arguments);
+    function Movie(data, id) {
+      // this is necessary to give the constructed node a name context
+      this.init.apply(this, arguments);
+      // or invoke directly with arguments: ``this.init(data, id);
     }
+    
+    _.extend(Movie.prototype, Node.prototype);
+    
+    Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
 
     Movie.prototype.fields = {
       defaults: {
-        is_movie: true
+        genre: 'Blockbuster'
       }
     };
-
+    
     return Movie;
-
-  })(Node);
+  })(Node)
 
   Node.prototype.register_model(Movie);
 

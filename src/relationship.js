@@ -70,6 +70,9 @@ var initRelationship = function(neo4jrestful) {
   Relationship.prototype.cypher = {};
   Relationship.prototype.is_instanced = null;
 
+  Relationship.prototype.__type__ = 'relationship';
+  Relationship.prototype.__type_identifier__ = 'r';
+
   Relationship.prototype.singleton = function() {
     var relationship = new Relationship();
     relationship.neo4jrestful = _neo4jrestful;

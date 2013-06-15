@@ -50,21 +50,26 @@ var initNode = function(neo4jrestful) {
    * Constructor
    */
   Node = function Node(data, id) {
+    // will be used for labels and classes
+    if (!this.constructor_name)
+      this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
+    this.init(data, id);
+  }
+
+  Node.prototype.init = function(data, id) {
     this.id = id || null;
     this.data = _.extend(this.data, data);
     this.resetQuery();
     if (id) {
       this.setUriById(id);
     }
-    // nested objects must be extended nested
+    // nested objects must be extended nestedly
     this.fields = _.extend({}, {
       defaults: _.extend({}, this.fields.defaults),
       indexes: _.extend({}, this.fields.indexes)
     });
     this.labels = [];
     this.is_instanced = true;
-    // will be used for labels and classes
-    this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
     // we will use a label by default if we have defined an inherited class of node
     if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
       this.label = this.cypher.label = this.constructor_name;
