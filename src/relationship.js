@@ -76,7 +76,6 @@ var initRelationship = function(neo4jrestful) {
   Relationship.prototype.singleton = function() {
     var relationship = new Relationship();
     relationship.neo4jrestful = _neo4jrestful;
-    relationship.resetQuery();
     relationship.is_singleton = true;
     // relationship.resetQuery();
     return relationship;
@@ -119,6 +118,13 @@ var initRelationship = function(neo4jrestful) {
 
   Relationship.prototype.unflattenData = Node.prototype.flattenData;
 
+  Relationship.prototype.findById = function(id, cb) {
+    var self = this;
+    if (!self.is_singleton)
+      self = this.singleton();
+    return this.neo4jrestful.get('/db/data/relationship/'+Number(id), cb);
+  }
+
   Relationship.prototype.save = function(cb) {
     var self = this;
     if (this.is_singleton)
@@ -141,22 +147,22 @@ var initRelationship = function(neo4jrestful) {
     }
   }
 
-  // Relationship.prototype.update = function(cb) {
-  //   var self = this;
-  //   if (this.is_singleton)
-  //     return cb(Error('Singleton instances can not be persisted'), null);
-  //   this._modified_query = false;
-  //   if (this.hasId()) {
-  //     this.neo4jrestful.put('/db/data/relationship/'+this.id+'/properties', { data: this.flattenData() }, function(err,data){
-  //       if (err)
-  //         return cb(err, data);
-  //       else
-  //         return cb(null, self);
-  //     });
-  //   } else {
-  //     return cb(Error('You have to save() the relationship before you can perform an update'), null);
-  //   }
-  // }
+  Relationship.prototype.update = function(cb) {
+    var self = this;
+    if (this.is_singleton)
+      return cb(Error('Singleton instances can not be persisted'), null);
+    this._modified_query = false;
+    if (this.hasId()) {
+      this.neo4jrestful.put('/db/data/relationship/'+this.id+'/properties', { data: this.flattenData() }, function(err,data){
+        if (err)
+          return cb(err, data);
+        else
+          return cb(null, self);
+      });
+    } else {
+      return cb(Error('You have to save() the relationship before you can perform an update'), null);
+    }
+  }
 
    // extensions: {},
    //  start: 'http://localhost:7419/db/data/node/169',

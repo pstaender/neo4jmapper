@@ -65,23 +65,7 @@ Define your own models with classes / object extension and enjoy label support:
 
   alice = new Person name: 'Alice'
   alice.save ->
-    alice.queryLabels (err, labels) -> # labels = [ 'Person' ]
-```
-
-You can convert any node to it's model if you have registered the model:
-
-```coffeescript
-  class Person extends Node
-    
-    property_only_for_person: true
-    
-    defaults:
-      is_confirmed: false
-  
-  Node::register_model(Person)
-  
-  alice = new Person({ name: 'Alice' }).save ->
-    alice.load -> # alice.property_only_for_person = true
+    alice.allLabels (err, labels) -> # labels = [ 'Person' ]
 ```
 
 To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well.
@@ -121,6 +105,16 @@ To extend the Node object in JavaScript you have to use an extend method (here I
   });
 ```
 
+Instance a model including labels (async by nature):
+
+```
+  class Person extends Node
+
+  new Person({ name: 'Jeff Bridges' }).save (err, savedJeff) ->
+    savedJeff.load (err, jeff) ->
+      # now jeff is from type 'Person'
+      console.log(jeff.toObject())
+```
 
 ### Connect Nodes in various kinds
 
@@ -158,13 +152,14 @@ Also with more customized queries in mongodb query style
 
 The query method names are heavily inspired by mongodb and mongoose - so if you have worked with,  most of them should sound familiar:
 
-  * find, findOne, findById, findByLabel
+  * find, findOne, findById, findByUniqueKeyValue
   * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhere, andWhereNode, …
   * whereHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …
   * match
   * limit
   * skip
   * delete
+  * allLabels, createLabel, createLabels, replaceLabels, removeLabels
 
 We distinct between **remove** and **delete**.
 Remove always means to remove the (one) instanced node or relationship we are working with, **delete** means to perfom `DELETE` action of a query:

@@ -58,7 +58,7 @@ var initNode = function(neo4jrestful) {
 
   Node.prototype.init = function(data, id) {
     this.id = id || null;
-    this.data = _.extend(this.data, data);
+    this.data = _.extend({}, data);
     this.resetQuery();
     if (id) {
       this.setUriById(id);
@@ -66,7 +66,8 @@ var initNode = function(neo4jrestful) {
     // nested objects must be extended nestedly
     this.fields = _.extend({}, {
       defaults: _.extend({}, this.fields.defaults),
-      indexes: _.extend({}, this.fields.indexes)
+      indexes: _.extend({}, this.fields.indexes),
+      unique: _.extend({}, this.fields.unique)
     });
     this.labels = [];
     this.is_instanced = true;
@@ -76,12 +77,44 @@ var initNode = function(neo4jrestful) {
     }
   }
 
+  /*
+   * Instantiate a node from a specific model
+   * Model can be a constrcutor() or a 'string'
+   * and must be registered in Node::registered_models()
+   */
+  Node.prototype.load = function(model, cb) {
+    if (typeof cb !== 'function') {
+      cb = model;
+      model = null;
+    }
+    else if (typeof model === 'function') {
+      model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
+    }
+    var self = this;
+    if ((typeof cb === 'function')&&(this.hasId())) {
+      this.allLabels(function(err, labels, debug){
+        if (err)
+          return cb(err, labels);
+        if (labels.length > 0) _.each(labels, function(label){
+          if (label === model)
+            model = label;
+        });
+        var Class = self.registered_model(model) || Node;
+        var node = new Class(model)
+        node.populateWithDataFromResponse(self._response);
+        node.labels = _.clone(labels);
+        cb(null, node, debug);
+      });
+    }
+  }
+
   Node.prototype.neo4jrestful = _neo4jrestful;
   Node.prototype.data = {};
   Node.prototype.id = null;
   Node.prototype.fields = {
     defaults: {},
-    indexes: {}
+    indexes: {},
+    unique: {}
   };
   
   Node.prototype.uri = null;
@@ -136,17 +169,32 @@ var initNode = function(neo4jrestful) {
     this.__already_initialized__ = true;
     // Index fields
     var fieldsToIndex = this.fieldsToIndex();
+    var fieldsWithUniqueValues = this.fieldsWithUniqueValues();
     // we create an object to get the label
     var node = new this.constructor();
     var label = node.label;
-    if ((label)&&(fieldsToIndex)) {
-      _.each(fieldsToIndex, function(toBeIndexed, field) {
-        if (toBeIndexed === true)
-          self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
-            // maybe better ways how to report if an error occurs
-            cb(err, result, debug);
-          });
-      });
+    if (label) {
+      if (fieldsToIndex) {
+        _.each(fieldsToIndex, function(toBeIndexed, field) {
+          if (toBeIndexed === true)
+            self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
+              // maybe better ways how to report if an error occurs
+              cb(err, result, debug);
+            });
+        });
+      }
+      // inactive
+      // http://docs.neo4j.org/chunked/snapshot/query-constraints.html
+      if (fieldsWithUniqueValues === 'deactivated, because it´s not implemented in neo4j, yet') {
+        _.each(fieldsWithUniqueValues, function(isUnique, field) {
+          if (isUnique)
+            //CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
+            self.neo4jrestful.query('CREATE CONSTRAINT ON (n:'+label+') ASSERT n.'+field+' IS UNIQUE;', function(err, result, debug) {
+              // maybe better ways how to report if an error occurs
+              cb(err, result, debug);
+            });
+        });
+      }
     }
   }
 
@@ -193,7 +241,7 @@ var initNode = function(neo4jrestful) {
 
   Node.prototype.resetQuery = function() {
     this.cypher = {}
-    _.extend(this.cypher, cypher_defaults);
+    _.extend(Node.prototype.cypher, cypher_defaults);
     this.cypher.where = [];
     this.cypher.return_properties = [];
     this._modified_query = false;
@@ -259,6 +307,10 @@ var initNode = function(neo4jrestful) {
 
   Node.prototype.fieldsToIndex = function() {
     return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? this.fields.indexes : null;
+  }
+
+  Node.prototype.fieldsWithUniqueValues = function() {
+    return ( (this.fields.unique) && (_.keys(this.fields.unique).length > 0) ) ? this.fields.unique : null;
   }
 
   Node.prototype.indexFields = function(cb) {
@@ -341,25 +393,25 @@ var initNode = function(neo4jrestful) {
         return cb(null, data, debug);
     }
 
-    function _onAfterSave(err, data, debug) {
+    function _onAfterSave(err, node, debug) {
       var labels = self.labelsAsArray();
       if ((typeof err !== 'undefined')&&(err !== null)) {
-        return cb(err, data, debug);
+        return cb(err, node, debug);
       } else {
         if (labels.length > 0) {
           // we need to post the label in an extra reqiuest
           // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
-          self.neo4jrestful.post('/db/data/node/'+data.id+'/labels', { data: labels }, function(labelError, notUseableData, debugLabel) {
+          node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
             // add label err if we have one
             if (labelError)
               err = (err) ? [ err, labelError ] : labelError;
             // add debug label if we have one
             if (debug)
               debug = (debugLabel) ? [ debug, debugLabel ] : debug;
-            _prepareData(err, data, debug);
+            _prepareData(err, node, debug);
           });
         } else {
-          return _prepareData(err, data, debug);
+          return _prepareData(err, node, debug);
         }
       }
     }
@@ -1121,27 +1173,54 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.createRelationship = function(options, cb) {
+    var self = this;
     options = _.extend({
       from_id: this.id,
       to_id: null,
       type: null,
       // unique: false ,// TODO: implement!
-      properties: null
+      properties: null,
+      distinct: null
     }, options);
-    if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
-      return this.neo4jrestful.post('/db/data/node/'+options.from_id+'/relationships', {
+
+    if (options.properties)
+      options.properties = helpers.flattenObject(options.properties);
+
+    var _create_relationship_by_options = function(options) {
+      return self.neo4jrestful.post('/db/data/node/'+options.from_id+'/relationships', {
         data: {
           to: new Node({},options.to_id).uri,
           type: options.type,
           data: options.properties
         }
       }, cb);
+    }
+
+    if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
+      if (options.distinct) {
+        this.neo4jrestful.get('/db/data/node/'+options.from_id+'/relationships/out/'+options.type, function(err, result) {
+          if (err)
+            return cb(err, result);
+          if (result.length === 1) {
+            // if we have only one relationship, we update this one
+            // var properties = (options.properties) ? options.properties : {};
+            return self.neo4jrestful.put('/db/data/relationship/'+result[0].id+'/properties', { data: options.properties }, cb);
+          } else {
+            // we create a new one
+            return _create_relationship_by_options(options);
+          }
+        });
+      } else {
+        // create relationship
+        return _create_relationship_by_options(options);
+      }
     } else {
-      cb(new Error('Missing from_id('+options.from_id+') or to_id('+options.to_id+'), please check.'), null);
+      cb(Error('Missing from_id('+options.from_id+') or to_id('+options.to_id+') OR no cb attached'), null);
     }
   }
 
-  Node.prototype.createRelationshipBetween = function(node, type, properties, cb) {
+  Node.prototype.createRelationshipBetween = function(node, type, properties, cb, options) {
+    if (typeof options !== 'object') options = {};
     var self = this;
     if (typeof properties === 'function') {
       cb = properties;
@@ -1150,52 +1229,73 @@ var initNode = function(neo4jrestful) {
     if ((this.hasId())&&(helpers.getIdFromObject(node))) {
       // to avoid deadlocks
       // we have to create the relationships sequentially
-      self.createRelationshipTo(node, type, properties, function(err, resultFirst){
-        self.createRelationshipFrom(node, type, properties, function(secondErr, resultSecond) {
+      self.createRelationshipTo(node, type, properties, function(err, resultFirst, debug_a){
+        self.createRelationshipFrom(node, type, properties, function(secondErr, resultSecond, debug_b) {
           if ((err)||(secondErr)) {
             if ((err)&&(secondErr))
-              cb([err, secondErr], null);
+              cb([err, secondErr], null, [ debug_a, debug_b ]);
             else
-              cb(err || secondErr, null);
+              cb(err || secondErr, null, [ debug_a, debug_b ]);
           } else {
-            cb(null, [ resultFirst, resultSecond ]);
+            cb(null, [ resultFirst, resultSecond ], debug_a || debug_b);
           }
-        });
-      });
+        }, options);
+      }, options);
     } else {
       cb(Error("You need two instanced nodes as start and end point."), null);
     }
     
   }
 
-  Node.prototype.createRelationshipTo = function(node, type, properties, cb) {
+  Node.prototype.createRelationshipTo = function(node, type, properties, cb, options) {
+    if (typeof options !== 'object') options = {};
     var args;
     var id = helpers.getIdFromObject(node);
     ( ( args = helpers.sortOptionsAndCallbackArguments(properties, cb) ) && ( properties = args.options ) && ( cb = args.callback ) );
-    var options = {
+    options = _.extend({
       properties: properties,
       to_id: id,
       type: type
-    };
+    }, options);
     return this.createRelationship(options, cb);
   }
-  /**
-   * @param {Object} node
-   * @param {String} type
-   * @param {Object} [properties]
-   * @param {Function} cb
-   */
-  Node.prototype.createRelationshipFrom = function(node, type, properties, cb) {
+
+  Node.prototype.createRelationshipFrom = function(node, type, properties, cb, options) {
+    if (typeof options !== 'object') options = {};
     var args;
     var id = helpers.getIdFromObject(node);
     ( ( args = helpers.sortOptionsAndCallbackArguments(properties, cb) ) && ( properties = args.options ) && ( cb = args.callback ) );
-    var options = {
+    options = _.extend({
       properties: properties,
       from_id: id,
       to_id: this.id,
       type: type
-    };
+    }, options);
     return this.createRelationship(options, cb);
+  }
+
+  Node.prototype.createOrUpdateRelationship = function(options, cb) {
+    if (typeof options !== 'object') options = {};
+    options.distinct = true;
+    return this.createRelationship(options, cb);
+  }
+
+  Node.prototype.createOrUpdateRelationshipTo = function(node, type, properties, cb, options) {
+    if (typeof options !== 'object') options = {};
+    options.distinct = true;
+    return this.createRelationshipTo(node, type, properties, cb, options);
+  }
+
+  Node.prototype.createOrUpdateRelationshipFrom = function(node, type, properties, cb, options) {
+    if (typeof options !== 'object') options = {};
+    options.distinct = true;
+    return this.createRelationshipFrom(node, type, properties, cb, options);
+  }
+
+  Node.prototype.createOrUpdateRelationshipBetween = function(node, type, properties, cb, options) {
+    if (typeof options !== 'object') options = {};
+    options.distinct = true;
+    return this.createRelationshipBetween(node, type, properties, cb, options);
   }
 
   Node.prototype.requestLabels = function(cb) {
@@ -1224,6 +1324,55 @@ var initNode = function(neo4jrestful) {
       labels.push(this.label);
     return _.uniq(labels);
   }
+
+  Node.prototype.allLabels = function(cb) {
+    if ( (this.hasId()) && (_.isFunction(cb)) )
+      return this.neo4jrestful.get('/db/data/node/'+this.id+'/labels', cb);
+  }
+
+  Node.prototype.createLabel = function(label, cb) {
+    return this.createLabels([ label ], cb);
+  }
+
+  Node.prototype.createLabels = function(labels, cb) {
+    if ( (this.hasId()) && (_.isFunction(cb)) )
+      return this.neo4jrestful.post('/db/data/node/'+this.id+'/labels', { data: labels }, cb);
+  }
+
+  Node.prototype.addLabels = function(labels, cb) {
+    var self = this;
+    if ( (this.hasId()) && (_.isFunction(cb)) ) {
+      if (!_.isArray(labels))
+        labels = [ labels ];
+      self.allLabels(function(err, storedLabels) {
+        if (!_.isArray(storedLabels))
+          storedLabels = [];
+        storedLabels.push(labels);
+        storedLabels = _.uniq(_.flatten(storedLabels));
+        self.replaceLabels(storedLabels, cb);
+      });
+    }
+  }
+
+  Node.prototype.addLabel = function(label, cb) {
+    return this.addLabels([ label ], cb);
+  }
+
+  Node.prototype.replaceLabels = function(labels, cb) {
+    if ( (this.hasId()) && (_.isFunction(cb)) ) {
+      if (!_.isArray(labels))
+        labels = [ labels ];
+      return this.neo4jrestful.put('/db/data/node/'+this.id+'/labels', { data: labels }, cb);
+    }
+  }
+
+  Node.prototype.removeLabels = function(cb) {
+    if ( (this.hasId()) && (_.isFunction(cb)) ) {
+      return this.neo4jrestful.delete('/db/data/node/'+this.id+'/labels', cb);
+    }
+  }
+
+  // Node.prototype.replaceLabel = function
 
   // TODO: autoindex? http://docs.neo4j.org/chunked/milestone/rest-api-configurable-auto-indexes.html
   Node.prototype.index = function(namespace, key, value, cb) {

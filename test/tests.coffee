@@ -301,7 +301,8 @@ describe 'Neo4jMapper', ->
         expect(err).to.be null
         expect(countBefore).to.be.a 'number'
         lebowski = new Movie title: 'The Big Lebowski'
-        lebowski.save (err) ->
+        lebowski.save (err, lebowski) ->
+          expect(_.keys(lebowski.data)).to.have.length 1
           expect(err).to.be null
           Movie::findAll().count (err, countNow) ->
             expect(countBefore+1).to.be countNow
@@ -328,6 +329,13 @@ describe 'Neo4jMapper', ->
           deathAndMaiden.remove ->
             done()
 
+    it 'expect to have unique values'#, (done) ->
+      # client.query """
+      # INDEX CONSTRAINT ON (n:Movie) ASSERT n.uid IS UNIQUE;
+      # """, (err, result) ->
+      #   console.log err, result
+      #   done()
+
     it 'expect to det default values on models', (done) ->
       # client.constructor::log = Graph::log = require('./log')
       class Movie extends Node
@@ -351,6 +359,7 @@ describe 'Neo4jMapper', ->
           expect(found[0].data.title).to.be.equal 'Bitter Moon'
           expect(found[0].data.is_movie).to.be true
           expect(found[0].data.director).to.be.equal 'Roman Polanski'
+          expect(_.keys(found[0].data)).to.have.length 4
           bitterMoon.remove ->
             done()
 
@@ -377,6 +386,43 @@ describe 'Neo4jMapper', ->
                 expect(labels[0]).to.be.equal 'Article'
                 article.remove ->
                   done()
+
+    it 'expect to add, remove and update labels of a node', (done) ->
+      class Person extends Node
+        fields:
+          defaults: {}
+          indexes: {}
+      p = new Person( name: 'Jeff Bridges' )
+      Node::register_model(Person)
+      new Person( name: 'Jeff Bridges' ).save (err, jeff) ->
+        jeff.allLabels (err, labels) ->
+          expect(err).to.be null
+          expect(labels).to.have.length 1
+          expect(_.keys(jeff.data)).to.have.length 1
+          expect(labels[0]).to.be.equal 'Person'
+          jeff.addLabel 'Actor', (err) ->
+            expect(err).to.be null
+            jeff.addLabels [ 'Actor', 'Singer', 'Photographer' ], (err) ->
+              jeff.allLabels (err, labels) ->
+                expect(err).to.be null
+                expect(labels).to.have.length 4
+                jeff.replaceLabels [ 'Person' ], (err) ->
+                  expect(err).to.be null
+                  jeff.allLabels (err, labels) ->
+                    expect(err).to.be null
+                    expect(labels).to.have.length 1
+                    expect(labels[0]).to.be.equal 'Person'
+                    Person::findOne().where { name: 'Jeff Bridges' }, (err, found) ->
+                      expect(err).to.be null
+                      found.load Person, (err, jeff) ->
+                        expect(jeff.label).to.be.equal 'Person'
+                        expect(jeff.labels).to.have.length 1
+                        expect(jeff.labels[0]).to.be.equal 'Person'
+                        expect(jeff.constructor_name).to.be.equal 'Person'
+                        done()
+
+                      # console.log found.label, jeff.toObject()
+                      # done()
   
     it 'expect to find labeled node, with and without class', (done) ->
       class Person extends Node
@@ -502,7 +548,9 @@ describe 'Neo4jMapper', ->
                     a.incomingRelationships 'LIKES', (err, result) ->
                       expect(outgoingRelationships).to.have.length 1
                       expect(err).to.be null
-                      a.createRelationshipBetween b, 'LIKES', (err, result) ->
+                      a.neo4jrestful.debug = true
+                      a.createRelationshipBetween b, 'LIKES', (err, result, debug) ->
+                        # console.log debug
                         expect(err).to.be null
                         a.allRelationships 'LIKES', (err, result) ->
                           expect(err).to.be null
@@ -538,7 +586,24 @@ describe 'Neo4jMapper', ->
                   expect(path.start).to.be.a 'string'
                   expect(path.end).to.be.a 'string'
                   expect(path.toObject()).to.be.an 'object'
-                  done()
+                  a.removeWithRelationships (err) ->
+                    expect(err).to.be null
+                    b.removeWithRelationships (err) ->
+                      expect(err).to.be null
+                      done()
+
+  describe 'relationship', ->
+
+    it 'expect to get a relationship by id and remove it', (done) ->
+      new Node().save (err, a) ->
+        new Node().save (err, b) ->
+          a.createRelationshipTo b, 'related', { since: 'year' }, (err, result) ->
+            expect(result.id).to.be.above 0
+            Relationship::findById result.id, (err, found) ->
+              expect(err).to.be null
+              expect(found.id).to.be.equal result.id
+              expect(found.data.since).to.be.equal 'year'
+              done()
 
   describe 'helpers', ->
 
