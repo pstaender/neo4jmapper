@@ -82,30 +82,24 @@ var initNode = function(neo4jrestful) {
    * Model can be a constrcutor() or a 'string'
    * and must be registered in Node::registered_models()
    */
-  Node.prototype.load = function(model, cb) {
-    if (typeof cb !== 'function') {
-      cb = model;
-      model = null;
-    }
-    else if (typeof model === 'function') {
-      model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
-    }
+  Node.prototype.create_by_model = function(model, fallbackModel) {
     var self = this;
-    if ((typeof cb === 'function')&&(this.hasId())) {
-      this.allLabels(function(err, labels, debug){
-        if (err)
-          return cb(err, labels);
-        if (labels.length > 0) _.each(labels, function(label){
-          if (label === model)
-            model = label;
-        });
-        var Class = self.registered_model(model) || Node;
-        var node = new Class(model)
-        node.populateWithDataFromResponse(self._response);
-        node.labels = _.clone(labels);
-        cb(null, node, debug);
-      });
+    if (this.hasId()) {
+      if (typeof model === 'function') {
+        model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
+      } else if (this.label) {
+        model = this.label;
+      } else if (typeof fallbackModel === 'function') {
+        model = helpers.constructorNameOfFunction(fallbackModel);
+      } else {
+        throw Error('No model or label found')
+      }
+      var Class = self.registered_model(model) || Node;
+      var node = new Class(model)
+      node.populateWithDataFromResponse(self._response);
+      return node;
     }
+    return null;
   }
 
   Node.prototype.neo4jrestful = _neo4jrestful;
@@ -393,35 +387,66 @@ var initNode = function(neo4jrestful) {
         return cb(null, data, debug);
     }
 
-    function _onAfterSave(err, node, debug) {
-      var labels = self.labelsAsArray();
-      if ((typeof err !== 'undefined')&&(err !== null)) {
-        return cb(err, node, debug);
-      } else {
-        if (labels.length > 0) {
-          // we need to post the label in an extra reqiuest
-          // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
-          node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
-            // add label err if we have one
-            if (labelError)
-              err = (err) ? [ err, labelError ] : labelError;
-            // add debug label if we have one
-            if (debug)
-              debug = (debugLabel) ? [ debug, debugLabel ] : debug;
-            _prepareData(err, node, debug);
-          });
-        } else {
-          return _prepareData(err, node, debug);
-        }
-      }
-    }
+    // function _onAfterSave(err, node, debug) {
+    //   var labels = self.labelsAsArray();
+    //   if ((typeof err !== 'undefined')&&(err !== null)) {
+    //     return cb(err, node, debug);
+    //   } else {
+    //     if (labels.length > 0) {
+    //       // we need to post the label in an extra reqiuest
+    //       // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
+    //       node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
+    //         // add label err if we have one
+    //         if (labelError)
+    //           err = (err) ? [ err, labelError ] : labelError;
+    //         // add debug label if we have one
+    //         if (debug)
+    //           debug = (debugLabel) ? [ debug, debugLabel ] : debug;
+    //         _prepareData(err, node, debug);
+    //       });
+    //     } else {
+    //       return _prepareData(err, node, debug);
+    //     }
+    //   }
+    // }
 
     if (this.hasId()) {
       method = 'update';
-      this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, _onAfterSave);
+      this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+        if (node)
+          node.copyTo(self);
+        self.onAfterSave(self, cb, debug);
+      });
     } else {
       method = 'create';   
-      this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, _onAfterSave);
+      this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, function(err, node, debug) {
+        if (node)
+          node.copyTo(self);
+        self.onAfterSave(self, cb, debug);
+      });
+    }
+  }
+
+  Node.prototype.onAfterSave = function(node, next, debug) {
+    var labels = node.labelsAsArray();
+    if ((typeof err !== 'undefined')&&(err !== null)) {
+      return next(err, node, debug);
+    } else {
+      if (labels.length > 0) {
+        // we need to post the label in an extra reqiuest
+        // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
+        node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
+          // add label err if we have one
+          if (labelError)
+            err = (err) ? [ err, labelError ] : labelError;
+          // add debug label if we have one
+          if (debug)
+            debug = (debugLabel) ? [ debug, debugLabel ] : debug;
+          return next(labelError, node, debug);
+        });
+      } else {
+        return next(null, node, debug);
+      }
     }
   }
 
@@ -431,6 +456,36 @@ var initNode = function(neo4jrestful) {
       this.save(cb);
     else
       return cb(Error('You have to save() the node one time before you can perform an update'), null);
+  }
+
+  Node.prototype.load = function(cb) {
+    var self = this;
+    this.onBeforeLoad(self, function(err, node){
+      if (err)
+        cb(err, node);
+      else
+        self.onAfterLoad(node, cb);
+    })
+  }
+
+  Node.prototype.onBeforeLoad = function(node, next) {
+    if (node.hasId()) {
+      node.allLabels(function(err, labels, debug) {
+        if (err)
+          return next(err, labels);
+        node.labels = _.clone(labels);
+        if (labels.length === 1)
+          node.label = labels[0]
+        next(null, node);
+      });
+    } else {
+      next(null, node);
+    }
+    
+  }
+
+  Node.prototype.onAfterLoad = function(node, next) {
+    next(null, node);
   }
 
   /*

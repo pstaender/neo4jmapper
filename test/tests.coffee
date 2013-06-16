@@ -414,12 +414,19 @@ describe 'Neo4jMapper', ->
                     expect(labels[0]).to.be.equal 'Person'
                     Person::findOne().where { name: 'Jeff Bridges' }, (err, found) ->
                       expect(err).to.be null
-                      found.load Person, (err, jeff) ->
+                      found.load (err, jeff) ->
                         expect(jeff.label).to.be.equal 'Person'
                         expect(jeff.labels).to.have.length 1
                         expect(jeff.labels[0]).to.be.equal 'Person'
-                        expect(jeff.constructor_name).to.be.equal 'Person'
+                        # expect(jeff.constructor_name).to.be.equal 'Person'
                         done()
+
+                      # found.load Person, (err, jeff) ->
+                      #   expect(jeff.label).to.be.equal 'Person'
+                      #   expect(jeff.labels).to.have.length 1
+                      #   expect(jeff.labels[0]).to.be.equal 'Person'
+                      #   expect(jeff.constructor_name).to.be.equal 'Person'
+                      #   done()
 
                       # console.log found.label, jeff.toObject()
                       # done()
