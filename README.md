@@ -2,13 +2,13 @@
 
 [![Build Status](https://api.travis-ci.org/pstaender/neo4jmapper.png)](https://travis-ci.org/pstaender/neo4jmapper)
 
-Neo4jMapper is a **client and server-side** object mapper for neo4j graphdatabases written in native JavaScript.
+Neo4jMapper is a **client- and serverside object mapper for neo4j** graphdatabases, written in JavaScript.
 
 ## Why?
 
 What if working with neo4j is as easy as working with mongodb in javascript? And what if the same is true for querying nodes?
 
-Neo4jMapper brings basic object-mapping and comfortable query building to the neo4j user - for client- and serverside.
+Neo4jMapper brings basic object-mapping and comfortable query building to the neo4j user. Ready to use in  webbrowsers or on nodejs.
 
 **Beta status**
 
