@@ -96,6 +96,7 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype._absoluteUrl = null;
   Neo4jRestful.prototype.exact_version = null;
   Neo4jRestful.prototype.version = null;
+  Neo4jRestful.prototype.ignore_exception_pattern = /^(Node|Relationship)NotFoundException$/;
 
   Neo4jRestful.prototype._queue = {
     stack: null, // contains all queued requests
@@ -347,6 +348,11 @@ var initNeo4jRestful = function() {
         self.log('**debug** Could not create/parse a valuable error object', e);
       }
     }
+    if ( (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
+      // we ignore by default notfound exceptions, because they are no "syntactical" errors
+      return cb(null, null, options._debug);
+    }
+
     return cb(err, null, options._debug);
   }
 

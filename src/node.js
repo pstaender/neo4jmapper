@@ -40,7 +40,8 @@ var initNode = function(neo4jrestful) {
     With: null,
     distinct: null,
     label: null,
-    node_identifier: 'n', // can be a, b or n
+    node_identifier: null, // can be a|b|n
+    by_id: null,
     // flasgs
     _count: null,
     _distinct: null,
@@ -393,6 +394,7 @@ var initNode = function(neo4jrestful) {
     if (this.hasId()) {
       method = 'update';
       this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+        self.populateWithDataFromResponse(node._response);
         cb(err, node, debug);
       });
     } else {
@@ -400,7 +402,7 @@ var initNode = function(neo4jrestful) {
       this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, function(err, node, debug) {
         if (node)
           node.copyTo(self);
-        cb(err, node, debug);
+        _prepareData(err, node, debug);
       });
     }
   }
@@ -525,35 +527,46 @@ var initNode = function(neo4jrestful) {
     var self = this;
     if (!self.is_singleton)
       self = this.singleton(undefined, this);
-    if (typeof cb === 'function') {
-      self.exec({ url: '/db/data/node/'+Number(id), type: 'get' }, function(err, node) {
-        if (err)
-          cb(err, node);
-        else
-          cb(err, node[0]);
-      });
-    }
+    // if (typeof cb === 'function') {
+    //   self.cypher.return_properties = [ this.__type_identifier__ ];      
+    //   self.exec(function(err, node) {
+    //     if (err)
+    //       cb(err, node);
+    //     else
+    //       cb(err, ( (node) && (node[0]) ) ? node[0] : node );
+    //   }, { url: '/db/data/node/'+Number(id), type: 'get' });
+    // } else { }
+    self.cypher.by_id = Number(id);
     return self.findByUniqueKeyValue('id', id, cb);
+    
   }
 
-  Node.prototype.findOneByUniqueKeyValue = Node.prototype.findByUniqueKeyValue;
+  //Node.prototype.findOneByUniqueKeyValue = Node.prototype.findByUniqueKeyValue;
 
   Node.prototype.findByUniqueKeyValue = function(key, value, cb) {
     var self = this;
     if (!self.is_singleton)
       self = this.singleton(undefined, this);
+    // we have s.th. like
+    // { key: value }
+    if (typeof key === 'object') {
+      cb = value;
+      var _key = Object.keys(key)[0];
+      value = key[_key];
+      key = _key;
+    }
+
     if (typeof key !== 'string')
       key = 'id';
     if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
+      var identifier = self.cypher.node_identifier || self.__type_identifier__;
       if (self.cypher.return_properties.length === 0)
-        self.cypher.return_properties = [ self.cypher.node_identifier ];
-      if (key==='id') {
-        // we have to use the id method for the special key `id`
-        self.cypher.where = [ "id("+self.cypher.node_identifier+") = "+Number(value) ];
-      } else {
+        self.cypher.return_properties = [ identifier ];
+      if (key !== 'id') {
         var query = {};
         query[key] = value;
         self.where(query);
+        // if we have an id: value, we will build the query in prepareQuery
       }
       if (typeof cb === 'function') {
          self.exec(function(err,found){
@@ -561,7 +574,7 @@ var initNode = function(neo4jrestful) {
             return cb(err, found);
           else
             // try to return the first
-            return cb(null, (found) ? found[0] : found);
+            return cb(null, ((found)&&(found[0])) ? found[0] : found);
          });
       }
      
@@ -786,6 +799,16 @@ var initNode = function(neo4jrestful) {
       query.match = this.__type_identifier__+':'+this.label;
     }
 
+    // rule(s) for findById
+    if (query.by_id > 0) {
+      var identifier = query.node_identifier || this.__type_identifier__;
+      // put in where clause if `START n = node(*)` or no START statement exists
+      if ( (!query.start) || (/^\s*n\s*\=\s*node\(\*\)\s*$/.test(query.start)) ) {
+        // we have to use the id method for the special key `id`
+        query.where.push("id("+identifier+") = "+query.by_id);
+      }
+    }
+
     return query;
   }
 
@@ -829,7 +852,10 @@ var initNode = function(neo4jrestful) {
       fallback = '*'
     if (this.cypher.from > 0)
       return this.cypher.from;
-    return (this.hasId()) ? this.id : fallback; 
+    if (this.cypher.by_id)
+      return this.cypher.by_id;
+    else
+      return (this.hasId()) ? this.id : fallback; 
   };
 
   Node.prototype._end_node_id = function(fallback) {
@@ -849,13 +875,14 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.incomingRelationships = function(relation, cb) {
-    var self = this.singletonForQuery({ node_identifier: 'a' });
+    var self = this.singletonForQuery();
     self._modified_query = true;
     if (typeof relation !== 'function') {
       self.cypher.relationship = relation;
     } else {
       cb = relation;
     }
+    self.cypher.node_identifier = 'a';
     self.cypher.start = 'a = node('+self._start_node_id('*')+')';
     self.cypher.start += (self.cypher.to > 0) ? ', b = node('+self._end_node_id('*')+')' : ''
     self.cypher.incoming = true;
@@ -866,7 +893,7 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.outgoingRelationships = function(relation, cb) {
-    var self = this.singletonForQuery({ node_identifier: 'a' });
+    var self = this.singletonForQuery();
     self._modified_query = true;
     if (typeof relation !== 'function') {
       self.cypher.relationship = relation;
@@ -874,6 +901,7 @@ var initNode = function(neo4jrestful) {
     } else {
       cb = relation;
     }
+    self.cypher.node_identifier = 'a';
     self.cypher.start = 'a = node('+self._start_node_id('*')+')';
     self.cypher.start += (self.cypher.to > 0) ? ', b = node('+self._end_node_id('*')+')' : ''
     self.cypher.incoming = false;
@@ -906,10 +934,11 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.allDirections = function(relation, cb) {
-    var self = this.singletonForQuery({ node_identifier: 'a' });
+    var self = this.singletonForQuery();
     self._modified_query = true;
     if (typeof relation !== 'function')
       self.cypher.relationship = relation;
+    self.cypher.node_identifier = 'a';
     self.cypher.start = 'a = node('+self._start_node_id('*')+'), b = node('+self._end_node_id('*')+')';
     self.cypher.incoming = true;
     self.cypher.outgoing = true;
@@ -1439,12 +1468,16 @@ var initNode = function(neo4jrestful) {
     } 
 
     var _processData = function(err, data, debug, cb) {
-      if (err)
+      if ((err)||(data === null))
         return cb(err, data, debug);
       else {
         var sortedData = [];
         var jobsToDo = data.data.length;
         for (var x=0; x < data.data.length; x++) {
+          if (!data.data[x][0]) {
+            jobsToDo--;
+            break;
+          }
           var basicNode = self.neo4jrestful.createObjectFromResponseData(data.data[x][0], DefaultConstructor);
           (function(x){
             if (typeof basicNode.load === 'function') {
@@ -1468,7 +1501,7 @@ var initNode = function(neo4jrestful) {
           return _deliverResultset(self, cb, err, sortedData, debug);
       }
     }
-    
+
     if (typeof cb === 'function') {
       var cypher = this.toCypherQuery();
       // reset node, because it might be called from prototype
@@ -1483,6 +1516,10 @@ var initNode = function(neo4jrestful) {
           });
         else if (request)
           return this.neo4jrestful[request.type](request.url, request.data, function(err, data, debug) {
+            // transform to resultset
+            data = {
+              data: [ [ data ] ]
+            };
             _processData(err, data, debug, cb);
           });
         else

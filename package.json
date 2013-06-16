@@ -1,7 +1,7 @@
 {
   "name": "neo4jmapper",
   "description": "Neo4jMapper is a client and server-side object mapper for neo4j graphdatabases written in native JavaScript",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "author": "Philipp Staender <philipp.staender@gmail.com>",
   "homepage": "https://github.com/pstaender/neo4jmapper/",
   "main": "./src/index",

@@ -46,6 +46,12 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*) RETURN n;'
           ]
         
+        "Node::findById(123)":
+          [
+            Node::findById(123),
+            "START n = node(*) WHERE id(n) = 123 RETURN n;"
+          ]
+
         'Node::findOne()':
           [
              Node::findOne(),
@@ -121,13 +127,13 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'r.since': 'years' })":
           [
              Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'r.since': 'years' }),
-            'START a = node(*), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = \'years\' ) RETURN r;'
+            'START a = node(1), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = \'years\' ) RETURN r;'
           ]
 
         "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
           [
              Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
-            "START a = node(*), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = 'years' ) RETURN r;"
+            "START a = node(1), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = 'years' ) RETURN r;"
           ]
         
         "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy 'n.name', 'DESC', ->":
@@ -157,7 +163,7 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node::findById(123).incomingRelationships().delete().toCypherQuery()":
           [
              Node::findById(123).incomingRelationships().delete(),
-            'START a = node(*) MATCH (a)<-[r]-() WHERE id(n) = 123 DELETE r;'
+            'START a = node(123) MATCH (a)<-[r]-() DELETE r;'
           ]
         
         "Node::findById(123).allRelationships().delete()":

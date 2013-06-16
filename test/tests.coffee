@@ -257,6 +257,15 @@ describe 'Neo4jMapper', ->
           n.exec ->
             done()
 
+    it 'expect to get null and an error if node is not found', (done) ->
+      Node::findById 1234567890, (err, found) ->
+        expect(err).to.be null
+        expect(found).to.have.length 0
+        Node::findByUniqueKeyValue { key: new Date().getTime() }, (err, found) ->
+          expect(err).to.be null
+          expect(found).to.have.length 0
+          done()
+
     it 'expect to update a node', (done) ->
       n = new Node()
       n.data = {
@@ -271,6 +280,7 @@ describe 'Neo4jMapper', ->
         Node::findById id, (err, found) ->
           found.data.title = 'How are you?'
           found.update (err, savedNode) ->
+            expect(savedNode.data.title).to.be.equal 'How are you?'
             expect(err).to.be null
             Node::findById id, (err, foundAgain) ->
               expect(foundAgain.data.title).to.be found.data.title
@@ -628,7 +638,7 @@ describe 'Neo4jMapper', ->
 
   describe 'relationship', ->
 
-    it 'expect to get a relationship by id and remove it', (done) ->
+    it 'expect to get a relationship by id, update and remove it', (done) ->
       new Node().save (err, a) ->
         new Node().save (err, b) ->
           a.createRelationshipTo b, 'related', { since: 'year' }, (err, result) ->
@@ -637,7 +647,21 @@ describe 'Neo4jMapper', ->
               expect(err).to.be null
               expect(found.id).to.be.equal result.id
               expect(found.data.since).to.be.equal 'year'
-              done()
+              found.data = from: 'Berlin'
+              found.save (err) ->
+                expect(err).to.be null
+                Relationship::findById result.id, (err, found) ->
+                  expect(err).to.be null
+                  expect(found.data.since).to.be undefined
+                  expect(found.data.from).to.be.equal 'Berlin'
+                  found.remove (err) ->
+                    expect(err).to.be null
+                    Relationship::findById result.id, (err, found) ->
+                      # expect(err).to.be null
+                      # expect(found).to.be null
+                      Node::findById 123, (err, f) ->
+                        console.log err, f
+                        done()
 
   describe 'helpers', ->
 

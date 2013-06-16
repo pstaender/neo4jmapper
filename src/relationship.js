@@ -130,21 +130,23 @@ var initRelationship = function(neo4jrestful) {
     if (this.is_singleton)
       return cb(Error('Singleton instances can not be persisted'), null);
     this._modified_query = false;
-    var url = '/db/relationship/relationship';
-    var method = 'post';
+    
     if (this.hasId()) {
-      url = '/db/data/relationship/'+this.id+'/properties';
-      method = 'put';
+      var url = '/db/data/relationship/'+this.id+'/properties';
+      var method = 'put';
     } else {
-      this.neo4jrestful['method']('/db/relationship/relationship', { data: this.flattenData() }, function(err,data){
-        if (err)
-          cb(err,data);
-        else {
-          self.populateWithDataFromResponse(data);
-          return cb(null, data);
-        }
-      });
+      var url = '/db/relationship/relationship';
+      var method = 'post';
     }
+    this.neo4jrestful[method](url, { data: this.flattenData() }, function(err,data){
+      if (err)
+        cb(err,data);
+      else {
+        self.populateWithDataFromResponse(data);
+        return cb(null, data);
+      }
+    });
+
   }
 
   Relationship.prototype.update = function(cb) {
