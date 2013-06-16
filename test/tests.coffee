@@ -657,10 +657,11 @@ describe 'Neo4jMapper', ->
                   found.remove (err) ->
                     expect(err).to.be null
                     Relationship::findById result.id, (err, found) ->
-                      # expect(err).to.be null
-                      # expect(found).to.be null
-                      Node::findById 123, (err, f) ->
-                        console.log err, f
+                      expect(err).to.be null
+                      expect(found).to.be null
+                      Node::findById 123, (err, found) ->
+                        expect(err).to.be null
+                        expect(found).to.have.length 0
                         done()
 
   describe 'helpers', ->

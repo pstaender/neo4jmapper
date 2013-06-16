@@ -93,6 +93,12 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node::findAll().incomingRelationships(),
             'START a = node(*) MATCH (a)<-[r]-() RETURN r;'
           ]
+
+        'Actor::findAll().incomingRelationships()':
+          [
+             Actor::findAll().incomingRelationships(),
+            'START a = node(*) MATCH (a:Actor)<-[r]-() RETURN r;'
+          ]
         
         'Node::findAll().outgoingRelationships()':
           [
@@ -140,6 +146,12 @@ describe 'Neo4jMapper (cypher queries)', ->
           [
              Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC'),
             "START n = node(*) WHERE ( HAS (n.name) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+          ]
+
+        "Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC')":
+          [
+             Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC'),
+            "START n = node(*) MATCH n:Actor WHERE ( HAS (n.name) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
           ]
         
         "Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }":

@@ -241,6 +241,7 @@ var initNode = function(neo4jrestful) {
     this.cypher = {}
     _.extend(this.cypher, cypher_defaults);
     this.cypher.where = [];
+    this.cypher.match = [];
     this.cypher.return_properties = [];
     this._modified_query = false;
     if (this.id)
@@ -503,6 +504,7 @@ var initNode = function(neo4jrestful) {
     if (!self.is_singleton)
       self = this.singleton(undefined, this);
     self._modified_query = true;
+    if (self.label) self.withLabel(self.label);
     if ((typeof where === 'string')||(typeof where === 'object')) {
       self.where(where);
       if (!self.cypher.start) {
@@ -566,6 +568,7 @@ var initNode = function(neo4jrestful) {
         var query = {};
         query[key] = value;
         self.where(query);
+        if (self.label) self.withLabel(self.label);
         // if we have an id: value, we will build the query in prepareQuery
       }
       if (typeof cb === 'function') {
@@ -592,6 +595,7 @@ var initNode = function(neo4jrestful) {
     self._modified_query = true;
     self.cypher.limit = null;
     self.cypher.return_properties = ['n'];
+    if (self.label) self.withLabel(self.label);
     self.exec(cb);
     return self;
   }
@@ -628,10 +632,6 @@ var initNode = function(neo4jrestful) {
     self.cypher.label = label;
     self.exec(cb);
     return self;
-  }
-
-  Node.prototype.labelWith = function(name, cb) {
-
   }
 
   Node.prototype.shortestPathTo = function(end, type, cb) {
@@ -680,8 +680,10 @@ var initNode = function(neo4jrestful) {
       // RETURN p
       var type = (options.relationships.type) ? ':'+options.relationships.type : options.relationships.type;
       this.cypher.start = 'a = node('+start+'), b = node('+end+')';
-      this.cypher.match = 'p = '+options.algorithm+'(a-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-b)';
-      this.cypher.match = this.cypher.match.replace(/\[\:\*+/, '[*');
+      
+      var matchString = 'p = '+options.algorithm+'(a-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-b)';
+      
+      this.cypher.match.push(matchString.replace(/\[\:\*+/, '[*'));
       this.cypher.return_properties = ['p'];
     }
 
@@ -768,7 +770,7 @@ var initNode = function(neo4jrestful) {
           y = '->';
         }
       }
-      query.match = '(a'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'b' : '' )+')';
+      query.match.push('(a'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'b' : '' )+')');
     }
     // guess return objects from start string if it's not set
     // e.g. START n = node(*), a = node(2) WHERE … RETURN (~>) n, a;
@@ -790,13 +792,13 @@ var initNode = function(neo4jrestful) {
     }
 
     // Set a fallback to START n = node(*) 
-    if ((!query.start)&&(!query.match)) {
+    if ((!query.start)&&(!(query.match.length > 0))) {
       // query.start = 'n = node(*)';
       query.start = this.__type_identifier__+' = '+this.__type__+'(*)';
     }
-    if ((!query.match)&&(this.label)) {
+    if ((!(query.match.length>0))&&(this.label)) {
       // e.g. ~> MATCH n:Person
-      query.match = this.__type_identifier__+':'+this.label;
+      query.match.push(this.__type_identifier__+':'+this.label);
     }
 
     // rule(s) for findById
@@ -817,7 +819,7 @@ var initNode = function(neo4jrestful) {
     var template = "";
     if (query.start)
       template += "START %(start)s ";
-    if (query.match)
+    if (query.match.length > 0)
       template += "MATCH %(match)s ";
       template += "%(With)s ";
       template += "%(where)s ";
@@ -833,7 +835,7 @@ var initNode = function(neo4jrestful) {
     var cypher = helpers.sprintf(template, {
       start:              query.start,
       from:               '',
-      match:              (query.match) ? query.match : '',
+      match:              (query.match.length > 0) ? query.match.join(' AND ') : '',
       With:               (query.With) ? query.With : '',
       action:             (query.action) ? query.action : 'RETURN'+((query._distinct) ? ' DISTINCT ' : ''),
       return_properties:  query.return_properties,
@@ -968,7 +970,7 @@ var initNode = function(neo4jrestful) {
       relation = '';
     }
     self._modified_query = true;
-    self.cypher.match = 'n'+label+'-[r'+relation+']-()';
+    self.cypher.match.push('n'+label+'-[r'+relation+']-()');
     self.cypher.return_properties = ['r'];
     self.exec(cb);
     return self;
@@ -1005,7 +1007,7 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.match = function(string, cb) {
-    this.cypher.match = string;
+    this.cypher.match.push(string);
     this.exec(cb);
     return this;
   }
