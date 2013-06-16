@@ -742,7 +742,8 @@ var neo4jmapper_helpers = {};
     getIdFromObject: getIdFromObject,
     escapeString: escapeString,
     sprintf: sprintf,
-    constructorNameOfFunction: constructorNameOfFunction
+    constructorNameOfFunction: constructorNameOfFunction,
+    cypherKeyValueToString: cypherKeyValueToString
   };
 
 })();

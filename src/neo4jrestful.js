@@ -321,7 +321,6 @@ var initNeo4jRestful = function() {
       if (jQuery(err.responseText).find('body pre:first, body p:first')[0])
         error = new Error(jQuery(err.responseText).find('body pre:first, body p:first').text().trim());
       else if (jQuery(err.responseText).text()) {
-        console.log(':)');
         error = jQuery(err.responseText).text().trim();
       } else {
         error = err;
@@ -354,7 +353,8 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype.makeRequest = function(_options, cb) {
     _options = _.extend({
       cache: false,
-      timeout: 1000
+      timeout: 1000,
+      loadNode: true // enables the load hooks
     }, _options);
     var self = this;
     var data = _options.data;

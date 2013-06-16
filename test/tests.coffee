@@ -181,6 +181,30 @@ describe 'Neo4jMapper', ->
           node.remove ->
             done()
 
+    it 'expect to find many nodes with different labels', (done) ->
+      groupid = new Date().getTime()
+      new Node(name: 'Alice', group_id: groupid).addLabel('Person').save (err, alice) ->
+        expect(err).to.be null
+        expect(alice.label).to.be 'Person'
+        expect(alice.labels[0]).to.be 'Person'
+        new Node(name: 'Bob', group_id: groupid).addLabel('Developer').save (err, bob) ->
+          expect(err).to.be null
+          expect(bob.label).to.be 'Developer'
+          expect(bob.labels[0]).to.be 'Developer'
+          Node::find { group_id: groupid }, (err, nodes) ->
+            expect(err).to.be null
+            expect(nodes).to.have.length 2
+            expect(nodes[0].constructor_name).to.be.equal 'Node'
+            expect(nodes[1].constructor_name).to.be.equal 'Node'
+            class Developer extends Node
+            Node::register_model(Developer)
+            Developer::find { group_id: groupid }, (err, nodes) ->
+              expect(err).to.be null
+              expect(nodes).to.have.length 1
+              expect(nodes[0].data.name).to.be.equal 'Bob'
+              done()
+
+
     it 'expect to remove a node', (done) ->
       node = new Node title: 'test'
       node.save -> 
@@ -258,7 +282,7 @@ describe 'Neo4jMapper', ->
     it 'expect to execute onBeforeSave hook if defined', (done) ->
       n = new Node()
       n.called_on_before_save = false
-      n.onBeforeSave = (next) ->
+      n.onBeforeSave = (self, next) ->
         n.called_on_before_save = true
         next()
       n.save (err) ->
@@ -309,6 +333,21 @@ describe 'Neo4jMapper', ->
             lebowski.remove ->
               done()
 
+    it 'expect to convert to specific models', (done) ->
+      class Director extends Node
+      new Director( name: 'Robert Zemeckis' ).save (err, robert) ->
+        expect(err).to.be null
+        expect(robert.constructor_name).to.be 'Director'
+        expect(robert.label).to.be 'Director'
+        Node::findById robert.id, (err, found) ->
+          # expect(found.constructor_name).to.be.equal 'Director'
+          expect(found.label).to.be.equal 'Director'
+
+          Node::register_model(Director)
+          found = Node::convert_node_to_model(found, Director)
+          expect(found.constructor_name).to.be.equal 'Director'
+
+          done()
 
     it 'expect to autoindex models', (done) ->
       # client.constructor::log = Graph::log = require('./log')
@@ -418,19 +457,8 @@ describe 'Neo4jMapper', ->
                         expect(jeff.label).to.be.equal 'Person'
                         expect(jeff.labels).to.have.length 1
                         expect(jeff.labels[0]).to.be.equal 'Person'
-                        # expect(jeff.constructor_name).to.be.equal 'Person'
                         done()
 
-                      # found.load Person, (err, jeff) ->
-                      #   expect(jeff.label).to.be.equal 'Person'
-                      #   expect(jeff.labels).to.have.length 1
-                      #   expect(jeff.labels[0]).to.be.equal 'Person'
-                      #   expect(jeff.constructor_name).to.be.equal 'Person'
-                      #   done()
-
-                      # console.log found.label, jeff.toObject()
-                      # done()
-  
     it 'expect to find labeled node, with and without class', (done) ->
       class Person extends Node
       person = new Person({name: 'Dave'})
@@ -523,6 +551,7 @@ describe 'Neo4jMapper', ->
       node.data.name = "Alice"
       node.save (err, a) ->
         expect(a.hasId()).to.be true
+        # console.log  a.outgoingRelationships().count().toCypherQuery()
         a.outgoingRelationships().count (err, count) ->
           expect(count).to.be 0
           node = new Node()
@@ -551,13 +580,11 @@ describe 'Neo4jMapper', ->
 
                   a.createRelationshipFrom b, 'LIKES', (err, result) ->
                     expect(err).to.be null
-                    # console.log b.allRelationships('LIKES').toCypherQuery()
                     a.incomingRelationships 'LIKES', (err, result) ->
                       expect(outgoingRelationships).to.have.length 1
                       expect(err).to.be null
                       a.neo4jrestful.debug = true
                       a.createRelationshipBetween b, 'LIKES', (err, result, debug) ->
-                        # console.log debug
                         expect(err).to.be null
                         a.allRelationships 'LIKES', (err, result) ->
                           expect(err).to.be null

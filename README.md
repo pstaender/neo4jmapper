@@ -286,9 +286,9 @@ There are some steps to take, especially some methods for daily use are missing,
   * Implement labels for neo4j 2.0
   * Complete missing tests
 
-## Use on a console
+## Terminal usage
 
-For quick testing you can also use the nodejs or coffeescript console (this example is on the coffeescript console), but without the ability to make requests because you need to define callbacks for that :
+For quick testing you can also use the nodejs or coffeescript console (this example is on the coffeescript console), but without the ability to make requests because you need to define callbacks for that:
 
 ```sh
   

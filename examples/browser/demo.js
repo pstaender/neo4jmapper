@@ -24,9 +24,10 @@ $(document).ready(function(){
     })
 
     Node.prototype.findOne(function(err, found){
-      log('First node found')
+      log('First node found');
       log(err || '…');
       log((found) ? JSON.stringify(found.toObject()) : '');
     });
+
   }
 });

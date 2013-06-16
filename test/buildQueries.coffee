@@ -157,13 +157,13 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node::findById(123).incomingRelationships().delete().toCypherQuery()":
           [
              Node::findById(123).incomingRelationships().delete(),
-            'START a = node(123) MATCH (a)<-[r]-() DELETE r;'
+            'START a = node(*) MATCH (a)<-[r]-() WHERE id(n) = 123 DELETE r;'
           ]
         
         "Node::findById(123).allRelationships().delete()":
           [
              Node::findById(123).allRelationships().delete(),
-            'START n = node(123) MATCH n-[r]-() DELETE r;'
+            'MATCH n-[r]-() WHERE id(n) = 123 DELETE r;'
           ]
 
       for functionCall of map
