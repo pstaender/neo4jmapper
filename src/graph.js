@@ -15,7 +15,7 @@ var initGraph = function(neo4jrestful) {
    * Constructor
    */
   Graph = function() {
-    this.about();
+    // this.about();
   }
 
   Graph.prototype.info = null;

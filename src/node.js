@@ -158,9 +158,7 @@ var initNode = function(neo4jrestful) {
     }
   }
 
-  Node.prototype.onBeforeInitialize = function(next) {
-    next(null,null);
-  }
+  Node.prototype.onBeforeInitialize = function(next) { next(null,null); }
 
   Node.prototype.onAfterInitialize = function(cb) {
     var self = this;
@@ -361,9 +359,7 @@ var initNode = function(neo4jrestful) {
     });
   }
 
-  Node.prototype.onBeforeSave = function(node, next) {
-    next(null, null);
-  }
+  Node.prototype.onBeforeSave = function(node, next) { next(null, null); }
 
   Node.prototype.onSave = function(cb) {
     var self = this;

@@ -55,20 +55,35 @@ or by shorthand
   bob.save (err, savedNode) ->
 ```
 
-Define your own models with classes / object extension and enjoy label support:
+### Classes and Models
+
+Since JavaScript has no classes, you must extend the `Node` object with your own constructor or extend with the `label` and `constructor_name` attributes, so that neo4jmapper can detect a name for your model. Alternatively you can create a Node object and set the `label` attribute with your model name each time you need it.
+
+Every defined model will enjoy the label feature of neo4j by default. 
 
 ```coffeescript
-  class Person extends Node
-    fields:
-      defaults:
-        category: 'User'
+  # coffeescript and it's class pattern
+  # is the most convenient way to define models
 
-  alice = new Person name: 'Alice'
+  class Person extends Node
+    fullname: ->
+      s = @firstName + " " + @surname
+      s.trim()
+
+  # optional but strongly recommend
+  # so that neo4jmapper can instantiate found labeled nodes with the respective model/constructor
+  Node::register_model(Person)
+
+  alice = new Person firstName: 'Alice', surname: 'Springs'
+  alice.fullname()
+  # ~> 'Alice Springs'
   alice.save ->
-    alice.allLabels (err, labels) -> # labels = [ 'Person' ]
+    alice.label
+    # ~> 'Person'
+    
 ```
 
-To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well.
+To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well. Sie example shows the same as above:
 
 ```js
   var Movie = (function(Node) {
@@ -81,6 +96,9 @@ To extend the Node object in JavaScript you have to use an extend method (here I
     
     _.extend(Movie.prototype, Node.prototype);
     
+    // **the most important part:**
+    // set the `label` and `constructor_name` attribute to the name of your model
+    // this step is redundant if the name of your constructor function is the name of your model
     Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
 
     Movie.prototype.fields = {
@@ -101,19 +119,9 @@ To extend the Node object in JavaScript you have to use an extend method (here I
   pulpFiction.data.director = 'Quentin Tarantino';
   pulpFiction.data.year = 1994;
   pulpFiction.save(function(err,movie){
+    console.log('Label: ', movie.label);
     console.log('Created movie: ', movie.toObject());
   });
-```
-
-Instance a model including labels (async by nature):
-
-```
-  class Person extends Node
-
-  new Person({ name: 'Jeff Bridges' }).save (err, savedJeff) ->
-    savedJeff.load (err, jeff) ->
-      # now jeff is from type 'Person'
-      console.log(jeff.toObject())
 ```
 
 ### Connect Nodes in various kinds
@@ -375,7 +383,7 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
 
 ### onBeforeInitialize
 
-Is called when the model is registered. For instance, it's used to ensure autoindex.
+Called once the model is being registered. For instance, to ensure autoindex on defined fields is done in this part:
 
 ```coffeescript
   Node::onBeforeInitialize = (next) ->
