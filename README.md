@@ -10,11 +10,15 @@ What if working with neo4j is as easy as working with mongodb in javascript? And
 
 Neo4jMapper brings basic object-mapping and comfortable query building to the neo4j user. Ready to use in  webbrowsers or on nodejs.
 
-**Beta status**
-
-**Neo4jMapper works with Neo4j v2.0 and above** - there will be no support for earlier versions than v2 because the label feature is essential for the mapping.
+**Neo4jMapper works with Neo4j v2** - there will be no support for earlier versions than v2 because the label feature is essential for the mapping.
 
 ## How to use
+
+### Installation
+
+```sh
+  $ npm install neo4jmapper
+```
 
 ### Include files and establish db connection
 
@@ -76,10 +80,10 @@ Every defined model will enjoy the label feature of neo4j by default.
 
   alice = new Person firstName: 'Alice', surname: 'Springs'
   alice.fullname()
-  # ~> 'Alice Springs'
+  ~> 'Alice Springs'
   alice.save ->
     alice.label
-    # ~> 'Person'
+    ~> 'Person'
     
 ```
 
@@ -326,8 +330,8 @@ For quick testing you can also use the nodejs or coffeescript console (this exam
 
 You can run tests in nodejs:
 
-```shell
-  > npm test
+```sh
+  $ npm test
 ```
 
 or in the browser of your choice by opening the `examples/tests.html` file. You have to overwrite the `configForTest` values with your own config data.

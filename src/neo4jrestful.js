@@ -181,7 +181,6 @@ var initNeo4jRestful = function() {
     var defaultOptions = {
       type: 'GET',
       data: null,
-      no_processing: false,
       debug: false
     };
     if (typeof options === 'undefined')
@@ -286,22 +285,27 @@ var initNeo4jRestful = function() {
     }
   }
 
+  Neo4jRestful.prototype.onProcess = function(res, next, debug) {
+    if (_.isArray(res)) {
+      for (var i=0; i < res.length; i++) {
+        res[i] = this.createObjectFromResponseData(res[i]);
+      }
+    } else if (_.isObject(res)) {
+      res = this.createObjectFromResponseData(res);
+    }
+    next(null, res, debug);
+  }
+
   Neo4jRestful.prototype.onSuccess = function(next, res, status, options) {
     if (options.debug) {
       options._debug.res = res;
       options._debug.status = status;
     }
     if (status === 'success') {
-      if (options.no_processing)
+      if (typeof this.onProcess === 'function')
+        return this.onProcess(res, next, options._debug);
+      else
         return next(null, res, options._debug);
-      if (_.isArray(res)) {
-        for (var i=0; i < res.length; i++) {
-          res[i] = this.createObjectFromResponseData(res[i]);
-        }
-      } else if (_.isObject(res)) {
-        res = this.createObjectFromResponseData(res);
-      }
-      next(null, res, options._debug);
     } else {
       next(res, status, options._debug);
     }
