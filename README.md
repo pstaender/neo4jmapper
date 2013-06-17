@@ -62,7 +62,7 @@ Since JavaScript has no classes, you must extend the `Node` object with your own
 Every defined model will enjoy the label feature of neo4j by default. 
 
 ```coffeescript
-  # coffeescript and it's class pattern
+  # coffeescript and it`s class pattern
   # is the most convenient way to define models
 
   class Person extends Node
@@ -277,6 +277,20 @@ In case you want to inspect sended + received data and/or the process of mapping
 
 The debug object is always the third passed argument in the callback.
 
+You can also log all network connections to the database by defining a logger:
+
+```coffeescript
+  client.constructor::log = Graph::log = -> console.log(Array::slice.call(arguments).join(' '))
+```
+
+or in JavaScript:
+
+```js
+  client.constructor.prototype.log = Graph.prototype.log = function() {
+    console.log(Array.prototype.slice.call(arguments).join(' '));
+  }
+```
+
 ### Inspect generated queries
 
 You can easiliy inspect the generated queries by invoking the `toCypherQuery()` method:
@@ -288,11 +302,10 @@ You can easiliy inspect the generated queries by invoking the `toCypherQuery()` 
 
 ## TODO
 
-There are some steps to take, especially some methods for daily use are missing, yet. But the basic set of operations are already implemented and test proofed.
+There are some steps to take, especially some methods for daily use are missing, yet. But the basic set of operations are already implemented and tested.
 
-  * Implement: relationship (index, findById)
-  * Implement labels for neo4j 2.0
-  * Complete missing tests
+  * Implement: relationship (index)
+  * Better test coverage
 
 ## Terminal usage
 

@@ -12,7 +12,12 @@
   "keywords": [
     "neo4j",
     "graphdatabase",
-    "orm"
+    "orm",
+    "graph",
+    "database", 
+    "driver", 
+    "rest",
+    "client"
   ],
   "scripts": {
     "test": "coffee -mcb test/ && mocha; npm run clean",
