@@ -360,6 +360,9 @@ describe 'Neo4jMapper', ->
           done()
 
     it 'expect to autoindex models', (done) ->
+      ###
+        TODO: autoindex check for indexed field tests
+      ###
       # client.constructor::log = Graph::log = require('./log')
       class Movie extends Node
         fields:
@@ -545,16 +548,27 @@ describe 'Neo4jMapper', ->
             expect(result).to.have.length 2
             graphdb.countRelationships (err, countedRelationshipsIntermediate) ->
               expect(countedRelationshipsBefore+2).to.be.equal countedRelationshipsIntermediate
-              bob.createRelationshipTo alice, 'liked', (err) ->
+              bob.createRelationshipTo alice, 'liked', (err, relationship) ->
                 expect(err).to.be null
+                expect(relationship).to.be.an 'object'
                 graphdb.countRelationships (err, countedRelationshipsFinally) ->
                   expect(countedRelationshipsBefore+3).to.be.equal countedRelationshipsFinally
-                  bob.createRelationshipFrom alice, 'follows', (err) ->
+                  bob.createRelationshipFrom alice, 'follows', (err, relationship) ->
                     expect(err).to.be null
+                    expect(relationship).to.be.an 'object'
                     graphdb.countRelationships (err, countedRelationshipsFinally) ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
-                      alice.removeWithRelationships -> bob.removeWithRelationships ->
-                        done()
+                      bob.createOrUpdateRelationshipFrom alice, 'follows', (err) ->
+                        expect(err).to.be null
+                        graphdb.countRelationships (err, count) ->
+                          expect(count).to.be.equal countedRelationshipsFinally
+                          bob.createOrUpdateRelationshipFrom alice, 'follows', (err, relationship) ->
+                            expect(err).to.be null
+                            expect(relationship).to.be.an 'object'
+                            graphdb.countRelationships (err, count) ->
+                              expect(count).to.be.equal countedRelationshipsFinally
+                              alice.removeWithRelationships -> bob.removeWithRelationships ->
+                                done()
 
     it 'expect to create and get incoming, outgoing and bidirectional relationships between two nodes', (done) ->
       node = new Node()

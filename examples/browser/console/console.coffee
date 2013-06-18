@@ -1,6 +1,8 @@
 config =
   streamlineSupport: true
   useToObject: true
+  outputShorthand: '\\> '
+  autoCbPlacement: true
 
 
 _beautify = (str) ->
@@ -46,11 +48,10 @@ $(document).ready ->
   $output = $('#output')
 
   window.query = (o) ->
-    window.log o?.toCypherQuery()
+    window.puts o?.toCypherQuery()
 
-  window.log = ->
+  window.puts = ->
     for arg in arguments
-      console.log arg
       if config.useToObject
         if typeof arg.toObject is 'function'
           arg = arg.toObject()
@@ -79,8 +80,20 @@ $(document).ready ->
       $output.text('') if e.shiftKey is true
       e.preventDefault()
       code = $(this).val()
+      if config.outputShorthand
+        pattern = new RegExp "\\n(\\s*)"+config.outputShorthand.trim()+"\\s", 'g'
+        #console.log pattern
+        #/\n(\s*)\>\s/g
+        code = code.replace(pattern, '\n$1puts ')
       if config.streamlineSupport
         js = CoffeeScript.compile(code, { bare: true })
+        # if config.autoCbPlacement
+        #   lines =for line, i in js.split('\n')
+        #     line = line.replace(/([^\_]+)\s*\);$/, '$1, _);')
+        #     line = line.replace(/\((\){1});/, '(_);')
+        #     line
+        #   js = lines.join("\n")
+        #   console.log js
         try
           js = Streamline.transform js, {
             lines: "preserve"

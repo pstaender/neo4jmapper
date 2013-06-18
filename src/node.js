@@ -1228,7 +1228,12 @@ var initNode = function(neo4jrestful) {
           if (result.length === 1) {
             // if we have only one relationship, we update this one
             // var properties = (options.properties) ? options.properties : {};
-            return self.neo4jrestful.put('/db/data/relationship/'+result[0].id+'/properties', { data: options.properties }, cb);
+            return self.neo4jrestful.put('/db/data/relationship/'+result[0].id+'/properties', { data: options.properties }, function(err) {
+              if (err)
+                cb(err, null);
+              else
+                cb(err, result);
+            });
           } else {
             // we create a new one
             return _create_relationship_by_options(options);
