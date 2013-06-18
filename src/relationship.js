@@ -228,7 +228,8 @@ var initRelationship = function(neo4jrestful) {
       end: this.end,
       from: _.extend(this.from),
       to: _.extend(this.to),
-      uri: this.uri
+      uri: this.uri,
+      type: this.type
     };
   }
 

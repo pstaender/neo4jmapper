@@ -1231,8 +1231,10 @@ var initNode = function(neo4jrestful) {
             return self.neo4jrestful.put('/db/data/relationship/'+result[0].id+'/properties', { data: options.properties }, function(err) {
               if (err)
                 cb(err, null);
-              else
-                cb(err, result);
+              else {
+                // TODO: Relationship::findById
+                self.neo4jrestful.get('/db/data/relationship/'+result[0].id, cb);
+              }
             });
           } else {
             // we create a new one

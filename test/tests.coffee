@@ -551,6 +551,8 @@ describe 'Neo4jMapper', ->
               bob.createRelationshipTo alice, 'liked', (err, relationship) ->
                 expect(err).to.be null
                 expect(relationship).to.be.an 'object'
+                expect(relationship.type).to.be.equal 'liked'
+                expect(relationship).to.be.an 'object'
                 graphdb.countRelationships (err, countedRelationshipsFinally) ->
                   expect(countedRelationshipsBefore+3).to.be.equal countedRelationshipsFinally
                   bob.createRelationshipFrom alice, 'follows', (err, relationship) ->
@@ -558,13 +560,21 @@ describe 'Neo4jMapper', ->
                     expect(relationship).to.be.an 'object'
                     graphdb.countRelationships (err, countedRelationshipsFinally) ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
-                      bob.createOrUpdateRelationshipFrom alice, 'follows', (err) ->
+                      bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
                         expect(err).to.be null
+                        expect(relationship).to.be.an 'object'
+                        expect(relationship.type).to.be.equal 'follows'
+                        expect(relationship.data.since).to.be.equal 'years'
+                        expect(relationship.id).to.be.a 'number'
+                        id = relationship.id
                         graphdb.countRelationships (err, count) ->
                           expect(count).to.be.equal countedRelationshipsFinally
-                          bob.createOrUpdateRelationshipFrom alice, 'follows', (err, relationship) ->
+                          bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'months' }, (err, relationship) ->
                             expect(err).to.be null
                             expect(relationship).to.be.an 'object'
+                            expect(relationship.type).to.be.a 'string'
+                            expect(relationship.data.since).to.be.equal 'months'
+                            expect(relationship.id).to.be.equal id
                             graphdb.countRelationships (err, count) ->
                               expect(count).to.be.equal countedRelationshipsFinally
                               alice.removeWithRelationships -> bob.removeWithRelationships ->
