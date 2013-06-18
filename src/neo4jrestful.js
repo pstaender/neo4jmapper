@@ -52,22 +52,29 @@ var initNeo4jRestful = function() {
   /*
    * Constructor
    */
-  Neo4jRestful = function(baseUrl, options) {
+  Neo4jRestful = function(url, options) {
     var self = this;
-    if (typeof baseUrl !== 'undefined') {
+    if (typeof options !== 'object') {
+      options = (typeof url === 'object') ? url : {};
+    }
+    if (typeof url === 'string') {
+      options.url = url;
+    }
+    if (typeof options.url === 'string') {
       // check url
       // ensure one trailing slash
-      baseUrl = baseUrl.replace(/\/*$/, '/');
+      options.url = options.url.replace(/\/*$/, '/');
       // stop here if we don't have a valid url
-      if (!/http(s)*\:\/\/.+(\:[0-9]+)*\//.test(baseUrl)) {
+      if (!/http(s)*\:\/\/.+(\:[0-9]+)*\//.test(options.url)) {
         var message = "Your URL ("+url+") needs to match the default url pattern 'http(s)://domain(:port)/…'";
         throw Error(message);
       }
+    } else {
+      throw Error('No url found. Argument must be either an URL as string or an option object including an `.url` property.');
     }
-    if (typeof baseUrl === 'string')
-      self.baseUrl = baseUrl;
-    if (typeof options === 'object')
-      self.options = options;
+
+    self.baseUrl = options.url;
+
     if (Node === null)
       Node = node(self);
     if (Relationship === null)

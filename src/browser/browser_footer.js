@@ -1,21 +1,8 @@
 
 return window.Neo4jMapper = Neo4jMapper = {
-  init: function(url, options) {
-    if (typeof url === 'object') {
-      options = url;
-    } else {
-      options = {};
-      if (typeof url === 'string')
-        options.url = url;
-    }
-
-    url = options.url;
-
-    if (typeof url !== 'string')
-      throw Error('You need to pass an url as argument to connect to neo4j');
-
+  init: function(urlOrOptions) {
     this.Neo4jRestful  = initNeo4jRestful();
-    this.neo4jrestful  = this.client = new this.Neo4jRestful(url);
+    this.neo4jrestful  = this.client = new this.Neo4jRestful(urlOrOptions);
     this.Node          = initNode(this.neo4jrestful);
     this.Relationship  = initRelationship(this.neo4jrestful);
     this.Graph         = initGraph(this.neo4jrestful);
