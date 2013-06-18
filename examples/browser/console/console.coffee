@@ -1,3 +1,17 @@
+config =
+  streamlineSupport: true
+  useToObject: true
+
+
+_beautify = (str) ->
+  try
+    str = Narcissus.decompiler.pp(Narcissus.parser.parse(str))
+    str = str.replace(/}\s*;/g, "}")
+    return str
+  catch ex
+    console.error ex.message
+    return false
+
 insertAtCursor = (myField, myValue) ->
   #IE support
   if document.selection
@@ -23,20 +37,28 @@ insertAtCursor = (myField, myValue) ->
   else
     myField.value += myValue
 
+Streamline.globals.context = errorHandler: (err) ->
+  console.error err.message or err.toString()
+
 $(document).ready ->
 
   $input  = $('#input')
   $output = $('#output')
 
+  window.query = (o) ->
+    window.log o?.toCypherQuery()
+
   window.log = ->
     for arg in arguments
       console.log arg
+      if config.useToObject
+        if typeof arg.toObject is 'function'
+          arg = arg.toObject()
+        else if arg.constructor is Array
+          for o, i in arg
+            arg[i] = o.toObject() if typeof o.toObject is 'function'
+      
       output = if typeof arg is 'object' then js_beautify(JSON.stringify(arg), { indent_size: 2 }) else String(arg)
-      # if /^error/i.test(arg)
-      #   $output.addClass('error')
-      #   setTimeput ->
-      #     $output.removeClass('error')
-      #   , 1000
       $output.text(output + '\n\n' + $output.text())
     stash.set('output', $output.text())
 
@@ -57,4 +79,16 @@ $(document).ready ->
       $output.text('') if e.shiftKey is true
       e.preventDefault()
       code = $(this).val()
-      CoffeeScript.eval code
+      if config.streamlineSupport
+        js = CoffeeScript.compile(code, { bare: true })
+        try
+          js = Streamline.transform js, {
+            lines: "preserve"
+            noHelpers: false
+          }
+        catch e
+          line = Number(e?.message.match(/line\s([0-9]+)+/)?[1])
+          console.error e.message, js.split('\n')?[line+1], js
+        eval(js)
+      else
+        CoffeeScript.eval code

@@ -513,9 +513,14 @@ var initNode = function(neo4jrestful) {
     }
   }
 
-  Node.prototype.findOne = function(cb) {
+  Node.prototype.findOne = function(where, cb) {
     var self = this;
-    self = this.find(cb);
+    if (typeof where === 'function') {
+      cb = where;
+      where = undefined;
+    }
+
+    self = this.find(where);
     self.cypher.limit = 1;
     self.exec(cb);
     return self;
