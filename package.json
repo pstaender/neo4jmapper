@@ -1,7 +1,7 @@
 {
   "name": "neo4jmapper",
   "description": "Neo4jMapper is a client- and serverside object mapper for neo4j graphdatabases",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": "Philipp Staender <philipp.staender@gmail.com>",
   "homepage": "https://github.com/pstaender/neo4jmapper/",
   "main": "./src/index",
@@ -29,11 +29,11 @@
     "should": "~1.2",
     "source-map-support": "*",
     "futures": "~2.3.1",
-    "jquery": "~1.8",
     "join": "~2.3"
   },
   "dependencies": {
-    "underscore": "~1.4"
+    "underscore": "~1.4",
+    "jquery": "~1.8"
   },
   "licenses" : {
     "type" : "GPL"
