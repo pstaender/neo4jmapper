@@ -1,4 +1,1 @@
-window.drawNodes = ->
-
-  true
-
+window.drawNodes = -> true

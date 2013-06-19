@@ -508,11 +508,11 @@ describe 'Neo4jMapper', ->
       uid = new Date().getTime()
       node.data.name = 'Peter'
       node.data.city = 'Berlin'
-      node.index 'test', 'city', 'cologne', (err) ->
+      node.addIndex 'test', 'city', 'cologne', (err) ->
         expect(err.message).to.be.equal 'You need to persist the node before you can index it.'
         node.save (err, savedNode) ->
           expect(err).to.be null
-          savedNode.index 'test', 'uid', uid, (err, result) ->
+          savedNode.addIndex 'test', 'uid', uid, (err, result) ->
             expect(err).to.be null
             node.findByIndex 'test', 'uid', uid, (err, result) ->
               expect(err).to.be null
