@@ -3,6 +3,9 @@ config =
   useToObject: true
   outputShorthand: '\\> '
   autoCbPlacement: true
+  onError:
+    console: true
+    alert: true
 
 
 _beautify = (str) ->
@@ -40,7 +43,8 @@ insertAtCursor = (myField, myValue) ->
     myField.value += myValue
 
 Streamline.globals.context = errorHandler: (err) ->
-  console.error err.message or err.toString()
+  console.error(err.message or err.toString()) if config.onError.console
+  alert(err.message or err.toString()) if config.onError.alert
 
 $(document).ready ->
 
@@ -51,7 +55,9 @@ $(document).ready ->
     window.puts o?.toCypherQuery()
 
   window.puts = ->
-    for arg in arguments
+    for arg, i in arguments
+      # first argument is taken for drawing as well
+      window.drawNodes(arg) if i is 0
       if config.useToObject
         if typeof arg.toObject is 'function'
           arg = arg.toObject()
@@ -61,6 +67,7 @@ $(document).ready ->
       
       output = if typeof arg is 'object' then js_beautify(JSON.stringify(arg), { indent_size: 2 }) else String(arg)
       $output.text(output + '\n\n' + $output.text())
+
     stash.set('output', $output.text())
 
   $input.val stash.get('input') or ''
