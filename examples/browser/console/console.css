@@ -1,7 +1,7 @@
 body {
   background: #fff;
   font-family: Lucida, 'Lucida Grande';
-  font-size: 12px;
+  font-size: 10px;
 }
 
 #input {
@@ -12,7 +12,7 @@ body {
 input, textarea, #inputContainer {
   font-family: 'Menlo', Courier;
   background: #333;
-  font-size: 12px;
+  font-size: 1em;
   color: #fff;
   text-shadow: 1px 1px 0px #000;
   border: 0px;
@@ -21,26 +21,9 @@ input, textarea, #inputContainer {
 input, textarea {
   outline: none;
 }
-
-/* nodes: http://bl.ocks.org/mbostock/929623 */
-rect {
-  fill: none;
-  pointer-events: all;
+#output {
+  color: #666;
 }
-
-.node {
-  fill: #000;
-}
-
-.cursor {
-  fill: none;
-  stroke: brown;
-  pointer-events: none;
-}
-
-.link {
-  stroke: #999;
-}
-#visualization {
-  background: #eee;
+#Console {
+  width: 50em;
 }

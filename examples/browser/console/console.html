@@ -4,6 +4,28 @@
   <title>neo4jmapper demo</title>
   <link href="console.css" rel="stylesheet" type="text/css" />
   <meta charset="utf-8">
+  <style>
+
+  rect {
+    fill: none;
+    pointer-events: all;
+  }
+
+  .node {
+    fill: #000;
+  }
+
+  .cursor {
+    fill: none;
+    stroke: brown;
+    pointer-events: none;
+  }
+
+  .link {
+    stroke: #999;
+  }
+
+  </style>
   <script type="text/javascript"    src="../lib/jquery.js"></script>
   <script type="text/javascript"    src="../lib/underscore.js"></script>
   <script type="text/javascript"    src="../lib/coffee-script.js"></script>
@@ -30,8 +52,10 @@
 
 </head>
 <body>
-<textarea id="input" autofocus="autofocus"></textarea>
-<pre id="output"></pre>
-<div id="visualization"></div>
+  <div id="Console">
+    <textarea id="input" autofocus="autofocus"></textarea>
+    <pre id="output"></pre>
+    <div id="visualization"></div>
+  </div>
 </body>
 </html>

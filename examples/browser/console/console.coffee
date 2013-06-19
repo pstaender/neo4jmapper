@@ -67,8 +67,8 @@ $(document).ready ->
       
       output = if typeof arg is 'object' then js_beautify(JSON.stringify(arg), { indent_size: 2 }) else String(arg)
       $output.text(output + '\n\n' + $output.text())
-
     stash.set('output', $output.text())
+
 
   $input.val stash.get('input') or ''
   $output.text stash.get('output') or ''
@@ -94,13 +94,6 @@ $(document).ready ->
         code = code.replace(pattern, '\n$1puts ')
       if config.streamlineSupport
         js = CoffeeScript.compile(code, { bare: true })
-        # if config.autoCbPlacement
-        #   lines =for line, i in js.split('\n')
-        #     line = line.replace(/([^\_]+)\s*\);$/, '$1, _);')
-        #     line = line.replace(/\((\){1});/, '(_);')
-        #     line
-        #   js = lines.join("\n")
-        #   console.log js
         try
           js = Streamline.transform js, {
             lines: "preserve"
@@ -112,3 +105,4 @@ $(document).ready ->
         eval(js)
       else
         CoffeeScript.eval code
+
