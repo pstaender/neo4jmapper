@@ -257,13 +257,13 @@ describe 'Neo4jMapper', ->
           n.exec ->
             done()
 
-    it 'expect to get null and an error if node is not found', (done) ->
+    it 'expect to get null if node is not found', (done) ->
       Node::findById 1234567890, (err, found) ->
         expect(err).to.be null
-        expect(found).to.have.length 0
+        expect(found).to.be null
         Node::findByUniqueKeyValue { key: new Date().getTime() }, (err, found) ->
           expect(err).to.be null
-          expect(found).to.have.length 0
+          expect(found).to.be null
           done()
 
     it 'expect to update a node', (done) ->
@@ -686,7 +686,7 @@ describe 'Neo4jMapper', ->
                       expect(found).to.be null
                       Node::findById 123, (err, found) ->
                         expect(err).to.be null
-                        expect(found).to.have.length 0
+                        expect(found).to.be null
                         done()
 
   describe 'helpers', ->

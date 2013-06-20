@@ -1490,9 +1490,11 @@ var initNode = function(neo4jrestful) {
          self.exec(function(err,found){
           if (err)
             return cb(err, found);
-          else
+          else {
             // try to return the first
-            return cb(null, ((found)&&(found[0])) ? found[0] : found);
+            found = (found.length === 0) ? null : ((found)&&(found[0])) ? found[0] : found;
+            return cb(null, found);
+          }
          });
       }
      
@@ -1528,7 +1530,6 @@ var initNode = function(neo4jrestful) {
           cb(err, result, debug);
         } else {
           result = (result[0]) ? result[0] : null;
-          // console.log(result);
           cb(null, result, debug);
         }
       });
