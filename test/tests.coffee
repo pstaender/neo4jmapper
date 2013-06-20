@@ -516,7 +516,7 @@ describe 'Neo4jMapper', ->
             expect(err).to.be null
             node.findByIndex 'test', 'uid', uid, (err, result) ->
               expect(err).to.be null
-              expect(result[0].id).to.be savedNode.id
+              expect(result.id).to.be savedNode.id
               done()
 
     it 'expect to set default values and index values', (done) ->
@@ -532,8 +532,9 @@ describe 'Neo4jMapper', ->
         node.save (err) ->  
           uid = node.data.uid
           expect(err).to.be null
-          Node::findByIndex 'collection','uid',uid, (err, found) ->
+          Node::findByIndex 'collection', 'uid', uid, (err, found) ->
             expect(err).to.be null
+            expect(found.data.uid).to.be.equal uid
             done()
 
   describe 'relationships (incoming, outgoing and between nodes)', ->

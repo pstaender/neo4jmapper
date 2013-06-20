@@ -244,7 +244,7 @@ var initNode = function(neo4jrestful) {
     this._modified_query = false;
     if (this.id)
       this.cypher.from = this.id;
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.hasId = function() {
@@ -311,7 +311,6 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.indexFields = function(cb) {
-
     if (this.hasFieldsToIndex()) {
       // var join = Join.create();
       var doneCount = 0;
@@ -378,12 +377,13 @@ var initNode = function(neo4jrestful) {
       self.is_persisted = true;
       // if we have defined fields to index
       // we need to call the cb after indexing
-      if (self.hasFieldsToIndex())
+      if (self.hasFieldsToIndex()) {
         return self.indexFields(function(){
           if (debug)
             debug.indexedFields = true;
           cb(null, data, debug);
         });
+      }
       else
         return cb(null, data, debug);
     }
@@ -499,11 +499,11 @@ var initNode = function(neo4jrestful) {
     var self = this;
     // return here if we have an instances node
     if ( (self.hasId()) || (typeof label !== 'string') )
-      return Node.prototype.copy_of(self);
+      return self; // return self for chaining
     self._modified_query = true;
     self.cypher.label = label;
     self.exec(cb);
-    return Node.prototype.copy_of(self);
+    return self; // return self for chaining
   }
 
   Node.prototype.shortestPathTo = function(end, type, cb) {
@@ -560,7 +560,7 @@ var initNode = function(neo4jrestful) {
     }
 
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.count = function(identifier, cb) {
@@ -588,7 +588,7 @@ var initNode = function(neo4jrestful) {
         }
         cb(err, result, debug);
       });
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   /*
@@ -850,7 +850,7 @@ var initNode = function(neo4jrestful) {
     self.cypher.outgoing = false;
     self.cypher.return_properties = ['r'];
     self.exec(cb);
-    return Node.prototype.copy_of(self);
+    return self; // return self for chaining
   }
 
   Node.prototype.outgoingRelationships = function(relation, cb) {
@@ -869,7 +869,7 @@ var initNode = function(neo4jrestful) {
     self.cypher.outgoing = true;
     self.cypher.return_properties = ['r'];
     self.exec(cb);
-    return Node.prototype.copy_of(self);
+    return self; // return self for chaining
   }
 
   Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
@@ -905,7 +905,7 @@ var initNode = function(neo4jrestful) {
     self.cypher.outgoing = true;
     self.cypher.return_properties = ['a', 'b', 'r'];
     self.exec(cb);
-    return Node.prototype.copy_of(self);
+    return self; // return self for chaining
   }
 
   Node.prototype.relationshipsBetween = function(node, relation, cb) {
@@ -932,28 +932,28 @@ var initNode = function(neo4jrestful) {
     self.cypher.match.push('n'+label+'-[r'+relation+']-()');
     self.cypher.return_properties = ['r'];
     self.exec(cb);
-    return Node.prototype.copy_of(self);
+    return self; // return self for chaining
   }
 
   Node.prototype.limit = function(limit, cb) {
     this._modified_query = true;
     this.cypher.limit = Number(limit);
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.skip = function(skip, cb) {
     this._modified_query = true;
     this.cypher.skip = Number(skip);
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.distinct = function(cb) {
     this._modified_query = true;
     this.cypher._distinct = true;
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.orderBy = function(property, direction, cb) {
@@ -962,13 +962,13 @@ var initNode = function(neo4jrestful) {
       this.cypher.order_direction = direction;
     this.cypher.order_by = property;
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.match = function(string, cb) {
     this.cypher.match.push(string);
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.where = function(where, cb) {
@@ -992,7 +992,7 @@ var initNode = function(neo4jrestful) {
       _options.identifier = 'n';
     this.cypher.where.push(helpers.conditionalParameterToString(_.extend(where),undefined,_options));
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   // Node.prototype.orWhere = function(where, cb) {
@@ -1062,7 +1062,7 @@ var initNode = function(neo4jrestful) {
       identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
     this.andWhere('HAS ('+identifier+'.'+property+')');
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.whereNodeHasProperty = function(property, cb) {
@@ -1088,7 +1088,7 @@ var initNode = function(neo4jrestful) {
     this.cypher.action = 'DELETE';
     this.cypher.limit = '';
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   Node.prototype.remove = function(cb) {
@@ -1414,7 +1414,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.stream = function(cb) {
     this.neo4jrestful.header['X-Stream'] = 'true';
     this.exec(cb);
-    return Node.prototype.copy_of(this);
+    return this; // return self for chaining
   }
 
   /*
@@ -1523,7 +1523,15 @@ var initNode = function(neo4jrestful) {
     if ((namespace)&&(key)&&(value)&&(typeof cb === 'function')) {
       // values = { key: value };
       // TODO: implement
-      return self.neo4jrestful.get('/db/data/index/node/'+namespace+'/'+key+'/'+value+'/', cb);
+      return self.neo4jrestful.get('/db/data/index/node/'+namespace+'/'+key+'/'+value+'/', function(err, result, debug) {
+        if (err) {
+          cb(err, result, debug);
+        } else {
+          result = (result[0]) ? result[0] : null;
+          // console.log(result);
+          cb(null, result, debug);
+        }
+      });
     } else {
       return cb(Error('Namespace, key, value and mandatory to find indexed nodes.'), null);
     }
