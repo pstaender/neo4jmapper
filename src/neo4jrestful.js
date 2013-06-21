@@ -188,7 +188,9 @@ var initNeo4jRestful = function() {
     var defaultOptions = {
       type: 'GET',
       data: null,
-      debug: false
+      debug: false,
+      // use copy of header, not reference
+      header: _.extend({},this.header)
     };
     if (typeof options === 'undefined')
       options = _.extend({},defaultOptions);
@@ -198,11 +200,11 @@ var initNeo4jRestful = function() {
     var requestedUrl = this.absoluteUrl();
     var type = options.type;
     var data = options.data;
+    var header = options.header;
 
-    // use copy of header, not reference
-    var header = _.extend({},this.header);
     if ( (typeof data === 'object') && (data !== null) )
      data = JSON.stringify(options.data);
+    
     this.log('**debug**', 'URI:', type+":"+requestedUrl);
     this.log('**debug**', 'sendedData:', data);
     this.log('**debug**', 'sendedHeader:', header);
