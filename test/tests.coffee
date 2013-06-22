@@ -266,17 +266,28 @@ describe 'Neo4jMapper', ->
           expect(found).to.be null
           done()
 
-    it 'expect to update a node', (done) ->
+    it 'expect to process data between javascript and neo4j as good as possible', (done) ->
       n = new Node()
       n.data = {
         title: 'Hello World'
         whatever:
           nested: 'pinguin'
+        numberArray: [ 1, 2, 3]
+        stringArray: [ 'a', 'b', 'c' ]
+        complexObject: [ { a: true } ]
       }
       n.save (err, node) ->
         expect(err).to.be null
         id = node.id
         expect(node.data.title).to.be.equal n.data.title
+        expect(node.data.numberArray.constructor).to.be.equal Array
+        expect(node.data.complexObject[0].a).to.be true
+        done()
+
+    it 'expect to update a node and expecting ', (done) ->
+      new Node( { title: 'Hello World!' }).save (err, node) ->
+        expect(node.data.title).to.be.equal 'Hello World!'
+        id = node.id
         Node::findById id, (err, found) ->
           found.data.title = 'How are you?'
           found.update (err, savedNode) ->
@@ -286,7 +297,7 @@ describe 'Neo4jMapper', ->
               expect(foundAgain.data.title).to.be found.data.title
               foundAgain.removeWithRelationships (err) ->
                 expect(err).to.be null
-                n.remove ->
+                node.remove ->
                   done()
 
     it 'expect to execute onBeforeSave hook if defined', (done) ->
@@ -700,33 +711,33 @@ describe 'Neo4jMapper', ->
     describe 'sortStringAndCallbackArguments', ->
     describe 'getIdFromObject', ->
     
-    it 'constructorNameOfFunction', ->
-      node = new Node
-      class Person extends Node
-      `var Movie = (function(Node) {
+    describe 'constructorNameOfFunction', ->
 
-      function Movie() {
-        // this is necessary to give the constructed node a name context
-        this.init.apply(this, arguments);
-      }
-      
-      _.extend(Movie.prototype, Node.prototype);
-      
-      Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
+      it 'expect to get the correct constructor name', ->
+        node = new Node
+        class Person extends Node
+        `var Movie = (function(Node) {
 
-      Movie.prototype.fields = {
-        defaults: {
-          genre: 'Blockbuster'
+        function Movie() {
+          // this is necessary to give the constructed node a name context
+          this.init.apply(this, arguments);
         }
-      };
-      
-      return Movie;
-    })(Node)`
-      expect(helpers.constructorNameOfFunction(Movie)).to.be.equal 'Movie'
-      expect(helpers.constructorNameOfFunction(Person)).to.be.equal 'Person'
-      expect(helpers.constructorNameOfFunction(node)).to.be.equal 'Node'
+        
+        _.extend(Movie.prototype, Node.prototype);
+        
+        Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
 
-
+        Movie.prototype.fields = {
+          defaults: {
+            genre: 'Blockbuster'
+          }
+        };
+        
+        return Movie;
+      })(Node)`
+        expect(helpers.constructorNameOfFunction(Movie)).to.be.equal 'Movie'
+        expect(helpers.constructorNameOfFunction(Person)).to.be.equal 'Person'
+        expect(helpers.constructorNameOfFunction(node)).to.be.equal 'Node'
 
     describe 'extractAttributesFromCondition', ->
 

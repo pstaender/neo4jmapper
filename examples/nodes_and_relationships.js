@@ -13,28 +13,27 @@ var Neo4j = require('../src')
 
 
 var Movie = (function(Node) {
-
-  function Movie(data, id) {
-    // this is necessary to give the constructed node a name context
-    this.init.apply(this, arguments);
-    // or
-    this.init(data, id);
-  }
   
   _.extend(Movie.prototype, Node.prototype);
   
+  /*
+    you can leave this out if you give a label name in register_model
+  
   Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
+  
+  */
 
   Movie.prototype.fields = {
     defaults: {
-      genre: 'Blockbuster'
+      country: 'USA'
     }
   };
   
   return Movie;
-})(Node)
 
-Node.prototype.register_model(Movie);
+})(Node);
+
+Node.prototype.register_model(Movie, 'Movie');
 
 pulpFiction = new Movie({
   title: 'Pulp Fiction' 

@@ -10,9 +10,11 @@ What if working with neo4j is as easy as working with mongodb in javascript? And
 
 Neo4jMapper brings basic object-mapping and comfortable query building to the neo4j user. Ready to use in  webbrowsers or on nodejs.
 
-**Neo4jMapper works with Neo4j v2** - there will be no support for earlier versions than v2 because the label feature is essential for the mapping.
+**Neo4jMapper is Beta and works with Neo4j v2+** - there will be no support for earlier versions than v2 because the label feature is essential for the mapping.
 
 ## How to use
+
+To reduce code, the following examples are written in CoffeeScript. But neo4jmapper is also made for use "native" JavaScript.
 
 ### Installation
 
@@ -27,7 +29,9 @@ Neo4jMapper brings basic object-mapping and comfortable query building to the ne
   {Graph,Node,Relationship}  = new Neo4j('http://localhost:7474')
 ```
 
-### Custom cypher queries
+### Cypher queries
+
+Use the full power of the cypher query language:
 
 ```coffeescript
   graph = new Graph()
@@ -46,17 +50,19 @@ Neo4jMapper brings basic object-mapping and comfortable query building to the ne
   alice.data = {
     name: 'Alice',
     nested: {
-      values: 'are allowed'
+      values: 'are allowed, but not recommend'
     }
+    arrays: [ 'are', 'allowed', 'but', 'also', 'non-recommend']
   }
-  alice.save (err, savedNode) ->
+  alice.save (err, alice) ->
+    alice.toObject()
 ```
 
 or by shorthand
 
 ```coffeescript
-  bob = new Node name: 'Bob'
-  bob.save (err, savedNode) ->
+  new Node({ name: 'Bob' }).save (err, bob) ->
+    bob.toObject()
 ```
 
 ### Classes and Models
@@ -76,7 +82,8 @@ Every defined model will enjoy the label feature of neo4j by default.
 
   # optional but strongly recommend
   # so that neo4jmapper can instantiate found labeled nodes with the respective model/constructor
-  Node::register_model(Person)
+  # The 2nd argument is optional, if the constructor name of your model is the name of the model
+  Node::register_model(Person, 'Person')
 
   alice = new Person firstName: 'Alice', surname: 'Springs'
   alice.fullname()
@@ -87,23 +94,12 @@ Every defined model will enjoy the label feature of neo4j by default.
     
 ```
 
-To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well. Sie example shows the same as above:
+To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well. The example demonstrate to define a model (same as above) in JavaScript:
 
 ```js
   var Movie = (function(Node) {
 
-    function Movie(data, id) {
-      // this is necessary to give the constructed node a name context
-      this.init.apply(this, arguments);
-      // or invoke directly with arguments: ``this.init(data, id);
-    }
-    
     _.extend(Movie.prototype, Node.prototype);
-    
-    // **the most important part:**
-    // set the `label` and `constructor_name` attribute to the name of your model
-    // this step is redundant if the name of your constructor function is the name of your model
-    Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
 
     Movie.prototype.fields = {
       defaults: {
@@ -112,9 +108,9 @@ To extend the Node object in JavaScript you have to use an extend method (here I
     };
     
     return Movie;
-  })(Node)
+  })(Node);
 
-  Node.prototype.register_model(Movie);
+  Node.prototype.register_model(Movie, 'Movie');
 
   pulpFiction = new Movie({
     title: 'Pulp Fiction' 

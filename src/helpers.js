@@ -58,7 +58,7 @@ var neo4jmapper_helpers = {};
     for (var i in ob) {
       if (!ob.hasOwnProperty(i)) continue;
       
-      if ((typeof ob[i]) == 'object') {
+      if ((typeof ob[i]) === 'object') {
         var flatObject = flattenObject(ob[i]);
         for (var x in flatObject) {
           if (!flatObject.hasOwnProperty(x)) continue;
@@ -74,18 +74,51 @@ var neo4jmapper_helpers = {};
 
   // source: https://gist.github.com/fantactuka/4989737
   var unflattenObject = function(object) {
-      return _(object).inject(function(result, value, keys) {
-          var current = result,
-              partitions = keys.split('.'),
-              limit = partitions.length - 1;
-   
-          _(partitions).each(function(key, index) {
-              current = current[key] = (index == limit ? value : (current[key] || {}));
-          });
-   
-          return result;
-      }, {});
+    var unflattenObject = _(object).inject(function(result, value, keys) {
+      var current = result,
+        partitions = keys.split('.'),
+        limit = partitions.length - 1;
+
+      _(partitions).each(function(key, index) {
+        current = current[key] = (index == limit ? value : (current[key] || {}));
+      });
+      return result;
+    }, {});
+    // try to find and generate arrays on first nested level
+    // recursion would be difficult here
+    for (var attr in unflattenObject) {
+      if (typeof unflattenObject[attr] === 'object')
+        unflattenObject[attr] = objectToArray(unflattenObject[attr]);
+    }
+    return unflattenObject;
   };
+
+  var objectCouldBeArray = function(o) {
+    var isArray = false;
+    if (typeof o === 'object') {
+      var i = 0;
+      isArray = true;
+      for (var x in o) {
+        if (Number(x) !== i) {
+          isArray = false;
+          break;
+        }
+        i++;
+      }
+    }
+    return isArray;
+  }
+
+  var objectToArray = function(o) {
+    if (objectCouldBeArray(o)) {
+      var arr = [];
+      for (var x in o) {
+        arr.push(o[x]);
+      }
+      return arr;
+    }
+    return o;
+  }
 
   var escapeString = function(s) {
     if (typeof s !== 'string')

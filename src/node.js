@@ -171,12 +171,25 @@ var initNode = function(neo4jrestful) {
     var label = node.label;
     if (label) {
       if (fieldsToIndex) {
+        var jobsToBeDone = Object.keys(fieldsToIndex).length;
+        var errors  = [];
+        var results = [];
+        var debugs  = []
         _.each(fieldsToIndex, function(toBeIndexed, field) {
-          if (toBeIndexed === true)
+          if (toBeIndexed === true) {
             self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
-              // maybe better ways how to report if an error occurs
-              cb(err, result, debug);
+              if (err)
+                errors.push(err);
+              if (result)
+                results.push(result);
+              if (debug)
+                debugs.push(debugs);
+              jobsToBeDone--;
+              if (jobsToBeDone === 0) {
+                cb((errors.length > 0) ? errors : null, results, (debugs.length > 0) ? debugs : null);
+              }
             });
+          }
         });
       }
       // inactive
