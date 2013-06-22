@@ -94,7 +94,7 @@ Every defined model will enjoy the label feature of neo4j by default.
     
 ```
 
-To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well. The example demonstrate to define a model (same as above) in JavaScript:
+To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well. The example demonstrates how to define a model (same as above) in JavaScript:
 
 ```js
   var Movie = (function(Node) {
@@ -158,7 +158,7 @@ Also with more customized queries in mongodb query style
 
 ## Naming conventions
 
-The query method names are heavily inspired by mongodb and mongoose - so if you have worked with,  most of them should sound familiar:
+The query method names are heavily inspired by mongodb and mongoose - so most of them should sound familiar in case you have worked with them:
 
   * find, findOne, findById, findByUniqueKeyValue
   * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhere, andWhereNode, …
@@ -170,7 +170,8 @@ The query method names are heavily inspired by mongodb and mongoose - so if you 
   * allLabels, createLabel, createLabels, replaceLabels, removeLabels
 
 We distinct between **remove** and **delete**.
-Remove always means to remove the (one) instanced node or relationship we are working with, **delete** means to perfom `DELETE` action of a query:
+
+**remove** always means to remove a current instanced node/relationship, **delete** means to perfom `DELETE` action on a query:
 
 ```coffeescript
   # Delete all nodes with the name `Bob`

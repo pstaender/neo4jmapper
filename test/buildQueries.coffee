@@ -141,6 +141,12 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
             "START a = node(1), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = 'years' ) RETURN r;"
           ]
+
+        "Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
+          [
+             Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ }),
+            "START n = node(*) WHERE ( HAS (n.boolean_a) ) AND ( HAS (n.boolean_b) ) AND ( HAS (n.string_a) ) AND ( HAS (n.number_a) ) AND ( HAS (n.number_b) ) AND ( HAS (n.string_b) ) AND ( HAS (n.regex) ) AND ( n.boolean_a = true AND n.boolean_b = false AND n.string_a = 'true' AND n.number_a = 123.2 AND n.number_b = 123 AND n.string_b = '123' AND n.regex =~ '[a-z]' ) RETURN n;"
+          ]
         
         "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy 'n.name', 'DESC', ->":
           [
