@@ -1,5 +1,5 @@
 var Neo4j = require('../src')
-  , neo4j = new Neo4j('http://localhost:7474')
+  , neo4j = new Neo4j('http://localhost:7420')
   , Node  = neo4j.Node
   , Graph = neo4j.Graph
   // underscore is used for extending
@@ -13,15 +13,13 @@ var Neo4j = require('../src')
 
 
 var Movie = (function(Node) {
+
+  function Movie(data, id) {
+    // this is necessary to give the constructed node a name context
+    this.init.apply(this, arguments);
+  }
   
   _.extend(Movie.prototype, Node.prototype);
-  
-  /*
-    you can leave this out if you give a label name in register_model
-  
-  Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
-  
-  */
 
   Movie.prototype.fields = {
     defaults: {
@@ -33,7 +31,7 @@ var Movie = (function(Node) {
 
 })(Node);
 
-Node.prototype.register_model(Movie, 'Movie');
+Node.prototype.register_model(Movie);
 
 pulpFiction = new Movie({
   title: 'Pulp Fiction' 

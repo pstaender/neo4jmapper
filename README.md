@@ -82,8 +82,7 @@ Every defined model will enjoy the label feature of neo4j by default.
 
   # optional but strongly recommend
   # so that neo4jmapper can instantiate found labeled nodes with the respective model/constructor
-  # The 2nd argument is optional, if the constructor name of your model is the name of the model
-  Node::register_model(Person, 'Person')
+  Node::register_model(Person)
 
   alice = new Person firstName: 'Alice', surname: 'Springs'
   alice.fullname()
@@ -99,6 +98,11 @@ To extend the Node object in JavaScript you have to use an extend method (here I
 ```js
   var Movie = (function(Node) {
 
+  function Movie(data, id) {
+    // this is necessary to give the constructed node a name context
+    this.init.apply(this, arguments);
+  }
+
     _.extend(Movie.prototype, Node.prototype);
 
     Movie.prototype.fields = {
@@ -110,7 +114,7 @@ To extend the Node object in JavaScript you have to use an extend method (here I
     return Movie;
   })(Node);
 
-  Node.prototype.register_model(Movie, 'Movie');
+  Node.prototype.register_model(Movie);
 
   pulpFiction = new Movie({
     title: 'Pulp Fiction' 

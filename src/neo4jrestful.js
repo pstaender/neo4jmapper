@@ -98,6 +98,7 @@ var initNeo4jRestful = function() {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   };
+  Neo4jRestful.prototype.timeout = 5000;
   Neo4jRestful.prototype.baseUrl = null;
   Neo4jRestful.prototype.debug = null;
   Neo4jRestful.prototype._absoluteUrl = null;
@@ -147,12 +148,11 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {
     var self = this;
-    var timeout = 3000;
     jQuery.ajax({
       url: self.baseUrl+'db/data/',
       type: 'GET',
       cache: false,
-      timeout: timeout,
+      timeout: this.timeout,
       success: function(res,status) {
         if ((status === 'success')&&(res)&&(res.neo4j_version)) {
           self.exact_version = res.neo4j_version;
