@@ -21,7 +21,7 @@
   ],
   "scripts": {
     "test": "coffee -mcb test/ && mocha; npm run clean",
-    "clean": "find test -name '*.map' -delete"
+    "clean": "find test -name '*.js' -delete -o -name '*.map' -delete"
   },
   "devDependencies": {
     "mocha": "~1.9",

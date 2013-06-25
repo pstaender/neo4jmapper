@@ -223,11 +223,16 @@ var initNode = function(neo4jrestful) {
 
   // TODO: implement createByLabel(label)
 
-  Node.prototype.register_model = function(Class, cb) {
+  Node.prototype.register_model = function(Class, label, cb) {
     var name = helpers.constructorNameOfFunction(Class);
+    if (typeof label === 'string') {
+      name = label; 
+    } else {
+      cb = label;
+    }
     Node.prototype.__models__[name] = Class;
     Class.prototype.initialize(cb);
-    return Node.prototype.__models__;
+    return Class;
   }
 
   Node.prototype.unregister_model = function(Class) {
