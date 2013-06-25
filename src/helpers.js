@@ -72,53 +72,48 @@ var neo4jmapper_helpers = {};
     return toReturn;
   };
 
-  // source: https://gist.github.com/fantactuka/4989737
-  var unflattenObject = function(object) {
-    var unflattenObject = _(object).inject(function(result, value, keys) {
-      var current = result,
-        partitions = keys.split('.'),
-        limit = partitions.length - 1;
+  // source: https://github.com/hughsk/flat/blob/master/index.js
+  var unflattenObject = function (target, opts) {
+    var opts = opts || {}
+      , delimiter = opts.delimiter || '.'
+      , result = {}
 
-      _(partitions).each(function(key, index) {
-        current = current[key] = (index == limit ? value : (current[key] || {}));
-      });
-      return result;
-    }, {});
-    // try to find and generate arrays on first nested level
-    // recursion would be difficult here
-    for (var attr in unflattenObject) {
-      if (typeof unflattenObject[attr] === 'object')
-        unflattenObject[attr] = objectToArray(unflattenObject[attr]);
+    if (Object.prototype.toString.call(target) !== '[object Object]') {
+        return target
     }
-    return unflattenObject;
-  };
 
-  var objectCouldBeArray = function(o) {
-    var isArray = false;
-    if (typeof o === 'object') {
-      var i = 0;
-      isArray = true;
-      for (var x in o) {
-        if (Number(x) !== i) {
-          isArray = false;
-          break;
+    function getkey(key) {
+        var parsedKey = parseInt(key)
+        return (isNaN(parsedKey) ? key : parsedKey)
+    };
+
+    Object.keys(target).forEach(function(key) {
+        var split = key.split(delimiter)
+          , firstNibble
+          , secondNibble
+          , recipient = result
+
+        firstNibble = getkey(split.shift())
+        secondNibble = getkey(split[0])
+
+        while (secondNibble !== undefined) {
+            if (recipient[firstNibble] === undefined) {
+                recipient[firstNibble] = ((typeof secondNibble === 'number') ? [] : {})
+            }
+
+            recipient = recipient[firstNibble]
+            if (split.length > 0) {
+                firstNibble = getkey(split.shift())
+                secondNibble = getkey(split[0])
+            }
         }
-        i++;
-      }
-    }
-    return isArray;
-  }
 
-  var objectToArray = function(o) {
-    if (objectCouldBeArray(o)) {
-      var arr = [];
-      for (var x in o) {
-        arr.push(o[x]);
-      }
-      return arr;
-    }
-    return o;
-  }
+        // unflatten again for 'messy objects'
+        recipient[firstNibble] = unflattenObject(target[key])
+    });
+
+    return result
+  };
 
   var escapeString = function(s) {
     if (typeof s !== 'string')

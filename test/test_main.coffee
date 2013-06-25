@@ -281,13 +281,15 @@ describe 'Neo4jMapper', ->
         numberArray: [ 1, 2, 3]
         stringArray: [ 'a', 'b', 'c' ]
         complexObject: [ { a: true } ]
+        other:
+          nested: [ 'A' ]
       }
       n.save (err, node) ->
-        expect(err).to.be null
         id = node.id
         expect(node.data.title).to.be.equal n.data.title
         expect(node.data.numberArray.constructor).to.be.equal Array
         expect(node.data.complexObject[0].a).to.be true
+        expect(node.data.other.nested).to.have.length 1
         done()
 
     it 'expect to update a node and expecting ', (done) ->

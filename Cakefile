@@ -42,4 +42,8 @@ task 'clientsidejs:build', ->
   """
 
   fs.writeFileSync(outputPath, data)
-  console.log("Wrote to file '#{outputPath}'")
+  console.log("Written to file '#{outputPath}'")
+
+  exec 'coffee -cb -o examples/browser/ test/test_*', (err, stdout) ->
+    console.log err or '', stdout or ''
+    console.log "Written testfiles"

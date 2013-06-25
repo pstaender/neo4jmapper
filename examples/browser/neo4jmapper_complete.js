@@ -84,7 +84,7 @@
       for (var i in ob) {
         if (!ob.hasOwnProperty(i)) continue;
         
-        if ((typeof ob[i]) == 'object') {
+        if ((typeof ob[i]) === 'object') {
           var flatObject = flattenObject(ob[i]);
           for (var x in flatObject) {
             if (!flatObject.hasOwnProperty(x)) continue;
@@ -98,19 +98,47 @@
       return toReturn;
     };
   
-    // source: https://gist.github.com/fantactuka/4989737
-    var unflattenObject = function(object) {
-        return _(object).inject(function(result, value, keys) {
-            var current = result,
-                partitions = keys.split('.'),
-                limit = partitions.length - 1;
-     
-            _(partitions).each(function(key, index) {
-                current = current[key] = (index == limit ? value : (current[key] || {}));
-            });
-     
-            return result;
-        }, {});
+    // source: https://github.com/hughsk/flat/blob/master/index.js
+    var unflattenObject = function (target, opts) {
+      var opts = opts || {}
+        , delimiter = opts.delimiter || '.'
+        , result = {}
+  
+      if (Object.prototype.toString.call(target) !== '[object Object]') {
+          return target
+      }
+  
+      function getkey(key) {
+          var parsedKey = parseInt(key)
+          return (isNaN(parsedKey) ? key : parsedKey)
+      };
+  
+      Object.keys(target).forEach(function(key) {
+          var split = key.split(delimiter)
+            , firstNibble
+            , secondNibble
+            , recipient = result
+  
+          firstNibble = getkey(split.shift())
+          secondNibble = getkey(split[0])
+  
+          while (secondNibble !== undefined) {
+              if (recipient[firstNibble] === undefined) {
+                  recipient[firstNibble] = ((typeof secondNibble === 'number') ? [] : {})
+              }
+  
+              recipient = recipient[firstNibble]
+              if (split.length > 0) {
+                  firstNibble = getkey(split.shift())
+                  secondNibble = getkey(split[0])
+              }
+          }
+  
+          // unflatten again for 'messy objects'
+          recipient[firstNibble] = unflattenObject(target[key])
+      });
+  
+      return result
     };
   
     var escapeString = function(s) {
@@ -881,6 +909,7 @@
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     };
+    Neo4jRestful.prototype.timeout = 5000;
     Neo4jRestful.prototype.baseUrl = null;
     Neo4jRestful.prototype.debug = null;
     Neo4jRestful.prototype._absoluteUrl = null;
@@ -930,12 +959,11 @@
   
     Neo4jRestful.prototype.checkAvailability = function(cb) {
       var self = this;
-      var timeout = 3000;
       jQuery.ajax({
         url: self.baseUrl+'db/data/',
         type: 'GET',
         cache: false,
-        timeout: timeout,
+        timeout: this.timeout,
         success: function(res,status) {
           if ((status === 'success')&&(res)&&(res.neo4j_version)) {
             self.exact_version = res.neo4j_version;
@@ -971,7 +999,9 @@
       var defaultOptions = {
         type: 'GET',
         data: null,
-        debug: false
+        debug: false,
+        // use copy of header, not reference
+        header: _.extend({},this.header)
       };
       if (typeof options === 'undefined')
         options = _.extend({},defaultOptions);
@@ -981,11 +1011,11 @@
       var requestedUrl = this.absoluteUrl();
       var type = options.type;
       var data = options.data;
+      var header = options.header;
   
-      // use copy of header, not reference
-      var header = _.extend({},this.header);
       if ( (typeof data === 'object') && (data !== null) )
        data = JSON.stringify(options.data);
+      
       this.log('**debug**', 'URI:', type+":"+requestedUrl);
       this.log('**debug**', 'sendedData:', data);
       this.log('**debug**', 'sendedHeader:', header);
@@ -1421,12 +1451,25 @@
       var label = node.label;
       if (label) {
         if (fieldsToIndex) {
+          var jobsToBeDone = Object.keys(fieldsToIndex).length;
+          var errors  = [];
+          var results = [];
+          var debugs  = []
           _.each(fieldsToIndex, function(toBeIndexed, field) {
-            if (toBeIndexed === true)
+            if (toBeIndexed === true) {
               self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
-                // maybe better ways how to report if an error occurs
-                cb(err, result, debug);
+                if (err)
+                  errors.push(err);
+                if (result)
+                  results.push(result);
+                if (debug)
+                  debugs.push(debugs);
+                jobsToBeDone--;
+                if (jobsToBeDone === 0) {
+                  cb((errors.length > 0) ? errors : null, results, (debugs.length > 0) ? debugs : null);
+                }
               });
+            }
           });
         }
         // inactive
@@ -1460,11 +1503,16 @@
   
     // TODO: implement createByLabel(label)
   
-    Node.prototype.register_model = function(Class, cb) {
+    Node.prototype.register_model = function(Class, label, cb) {
       var name = helpers.constructorNameOfFunction(Class);
+      if (typeof label === 'string') {
+        name = label; 
+      } else {
+        cb = label;
+      }
       Node.prototype.__models__[name] = Class;
       Class.prototype.initialize(cb);
-      return Node.prototype.__models__;
+      return Class;
     }
   
     Node.prototype.unregister_model = function(Class) {
@@ -2011,6 +2059,8 @@
           sortedData = sortedData[0];
         else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
           sortedData = sortedData[0];
+        else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
+          sortedData = null;
         return cb(err, sortedData, debug);
       } 
   
