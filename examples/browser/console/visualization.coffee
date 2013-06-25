@@ -52,7 +52,7 @@ refresh = ->
     .call(force.drag)
   force.start()
 
-refresh()
+# refresh()
 
 # do ->
 #   return null

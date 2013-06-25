@@ -312,6 +312,12 @@ There are some steps to take, especially some methods for daily use are missing,
   * Implement: relationship (index)
   * Better test coverage
 
+  * _id_ attribute
+  * Nodes as shortcut for Node.prototype.singleton()
+  * flatten indexes and defaults
+  * Schema?!
+  * Nice Documentation
+
 ## Terminal usage
 
 For quick testing you can also use the nodejs or coffeescript console (this example is on the coffeescript console), but without the ability to make requests because you need to define callbacks for that:
