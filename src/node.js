@@ -779,6 +779,8 @@ var initNode = function(neo4jrestful) {
         sortedData = sortedData[0];
       else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
         sortedData = sortedData[0];
+      else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
+        sortedData = null;
       return cb(err, sortedData, debug);
     } 
 

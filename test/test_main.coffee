@@ -181,6 +181,12 @@ describe 'Neo4jMapper', ->
           node.remove ->
             done()
 
+    it 'expect to get null as result if one specific node is not found', (done) ->
+      Node::findOne { SomeKey: new Date().getTime() }, (err, found) ->
+        expect(err).to.be null
+        expect(found).to.be null
+        done()
+
     it 'expect to find many nodes with different labels', (done) ->
       groupid = new Date().getTime()
       new Node(name: 'Alice', group_id: groupid).addLabel('Person').save (err, alice) ->
