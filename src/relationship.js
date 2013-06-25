@@ -122,7 +122,22 @@ var initRelationship = function(neo4jrestful) {
     var self = this;
     if (!self.is_singleton)
       self = this.singleton();
-    return this.neo4jrestful.get('/db/data/relationship/'+Number(id), cb);
+    return this.neo4jrestful.get('/db/data/relationship/'+Number(id), function(err, relationship) {
+      if ((err)||(!relationship))
+        return cb(err, relationship);
+      else {
+        var attributes = [ 'from', 'to' ];
+        for (var i = 0; i < 2; i++) {
+          (function(point){
+            Node.prototype.findById(relationship[point].id,function(err,node) {
+              relationship[point] = node;
+              if (point === 'to')
+                cb(null, relationship);
+            });
+          })(attributes[i]);
+        }
+      }
+    });
   }
 
   Relationship.prototype.save = function(cb) {

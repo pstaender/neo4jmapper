@@ -59,22 +59,27 @@ describe('Neo4jMapper (cypher queries)', function() {
       "Actor::findAll()": [Actor.prototype.findAll(), "START n = node(*) MATCH n:Actor RETURN n;"],
       "Node::findAll().skip(5)": [Node.prototype.findAll().skip(5), 'START n = node(*) RETURN n SKIP 5;'],
       "Node::findAll().orderBy('n.name', 'ASC')": [Node.prototype.findAll().orderBy('n.name', 'ASC'), 'START n = node(*) RETURN n ORDER BY n.name ASC;'],
-      'Node::findAll().incomingRelationships()': [Node.prototype.findAll().incomingRelationships(), 'START a = node(*) MATCH (a)<-[r]-() RETURN r;'],
-      'Actor::findAll().incomingRelationships()': [Actor.prototype.findAll().incomingRelationships(), 'START a = node(*) MATCH (a:Actor)<-[r]-() RETURN r;'],
-      'Node::findAll().outgoingRelationships()': [Node.prototype.findAll().outgoingRelationships(), 'START a = node(*) MATCH (a)-[r]->() RETURN r;'],
-      "Node::findAll().incomingRelationships()": [Node.prototype.findAll().incomingRelationships(), 'START a = node(*) MATCH (a)<-[r]-() RETURN r;'],
-      "Node::findOne().outgoingRelationships(['know','like'])": [Node.prototype.findOne().outgoingRelationships(['know', 'like']), 'START a = node(*) MATCH (a)-[r:know|like]->() RETURN r LIMIT 1;'],
-      "Node::findOne().outgoingRelationshipsTo(2, ['know','like'])": [Node.prototype.findOne().outgoingRelationshipsTo(2, ['know', 'like']), 'START a = node(*), b = node(2) MATCH (a)-[r:know|like]->(b) RETURN r LIMIT 1;'],
-      "Node::findAll().outgoingRelationships('know').distinct().count()": [Node.prototype.findAll().outgoingRelationships('know').distinct().count(), 'START a = node(*) MATCH (a)-[r:know]->() RETURN COUNT(DISTINCT *);'],
+      'Node::findAll().incomingRelationships()': [Node.prototype.findAll().incomingRelationships(), 'START n = node(*) MATCH (n)<-[r]-() RETURN r;'],
+      'Actor::findAll().incomingRelationships()': [Actor.prototype.findAll().incomingRelationships(), 'START n = node(*) MATCH (n:Actor)<-[r]-() RETURN r;'],
+      'Node::findAll().outgoingRelationships()': [Node.prototype.findAll().outgoingRelationships(), 'START n = node(*) MATCH (n)-[r]->() RETURN r;'],
+      "Node::findAll().incomingRelationships()": [Node.prototype.findAll().incomingRelationships(), 'START n = node(*) MATCH (n)<-[r]-() RETURN r;'],
+      "Node::findOne().outgoingRelationships(['know','like'])": [Node.prototype.findOne().outgoingRelationships(['know', 'like']), 'START n = node(*) MATCH (n)-[r:know|like]->() RETURN r LIMIT 1;'],
+      "Node::findOne().outgoingRelationshipsTo(2, ['know','like'])": [Node.prototype.findOne().outgoingRelationshipsTo(2, ['know', 'like']), 'START n = node(*), m = node(2) MATCH (n)-[r:know|like]->(m) RETURN r LIMIT 1;'],
+      "Node::findOne().where({name: 'Alice'}).outgoingRelationships()": [
+        Node.prototype.findOne().where({
+          name: 'Alice'
+        }).outgoingRelationships(), "START n = node(*) MATCH (n)-[r]->()  WHERE ( HAS (n.name) ) AND ( n.name = 'Alice' ) RETURN r LIMIT 1;"
+      ],
+      "Node::findAll().outgoingRelationships('know').distinct().count()": [Node.prototype.findAll().outgoingRelationships('know').distinct().count(), 'START n = node(*) MATCH (n)-[r:know]->() RETURN COUNT(DISTINCT *);'],
       "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'r.since': 'years' })": [
         Node.prototype.singleton(1).incomingRelationshipsFrom(2, 'like').where({
           'r.since': 'years'
-        }), 'START a = node(1), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = \'years\' ) RETURN r;'
+        }), 'START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.since) ) AND ( r.since = \'years\' ) RETURN r;'
       ],
       "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })": [
         Node.prototype.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({
           'since': 'years'
-        }), "START a = node(1), b = node(2) MATCH (a)<-[r:like]-(b) WHERE ( HAS (r.since) ) AND ( r.since = 'years' ) RETURN r;"
+        }), "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.since) ) AND ( r.since = 'years' ) RETURN r;"
       ],
       "Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })": [
         Node.prototype.find().whereNode({
@@ -152,7 +157,7 @@ describe('Neo4jMapper (cypher queries)', function() {
           }
         ]), "START n = node(*) WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( n.city = 'berlin' AND ( n.name = 'peter' AND NOT ( n.name = 'pedro' ) ) ) RETURN n LIMIT 1;"
       ],
-      "Node::findById(123).incomingRelationships().delete().toCypherQuery()": [Node.prototype.findById(123).incomingRelationships()["delete"](), 'START a = node(123) MATCH (a)<-[r]-() DELETE r;'],
+      "Node::findById(123).incomingRelationships().delete().toCypherQuery()": [Node.prototype.findById(123).incomingRelationships()["delete"](), 'START n = node(123) MATCH (n)<-[r]-() DELETE r;'],
       "Node::findById(123).allRelationships().delete()": [Node.prototype.findById(123).allRelationships()["delete"](), 'MATCH n-[r]-() WHERE id(n) = 123 DELETE r;']
     };
     _results = [];

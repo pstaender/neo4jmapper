@@ -1899,12 +1899,12 @@
   
       if (!query.start) {
         if (query.from > 0) {
-          query.start = 'a = node('+query.from+')';
-          query.return_properties.push('a');
+          query.start = 'n = node('+query.from+')';
+          query.return_properties.push('n');
         }
         if (query.to > 0) {
-          query.start += ', b = node('+query.to+')';
-          query.return_properties.push('b');
+          query.start += ', m = node('+query.to+')';
+          query.return_properties.push('m');
         }
       }
   
@@ -1939,7 +1939,7 @@
             y = '->';
           }
         }
-        query.match.push('(a'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'b' : '' )+')');
+        query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'm' : '' )+')');
       }
       // guess return objects from start string if it's not set
       // e.g. START n = node(*), a = node(2) WHERE … RETURN (~>) n, a;
@@ -2143,9 +2143,9 @@
       } else {
         cb = relation;
       }
-      self.cypher.node_identifier = 'a';
-      self.cypher.start = 'a = node('+self._start_node_id('*')+')';
-      self.cypher.start += (self.cypher.to > 0) ? ', b = node('+self._end_node_id('*')+')' : ''
+      self.cypher.node_identifier = 'n';
+      self.cypher.start = 'n = node('+self._start_node_id('*')+')';
+      self.cypher.start += (self.cypher.to > 0) ? ', m = node('+self._end_node_id('*')+')' : ''
       self.cypher.incoming = true;
       self.cypher.outgoing = false;
       self.cypher.return_properties = ['r'];
@@ -2162,9 +2162,9 @@
       } else {
         cb = relation;
       }
-      self.cypher.node_identifier = 'a';
-      self.cypher.start = 'a = node('+self._start_node_id('*')+')';
-      self.cypher.start += (self.cypher.to > 0) ? ', b = node('+self._end_node_id('*')+')' : ''
+      self.cypher.node_identifier = 'n';
+      self.cypher.start = 'n = node('+self._start_node_id('*')+')';
+      self.cypher.start += (self.cypher.to > 0) ? ', m = node('+self._end_node_id('*')+')' : ''
       self.cypher.incoming = false;
       self.cypher.outgoing = true;
       self.cypher.return_properties = ['r'];
@@ -2199,11 +2199,11 @@
       self._modified_query = true;
       if (typeof relation !== 'function')
         self.cypher.relationship = relation;
-      self.cypher.node_identifier = 'a';
-      self.cypher.start = 'a = node('+self._start_node_id('*')+'), b = node('+self._end_node_id('*')+')';
+      self.cypher.node_identifier = 'n';
+      self.cypher.start = 'n = node('+self._start_node_id('*')+'), m = node('+self._end_node_id('*')+')';
       self.cypher.incoming = true;
       self.cypher.outgoing = true;
-      self.cypher.return_properties = ['a', 'b', 'r'];
+      self.cypher.return_properties = ['n', 'm', 'r'];
       self.exec(cb);
       return self; // return self for chaining
     }
@@ -2294,28 +2294,15 @@
       this.exec(cb);
       return this; // return self for chaining
     }
-  
-    // Node.prototype.orWhere = function(where, cb) {
-    //   this.cypher.where = [ { '$or': [ this.cypher.where, where ] } ];
-    //   this.exec(cb);
-    //   return this;
-    // }
-  
-    // Node.prototype.whereNot = function(where, cb){
-    //   if (typeof where !== 'object')
-    //     return this;
-    //   this.cypher.where = [];
-    //   return this.where({ '$not': where }, cb);
-    // }
     
     Node.prototype.whereStartNode = function(where, cb) {
       this.cypher.where = [];
-      return this.andWhere(where, cb, { identifier: 'a' });
+      return this.andWhere(where, cb, { identifier: 'n' });
     }
   
     Node.prototype.whereEndNode = function(where, cb) {
       this.cypher.where = [];
-      return this.andWhere(where, cb, { identifier: 'b' });
+      return this.andWhere(where, cb, { identifier: 'm' });
     }
   
     Node.prototype.whereNode = function(where, cb) {
@@ -2329,11 +2316,11 @@
     }
   
     Node.prototype.andWhereStartNode = function(where, cb) {
-      return this.andWhere(where, cb, {identifier: 'a' });
+      return this.andWhere(where, cb, {identifier: 'n' });
     }
   
     Node.prototype.andWhereEndNode = function(where, cb) {
-      return this.andWhere(where, cb, { identifier: 'b' });
+      return this.andWhere(where, cb, { identifier: 'm' });
     }
   
     Node.prototype.andWhereNode = function(where, cb) {
@@ -2370,11 +2357,11 @@
     }
   
     Node.prototype.whereStartNodeHasProperty = function(property, cb) {
-      return this.whereHasProperty(property, 'a', cb);
+      return this.whereHasProperty(property, 'n', cb);
     }
   
     Node.prototype.whereEndNodeHasProperty = function(property, cb) {
-      return this.whereHasProperty(property, 'b', cb);
+      return this.whereHasProperty(property, 'm', cb);
     }
   
     Node.prototype.whereRelationshipHasProperty = function(property, cb) {
