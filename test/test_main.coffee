@@ -819,7 +819,7 @@ describe 'Neo4jMapper', ->
 
       it 'expect to transform an key-value-object with identifier', ->
         resultShouldBe = """
-        ( ( n.name =~ '(?i)Alice' AND r.since = 'years' AND ( n.email = 'alice@home.com' OR ( n.email = 'alice@home.de' AND n.country = 'de_DE' ) ) ) )
+        ( ( n.name =~ '(?i)Alice' AND r.since = 'years' AND ( n.email = 'alice@home.com' OR ( n.`email` = 'alice@home.de' AND n.`country` = 'de_DE' ) ) ) )
         """;
         condition = [
           { $and: [

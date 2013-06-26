@@ -201,7 +201,7 @@ var initNode = function(neo4jrestful) {
         _.each(fieldsWithUniqueValues, function(isUnique, field) {
           if (isUnique)
             //CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
-            self.neo4jrestful.query('CREATE CONSTRAINT ON (n:'+label+') ASSERT n.'+field+' IS UNIQUE;', function(err, result, debug) {
+            self.neo4jrestful.query('CREATE CONSTRAINT ON (n:'+label+') ASSERT n.`'+field+'` IS UNIQUE;', function(err, result, debug) {
               // maybe better ways how to report if an error occurs
               cb(err, result, debug);
             });
@@ -1106,7 +1106,7 @@ var initNode = function(neo4jrestful) {
     // no identifier found, guessing from return properties
     if (typeof identifier !== 'string')
       identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
-    this.andWhere('HAS ('+identifier+'.'+property+')');
+    this.andWhere('HAS ('+identifier+'.`'+property+'`)');
     this.exec(cb);
     return this; // return self for chaining
   }
