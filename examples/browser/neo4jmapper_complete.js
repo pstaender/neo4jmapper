@@ -2048,12 +2048,33 @@
         cypherQuery = cypher_or_request;
       else if (typeof cypher_or_request === 'object')
         request = _.extend({ type: 'get', data: {}, url: null }, cypher_or_request);
+      
+      if (typeof cb === 'function') {
+        var cypher = this.toCypherQuery();
+        // reset node, because it might be called from prototype
+        // if we have only one return property, we resort this
+        if ( (this.cypher.return_properties)&&(this.cypher.return_properties.length === 1) ) {
+          if (cypherQuery)
+            return this.query(cypherQuery, cb);
+          else if (request)
+            return this.query(request, cb);
+          else
+            // default, use the build cypher query
+            return this.query(cypher, cb);
+        } else {
+          return this.query(cypher, cb);
+        } 
+      }
+      return null;
+    }
+  
+    Node.prototype.query = function(cypherQuery, options, cb) {
       var self = this;
-      // var Class = null;
+      
       var DefaultConstructor = this.recommendConstructor();
       // To check that it's invoked by Noder::find() or Person::find()
       var constructorNameOfStaticMethod = helpers.constructorNameOfFunction(DefaultConstructor);
-      
+  
       var _deliverResultset = function(self, cb, err, sortedData, debug) {
         if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
           sortedData = sortedData[0];
@@ -2071,7 +2092,7 @@
           var sortedData = [];
           var jobsToDo = data.data.length;
           for (var x=0; x < data.data.length; x++) {
-            if (!data.data[x][0]) {
+            if (typeof data.data[x][0] === 'undefined') {
               jobsToDo--;
               break;
             }
@@ -2094,41 +2115,45 @@
               }
             })(x);
           }
-          if (jobsToDo === 0)
+          if (jobsToDo === 0) {
+            // TODO: before refactor it worked withaout this 
+            if ( (data.data[0]) && (typeof data.data[0][0] !== 'object') )
+              sortedData = data.data[0][0];
             return _deliverResultset(self, cb, err, sortedData, debug);
+          }
         }
       }
   
-      if (typeof cb === 'function') {
-        var cypher = this.toCypherQuery();
-        // reset node, because it might be called from prototype
-        // if we have only one return property, we resort this
-        if ( (this.cypher.return_properties)&&(this.cypher.return_properties.length === 1) ) {
-          var options = {};
-          if (this.label)
-            options.label = this.label;
-          if (cypherQuery)
-            return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
-              _processData(err, data, debug, cb);
-            });
-          else if (request)
-            return this.neo4jrestful[request.type](request.url, request.data, function(err, data, debug) {
-              // transform to resultset
-              data = {
-                data: [ [ data ] ]
-              };
-              _processData(err, data, debug, cb);
-            });
-          else
-            // default, use the build cypher query
-            return this.neo4jrestful.query(cypher, options, function(err, data, debug) {
-              _processData(err, data, debug, cb);
-            });
-        } else {
-          return this.neo4jrestful.query(cypher, cb);
-        } 
+      // sort arguments
+      if (typeof options !== 'object') {
+        cb = options;
+        options = {};
       }
-      return null;
+      if (this.label)
+        options.label = this.label;
+  
+      if (typeof cypherQuery === 'string') {
+        return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
+          _processData(err, data, debug, cb);
+        });
+      } else if (typeof cypherQuery === 'object') {
+        // we expect a raw request object here
+        // this is used to make get/post/put restful request
+        // with the faeture of process node data
+        var request = cypherQuery;
+        if ( (!request.type) || (!request.data) || (!request.url) ) {
+          return cb(Error("The 1st argument as request object must have the properties .url, .data and .type"), null);
+        }
+        return this.neo4jrestful[request.type](request.url, request.data, function(err, data, debug) {
+          // transform to resultset
+          data = {
+            data: [ [ data ] ]
+          };
+          _processData(err, data, debug, cb);
+        });
+      } else {
+        return cb(Error("First argument must be a string with the cypher query"), null);
+      }
     }
   
     /*
@@ -3113,7 +3138,22 @@
       var self = this;
       if (!self.is_singleton)
         self = this.singleton();
-      return this.neo4jrestful.get('/db/data/relationship/'+Number(id), cb);
+      return this.neo4jrestful.get('/db/data/relationship/'+Number(id), function(err, relationship) {
+        if ((err)||(!relationship))
+          return cb(err, relationship);
+        else {
+          var attributes = [ 'from', 'to' ];
+          for (var i = 0; i < 2; i++) {
+            (function(point){
+              Node.prototype.findById(relationship[point].id,function(err,node) {
+                relationship[point] = node;
+                if (point === 'to')
+                  cb(null, relationship);
+              });
+            })(attributes[i]);
+          }
+        }
+      });
     }
   
     Relationship.prototype.save = function(cb) {
