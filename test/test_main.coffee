@@ -387,18 +387,27 @@ describe 'Neo4jMapper', ->
         fields:
           indexes:
             uid: true
-      Node::register_model(Movie)
-      deathAndMaiden = new Movie title: 'Death and the Maiden'
-      uid = new Date().getTime()
-      deathAndMaiden.data.uid = uid
-      deathAndMaiden.save (err) ->
-        expect(err).to.be null
-        Movie::findAll().where { uid: uid }, (err, found) ->
+            nested:
+              id: true
+      # using the cb is not mandatory but recommend
+      Node::register_model Movie, (err, result) ->
+        # neo4j returns an error, if field(s) have been indexed already
+        # in that case, we can ignore the errors -> so it'll be checked that we have only these expected errors
+        if err
+          expect(err.constructor).to.be Array
+          for error in err
+            expect(error.cause.exception).to.be.equal 'AddIndexFailureException'
+        deathAndMaiden = new Movie title: 'Death and the Maiden'
+        uid = new Date().getTime()
+        deathAndMaiden.data.uid = uid
+        deathAndMaiden.save (err) ->
           expect(err).to.be null
-          expect(found).to.have.length 1
-          expect(found[0].data.uid).to.be.equal uid
-          deathAndMaiden.remove ->
-            done()
+          Movie::findAll().where { uid: uid }, (err, found) ->
+            expect(err).to.be null
+            expect(found).to.have.length 1
+            expect(found[0].data.uid).to.be.equal uid
+            deathAndMaiden.remove ->
+              done()
 
     it 'expect to have unique values'#, (done) ->
       # client.query """
@@ -539,12 +548,16 @@ describe 'Neo4jMapper', ->
               done()
 
     it 'expect to set default values and index values', (done) ->
-      Node::fields.defaults.uid = -> new Date().getTime()
+      Node::fields.defaults =
+        uid: -> new Date().getTime()
+        nested:
+          hasValue: true
       node = new Node()
       node.data.name = 'Steve'
       node.save (err) ->
         expect(err).to.be null
         expect(node.data.uid).to.be.above 0
+        expect(node.data.nested.hasValue).to.be true
         Node::fields.indexes.uid = 'collection'
         node = new Node()
         node.data.name = 'Bill'

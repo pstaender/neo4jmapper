@@ -108,7 +108,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.neo4jrestful = _neo4jrestful;
   Node.prototype.data = {};
   Node.prototype.id = null;
-  //Node.prototype._id_ = null; // _id_ is the private key store to ensure that this.id deosn't get manipulated accidently
+  Node.prototype._id_ = null; // _id_ is the private key store to ensure that this.id deosn't get manipulated accidently
   Node.prototype.fields = {
     defaults: {},
     indexes: {},
@@ -156,6 +156,8 @@ var initNode = function(neo4jrestful) {
       return this.onBeforeInitialize(function(err){
         self.onAfterInitialize(cb);
       });
+    } else {
+      return cb(null, null);
     }
   }
 
@@ -178,7 +180,7 @@ var initNode = function(neo4jrestful) {
         var debugs  = []
         _.each(fieldsToIndex, function(toBeIndexed, field) {
           if (toBeIndexed === true) {
-            self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
+            self.neo4jrestful.query('CREATE INDEX ON :'+label+'(`'+field+'`);', function(err, result, debug) {
               if (err)
                 errors.push(err);
               if (result)
@@ -205,6 +207,8 @@ var initNode = function(neo4jrestful) {
             });
         });
       }
+    } else {
+      cb(Error('No label found'), null);
     }
   }
 
@@ -212,7 +216,7 @@ var initNode = function(neo4jrestful) {
    * Copys only the relevant data(s) of a node to another object
    */
   Node.prototype.copyTo = function(n) {
-    n.id = this.id;
+    n.id = n._id_ = this._id_;
     n.data   = _.extend(this.data);
     n.labels = _.clone(this.labels);
     if (this.label)
@@ -303,14 +307,18 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.applyDefaultValues = function() {
-    for (var key in this.fields.defaults) {
-      if (((typeof this.data[key] === 'undefined')||(this.data[key] === null))&&(typeof this.fields.defaults[key] !== 'undefined'))
+    // flatten data and defaults
+    var data     = helpers.flattenObject(this.data);
+    var defaults = helpers.flattenObject(this.fields.defaults);
+    for (var key in defaults) {
+      if (((typeof data[key] === 'undefined')||(data[key] === null))&&(typeof defaults[key] !== 'undefined'))
         // set a default value by defined function
-        if (typeof this.fields.defaults[key] === 'function')
-          this.data[key] = this.fields.defaults[key](this);
+        if (typeof defaults[key] === 'function')
+          data[key] = defaults[key](this);
         else
-          this.data[key] = this.fields.defaults[key];
+          data[key] = defaults[key];
     }
+    this.data = helpers.unflattenObject(data);
     return this;
   }
 
@@ -322,7 +330,7 @@ var initNode = function(neo4jrestful) {
   }
 
   Node.prototype.fieldsToIndex = function() {
-    return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? this.fields.indexes : null;
+    return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? helpers.flattenObject(this.fields.indexes) : null;
   }
 
   Node.prototype.fieldsWithUniqueValues = function() {
@@ -508,7 +516,7 @@ var initNode = function(neo4jrestful) {
       node.uri  = node._response.self;
       //'http://localhost:7474/db/data/node/3648'
       if ((node._response.self) && (node._response.self.match(/[0-9]+$/))) {
-        node.id = Number(node._response.self.match(/[0-9]+$/)[0]);
+        node.id = node._id_ = Number(node._response.self.match(/[0-9]+$/)[0]);
       }
     }
     node.is_persisted = true;
