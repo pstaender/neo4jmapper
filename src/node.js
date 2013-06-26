@@ -108,6 +108,7 @@ var initNode = function(neo4jrestful) {
   Node.prototype.neo4jrestful = _neo4jrestful;
   Node.prototype.data = {};
   Node.prototype.id = null;
+  //Node.prototype._id_ = null; // _id_ is the private key store to ensure that this.id deosn't get manipulated accidently
   Node.prototype.fields = {
     defaults: {},
     indexes: {},
@@ -445,12 +446,18 @@ var initNode = function(neo4jrestful) {
     }
   }
 
-  Node.prototype.update = function(cb) {
+  Node.prototype.update = function(data, cb) {
     var self = this;
-    if (this.hasId())
+    if (this.hasId()) {
+      if (typeof data === 'object') {
+        this.data = data;
+      } else {
+        cb = data;
+      }
       this.save(cb);
-    else
+    } else {
       return cb(Error('You have to save() the node one time before you can perform an update'), null);
+    }
   }
 
   Node.prototype.load = function(cb) {

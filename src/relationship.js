@@ -126,7 +126,7 @@ var initRelationship = function(neo4jrestful) {
       if ((err)||(!relationship))
         return cb(err, relationship);
       else {
-        relationship.loadFromAndToNodes(cb);
+        relationship.load(cb);
       }
     });
   }
@@ -155,9 +155,14 @@ var initRelationship = function(neo4jrestful) {
 
   }
 
-  Relationship.prototype.update = function(cb) {
+  Relationship.prototype.update = function(data, cb) {
     var self = this;
-    if (this.is_singleton)
+    if (typeof data === 'object') {
+      this.data = data;
+    } else {
+      cb = data;
+    }
+    if (!this.hasId())
       return cb(Error('Singleton instances can not be persisted'), null);
     this._modified_query = false;
     if (this.hasId()) {
@@ -239,32 +244,29 @@ var initRelationship = function(neo4jrestful) {
     }
   }
 
-  // Relationship.prototype.load = function(cb) {
-  //   var self = this;
-  //   this.onBeforeLoad(self, function(err, node){
-  //     if (err)
-  //       cb(err, node);
-  //     else
-  //       self.onAfterLoad(node, cb);
-  //   })
-  // }
+  Relationship.prototype.load = function(cb) {
+    var self = this;
+    this.onBeforeLoad(self, function(err, relationship){
+      if (err)
+        cb(err, relationship);
+      else
+        self.onAfterLoad(relationship, cb);
+    })
+  }
 
-  // Relationship.prototype.onBeforeLoad = function(relationship, next) {
-  //   if (relationship.hasId()) {
-  //     relationship.fromAndToNodes(function(err, fromAndTo){
-  //       if (err)
-  //         return next(err, fromAndTo);
-  //       else
-  //         return next(null, relationship);
-  //     })
-  //   } else {
-  //     next(null, relationship);
-  //   } 
-  // }
+  Relationship.prototype.onBeforeLoad = function(relationship, next) {
+    if (relationship.hasId()) {
+      relationship.loadFromAndToNodes(function(err, relationship){
+        next(err, relationship);
+      });
+    } else {
+      next(null, relationship);
+    } 
+  }
 
-  // Relationship.prototype.onAfterLoad = function(relationship, next) {
-  //   return next(null, relationship);
-  // }
+  Relationship.prototype.onAfterLoad = function(relationship, next) {
+    return next(null, relationship);
+  }
 
   Relationship.prototype.toObject = function() {
     return {
