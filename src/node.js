@@ -475,8 +475,7 @@ var initNode = function(neo4jrestful) {
       });
     } else {
       next(null, node);
-    }
-    
+    } 
   }
 
   Node.prototype.onAfterLoad = function(node, next) {

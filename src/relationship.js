@@ -126,16 +126,7 @@ var initRelationship = function(neo4jrestful) {
       if ((err)||(!relationship))
         return cb(err, relationship);
       else {
-        var attributes = [ 'from', 'to' ];
-        for (var i = 0; i < 2; i++) {
-          (function(point){
-            Node.prototype.findById(relationship[point].id,function(err,node) {
-              relationship[point] = node;
-              if (point === 'to')
-                cb(null, relationship);
-            });
-          })(attributes[i]);
-        }
+        relationship.loadFromAndToNodes(cb);
       }
     });
   }
@@ -232,8 +223,48 @@ var initRelationship = function(neo4jrestful) {
     return this;
   }
 
-  // TODO: autoindex? http://docs.neo4j.org/chunked/milestone/rest-api-configurable-auto-indexes.html
-  // Relationship.prototype.index = function(namespace, key, value, cb) { }
+  Relationship.prototype.loadFromAndToNodes = function(cb) {
+    var self = this;
+    var attributes = [ 'from', 'to' ];
+    for (var i = 0; i < 2; i++) {
+      (function(point){
+        Node.prototype.findById(self[point].id,function(err,node) {
+          self[point] = node;
+          if (point === 'to') {
+            cb(null, self);
+          }
+            
+        });
+      })(attributes[i]);
+    }
+  }
+
+  // Relationship.prototype.load = function(cb) {
+  //   var self = this;
+  //   this.onBeforeLoad(self, function(err, node){
+  //     if (err)
+  //       cb(err, node);
+  //     else
+  //       self.onAfterLoad(node, cb);
+  //   })
+  // }
+
+  // Relationship.prototype.onBeforeLoad = function(relationship, next) {
+  //   if (relationship.hasId()) {
+  //     relationship.fromAndToNodes(function(err, fromAndTo){
+  //       if (err)
+  //         return next(err, fromAndTo);
+  //       else
+  //         return next(null, relationship);
+  //     })
+  //   } else {
+  //     next(null, relationship);
+  //   } 
+  // }
+
+  // Relationship.prototype.onAfterLoad = function(relationship, next) {
+  //   return next(null, relationship);
+  // }
 
   Relationship.prototype.toObject = function() {
     return {
