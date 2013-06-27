@@ -425,7 +425,7 @@ describe('Neo4jMapper', function() {
         return done();
       });
     });
-    it('expect to update a node and expecting ', function(done) {
+    it('expect to update a node', function(done) {
       return new Node({
         title: 'Hello World!'
       }).save(function(err, node) {
@@ -448,6 +448,37 @@ describe('Neo4jMapper', function() {
               });
             });
           });
+        });
+      });
+    });
+    it('expect to update data of a node with changing accidently id', function(done) {
+      return new Node({
+        name: 'Dave Grohl',
+        origin: {
+           country: 'USA',
+          state: ''
+        }
+      }).save(function(err, dave) {
+        var id;
+
+        expect(err).to.be(null);
+        expect(dave.data.name).to.be.equal('Dave Grohl');
+        expect(dave.data.origin.state).to.be.equal('');
+        expect(dave.data.origin.country).to.be.equal('USA');
+        id = dave.id;
+        dave.id = -2;
+        expect(id).to.be.above(0);
+        return dave.update({
+          origin: {
+            state: 'Ohio'
+          }
+        }, function(err, daveSaved) {
+          expect(err).to.be(null);
+          expect(dave.data.name).to.be.equal('Dave Grohl');
+          expect(dave.data.origin.state).to.be.equal('Ohio');
+          expect(dave.data.origin.country).to.be(void 0);
+          expect(dave.id).to.be(id);
+          return done();
         });
       });
     });
@@ -579,7 +610,7 @@ describe('Neo4jMapper', function() {
         TODO: autoindex check for indexed field tests
       */
 
-      var Movie, deathAndMaiden, uid, _ref1;
+      var Movie, _ref1;
 
       Movie = (function(_super) {
         __extends(Movie, _super);
@@ -591,29 +622,42 @@ describe('Neo4jMapper', function() {
 
         Movie.prototype.fields = {
           indexes: {
-            uid: true
+            uid: true,
+            nested: {
+              id: true
+            }
           }
         };
 
         return Movie;
 
       })(Node);
-      Node.prototype.register_model(Movie);
-      deathAndMaiden = new Movie({
-        title: 'Death and the Maiden'
-      });
-      uid = new Date().getTime();
-      deathAndMaiden.data.uid = uid;
-      return deathAndMaiden.save(function(err) {
-        expect(err).to.be(null);
-        return Movie.prototype.findAll().where({
-          uid: uid
-        }, function(err, found) {
+      return Node.prototype.register_model(Movie, function(err, result) {
+        var deathAndMaiden, error, uid, _i, _len;
+
+        if (err) {
+          expect(err.constructor).to.be(Array);
+          for (_i = 0, _len = err.length; _i < _len; _i++) {
+            error = err[_i];
+            expect(error.cause.exception).to.be.equal('AddIndexFailureException');
+          }
+        }
+        deathAndMaiden = new Movie({
+          title: 'Death and the Maiden'
+        });
+        uid = new Date().getTime();
+        deathAndMaiden.data.uid = uid;
+        return deathAndMaiden.save(function(err) {
           expect(err).to.be(null);
-          expect(found).to.have.length(1);
-          expect(found[0].data.uid).to.be.equal(uid);
-          return deathAndMaiden.remove(function() {
-            return done();
+          return Movie.prototype.findAll().where({
+            uid: uid
+          }, function(err, found) {
+            expect(err).to.be(null);
+            expect(found).to.have.length(1);
+            expect(found[0].data.uid).to.be.equal(uid);
+            return deathAndMaiden.remove(function() {
+              return done();
+            });
           });
         });
       });
@@ -883,14 +927,20 @@ describe('Neo4jMapper', function() {
     return it('expect to set default values and index values', function(done) {
       var node;
 
-      Node.prototype.fields.defaults.uid = function() {
-        return new Date().getTime();
+      Node.prototype.fields.defaults = {
+        uid: function() {
+          return new Date().getTime();
+        },
+        nested: {
+          hasValue: true
+        }
       };
       node = new Node();
       node.data.name = 'Steve';
       return node.save(function(err) {
         expect(err).to.be(null);
         expect(node.data.uid).to.be.above(0);
+        expect(node.data.nested.hasValue).to.be(true);
         Node.prototype.fields.indexes.uid = 'collection';
         node = new Node();
         node.data.name = 'Bill';
@@ -1089,7 +1139,7 @@ describe('Neo4jMapper', function() {
     });
   });
   describe('relationship', function() {
-    return it('expect to get a relationship by id, update and remove it', function(done) {
+    it('expect to get a relationship by id, update and remove it', function(done) {
       return new Node().save(function(err, a) {
         return new Node().save(function(err, b) {
           return a.createRelationshipTo(b, 'related', {
@@ -1114,13 +1164,72 @@ describe('Neo4jMapper', function() {
                     return Relationship.prototype.findById(result.id, function(err, found) {
                       expect(err).to.be(null);
                       expect(found).to.be(null);
-                      return Node.prototype.findById(123, function(err, found) {
-                        expect(err).to.be(null);
-                        expect(found).to.be(null);
-                        return done();
-                      });
+                      return done();
                     });
                   });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+    it('expect to trigger load hook and loading both nodes on getById', function(done) {
+      return new Node({
+        name: 'Alice'
+      }).save(function(err, a) {
+        return new Node({
+          name: 'Bob'
+        }).save(function(err, b) {
+          return a.createRelationshipTo(b, 'related', {
+            since: 'year'
+          }, function(err, result) {
+            expect(err).to.be(null);
+            return Relationship.prototype.findById(result.id, function(err, relationship) {
+              expect(err).to.be(null);
+              expect(relationship.from.data.name).to.be.equal('Alice');
+              expect(relationship.to.data.name).to.be.equal('Bob');
+              return done();
+            });
+          });
+        });
+      });
+    });
+    return it('expect to update a relationship with preventing id accidently changing and with value extending', function(done) {
+      return new Node({
+        name: 'Alice'
+      }).save(function(err, a) {
+        return new Node({
+          name: 'Bob'
+        }).save(function(err, b) {
+          return a.createRelationshipTo(b, 'related', {
+            since: 'years',
+            city: 'Berlin'
+          }, function(err, relationship) {
+            expect(err).to.be(null);
+            return Relationship.prototype.findById(relationship.id, function(err, relationship) {
+              expect(relationship.data.since).to.be.equal('years');
+              expect(relationship.data.city).to.be.equal('Berlin');
+              return relationship.update({
+                since: 'months'
+              }, function(err, updatedRelationship) {
+                var id;
+
+                expect(relationship.data.since).to.be.equal('months');
+                expect(relationship.data.city).to.be.equal('Berlin');
+                expect(updatedRelationship.data.since).to.be.equal('months');
+                expect(updatedRelationship.data.city).to.be.equal('Berlin');
+                id = relationship.id;
+                relationship.id = -2;
+                relationship.data.city = 'Cologne';
+                return relationship.save(function(err, updatedRelationship) {
+                  expect(err).to.be(null);
+                  expect(relationship.id).to.equal(id);
+                  expect(updatedRelationship.data.since).to.be.equal('months');
+                  expect(updatedRelationship.data.city).to.be.equal('Cologne');
+                  expect(relationship.data.since).to.be.equal('months');
+                  expect(relationship.data.city).to.be.equal('Cologne');
+                  return done();
                 });
               });
             });
@@ -1281,7 +1390,7 @@ describe('Neo4jMapper', function() {
       return it('expect to transform an key-value-object with identifier', function() {
         var condition, resultShouldBe;
 
-        resultShouldBe = "( ( n.name =~ '(?i)Alice' AND r.since = 'years' AND ( n.email = 'alice@home.com' OR ( n.email = 'alice@home.de' AND n.country = 'de_DE' ) ) ) )";
+        resultShouldBe = "( ( n.name =~ '(?i)Alice' AND r.since = 'years' AND ( n.email = 'alice@home.com' OR ( n.`email` = 'alice@home.de' AND n.`country` = 'de_DE' ) ) ) )";
         condition = [
           {
             $and: [

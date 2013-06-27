@@ -152,7 +152,7 @@
   
     var cypherKeyValueToString = function(key, value, identifier) {
       if (typeof identifier === 'string')
-        key = identifier+'.'+key;
+        key = identifier+'.`'+key+'`';
       if (_.isRegExp(value)) {
         var s = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
         return key+" =~ '"+s+"'";
@@ -786,6 +786,10 @@
       }
     };
   
+    var isValidData = function(data) {
+      return Boolean( (typeof data === 'object') && (data !== null) );
+    }
+  
     return neo4jmapper_helpers = {
       sortStringAndOptionsArguments: sortStringAndOptionsArguments,
       sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
@@ -797,7 +801,8 @@
       escapeString: escapeString,
       sprintf: sprintf,
       constructorNameOfFunction: constructorNameOfFunction,
-      cypherKeyValueToString: cypherKeyValueToString
+      cypherKeyValueToString: cypherKeyValueToString,
+      isValidData: isValidData
     };
   
   })();
@@ -1131,7 +1136,8 @@
       }
     }
   
-    Neo4jRestful.prototype.onError = function(cb, err, res, options) {    
+    Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
+      var err = responseError;
       var self = this;
       var statusCode = err.status;
       var error = ( err && err.responseText ) ? Error(err.responseText) : err;
@@ -1144,14 +1150,10 @@
       try {
         // try to extract the first <p> or <pre> from html body, else return error object for better debugging
         if (jQuery(err.responseText).find('body pre:first, body p:first')[0])
-          error = new Error(jQuery(err.responseText).find('body pre:first, body p:first').text().trim());
+          err.responseText = jQuery(err.responseText).find('body pre:first, body p:first').first().text().trim().replace(/(\s|\n)+/g,' ');
         else if (jQuery(err.responseText).text()) {
-          error = jQuery(err.responseText).text().trim();
-        } else {
-          error = err;
+          err.responseText = jQuery(err.responseText).text().trim();
         }
-  
-        return cb(error,null, options._debug);
       } catch(e) {
         // ignore exception
       }
@@ -1175,9 +1177,11 @@
       if ( (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
         // we ignore by default notfound exceptions, because they are no "syntactical" errors
         return cb(null, null, options._debug);
+      } else {
+        // console.log('(!!!')
+        return cb(err, null, options._debug);
       }
   
-      return cb(err, null, options._debug);
     }
   
     Neo4jRestful.prototype.makeRequest = function(_options, cb) {
@@ -1388,6 +1392,7 @@
     Node.prototype.neo4jrestful = _neo4jrestful;
     Node.prototype.data = {};
     Node.prototype.id = null;
+    Node.prototype._id_ = null; // _id_ is the private key store to ensure that this.id deosn't get manipulated accidently
     Node.prototype.fields = {
       defaults: {},
       indexes: {},
@@ -1435,6 +1440,8 @@
         return this.onBeforeInitialize(function(err){
           self.onAfterInitialize(cb);
         });
+      } else {
+        return cb(null, null);
       }
     }
   
@@ -1457,7 +1464,7 @@
           var debugs  = []
           _.each(fieldsToIndex, function(toBeIndexed, field) {
             if (toBeIndexed === true) {
-              self.neo4jrestful.query('CREATE INDEX ON :'+label+'('+field+');', function(err, result, debug) {
+              self.neo4jrestful.query('CREATE INDEX ON :'+label+'(`'+field+'`);', function(err, result, debug) {
                 if (err)
                   errors.push(err);
                 if (result)
@@ -1478,12 +1485,14 @@
           _.each(fieldsWithUniqueValues, function(isUnique, field) {
             if (isUnique)
               //CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
-              self.neo4jrestful.query('CREATE CONSTRAINT ON (n:'+label+') ASSERT n.'+field+' IS UNIQUE;', function(err, result, debug) {
+              self.neo4jrestful.query('CREATE CONSTRAINT ON (n:'+label+') ASSERT n.`'+field+'` IS UNIQUE;', function(err, result, debug) {
                 // maybe better ways how to report if an error occurs
                 cb(err, result, debug);
               });
           });
         }
+      } else {
+        cb(Error('No label found'), null);
       }
     }
   
@@ -1491,7 +1500,7 @@
      * Copys only the relevant data(s) of a node to another object
      */
     Node.prototype.copyTo = function(n) {
-      n.id = this.id;
+      n.id = n._id_ = this._id_;
       n.data   = _.extend(this.data);
       n.labels = _.clone(this.labels);
       if (this.label)
@@ -1581,15 +1590,23 @@
       return helpers.unflattenObject(data);
     }
   
+    Node.prototype.hasValidData = function() {
+      return helpers.isValidData(this.data);
+    }
+  
     Node.prototype.applyDefaultValues = function() {
-      for (var key in this.fields.defaults) {
-        if (((typeof this.data[key] === 'undefined')||(this.data[key] === null))&&(typeof this.fields.defaults[key] !== 'undefined'))
+      // flatten data and defaults
+      var data     = helpers.flattenObject(this.data);
+      var defaults = helpers.flattenObject(this.fields.defaults);
+      for (var key in defaults) {
+        if (((typeof data[key] === 'undefined')||(data[key] === null))&&(typeof defaults[key] !== 'undefined'))
           // set a default value by defined function
-          if (typeof this.fields.defaults[key] === 'function')
-            this.data[key] = this.fields.defaults[key](this);
+          if (typeof defaults[key] === 'function')
+            data[key] = defaults[key](this);
           else
-            this.data[key] = this.fields.defaults[key];
+            data[key] = defaults[key];
       }
+      this.data = helpers.unflattenObject(data);
       return this;
     }
   
@@ -1601,7 +1618,7 @@
     }
   
     Node.prototype.fieldsToIndex = function() {
-      return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? this.fields.indexes : null;
+      return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? helpers.flattenObject(this.fields.indexes) : null;
     }
   
     Node.prototype.fieldsWithUniqueValues = function() {
@@ -1662,6 +1679,8 @@
       var self = this;
       if (this.is_singleton)
         return cb(Error('Singleton instances can not be persisted'), null);
+      if (!this.hasValidData())
+        return cb(Error('Node does not contain valid data. `node.data` must be an object.'));
       this._modified_query = false;
       this.applyDefaultValues();
       var method = null;
@@ -1685,10 +1704,12 @@
         else
           return cb(null, data, debug);
       }
+      
+      this.id = this._id_;
   
-      if (this.hasId()) {
+      if (this.id > 0) {
         method = 'update';
-        this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+        this.neo4jrestful.put('/db/data/node/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
           self.populateWithDataFromResponse(node._response);
           cb(err, node, debug);
         });
@@ -1725,12 +1746,19 @@
       }
     }
   
-    Node.prototype.update = function(cb) {
+    Node.prototype.update = function(data, cb) {
       var self = this;
-      if (this.hasId())
+      if (this._id_ > 0) {
+        if (helpers.isValidData(data)) {
+          // we apply the data upon the current data
+          this.data = _.extend(this.data, data);
+        } else {
+          cb = data;
+        }
         this.save(cb);
-      else
+      } else {
         return cb(Error('You have to save() the node one time before you can perform an update'), null);
+      }
     }
   
     Node.prototype.load = function(cb) {
@@ -1755,8 +1783,7 @@
         });
       } else {
         next(null, node);
-      }
-      
+      } 
     }
   
     Node.prototype.onAfterLoad = function(node, next) {
@@ -1782,7 +1809,7 @@
         node.uri  = node._response.self;
         //'http://localhost:7474/db/data/node/3648'
         if ((node._response.self) && (node._response.self.match(/[0-9]+$/))) {
-          node.id = Number(node._response.self.match(/[0-9]+$/)[0]);
+          node.id = node._id_ = Number(node._response.self.match(/[0-9]+$/)[0]);
         }
       }
       node.is_persisted = true;
@@ -2372,7 +2399,7 @@
       // no identifier found, guessing from return properties
       if (typeof identifier !== 'string')
         identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
-      this.andWhere('HAS ('+identifier+'.'+property+')');
+      this.andWhere('HAS ('+identifier+'.`'+property+'`)');
       this.exec(cb);
       return this; // return self for chaining
     }
@@ -2858,6 +2885,14 @@
       return _.extend({},that);
     }
   
+    /*
+     * Static methods accessible on Node
+     */
+  
+    // Node.singleton = function(id) {
+    //   return Node.prototype.singleton(id);
+    // }
+  
   
     return Node;
   
@@ -3078,6 +3113,7 @@
     Relationship.prototype.from = null;
     Relationship.prototype.to = null;
     Relationship.prototype.id = null;
+    Relationship.prototype._id_ = null;
     Relationship.prototype.uri = null;
     Relationship.prototype._response = null;
     // Relationship.prototype._modified_query = false;
@@ -3142,16 +3178,7 @@
         if ((err)||(!relationship))
           return cb(err, relationship);
         else {
-          var attributes = [ 'from', 'to' ];
-          for (var i = 0; i < 2; i++) {
-            (function(point){
-              Node.prototype.findById(relationship[point].id,function(err,node) {
-                relationship[point] = node;
-                if (point === 'to')
-                  cb(null, relationship);
-              });
-            })(attributes[i]);
-          }
+          relationship.load(cb);
         }
       });
     }
@@ -3161,31 +3188,36 @@
       if (this.is_singleton)
         return cb(Error('Singleton instances can not be persisted'), null);
       this._modified_query = false;
-      
-      if (this.hasId()) {
-        var url = '/db/data/relationship/'+this.id+'/properties';
-        var method = 'put';
+      if (this._id_) {
+        // copy 'private' _id_ to public
+        this.id = this._id_;
+        return this.update(cb);
       } else {
         var url = '/db/relationship/relationship';
-        var method = 'post';
+        this.neo4jrestful.post(url, { data: this.flattenData() }, function(err,data){
+          if (err)
+            cb(err,data);
+          else {
+            self.populateWithDataFromResponse(data);
+            return cb(null, data);
+          }
+        });
       }
-      this.neo4jrestful[method](url, { data: this.flattenData() }, function(err,data){
-        if (err)
-          cb(err,data);
-        else {
-          self.populateWithDataFromResponse(data);
-          return cb(null, data);
-        }
-      });
-  
     }
   
-    Relationship.prototype.update = function(cb) {
+    Relationship.prototype.update = function(data, cb) {
       var self = this;
-      if (this.is_singleton)
+      if (helpers.isValidData(data)) {
+        this.data = _.extend(this.data, data);
+      } else {
+        cb = data;
+      }
+      if (!this.hasId())
         return cb(Error('Singleton instances can not be persisted'), null);
       this._modified_query = false;
       if (this.hasId()) {
+        // copy 'private' _id_ to public
+        this.id = this._id_;
         this.neo4jrestful.put('/db/data/relationship/'+this.id+'/properties', { data: this.flattenData() }, function(err,data){
           if (err)
             return cb(err, data);
@@ -3224,7 +3256,7 @@
         relationship.uri  = relationship._response.self;
         relationship.type = relationship._response.type;
         if ((relationship._response.self) && (relationship._response.self.match(/[0-9]+$/))) {
-          relationship.id = Number(relationship._response.self.match(/[0-9]+$/)[0]);
+          relationship.id = relationship._id_ = Number(relationship._response.self.match(/[0-9]+$/)[0]);
         }
         if ((relationship._response.start) && (relationship._response.start.match(/[0-9]+$/))) {
           relationship.from.uri = relationship.start = relationship._response.start;
@@ -3248,8 +3280,47 @@
       return this;
     }
   
-    // TODO: autoindex? http://docs.neo4j.org/chunked/milestone/rest-api-configurable-auto-indexes.html
-    // Relationship.prototype.index = function(namespace, key, value, cb) { }
+    Relationship.prototype.loadFromAndToNodes = function(cb) {
+      var self = this;
+      var attributes = [ 'from', 'to' ];
+      var done = 0;
+      for (var i = 0; i < 2; i++) {
+        (function(point){
+          Node.prototype.findById(self[point].id,function(err,node) {
+            self[point] = node;
+            done++;
+            if (done === 2) {
+              cb(null, self);
+            }
+              
+          });
+        })(attributes[i]);
+      }
+    }
+  
+    Relationship.prototype.load = function(cb) {
+      var self = this;
+      this.onBeforeLoad(self, function(err, relationship){
+        if (err)
+          cb(err, relationship);
+        else
+          self.onAfterLoad(relationship, cb);
+      })
+    }
+  
+    Relationship.prototype.onBeforeLoad = function(relationship, next) {
+      if (relationship.hasId()) {
+        relationship.loadFromAndToNodes(function(err, relationship){
+          next(err, relationship);
+        });
+      } else {
+        next(null, relationship);
+      } 
+    }
+  
+    Relationship.prototype.onAfterLoad = function(relationship, next) {
+      return next(null, relationship);
+    }
   
     Relationship.prototype.toObject = function() {
       return {
@@ -3263,6 +3334,9 @@
         type: this.type
       };
     }
+  
+    // copy 1:1 some methods from Node object
+    // Relationship.prototype.copyTo = Node.prototype.copyTo;
   
     return Relationship;
   

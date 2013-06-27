@@ -68,18 +68,18 @@ describe('Neo4jMapper (cypher queries)', function() {
       "Node::findOne().where({name: 'Alice'}).outgoingRelationships()": [
         Node.prototype.findOne().where({
           name: 'Alice'
-        }).outgoingRelationships(), "START n = node(*) MATCH (n)-[r]->()  WHERE ( HAS (n.name) ) AND ( n.name = 'Alice' ) RETURN r LIMIT 1;"
+        }).outgoingRelationships(), "START n = node(*) MATCH (n)-[r]->()  WHERE ( HAS (n.`name`) ) AND ( n.`name` = 'Alice' ) RETURN r LIMIT 1;"
       ],
       "Node::findAll().outgoingRelationships('know').distinct().count()": [Node.prototype.findAll().outgoingRelationships('know').distinct().count(), 'START n = node(*) MATCH (n)-[r:know]->() RETURN COUNT(DISTINCT *);'],
       "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'r.since': 'years' })": [
         Node.prototype.singleton(1).incomingRelationshipsFrom(2, 'like').where({
           'r.since': 'years'
-        }), 'START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.since) ) AND ( r.since = \'years\' ) RETURN r;'
+        }), "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) ) AND ( r.since = 'years' ) RETURN r;"
       ],
       "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })": [
         Node.prototype.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({
           'since': 'years'
-        }), "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.since) ) AND ( r.since = 'years' ) RETURN r;"
+        }), "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) ) AND ( r.`since` = 'years' ) RETURN r;"
       ],
       "Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })": [
         Node.prototype.find().whereNode({
@@ -90,9 +90,9 @@ describe('Neo4jMapper (cypher queries)', function() {
           'number_b': 123,
           'string_b': '123',
           'regex': /[a-z]/
-        }), "START n = node(*) WHERE ( HAS (n.boolean_a) ) AND ( HAS (n.boolean_b) ) AND ( HAS (n.string_a) ) AND ( HAS (n.number_a) ) AND ( HAS (n.number_b) ) AND ( HAS (n.string_b) ) AND ( HAS (n.regex) ) AND ( n.boolean_a = true AND n.boolean_b = false AND n.string_a = 'true' AND n.number_a = 123.2 AND n.number_b = 123 AND n.string_b = '123' AND n.regex =~ '[a-z]' ) RETURN n;"
+        }), "START n = node(*) WHERE ( HAS (n.`boolean_a`) ) AND ( HAS (n.`boolean_b`) ) AND ( HAS (n.`string_a`) ) AND ( HAS (n.`number_a`) ) AND ( HAS (n.`number_b`) ) AND ( HAS (n.`string_b`) ) AND ( HAS (n.`regex`) ) AND ( n.`boolean_a` = true AND n.`boolean_b` = false AND n.`string_a` = 'true' AND n.`number_a` = 123.2 AND n.`number_b` = 123 AND n.`string_b` = '123' AND n.`regex` =~ '[a-z]' ) RETURN n;"
       ],
-      "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy 'n.name', 'DESC', ->": [
+      "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC')": [
         Node.prototype.find().where({
           $or: [
             {
@@ -101,7 +101,7 @@ describe('Neo4jMapper (cypher queries)', function() {
               'n.name': /bob/i
             }
           ]
-        }).skip(2).limit(10).orderBy('n.name', 'DESC'), "START n = node(*) WHERE ( HAS (n.name) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+        }).skip(2).limit(10).orderBy('n.name', 'DESC'), "START n = node(*) WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
       ],
       "Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC')": [
         Actor.prototype.find().where({
@@ -112,12 +112,12 @@ describe('Neo4jMapper (cypher queries)', function() {
               'n.name': /bob/i
             }
           ]
-        }).skip(2).limit(10).orderBy('n.name', 'DESC'), "START n = node(*) MATCH n:Actor WHERE ( HAS (n.name) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+        }).skip(2).limit(10).orderBy('n.name', 'DESC'), "START n = node(*) MATCH n:Actor WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
       ],
       "Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }": [
         Node.prototype.findOne().whereHasProperty('name').andWhere({
           'n.city': 'berlin'
-        }), "START n = node(*) WHERE ( HAS (n.name) ) AND ( HAS (n.city) ) AND ( n.city = 'berlin' ) RETURN n LIMIT 1;"
+        }), "START n = node(*) WHERE ( HAS (n.`name`) ) AND ( HAS (n.`city`) ) AND ( n.city = 'berlin' ) RETURN n LIMIT 1;"
       ],
       "Node::findOne().whereHasProperty('name').andWhere('name').andWhere([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ])": [
         Node.prototype.findOne().whereHasProperty('name').andWhere([
@@ -136,7 +136,7 @@ describe('Neo4jMapper (cypher queries)', function() {
               }
             ]
           }
-        ]), "START n = node(*) WHERE ( HAS (n.name) ) AND ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( n.city = 'berlin' AND ( n.name = 'peter' AND NOT ( n.name = 'pedro' ) ) ) RETURN n LIMIT 1;"
+        ]), "START n = node(*) WHERE ( HAS (n.`name`) ) AND ( HAS (n.`city`) ) AND ( HAS (n.`name`) ) AND ( n.city = 'berlin' AND ( n.name = 'peter' AND NOT ( n.name = 'pedro' ) ) ) RETURN n LIMIT 1;"
       ],
       "Node::findOne().whereNode([ { 'city': 'berlin' } , $and: [ { 'name': 'peter' }, $not: [ { 'name': 'pedro' } ] ] ])": [
         Node.prototype.findOne().where([
@@ -155,7 +155,7 @@ describe('Neo4jMapper (cypher queries)', function() {
               }
             ]
           }
-        ]), "START n = node(*) WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( n.city = 'berlin' AND ( n.name = 'peter' AND NOT ( n.name = 'pedro' ) ) ) RETURN n LIMIT 1;"
+        ]), "START n = node(*) WHERE ( HAS (n.`city`) ) AND ( HAS (n.`name`) ) AND ( n.`city` = 'berlin' AND ( n.`name` = 'peter' AND NOT ( n.`name` = 'pedro' ) ) ) RETURN n LIMIT 1;"
       ],
       "Node::findById(123).incomingRelationships().delete().toCypherQuery()": [Node.prototype.findById(123).incomingRelationships()["delete"](), 'START n = node(123) MATCH (n)<-[r]-() DELETE r;'],
       "Node::findById(123).allRelationships().delete()": [Node.prototype.findById(123).allRelationships()["delete"](), 'MATCH n-[r]-() WHERE id(n) = 123 DELETE r;']
