@@ -201,7 +201,7 @@ describe('Neo4jMapper', function() {
         expect(err).to.be(null);
         expect(storedNode.data.title).to.be(node.data.title);
         expect(storedNode.id).to.be.above(0);
-        return Node.prototype.findById(id, function(err, found) {
+        return Node.findById(id, function(err, found) {
           expect(found).to.be.an('object');
           expect(found.id).to.be.equal(id);
           expect(found.data.title).to.be.equal(node.data.title);
@@ -218,7 +218,7 @@ describe('Neo4jMapper', function() {
         title: new Date().toString()
       });
       return node.save(function() {
-        return Node.prototype.findById(node.id, function(err, found) {
+        return Node.findById(node.id, function(err, found) {
           expect(err).to.be(null);
           expect(found.data.title).to.be.equal(node.data.title);
           expect(found.id).to.be.equal(node.id);
@@ -235,7 +235,7 @@ describe('Neo4jMapper', function() {
         title: new Date().toString()
       });
       return node.save(function() {
-        return Node.prototype.findByUniqueKeyValue('title', node.data.title, function(err, found) {
+        return Node.findByUniqueKeyValue('title', node.data.title, function(err, found) {
           expect(err).to.be(null);
           expect(found.data.title).to.be.equal(node.data.title);
           expect(found.id).to.be.equal(node.id);
@@ -246,7 +246,7 @@ describe('Neo4jMapper', function() {
       });
     });
     it('expect to get null as result if one specific node is not found', function(done) {
-      return Node.prototype.findOne({
+      return Node.findOne({
         SomeKey: new Date().getTime()
       }, function(err, found) {
         expect(err).to.be(null);
@@ -272,7 +272,7 @@ describe('Neo4jMapper', function() {
           expect(err).to.be(null);
           expect(bob.label).to.be('Developer');
           expect(bob.labels[0]).to.be('Developer');
-          return Node.prototype.find({
+          return Node.find({
             group_id: groupid
           }, function(err, nodes) {
             var Developer, _ref1;
@@ -292,8 +292,8 @@ describe('Neo4jMapper', function() {
               return Developer;
 
             })(Node);
-            Node.prototype.register_model(Developer);
-            return Developer.prototype.find({
+            Node.register_model(Developer);
+            return Developer.find({
               group_id: groupid
             }, function(err, nodes) {
               expect(err).to.be(null);
@@ -348,7 +348,7 @@ describe('Neo4jMapper', function() {
       });
     });
     it('expect to get suitable error on wrong mapper cypher queries', function(done) {
-      return Node.prototype.findOne().where("thisWillProduceAnError BECAUSE 'it\'s not a valid cypher query at all'", function(err) {
+      return Node.findOne().where("thisWillProduceAnError BECAUSE 'it\'s not a valid cypher query at all'", function(err) {
         expect(err).to.be.an('object');
         expect(/unclosed\s+parenth/i.test(err.message)).to.be(true);
         expect(/SyntaxException/i.test(err.exception)).to.be(true);
@@ -382,10 +382,10 @@ describe('Neo4jMapper', function() {
       });
     });
     it('expect to get null if node is not found', function(done) {
-      return Node.prototype.findById(1234567890, function(err, found) {
+      return Node.findById(1234567890, function(err, found) {
         expect(err).to.be(null);
         expect(found).to.be(null);
-        return Node.prototype.findByUniqueKeyValue({
+        return Node.findByUniqueKeyValue({
            key: new Date().getTime()
         }, function(err, found) {
           expect(err).to.be(null);
@@ -433,12 +433,12 @@ describe('Neo4jMapper', function() {
 
         expect(node.data.title).to.be.equal('Hello World!');
         id = node.id;
-        return Node.prototype.findById(id, function(err, found) {
+        return Node.findById(id, function(err, found) {
           found.data.title = 'How are you?';
           return found.update(function(err, savedNode) {
             expect(savedNode.data.title).to.be.equal('How are you?');
             expect(err).to.be(null);
-            return Node.prototype.findById(id, function(err, foundAgain) {
+            return Node.findById(id, function(err, foundAgain) {
               expect(foundAgain.data.title).to.be(found.data.title);
               return foundAgain.removeWithRelationships(function(err) {
                 expect(err).to.be(null);
@@ -533,13 +533,13 @@ describe('Neo4jMapper', function() {
         return Person;
 
       })(Node);
-      Node.prototype.register_model(Person);
-      expect(Node.prototype.registered_models()['Person'].constructor).to.be(Person.constructor);
-      Node.prototype.unregister_model(Person);
-      expect(Node.prototype.registered_models()['Person']).to.be(void 0);
-      Node.prototype.register_model(Person);
-      Node.prototype.unregister_model('Person');
-      return expect(Node.prototype.registered_models()['Person']).to.be(void 0);
+      Node.register_model(Person);
+      expect(Node.registered_models()['Person'].constructor).to.be(Person.constructor);
+      Node.unregister_model(Person);
+      expect(Node.registered_models()['Person']).to.be(void 0);
+      Node.register_model(Person);
+      Node.unregister_model('Person');
+      return expect(Node.registered_models()['Person']).to.be(void 0);
     });
     it('expect to find corresponding node to each model', function(done) {
       var Movie, _ref1;
@@ -555,8 +555,8 @@ describe('Neo4jMapper', function() {
         return Movie;
 
       })(Node);
-      Node.prototype.register_model(Movie);
-      return Movie.prototype.findAll().count(function(err, countBefore) {
+      Node.register_model(Movie);
+      return Movie.findAll().count(function(err, countBefore) {
         var lebowski;
 
         expect(err).to.be(null);
@@ -567,7 +567,7 @@ describe('Neo4jMapper', function() {
         return lebowski.save(function(err, lebowski) {
           expect(_.keys(lebowski.data)).to.have.length(1);
           expect(err).to.be(null);
-          return Movie.prototype.findAll().count(function(err, countNow) {
+          return Movie.findAll().count(function(err, countNow) {
             expect(countBefore + 1).to.be(countNow);
             return lebowski.remove(function() {
               return done();
@@ -596,10 +596,10 @@ describe('Neo4jMapper', function() {
         expect(err).to.be(null);
         expect(robert.constructor_name).to.be('Director');
         expect(robert.label).to.be('Director');
-        return Node.prototype.findById(robert.id, function(err, found) {
+        return Node.findById(robert.id, function(err, found) {
           expect(found.label).to.be.equal('Director');
-          Node.prototype.register_model(Director);
-          found = Node.prototype.convert_node_to_model(found, Director);
+          Node.register_model(Director);
+          found = Node.convert_node_to_model(found, Director);
           expect(found.constructor_name).to.be.equal('Director');
           return done();
         });
@@ -632,7 +632,7 @@ describe('Neo4jMapper', function() {
         return Movie;
 
       })(Node);
-      return Node.prototype.register_model(Movie, function(err, result) {
+      return Node.register_model(Movie, function(err, result) {
         var deathAndMaiden, error, uid, _i, _len;
 
         if (err) {
@@ -649,7 +649,7 @@ describe('Neo4jMapper', function() {
         deathAndMaiden.data.uid = uid;
         return deathAndMaiden.save(function(err) {
           expect(err).to.be(null);
-          return Movie.prototype.findAll().where({
+          return Movie.findAll().where({
             uid: uid
           }, function(err, found) {
             expect(err).to.be(null);
@@ -690,7 +690,7 @@ describe('Neo4jMapper', function() {
         return Movie;
 
       })(Node);
-      Node.prototype.register_model(Movie);
+      Node.register_model(Movie);
       bitterMoon = new Movie({
         title: 'Bitter Moon'
       });
@@ -700,7 +700,7 @@ describe('Neo4jMapper', function() {
         expect(err).to.be(null);
         uid = bitterMoon.data.uid;
         expect(uid).to.be.a('number');
-        return Movie.prototype.findAll().where({
+        return Movie.findAll().where({
           uid: uid
         }, function(err, found) {
           expect(err).to.be(null);
@@ -785,7 +785,7 @@ describe('Neo4jMapper', function() {
       p = new Person({
         name: 'Jeff Bridges'
       });
-      Node.prototype.register_model(Person);
+      Node.register_model(Person);
       return new Person({
         name: 'Jeff Bridges'
       }).save(function(err, jeff) {
@@ -806,7 +806,7 @@ describe('Neo4jMapper', function() {
                     expect(err).to.be(null);
                     expect(labels).to.have.length(1);
                     expect(labels[0]).to.be.equal('Person');
-                    return Person.prototype.findOne().where({
+                    return Person.findOne().where({
                       name: 'Jeff Bridges'
                     }, function(err, found) {
                       expect(err).to.be(null);
@@ -862,11 +862,11 @@ describe('Neo4jMapper', function() {
         return Person;
 
       })(Node);
-      Node.prototype.register_model(Person);
+      Node.register_model(Person);
       return new Person({
         name: 'Alice'
       }).save(function(err, alice) {
-        return Person.prototype.findById(alice.id, function(err, alice) {
+        return Person.findById(alice.id, function(err, alice) {
           expect(alice.constructor_name).to.be.equal('Person');
           expect(alice.label).to.be.equal('Person');
           return done();
@@ -890,9 +890,9 @@ describe('Neo4jMapper', function() {
       person = new Person({
         name: 'Dave'
       });
-      return Node.prototype.findAll().match('n:Person').count(function(err, countBefore) {
+      return Node.findAll().match('n:Person').count(function(err, countBefore) {
         return person.save(function() {
-          return Node.prototype.findAll().match('n:Person').count(function(err, count) {
+          return Node.findAll().match('n:Person').count(function(err, count) {
             expect(err).to.be(null);
             expect(count).to.be.equal(countBefore + 1);
             return done();
@@ -949,7 +949,7 @@ describe('Neo4jMapper', function() {
 
           uid = node.data.uid;
           expect(err).to.be(null);
-          return Node.prototype.findByIndex('collection', 'uid', uid, function(err, found) {
+          return Node.findByIndex('collection', 'uid', uid, function(err, found) {
             expect(err).to.be(null);
             expect(found.data.uid).to.be.equal(uid);
             return done();
@@ -1146,7 +1146,7 @@ describe('Neo4jMapper', function() {
             since: 'year'
           }, function(err, result) {
             expect(result.id).to.be.above(0);
-            return Relationship.prototype.findById(result.id, function(err, found) {
+            return Relationship.findById(result.id, function(err, found) {
               expect(err).to.be(null);
               expect(found.id).to.be.equal(result.id);
               expect(found.data.since).to.be.equal('year');
@@ -1155,13 +1155,13 @@ describe('Neo4jMapper', function() {
               };
               return found.save(function(err) {
                 expect(err).to.be(null);
-                return Relationship.prototype.findById(result.id, function(err, found) {
+                return Relationship.findById(result.id, function(err, found) {
                   expect(err).to.be(null);
                   expect(found.data.since).to.be(void 0);
                   expect(found.data.from).to.be.equal('Berlin');
                   return found.remove(function(err) {
                     expect(err).to.be(null);
-                    return Relationship.prototype.findById(result.id, function(err, found) {
+                    return Relationship.findById(result.id, function(err, found) {
                       expect(err).to.be(null);
                       expect(found).to.be(null);
                       return done();
@@ -1185,7 +1185,7 @@ describe('Neo4jMapper', function() {
             since: 'year'
           }, function(err, result) {
             expect(err).to.be(null);
-            return Relationship.prototype.findById(result.id, function(err, relationship) {
+            return Relationship.findById(result.id, function(err, relationship) {
               expect(err).to.be(null);
               expect(relationship.from.data.name).to.be.equal('Alice');
               expect(relationship.to.data.name).to.be.equal('Bob');
@@ -1207,7 +1207,7 @@ describe('Neo4jMapper', function() {
             city: 'Berlin'
           }, function(err, relationship) {
             expect(err).to.be(null);
-            return Relationship.prototype.findById(relationship.id, function(err, relationship) {
+            return Relationship.findById(relationship.id, function(err, relationship) {
               expect(relationship.data.since).to.be.equal('years');
               expect(relationship.data.city).to.be.equal('Berlin');
               return relationship.update({

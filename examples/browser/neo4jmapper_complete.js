@@ -2143,7 +2143,7 @@
             })(x);
           }
           if (jobsToDo === 0) {
-            // TODO: before refactor it worked withaout this 
+            // TODO: check why before refactoring it also worked without this condition
             if ( (data.data[0]) && (typeof data.data[0][0] !== 'object') )
               sortedData = data.data[0][0];
             return _deliverResultset(self, cb, err, sortedData, debug);
@@ -2886,13 +2886,61 @@
     }
   
     /*
-     * Static methods accessible on Node
+     * Singleton methods, shorthands for their corresponding (static) prototype methods
      */
   
-    // Node.singleton = function(id) {
-    //   return Node.prototype.singleton(id);
-    // }
+    // TODO: maybe better to replace manual argument passing with .apply method?!
   
+    Node.singleton = function(id) {
+      return this.prototype.singleton(id);
+    }
+  
+    Node.find = function(where, cb) {
+      return this.prototype.find(where, cb);
+    }
+  
+    Node.findAll = function(cb) {
+      return this.prototype.findAll(cb);
+    }
+    Node.findByIndex = function(namespace, key, value, cb) {
+      return this.prototype.findByIndex(namespace, key, value, cb);
+    }
+  
+    Node.findByUniqueKeyValue = function(key, value, cb) {
+      return this.prototype.findByUniqueKeyValue(key, value, cb);
+    }
+  
+    Node.findById = function(id, cb) {
+      return this.prototype.findById(id, cb);
+    }
+    
+    Node.findOne = function(where, cb) {
+      return this.prototype.findOne(where, cb);
+    }
+  
+    Node.find = function(where, cb) {
+      return this.prototype.find(where, cb);
+    }
+  
+    Node.register_model = function(Class, label, cb) {
+      return this.prototype.register_model(Class, label, cb);
+    }
+  
+    Node.unregister_model = function(Class) {
+      return this.prototype.unregister_model(Class);
+    }
+  
+    Node.registered_models = function() {
+      return this.prototype.registered_models();
+    }
+  
+    Node.registered_model = function(model) {
+      return this.prototype.registered_model(model);
+    }
+  
+    Node.convert_node_to_model = function(node, model, fallbackModel) {
+      return this.prototype.convert_node_to_model(node, model, fallbackModel);
+    }
   
     return Node;
   
@@ -3050,7 +3098,9 @@
    * include file: 'src/relationship.js'
    */
   /*
-   * TODO: make query mapper from Node available for relationships as well
+   * TODO:
+   * + make query mapper from Node available for relationships as well
+   * + make relationships queryable with custom queries
    */
   
   var initRelationship = function(neo4jrestful) {
@@ -3079,6 +3129,7 @@
     /*
      * Constructor
      */
+    
     Relationship = function Relationship(data, start, end, id) {
       this.id = id || null;
       this.data = data || {};
@@ -3335,8 +3386,13 @@
       };
     }
   
-    // copy 1:1 some methods from Node object
-    // Relationship.prototype.copyTo = Node.prototype.copyTo;
+    /*
+     * Static singleton methods
+     */
+  
+    Relationship.findById = function(id, cb) {
+      return this.prototype.findById(id, cb);
+    }
   
     return Relationship;
   

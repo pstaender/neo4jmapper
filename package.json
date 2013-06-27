@@ -14,14 +14,16 @@
     "graphdatabase",
     "orm",
     "graph",
-    "database", 
-    "driver", 
+    "database",
+    "driver",
     "rest",
     "client"
   ],
   "scripts": {
     "test": "coffee -mcb test/ && mocha; npm run clean",
-    "clean": "find test -name '*.js' -delete -o -name '*.map' -delete"
+    "codecoverage": "coffee -mcb test/ && mocha --require blanket -R html-cov > test/coverage.html; npm run clean",
+    "clean": "find test -name '*.js' -delete -o -name '*.map' -delete",
+    "blanket": { "pattern": "src"}
   },
   "devDependencies": {
     "mocha": "~1.9",
@@ -29,13 +31,16 @@
     "should": "~1.2",
     "source-map-support": "*",
     "futures": "~2.3.1",
-    "join": "~2.3"
+    "join": "~2.3",
+    "coveralls": "~2.0.16",
+    "mocha-lcov-reporter": "0.0.1",
+    "blanket": "~1.1.5"
   },
   "dependencies": {
     "underscore": "~1.4",
     "jquery": "~1.8"
   },
-  "licenses" : {
-    "type" : "GPL"
+  "licenses": {
+    "type": "GPL"
   }
 }
