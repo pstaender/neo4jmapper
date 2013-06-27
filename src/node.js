@@ -1601,15 +1601,6 @@ var initNode = function(neo4jrestful) {
     return _.extend({},that);
   }
 
-  /*
-   * Static methods accessible on Node
-   */
-
-  // Node.singleton = function(id) {
-  //   return Node.prototype.singleton(id);
-  // }
-
-
   return Node;
 
 }
