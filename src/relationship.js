@@ -1,5 +1,7 @@
 /*
- * TODO: make query mapper from Node available for relationships as well
+ * TODO:
+ * + make query mapper from Node available for relationships as well
+ * + make relationships queryable with custom queries
  */
 
 var initRelationship = function(neo4jrestful) {
@@ -28,6 +30,7 @@ var initRelationship = function(neo4jrestful) {
   /*
    * Constructor
    */
+  
   Relationship = function Relationship(data, start, end, id) {
     this.id = id || null;
     this.data = data || {};
@@ -284,8 +287,13 @@ var initRelationship = function(neo4jrestful) {
     };
   }
 
-  // copy 1:1 some methods from Node object
-  // Relationship.prototype.copyTo = Node.prototype.copyTo;
+  /*
+   * Static singleton methods
+   */
+
+  Relationship.findById = function(id, cb) {
+    return this.prototype.findById(id, cb);
+  }
 
   return Relationship;
 

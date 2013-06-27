@@ -1601,6 +1601,63 @@ var initNode = function(neo4jrestful) {
     return _.extend({},that);
   }
 
+  /*
+   * Singleton methods, shorthands for their corresponding (static) prototype methods
+   */
+
+  // TODO: maybe better to replace manual argument passing with .apply method?!
+
+  Node.singleton = function(id) {
+    return this.prototype.singleton(id);
+  }
+
+  Node.find = function(where, cb) {
+    return this.prototype.find(where, cb);
+  }
+
+  Node.findAll = function(cb) {
+    return this.prototype.findAll(cb);
+  }
+  Node.findByIndex = function(namespace, key, value, cb) {
+    return this.prototype.findByIndex(namespace, key, value, cb);
+  }
+
+  Node.findByUniqueKeyValue = function(key, value, cb) {
+    return this.prototype.findByUniqueKeyValue(key, value, cb);
+  }
+
+  Node.findById = function(id, cb) {
+    return this.prototype.findById(id, cb);
+  }
+  
+  Node.findOne = function(where, cb) {
+    return this.prototype.findOne(where, cb);
+  }
+
+  Node.find = function(where, cb) {
+    return this.prototype.find(where, cb);
+  }
+
+  Node.register_model = function(Class, label, cb) {
+    return this.prototype.register_model(Class, label, cb);
+  }
+
+  Node.unregister_model = function(Class) {
+    return this.prototype.unregister_model(Class);
+  }
+
+  Node.registered_models = function() {
+    return this.prototype.registered_models();
+  }
+
+  Node.registered_model = function(model) {
+    return this.prototype.registered_model(model);
+  }
+
+  Node.convert_node_to_model = function(node, model, fallbackModel) {
+    return this.prototype.convert_node_to_model(node, model, fallbackModel);
+  }
+
   return Node;
 
 }

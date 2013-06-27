@@ -154,7 +154,7 @@ describe 'Neo4jMapper', ->
         expect(err).to.be null
         expect(storedNode.data.title).to.be node.data.title
         expect(storedNode.id).to.be.above 0
-        Node::findById id, (err, found) ->
+        Node.findById id, (err, found) ->
           expect(found).to.be.an 'object'
           expect(found.id).to.be.equal id
           expect(found.data.title).to.be.equal node.data.title
@@ -164,7 +164,7 @@ describe 'Neo4jMapper', ->
     it 'expect to find one specific node by id', (done) ->
       node = new Node title: new Date().toString()
       node.save ->
-        Node::findById node.id, (err, found) ->
+        Node.findById node.id, (err, found) ->
           expect(err).to.be null
           expect(found.data.title).to.be.equal node.data.title
           expect(found.id).to.be.equal node.id
@@ -174,7 +174,7 @@ describe 'Neo4jMapper', ->
     it 'expect to find one specific node by key/value', (done) ->
       node = new Node title: new Date().toString()
       node.save ->
-        Node::findByUniqueKeyValue 'title', node.data.title, (err, found) ->
+        Node.findByUniqueKeyValue 'title', node.data.title, (err, found) ->
           expect(err).to.be null
           expect(found.data.title).to.be.equal node.data.title
           expect(found.id).to.be.equal node.id
@@ -182,7 +182,7 @@ describe 'Neo4jMapper', ->
             done()
 
     it 'expect to get null as result if one specific node is not found', (done) ->
-      Node::findOne { SomeKey: new Date().getTime() }, (err, found) ->
+      Node.findOne { SomeKey: new Date().getTime() }, (err, found) ->
         expect(err).to.be null
         expect(found).to.be null
         done()
@@ -197,14 +197,14 @@ describe 'Neo4jMapper', ->
           expect(err).to.be null
           expect(bob.label).to.be 'Developer'
           expect(bob.labels[0]).to.be 'Developer'
-          Node::find { group_id: groupid }, (err, nodes) ->
+          Node.find { group_id: groupid }, (err, nodes) ->
             expect(err).to.be null
             expect(nodes).to.have.length 2
             expect(nodes[0].constructor_name).to.be.equal 'Node'
             expect(nodes[1].constructor_name).to.be.equal 'Node'
             class Developer extends Node
-            Node::register_model(Developer)
-            Developer::find { group_id: groupid }, (err, nodes) ->
+            Node.register_model(Developer)
+            Developer.find { group_id: groupid }, (err, nodes) ->
               expect(err).to.be null
               expect(nodes).to.have.length 1
               expect(nodes[0].data.name).to.be.equal 'Bob'
@@ -244,7 +244,7 @@ describe 'Neo4jMapper', ->
         done()
 
     it 'expect to get suitable error on wrong mapper cypher queries', (done) ->
-      Node::findOne().where "thisWillProduceAnError BECAUSE 'it\'s not a valid cypher query at all'", (err) ->
+      Node.findOne().where "thisWillProduceAnError BECAUSE 'it\'s not a valid cypher query at all'", (err) ->
         expect(err).to.be.an 'object'
         # the following values may vary between versions
         # we'll keep the anyway as long we have no major difficulties
@@ -264,10 +264,10 @@ describe 'Neo4jMapper', ->
             done()
 
     it 'expect to get null if node is not found', (done) ->
-      Node::findById 1234567890, (err, found) ->
+      Node.findById 1234567890, (err, found) ->
         expect(err).to.be null
         expect(found).to.be null
-        Node::findByUniqueKeyValue { key: new Date().getTime() }, (err, found) ->
+        Node.findByUniqueKeyValue { key: new Date().getTime() }, (err, found) ->
           expect(err).to.be null
           expect(found).to.be null
           done()
@@ -296,12 +296,12 @@ describe 'Neo4jMapper', ->
       new Node( { title: 'Hello World!' }).save (err, node) ->
         expect(node.data.title).to.be.equal 'Hello World!'
         id = node.id
-        Node::findById id, (err, found) ->
+        Node.findById id, (err, found) ->
           found.data.title = 'How are you?'
           found.update (err, savedNode) ->
             expect(savedNode.data.title).to.be.equal 'How are you?'
             expect(err).to.be null
-            Node::findById id, (err, foundAgain) ->
+            Node.findById id, (err, foundAgain) ->
               expect(foundAgain.data.title).to.be found.data.title
               foundAgain.removeWithRelationships (err) ->
                 expect(err).to.be null
@@ -356,25 +356,25 @@ describe 'Neo4jMapper', ->
 
     it 'expect to register and unregister models for nodes', ->
       class Person extends Node
-      Node::register_model(Person)
-      expect(Node::registered_models()['Person'].constructor).to.be Person.constructor
-      Node::unregister_model(Person)
-      expect(Node::registered_models()['Person']).to.be undefined
-      Node::register_model(Person)
-      Node::unregister_model('Person')
-      expect(Node::registered_models()['Person']).to.be undefined
+      Node.register_model(Person)
+      expect(Node.registered_models()['Person'].constructor).to.be Person.constructor
+      Node.unregister_model(Person)
+      expect(Node.registered_models()['Person']).to.be undefined
+      Node.register_model(Person)
+      Node.unregister_model('Person')
+      expect(Node.registered_models()['Person']).to.be undefined
 
     it 'expect to find corresponding node to each model', (done) ->
       class Movie extends Node
-      Node::register_model(Movie)
-      Movie::findAll().count (err, countBefore) ->
+      Node.register_model(Movie)
+      Movie.findAll().count (err, countBefore) ->
         expect(err).to.be null
         expect(countBefore).to.be.a 'number'
         lebowski = new Movie title: 'The Big Lebowski'
         lebowski.save (err, lebowski) ->
           expect(_.keys(lebowski.data)).to.have.length 1
           expect(err).to.be null
-          Movie::findAll().count (err, countNow) ->
+          Movie.findAll().count (err, countNow) ->
             expect(countBefore+1).to.be countNow
             lebowski.remove ->
               done()
@@ -385,12 +385,12 @@ describe 'Neo4jMapper', ->
         expect(err).to.be null
         expect(robert.constructor_name).to.be 'Director'
         expect(robert.label).to.be 'Director'
-        Node::findById robert.id, (err, found) ->
+        Node.findById robert.id, (err, found) ->
           # expect(found.constructor_name).to.be.equal 'Director'
           expect(found.label).to.be.equal 'Director'
 
-          Node::register_model(Director)
-          found = Node::convert_node_to_model(found, Director)
+          Node.register_model(Director)
+          found = Node.convert_node_to_model(found, Director)
           expect(found.constructor_name).to.be.equal 'Director'
 
           done()
@@ -407,7 +407,7 @@ describe 'Neo4jMapper', ->
             nested:
               id: true
       # using the cb is not mandatory but recommend
-      Node::register_model Movie, (err, result) ->
+      Node.register_model Movie, (err, result) ->
         # neo4j returns an error, if field(s) have been indexed already
         # in that case, we can ignore the errors -> so it'll be checked that we have only these expected errors
         if err
@@ -419,7 +419,7 @@ describe 'Neo4jMapper', ->
         deathAndMaiden.data.uid = uid
         deathAndMaiden.save (err) ->
           expect(err).to.be null
-          Movie::findAll().where { uid: uid }, (err, found) ->
+          Movie.findAll().where { uid: uid }, (err, found) ->
             expect(err).to.be null
             expect(found).to.have.length 1
             expect(found[0].data.uid).to.be.equal uid
@@ -443,13 +443,13 @@ describe 'Neo4jMapper', ->
             uid: -> new Date().getTime()
             is_movie: true
             director: 'Roman Polanski'
-      Node::register_model(Movie)
+      Node.register_model(Movie)
       bitterMoon = new Movie title: 'Bitter Moon'
       bitterMoon.save (err) ->
         expect(err).to.be null
         uid = bitterMoon.data.uid
         expect(uid).to.be.a 'number'
-        Movie::findAll().where { uid: uid }, (err, found) ->
+        Movie.findAll().where { uid: uid }, (err, found) ->
           expect(err).to.be null
           expect(found).to.have.length 1
           expect(found[0].data.uid).to.be.equal uid
@@ -490,7 +490,7 @@ describe 'Neo4jMapper', ->
           defaults: {}
           indexes: {}
       p = new Person( name: 'Jeff Bridges' )
-      Node::register_model(Person)
+      Node.register_model(Person)
       new Person( name: 'Jeff Bridges' ).save (err, jeff) ->
         jeff.allLabels (err, labels) ->
           expect(err).to.be null
@@ -509,7 +509,7 @@ describe 'Neo4jMapper', ->
                     expect(err).to.be null
                     expect(labels).to.have.length 1
                     expect(labels[0]).to.be.equal 'Person'
-                    Person::findOne().where { name: 'Jeff Bridges' }, (err, found) ->
+                    Person.findOne().where { name: 'Jeff Bridges' }, (err, found) ->
                       expect(err).to.be null
                       found.load (err, jeff) ->
                         expect(jeff.label).to.be.equal 'Person'
@@ -527,9 +527,9 @@ describe 'Neo4jMapper', ->
 
     it 'expect to find node including labels', (done) ->
       class Person extends Node
-      Node::register_model(Person)
+      Node.register_model(Person)
       new Person({ name: 'Alice' }).save (err, alice) ->
-        Person::findById alice.id, (err, alice) ->
+        Person.findById alice.id, (err, alice) ->
           expect(alice.constructor_name).to.be.equal 'Person'
           expect(alice.label).to.be.equal 'Person'
           # expect(alice.labels.constructor).to.be Array
@@ -539,9 +539,9 @@ describe 'Neo4jMapper', ->
     it 'expect to find labeled nodes', (done) ->
       class Person extends Node
       person = new Person({name: 'Dave'})
-      Node::findAll().match('n:Person').count (err, countBefore) ->
+      Node.findAll().match('n:Person').count (err, countBefore) ->
         person.save ->
-          Node::findAll().match('n:Person').count (err, count) ->
+          Node.findAll().match('n:Person').count (err, count) ->
             expect(err).to.be null
             expect(count).to.be.equal countBefore+1
             done()
@@ -581,7 +581,7 @@ describe 'Neo4jMapper', ->
         node.save (err) ->  
           uid = node.data.uid
           expect(err).to.be null
-          Node::findByIndex 'collection', 'uid', uid, (err, found) ->
+          Node.findByIndex 'collection', 'uid', uid, (err, found) ->
             expect(err).to.be null
             expect(found.data.uid).to.be.equal uid
             done()
@@ -717,20 +717,20 @@ describe 'Neo4jMapper', ->
         new Node().save (err, b) ->
           a.createRelationshipTo b, 'related', { since: 'year' }, (err, result) ->
             expect(result.id).to.be.above 0
-            Relationship::findById result.id, (err, found) ->
+            Relationship.findById result.id, (err, found) ->
               expect(err).to.be null
               expect(found.id).to.be.equal result.id
               expect(found.data.since).to.be.equal 'year'
               found.data = from: 'Berlin'
               found.save (err) ->
                 expect(err).to.be null
-                Relationship::findById result.id, (err, found) ->
+                Relationship.findById result.id, (err, found) ->
                   expect(err).to.be null
                   expect(found.data.since).to.be undefined
                   expect(found.data.from).to.be.equal 'Berlin'
                   found.remove (err) ->
                     expect(err).to.be null
-                    Relationship::findById result.id, (err, found) ->
+                    Relationship.findById result.id, (err, found) ->
                       expect(err).to.be null
                       expect(found).to.be null
                       done()
@@ -740,7 +740,7 @@ describe 'Neo4jMapper', ->
         new Node( name: 'Bob' ).save (err, b) ->
           a.createRelationshipTo b, 'related', { since: 'year' }, (err, result) -> 
             expect(err).to.be null
-            Relationship::findById result.id, (err, relationship) ->
+            Relationship.findById result.id, (err, relationship) ->
               expect(err).to.be null
               expect(relationship.from.data.name).to.be.equal 'Alice'
               expect(relationship.to.data.name).to.be.equal 'Bob'
@@ -751,7 +751,7 @@ describe 'Neo4jMapper', ->
         new Node( name: 'Bob' ).save (err, b) ->
           a.createRelationshipTo b, 'related', { since: 'years', city: 'Berlin' }, (err, relationship) ->
             expect(err).to.be null
-            Relationship::findById relationship.id, (err, relationship) ->
+            Relationship.findById relationship.id, (err, relationship) ->
               expect(relationship.data.since).to.be.equal 'years'
               expect(relationship.data.city).to.be.equal 'Berlin'
               relationship.update since: 'months', (err, updatedRelationship) ->
