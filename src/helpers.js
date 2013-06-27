@@ -760,6 +760,10 @@ var neo4jmapper_helpers = {};
     }
   };
 
+  var isValidData = function(data) {
+    return Boolean( (typeof data === 'object') && (data !== null) );
+  }
+
   return neo4jmapper_helpers = {
     sortStringAndOptionsArguments: sortStringAndOptionsArguments,
     sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
@@ -771,7 +775,8 @@ var neo4jmapper_helpers = {};
     escapeString: escapeString,
     sprintf: sprintf,
     constructorNameOfFunction: constructorNameOfFunction,
-    cypherKeyValueToString: cypherKeyValueToString
+    cypherKeyValueToString: cypherKeyValueToString,
+    isValidData: isValidData
   };
 
 })();

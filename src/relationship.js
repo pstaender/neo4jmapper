@@ -62,6 +62,7 @@ var initRelationship = function(neo4jrestful) {
   Relationship.prototype.from = null;
   Relationship.prototype.to = null;
   Relationship.prototype.id = null;
+  Relationship.prototype._id_ = null;
   Relationship.prototype.uri = null;
   Relationship.prototype._response = null;
   // Relationship.prototype._modified_query = false;
@@ -136,29 +137,27 @@ var initRelationship = function(neo4jrestful) {
     if (this.is_singleton)
       return cb(Error('Singleton instances can not be persisted'), null);
     this._modified_query = false;
-    
-    if (this.hasId()) {
-      var url = '/db/data/relationship/'+this.id+'/properties';
-      var method = 'put';
+    if (this._id_) {
+      // copy 'private' _id_ to public
+      this.id = this._id_;
+      return this.update(cb);
     } else {
       var url = '/db/relationship/relationship';
-      var method = 'post';
+      this.neo4jrestful.post(url, { data: this.flattenData() }, function(err,data){
+        if (err)
+          cb(err,data);
+        else {
+          self.populateWithDataFromResponse(data);
+          return cb(null, data);
+        }
+      });
     }
-    this.neo4jrestful[method](url, { data: this.flattenData() }, function(err,data){
-      if (err)
-        cb(err,data);
-      else {
-        self.populateWithDataFromResponse(data);
-        return cb(null, data);
-      }
-    });
-
   }
 
   Relationship.prototype.update = function(data, cb) {
     var self = this;
-    if (typeof data === 'object') {
-      this.data = data;
+    if (helpers.isValidData(data)) {
+      this.data = _.extend(this.data, data);
     } else {
       cb = data;
     }
@@ -166,6 +165,8 @@ var initRelationship = function(neo4jrestful) {
       return cb(Error('Singleton instances can not be persisted'), null);
     this._modified_query = false;
     if (this.hasId()) {
+      // copy 'private' _id_ to public
+      this.id = this._id_;
       this.neo4jrestful.put('/db/data/relationship/'+this.id+'/properties', { data: this.flattenData() }, function(err,data){
         if (err)
           return cb(err, data);
@@ -204,7 +205,7 @@ var initRelationship = function(neo4jrestful) {
       relationship.uri  = relationship._response.self;
       relationship.type = relationship._response.type;
       if ((relationship._response.self) && (relationship._response.self.match(/[0-9]+$/))) {
-        relationship.id = Number(relationship._response.self.match(/[0-9]+$/)[0]);
+        relationship.id = relationship._id_ = Number(relationship._response.self.match(/[0-9]+$/)[0]);
       }
       if ((relationship._response.start) && (relationship._response.start.match(/[0-9]+$/))) {
         relationship.from.uri = relationship.start = relationship._response.start;
@@ -231,11 +232,13 @@ var initRelationship = function(neo4jrestful) {
   Relationship.prototype.loadFromAndToNodes = function(cb) {
     var self = this;
     var attributes = [ 'from', 'to' ];
+    var done = 0;
     for (var i = 0; i < 2; i++) {
       (function(point){
         Node.prototype.findById(self[point].id,function(err,node) {
           self[point] = node;
-          if (point === 'to') {
+          done++;
+          if (done === 2) {
             cb(null, self);
           }
             
@@ -280,6 +283,9 @@ var initRelationship = function(neo4jrestful) {
       type: this.type
     };
   }
+
+  // copy 1:1 some methods from Node object
+  // Relationship.prototype.copyTo = Node.prototype.copyTo;
 
   return Relationship;
 

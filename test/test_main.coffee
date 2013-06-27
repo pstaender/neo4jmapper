@@ -292,7 +292,7 @@ describe 'Neo4jMapper', ->
         expect(node.data.other.nested).to.have.length 1
         done()
 
-    it 'expect to update a node and expecting ', (done) ->
+    it 'expect to update a node', (done) ->
       new Node( { title: 'Hello World!' }).save (err, node) ->
         expect(node.data.title).to.be.equal 'Hello World!'
         id = node.id
@@ -307,6 +307,23 @@ describe 'Neo4jMapper', ->
                 expect(err).to.be null
                 node.remove ->
                   done()
+
+    it 'expect to update data of a node with changing accidently id', (done) ->
+      new Node({ name: 'Dave Grohl', origin: { country: 'USA', state: '' } }).save (err, dave) ->
+        expect(err).to.be null
+        expect(dave.data.name).to.be.equal 'Dave Grohl'
+        expect(dave.data.origin.state).to.be.equal ''
+        expect(dave.data.origin.country).to.be.equal 'USA'
+        id = dave.id
+        dave.id = -2
+        expect(id).to.be.above 0
+        dave.update { origin: { state: 'Ohio'} }, (err, daveSaved) ->
+          expect(err).to.be null
+          expect(dave.data.name).to.be.equal 'Dave Grohl'
+          expect(dave.data.origin.state).to.be.equal 'Ohio'
+          expect(dave.data.origin.country).to.be undefined
+          expect(dave.id).to.be id
+          done()
 
     it 'expect to execute onBeforeSave hook if defined', (done) ->
       n = new Node()
@@ -716,10 +733,44 @@ describe 'Neo4jMapper', ->
                     Relationship::findById result.id, (err, found) ->
                       expect(err).to.be null
                       expect(found).to.be null
-                      Node::findById 123, (err, found) ->
-                        expect(err).to.be null
-                        expect(found).to.be null
-                        done()
+                      done()
+
+    it 'expect to trigger load hook and loading both nodes on getById', (done) ->
+      new Node( name: 'Alice' ).save (err, a) ->
+        new Node( name: 'Bob' ).save (err, b) ->
+          a.createRelationshipTo b, 'related', { since: 'year' }, (err, result) -> 
+            expect(err).to.be null
+            Relationship::findById result.id, (err, relationship) ->
+              expect(err).to.be null
+              expect(relationship.from.data.name).to.be.equal 'Alice'
+              expect(relationship.to.data.name).to.be.equal 'Bob'
+              done()
+
+    it 'expect to update a relationship with preventing id accidently changing and with value extending', (done) ->
+      new Node( name: 'Alice' ).save (err, a) ->
+        new Node( name: 'Bob' ).save (err, b) ->
+          a.createRelationshipTo b, 'related', { since: 'years', city: 'Berlin' }, (err, relationship) ->
+            expect(err).to.be null
+            Relationship::findById relationship.id, (err, relationship) ->
+              expect(relationship.data.since).to.be.equal 'years'
+              expect(relationship.data.city).to.be.equal 'Berlin'
+              relationship.update since: 'months', (err, updatedRelationship) ->
+                expect(relationship.data.since).to.be.equal 'months'
+                expect(relationship.data.city).to.be.equal 'Berlin'
+                expect(updatedRelationship.data.since).to.be.equal 'months'
+                expect(updatedRelationship.data.city).to.be.equal 'Berlin'
+                id = relationship.id
+                relationship.id = -2
+                relationship.data.city = 'Cologne'
+                relationship.save (err, updatedRelationship) ->
+                  expect(err).to.be null
+                  expect(relationship.id).to.equal id
+                  expect(updatedRelationship.data.since).to.be.equal 'months'
+                  expect(updatedRelationship.data.city).to.be.equal 'Cologne'
+                  expect(relationship.data.since).to.be.equal 'months'
+                  expect(relationship.data.city).to.be.equal 'Cologne'
+                  done()
+
 
   describe 'helpers', ->
 

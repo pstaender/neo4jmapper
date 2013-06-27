@@ -310,12 +310,9 @@ You can easiliy inspect the generated queries by invoking the `toCypherQuery()` 
 There are some steps to take, especially some methods for daily use are missing, yet. But the basic set of operations are already implemented and tested.
 
   * Implement: relationship (index)
-  * Better test coverage
-
-  * _id_ attribute
-  * Nodes as shortcut for Node.prototype.singleton()
-  * flatten indexes and defaults
-  * Schema?!
+  * measure of code coverage
+  * nodes as shortcut for Node.prototype.singleton()
+  * Schemas … ?!
   * Nice Documentation
 
 ## Terminal usage

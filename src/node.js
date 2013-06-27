@@ -306,6 +306,10 @@ var initNode = function(neo4jrestful) {
     return helpers.unflattenObject(data);
   }
 
+  Node.prototype.hasValidData = function() {
+    return helpers.isValidData(this.data);
+  }
+
   Node.prototype.applyDefaultValues = function() {
     // flatten data and defaults
     var data     = helpers.flattenObject(this.data);
@@ -391,6 +395,8 @@ var initNode = function(neo4jrestful) {
     var self = this;
     if (this.is_singleton)
       return cb(Error('Singleton instances can not be persisted'), null);
+    if (!this.hasValidData())
+      return cb(Error('Node does not contain valid data. `node.data` must be an object.'));
     this._modified_query = false;
     this.applyDefaultValues();
     var method = null;
@@ -414,10 +420,12 @@ var initNode = function(neo4jrestful) {
       else
         return cb(null, data, debug);
     }
+    
+    this.id = this._id_;
 
-    if (this.hasId()) {
+    if (this.id > 0) {
       method = 'update';
-      this.neo4jrestful.put('/db/data/node/'+this.id+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+      this.neo4jrestful.put('/db/data/node/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
         self.populateWithDataFromResponse(node._response);
         cb(err, node, debug);
       });
@@ -456,9 +464,10 @@ var initNode = function(neo4jrestful) {
 
   Node.prototype.update = function(data, cb) {
     var self = this;
-    if (this.hasId()) {
-      if (typeof data === 'object') {
-        this.data = data;
+    if (this._id_ > 0) {
+      if (helpers.isValidData(data)) {
+        // we apply the data upon the current data
+        this.data = _.extend(this.data, data);
       } else {
         cb = data;
       }
@@ -1591,6 +1600,14 @@ var initNode = function(neo4jrestful) {
   Node.prototype.copy_of = function(that) {
     return _.extend({},that);
   }
+
+  /*
+   * Static methods accessible on Node
+   */
+
+  // Node.singleton = function(id) {
+  //   return Node.prototype.singleton(id);
+  // }
 
 
   return Node;
