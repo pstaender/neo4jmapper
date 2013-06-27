@@ -859,7 +859,7 @@ var initNode = function(neo4jrestful) {
           })(x);
         }
         if (jobsToDo === 0) {
-          // TODO: before refactor it worked withaout this 
+          // TODO: check why before refactoring it also worked without this condition
           if ( (data.data[0]) && (typeof data.data[0][0] !== 'object') )
             sortedData = data.data[0][0];
           return _deliverResultset(self, cb, err, sortedData, debug);
