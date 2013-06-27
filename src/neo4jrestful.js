@@ -320,7 +320,8 @@ var initNeo4jRestful = function() {
     }
   }
 
-  Neo4jRestful.prototype.onError = function(cb, err, res, options) {    
+  Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
+    var err = responseError;
     var self = this;
     var statusCode = err.status;
     var error = ( err && err.responseText ) ? Error(err.responseText) : err;
@@ -333,13 +334,10 @@ var initNeo4jRestful = function() {
     try {
       // try to extract the first <p> or <pre> from html body, else return error object for better debugging
       if (jQuery(err.responseText).find('body pre:first, body p:first')[0])
-        error = new Error(jQuery(err.responseText).find('body pre:first, body p:first').first().text().trim().replace(/(\s|\n)+/g,' '));
+        err.responseText = jQuery(err.responseText).find('body pre:first, body p:first').first().text().trim().replace(/(\s|\n)+/g,' ');
       else if (jQuery(err.responseText).text()) {
-        error = jQuery(err.responseText).text().trim();
-      } else {
-        error = err;
+        err.responseText = jQuery(err.responseText).text().trim();
       }
-      return cb(error,null, options._debug);
     } catch(e) {
       // ignore exception
     }
@@ -363,9 +361,8 @@ var initNeo4jRestful = function() {
     if ( (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
       // we ignore by default notfound exceptions, because they are no "syntactical" errors
       return cb(null, null, options._debug);
-    } else if (error) {
-      return cb(error, null, options._debug);
     } else {
+      // console.log('(!!!')
       return cb(err, null, options._debug);
     }
 
