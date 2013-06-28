@@ -30,18 +30,28 @@ var initNeo4jRestful = function() {
     path         = require('./path');
   }
 
+  var CustomError = function(message) {
+    if (typeof message === 'string')
+      this.message = message;
+  }
+
+  CustomError.prototype.message = '';
+  CustomError.prototype.name = '';
+  CustomError.prototype.exception = null;
+  CustomError.prototype.cypher = null;
+  CustomError.prototype.stacktrace = null;
+  CustomError.prototype.statusCode = null;
+  CustomError.prototype.method = null;
+  CustomError.prototype.url = null;
+  CustomError.prototype.data = null;
+
+
   var QueryError = function(message, options, name) {
-      this.name = (typeof name === 'string') ? name : "QueryError";
-      this.message = message || '';
-      if (typeof options === 'object') {
-        this.exception = options.exception || null;
-        this.cypher = options.cypher || null;
-        this.stacktrace = options.stacktrace || null;
-        this.statusCode = options.statusCode || null;
-        this.method = options.method || null;
-        this.url = options.url || null;
-        this.data = options.data || null;
-      }
+    var error = new CustomError(message);
+    error.name = (typeof name === 'string') ? name : "QueryError";
+    if (typeof options === 'object') {
+      error = _.extend(error, options);
+    }
   }
 
   var CypherQueryError = function(message, options) {

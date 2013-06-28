@@ -234,7 +234,7 @@ var initRelationship = function(neo4jrestful) {
 
   Relationship.prototype.loadFromAndToNodes = function(cb) {
     var self = this;
-    var attributes = [ 'from', 'to' ];
+    var attributes = ['from', 'to'];
     var done = 0;
     for (var i = 0; i < 2; i++) {
       (function(point){
