@@ -20,8 +20,9 @@
     "client"
   ],
   "scripts": {
-    "test":           "make test",
-    "clean":          "find test -name '*.js' -delete -o -name '*.map' -delete",
+    "test": "make test",
+    "clean": "find test -name '*.js' -delete -o -name '*.map' -delete",
+    "preinstall": "npm i -g coffee-script mocha-lcov-reporter",
     "blanket": {
       "pattern": "src"
     }
@@ -36,7 +37,8 @@
     "coveralls": "~2.0.16",
     "mocha-lcov-reporter": "0.0.1",
     "blanket": "~1.1.5",
-    "jscoverage": "~0.3.7"
+    "jscoverage": "~0.3.7",
+    "coffee-script": "~1.6.3"
   },
   "dependencies": {
     "underscore": "~1.4",

@@ -3,6 +3,7 @@ test:test-build
 	npm run clean
 
 test-build:
+	npm run preinstall
 	coffee -mcb test/
 
 test-coverage:test-build
