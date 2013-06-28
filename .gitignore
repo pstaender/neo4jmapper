@@ -4,5 +4,6 @@ npm-debug.log
 # test + code coverage tmp files
 test/*.js
 test/*.map
+test/coverage.html
 src-cov/*
 coverage.lcov
