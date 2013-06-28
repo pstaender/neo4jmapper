@@ -1,5 +1,8 @@
 .DS_Store
 node_modules/*
+npm-debug.log
+# test + code coverage tmp files
 test/*.js
 test/*.map
-npm-debug.log
+src-cov/*
+coverage.lcov

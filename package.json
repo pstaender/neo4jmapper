@@ -1,7 +1,7 @@
 {
   "name": "neo4jmapper",
   "description": "Neo4jMapper is a client- and serverside object mapper for neo4j graphdatabases",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "author": "Philipp Staender <philipp.staender@gmail.com>",
   "homepage": "https://github.com/pstaender/neo4jmapper/",
   "main": "./src/index",
@@ -20,10 +20,11 @@
     "client"
   ],
   "scripts": {
-    "test": "coffee -mcb test/ && mocha; npm run clean",
-    "codecoverage": "coffee -mcb test/ && mocha --require blanket -R html-cov > test/coverage.html; npm run clean",
-    "clean": "find test -name '*.js' -delete -o -name '*.map' -delete",
-    "blanket": { "pattern": "src"}
+    "test":           "make test",
+    "clean":          "find test -name '*.js' -delete -o -name '*.map' -delete",
+    "blanket": {
+      "pattern": "src"
+    }
   },
   "devDependencies": {
     "mocha": "~1.9",
@@ -34,7 +35,8 @@
     "join": "~2.3",
     "coveralls": "~2.0.16",
     "mocha-lcov-reporter": "0.0.1",
-    "blanket": "~1.1.5"
+    "blanket": "~1.1.5",
+    "jscoverage": "~0.3.7"
   },
   "dependencies": {
     "underscore": "~1.4",

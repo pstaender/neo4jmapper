@@ -9,7 +9,7 @@ if root?
   configForTest = require('./config')
 
   # neo4j mapper modules
-  Neo4j         = require('../src/index.js')
+  Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
   # patter matching for objects we will need for the tests
   {Graph,Node,helpers,client}  = new Neo4j(configForTest.neo4jURL)
@@ -17,7 +17,7 @@ if root?
 else if window?
   # tests in browser
   configForTest = _.extend({
-    doLog: false#console.log
+    doLog: false
     wipeDatabase: false
     neo4jURL: 'http://yourserver:0000/'
     startInstantly: false
