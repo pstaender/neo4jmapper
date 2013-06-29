@@ -426,14 +426,16 @@ var initNode = function(neo4jrestful) {
     if (this.id > 0) {
       method = 'update';
       this.neo4jrestful.put('/db/data/node/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+        if ((err) || (!node))
+          return cb(err, node);
         self.populateWithDataFromResponse(node._response);
         cb(err, node, debug);
       });
     } else {
       method = 'create';   
       this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, function(err, node, debug) {
-        if (node)
-          node.copyTo(self);
+        if ((err) || (!node))
+          return cb(err, node);
         _prepareData(err, node, debug);
       });
     }
@@ -834,6 +836,7 @@ var initNode = function(neo4jrestful) {
       else {
         var sortedData = [];
         var jobsToDo = data.data.length;
+        var errors = [];
         for (var x=0; x < data.data.length; x++) {
           if (typeof data.data[x][0] === 'undefined') {
             jobsToDo--;
@@ -843,13 +846,15 @@ var initNode = function(neo4jrestful) {
           (function(x){
             if (typeof basicNode.load === 'function') {
               basicNode.load(function(err, node) {
+                if ((err) || (!node))
+                  errors.push(err);
                 // convert node to it's model if it has a distinct label and differs from static method
-                if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
+                else if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
                   Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
                 jobsToDo--;
                 sortedData[x] = node;
                 if (jobsToDo === 0)
-                  return _deliverResultset(self, cb, err, sortedData, debug);
+                  return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
               });
             } else {
               // no load() function found

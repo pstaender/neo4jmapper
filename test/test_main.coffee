@@ -684,6 +684,19 @@ client.checkAvailability (err) ->
                               expect(result).to.have.length 3
                               done()
 
+        it 'expect to get start and end nodes from relationships', (done) ->
+          new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) -> new Node({name: 'Charles'}).save (err, charles) ->
+            expect(alice.data.name).to.be 'Alice'
+            expect(bob.data.name).to.be 'Bob'
+            alice.createOrUpdateRelationshipBetween bob, 'know', (err) ->
+              expect(err).to.be null
+              charles.createRelationshipTo alice, 'know', (err) ->
+                expect(err).to.be null
+                alice.incomingRelationships 'know', (err, result) ->
+                  expect(result).to.have.length 2
+                  expect(result[0].to.id).to.be.above 0
+                  done()
+
       describe 'path algorithms', ->
 
         it 'expect to find shortest path from one node to an other node', (done) ->
