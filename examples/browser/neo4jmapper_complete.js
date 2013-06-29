@@ -22,6 +22,80 @@
   
     
   /*
+   * include file: 'src/lib/sequence.js'
+   */
+  // originally from: https://github.com/coolaj86/futures
+  ;(function() {
+  
+    function isSequence(obj) {
+      return obj instanceof Sequence;
+    }
+  
+    function Sequence(global_context) {
+      var self = this,
+        waiting = true,
+        data,
+        stack = [];
+  
+      if (!isSequence(this)) {
+        return new Sequence(global_context);
+      }
+  
+      global_context = global_context || null;
+  
+      function next() {
+        var args = Array.prototype.slice.call(arguments),
+          seq = stack.shift(); // BUG this will eventually leak
+  
+        data = arguments;
+  
+        if (!seq) {
+          // the chain has ended (for now)
+          waiting = true;
+          return;
+        }
+  
+        args.unshift(next);
+        seq.callback.apply(seq._context, args);
+      }
+  
+      function then(callback, context) {
+        if ('function' !== typeof callback) {
+          throw new Error("`Sequence().then(callback [context])` requires that `callback` be a function and that `context` be `null`, an object, or a function");
+        }
+        stack.push({
+          callback: callback,
+          _context: (null === context ? null : context || global_context),
+          index: stack.length
+        });
+  
+        // if the chain has stopped, start it back up
+        if (waiting) {
+          waiting = false;
+          next.apply(null, data);
+        }
+  
+        return self;
+      }
+  
+      self.next = next;
+      self.then = then;
+    }
+  
+    function createSequence(context) {
+      // TODO use prototype instead of new
+      return (new Sequence(context));
+    }
+    Sequence.create = createSequence;
+    Sequence.isSequence = isSequence;
+  
+    if (typeof window === 'object')
+      window.Sequence = Sequence;
+    else
+      module.exports = Sequence;
+      
+  })();  
+  /*
    * include file: 'src/helpers.js'
    */
   var neo4jmapper_helpers = {};
@@ -846,18 +920,28 @@
       path         = require('./path');
     }
   
+    var CustomError = function(message) {
+      if (typeof message === 'string')
+        this.message = message;
+    }
+  
+    CustomError.prototype.message = '';
+    CustomError.prototype.name = '';
+    CustomError.prototype.exception = null;
+    CustomError.prototype.cypher = null;
+    CustomError.prototype.stacktrace = null;
+    CustomError.prototype.statusCode = null;
+    CustomError.prototype.method = null;
+    CustomError.prototype.url = null;
+    CustomError.prototype.data = null;
+  
+  
     var QueryError = function(message, options, name) {
-        this.name = (typeof name === 'string') ? name : "QueryError";
-        this.message = message || '';
-        if (typeof options === 'object') {
-          this.exception = options.exception || null;
-          this.cypher = options.cypher || null;
-          this.stacktrace = options.stacktrace || null;
-          this.statusCode = options.statusCode || null;
-          this.method = options.method || null;
-          this.url = options.url || null;
-          this.data = options.data || null;
-        }
+      var error = new CustomError(message);
+      error.name = (typeof name === 'string') ? name : "QueryError";
+      if (typeof options === 'object') {
+        error = _.extend(error, options);
+      }
     }
   
     var CypherQueryError = function(message, options) {
@@ -1187,7 +1271,7 @@
     Neo4jRestful.prototype.makeRequest = function(_options, cb) {
       _options = _.extend({
         cache: false,
-        timeout: 1000,
+        timeout: this.timeout,
         loadNode: true // enables the load hooks
       }, _options);
       var self = this;
@@ -1286,17 +1370,20 @@
   
     var _neo4jrestful = null
       , helpers = null
-      , _ = null;
+      , _ = null
+      , Sequence = null;
   
     if (typeof window === 'object') {
       // browser
       // TODO: find a solution for bson object id
-      helpers = neo4jmapper_helpers;
-      _       = window._;
+      helpers  = neo4jmapper_helpers;
+      _        = window._;
+      Sequence = window.Sequence;
     } else {
       // nodejs
       helpers  = require('./helpers');
-      _        = require('underscore')
+      _        = require('underscore');
+      Sequence = require('./lib/sequence');
     }
   
     // we can only check for object type,
@@ -1710,14 +1797,16 @@
       if (this.id > 0) {
         method = 'update';
         this.neo4jrestful.put('/db/data/node/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+          if ((err) || (!node))
+            return cb(err, node);
           self.populateWithDataFromResponse(node._response);
           cb(err, node, debug);
         });
       } else {
         method = 'create';   
         this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, function(err, node, debug) {
-          if (node)
-            node.copyTo(self);
+          if ((err) || (!node))
+            return cb(err, node);
           _prepareData(err, node, debug);
         });
       }
@@ -2117,37 +2206,41 @@
           return cb(err, data, debug);
         else {
           var sortedData = [];
-          var jobsToDo = data.data.length;
+          var errors = [];
+          // we are using the 
+          var sequence = Sequence.create();
+          // we iterate through the results
           for (var x=0; x < data.data.length; x++) {
             if (typeof data.data[x][0] === 'undefined') {
-              jobsToDo--;
               break;
             }
             var basicNode = self.neo4jrestful.createObjectFromResponseData(data.data[x][0], DefaultConstructor);
             (function(x){
-              if (typeof basicNode.load === 'function') {
-                basicNode.load(function(err, node) {
-                  // convert node to it's model if it has a distinct label and differs from static method
-                  if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
-                    Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
-                  jobsToDo--;
-                  sortedData[x] = node;
-                  if (jobsToDo === 0)
-                    return _deliverResultset(self, cb, err, sortedData, debug);
-                });
-              } else {
-                // no load() function found
-                sortedData[x] = basicNode;
-                jobsToDo--;
-              }
+              sequence.then(function(next) {
+                if (typeof basicNode.load === 'function') {
+                  basicNode.load(function(err, node) {
+                    if ((err) || (!node))
+                      errors.push(err);
+                    // convert node to it's model if it has a distinct label and differs from static method
+                    else if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
+                      Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
+                    sortedData[x] = node;
+                    next();
+                  });
+                } else {
+                  // no load() function found
+                  sortedData[x] = basicNode;
+                  next();
+                }
+              });
             })(x);
           }
-          if (jobsToDo === 0) {
-            // TODO: check why before refactoring it also worked without this condition
+          sequence.then(function(next){
+            //finally
             if ( (data.data[0]) && (typeof data.data[0][0] !== 'object') )
               sortedData = data.data[0][0];
-            return _deliverResultset(self, cb, err, sortedData, debug);
-          }
+            return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
+          });
         }
       }
   
@@ -2525,7 +2618,9 @@
             if (result.length === 1) {
               // if we have only one relationship, we update this one
               // var properties = (options.properties) ? options.properties : {};
-              return self.neo4jrestful.put('/db/data/relationship/'+result[0].id+'/properties', { data: options.properties }, function(err) {
+              return self.neo4jrestful.put('/db/data/relationship/'+result[0].id+'/properties', {
+                data: options.properties
+              }, function(err) {
                 if (err)
                   cb(err, null);
                 else {
@@ -3333,15 +3428,18 @@
   
     Relationship.prototype.loadFromAndToNodes = function(cb) {
       var self = this;
-      var attributes = [ 'from', 'to' ];
+      var attributes = ['from', 'to'];
       var done = 0;
+      var errors = [];
       for (var i = 0; i < 2; i++) {
         (function(point){
           Node.prototype.findById(self[point].id,function(err,node) {
             self[point] = node;
+            if (err)
+              errors.push(err);
             done++;
             if (done === 2) {
-              cb(null, self);
+              cb((errors.length === 0) ? null : errors, self);
             }
               
           });

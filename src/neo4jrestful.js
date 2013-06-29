@@ -381,7 +381,7 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype.makeRequest = function(_options, cb) {
     _options = _.extend({
       cache: false,
-      timeout: 1000,
+      timeout: this.timeout,
       loadNode: true // enables the load hooks
     }, _options);
     var self = this;

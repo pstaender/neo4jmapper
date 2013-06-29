@@ -236,13 +236,16 @@ var initRelationship = function(neo4jrestful) {
     var self = this;
     var attributes = ['from', 'to'];
     var done = 0;
+    var errors = [];
     for (var i = 0; i < 2; i++) {
       (function(point){
         Node.prototype.findById(self[point].id,function(err,node) {
           self[point] = node;
+          if (err)
+            errors.push(err);
           done++;
           if (done === 2) {
-            cb(null, self);
+            cb((errors.length === 0) ? null : errors, self);
           }
             
         });

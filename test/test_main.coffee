@@ -33,10 +33,8 @@ version = client.version
 graphdb = null # will be initialized in before()
 
 # get version of neo4j
-client.checkAvailability (err) ->
+client.checkAvailability (err, version) ->
   
-  version = client.version
-
   if version < 2
     # these tests do only run on versions >= 2
     describe 'Neo4jMapper', ->

@@ -9,7 +9,7 @@ if (typeof root !== "undefined" && root !== null) {
   Join = require('join');
   _ = require('underscore');
   configForTest = require('./config');
-  Neo4j = require('../src/index.js');
+  Neo4j = require("../" + configForTest.srcFolder + "/index.js");
   _ref = new Neo4j(configForTest.neo4jURL), Graph = _ref.Graph, Node = _ref.Node, helpers = _ref.helpers, client = _ref.client;
 } else if (typeof window !== "undefined" && window !== null) {
   configForTest = _.extend({

@@ -11,6 +11,7 @@ task 'clientsidejs:build', ->
   outputPath = __dirname+"/examples/browser/neo4jmapper_complete.js"
   files = """
     src/browser/browser_header.js
+    src/lib/sequence.js
     src/helpers.js
     src/neo4jrestful.js
     src/node.js

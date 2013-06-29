@@ -2,17 +2,20 @@ var initNode = function(neo4jrestful) {
 
   var _neo4jrestful = null
     , helpers = null
-    , _ = null;
+    , _ = null
+    , Sequence = null;
 
   if (typeof window === 'object') {
     // browser
     // TODO: find a solution for bson object id
-    helpers = neo4jmapper_helpers;
-    _       = window._;
+    helpers  = neo4jmapper_helpers;
+    _        = window._;
+    Sequence = window.Sequence;
   } else {
     // nodejs
     helpers  = require('./helpers');
-    _        = require('underscore')
+    _        = require('underscore');
+    Sequence = require('./lib/sequence');
   }
 
   // we can only check for object type,
@@ -835,40 +838,41 @@ var initNode = function(neo4jrestful) {
         return cb(err, data, debug);
       else {
         var sortedData = [];
-        var jobsToDo = data.data.length;
         var errors = [];
+        // we are using the 
+        var sequence = Sequence.create();
+        // we iterate through the results
         for (var x=0; x < data.data.length; x++) {
           if (typeof data.data[x][0] === 'undefined') {
-            jobsToDo--;
             break;
           }
           var basicNode = self.neo4jrestful.createObjectFromResponseData(data.data[x][0], DefaultConstructor);
           (function(x){
-            if (typeof basicNode.load === 'function') {
-              basicNode.load(function(err, node) {
-                if ((err) || (!node))
-                  errors.push(err);
-                // convert node to it's model if it has a distinct label and differs from static method
-                else if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
-                  Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
-                jobsToDo--;
-                sortedData[x] = node;
-                if (jobsToDo === 0)
-                  return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
-              });
-            } else {
-              // no load() function found
-              sortedData[x] = basicNode;
-              jobsToDo--;
-            }
+            sequence.then(function(next) {
+              if (typeof basicNode.load === 'function') {
+                basicNode.load(function(err, node) {
+                  if ((err) || (!node))
+                    errors.push(err);
+                  // convert node to it's model if it has a distinct label and differs from static method
+                  else if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
+                    Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
+                  sortedData[x] = node;
+                  next();
+                });
+              } else {
+                // no load() function found
+                sortedData[x] = basicNode;
+                next();
+              }
+            });
           })(x);
         }
-        if (jobsToDo === 0) {
-          // TODO: check why before refactoring it also worked without this condition
+        sequence.then(function(next){
+          //finally
           if ( (data.data[0]) && (typeof data.data[0][0] !== 'object') )
             sortedData = data.data[0][0];
-          return _deliverResultset(self, cb, err, sortedData, debug);
-        }
+          return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
+        });
       }
     }
 
