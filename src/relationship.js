@@ -48,6 +48,8 @@ Relationship = function Relationship(data, start, end, id) {
   this.fields = _.extend({},{
     defaults: _.extend({}, this.fields.defaults)
   });
+  // each relationship object has it's own restful client
+  this.neo4jrestful = _.extend(Relationship.prototype.neo4jrestful);
   this.is_instanced = true;
 }
 
@@ -115,7 +117,7 @@ Relationship.prototype.setUriById = function(id) {
     return this.uri = this.neo4jrestful.baseUrl+'db/data/relationship/'+id;
 }
 
-//Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;
+Relationship.prototype.applyDefaultValues = null; // will be initialized
 
 Relationship.prototype.findById = function(id, cb) {
   var self = this;
@@ -135,8 +137,7 @@ Relationship.prototype.save = function(cb) {
   if (this.is_singleton)
     return cb(Error('Singleton instances can not be persisted'), null);
   this._modified_query = false;
-  // this.applyDefaultValues();
-  this.data.timstamp = new Date().getTime();
+  this.applyDefaultValues();
   if (this._id_) {
     // copy 'private' _id_ to public
     this.id = this._id_;
@@ -311,15 +312,16 @@ Relationship.findById = function(id, cb) {
 
 var initRelationship = function(neo4jrestful) {
 
-  if (_.isObject(neo4jrestful)) {
+  if (typeof neo4jrestful === 'object') {
     Relationship.prototype.neo4jrestful = neo4jrestful;
     if (typeof window === 'object') {
       // browser
-      Node    = initNode(neo4jrestful);
+      Node = initNode(neo4jrestful);
     } else {
       // nodejs
-      Node     = require('./node')(neo4jrestful);
+      Node = require('./node')(neo4jrestful);
     }
+    Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;
   }
 
   return Relationship;

@@ -50,6 +50,8 @@ Node = function Node(data, id) {
   // will be used for labels and classes
   if (!this.constructor_name)
     this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
+  // each node object has it's own restful client
+  this.neo4jrestful = _.extend(Node.prototype.neo4jrestful);
   this.init(data, id);
 }
 
@@ -1672,7 +1674,7 @@ var initNode = function(neo4jrestful) {
 
   // we can only check for object type,
   // better would be to check for constructor neo4jrestful
-  if (_.isObject(neo4jrestful))
+  if (typeof neo4jrestful === 'object')
     Node.prototype.neo4jrestful = neo4jrestful;
 
   return Node;

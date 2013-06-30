@@ -639,7 +639,6 @@ describe 'Neo4jMapper', ->
       node.data.name = "Alice"
       node.save (err, a) ->
         expect(a.hasId()).to.be true
-        # console.log  a.outgoingRelationships().count().toCypherQuery()
         a.outgoingRelationships().count (err, count) ->
           expect(count).to.be 0
           node = new Node()
@@ -682,7 +681,7 @@ describe 'Neo4jMapper', ->
     it 'expect to set default values for properties on relationships', (done) ->
       Relationship::fields = {
         defaults: {
-          created_on: -> new Date().getTime
+          created_on: -> new Date().getTime()
         }
       }
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) ->
@@ -693,17 +692,12 @@ describe 'Neo4jMapper', ->
             for relationship, i in relationships
               expect(relationships[i].id).to.be.above 0
               expect(relationships[i].data.since).to.be.equal 'years'
-              #expect(relationships[i].data.nested.values).to.be.equal true
-              #console.log relationships[i].data
-              #expect(relationships[i].data.created_on).to.be.above 0
+              expect(relationships[i].data.nested.values).to.be.equal true
+              expect(relationships[i].data.created_on).to.be.above 0
             alice.incomingRelationships (err, relationship) ->
               r = new Relationship()
-              console.log r.fields
-
-              console.log relationship[0].fields
-              # console.log err, relationship[0].data
               expect(relationship).to.have.length 1
-              #Relationship::fields.defaults = {}
+              Relationship::fields.defaults = {}
               done()
 
     it 'expect to get start and end nodes from relationships', (done) ->
