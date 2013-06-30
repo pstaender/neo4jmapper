@@ -10,7 +10,8 @@ var initNeo4jRestful = function() {
     , _singleton_instance = null
     , helpers             = null
     , _                   = null
-    , jQuery              = null;
+    , jQuery              = null
+    , Sequence            = null;
 
   if (typeof window === 'object') {
     // browser
@@ -20,6 +21,7 @@ var initNeo4jRestful = function() {
     relationship = initRelationship;
     _            = window._;
     jQuery       = window.jQuery;
+    Sequence     = window.Sequence;
   } else {
     // nodejs
     helpers      = require('./helpers');
@@ -28,8 +30,10 @@ var initNeo4jRestful = function() {
     node         = require('./node');
     relationship = require('./relationship');
     path         = require('./path');
+    Sequence     = require('./lib/sequence');
   }
 
+  // Base for QueryError and CypherQueryError
   var CustomError = function(message) {
     if (typeof message === 'string')
       this.message = message;
@@ -182,7 +186,7 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype.absoluteUrl = function() {
     if (this.url) {
       if (/^(\/\/|http(s)*\:\/\/)/.test(this.url)) {
-        // TODO: check for http or https, but would cost a extra cb
+        // TODO: check for http or https, but would cost a extra call
         this._absoluteUrl = this.url.replace(/^\/\//,'http://').replace(/^\//,'');
       }
       else {

@@ -1228,7 +1228,6 @@ var initNode = function(neo4jrestful) {
       properties: null,
       distinct: null
     }, options);
-
     if (options.properties)
       options.properties = helpers.flattenObject(options.properties);
 
@@ -1239,7 +1238,15 @@ var initNode = function(neo4jrestful) {
           type: options.type,
           data: options.properties
         }
-      }, cb);
+      }, function(err, relationship) {
+        // to execute the hooks we manually perform the save method
+        // TODO: make a static method in relationships, s.th. create_between_nodes(startId, endId, data)
+        if (err)
+          return cb(err, relationship);
+        else {
+          relationship.save(cb);
+        }
+      });
     }
 
     if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
@@ -1249,17 +1256,15 @@ var initNode = function(neo4jrestful) {
             return cb(err, result);
           if (result.length === 1) {
             // if we have only one relationship, we update this one
-            // var properties = (options.properties) ? options.properties : {};
-            return self.neo4jrestful.put('/db/data/relationship/'+result[0].id+'/properties', {
-              data: options.properties
-            }, function(err) {
-              if (err)
-                cb(err, null);
-              else {
-                // TODO: Relationship::findById
-                self.neo4jrestful.get('/db/data/relationship/'+result[0].id, cb);
+            Relationship.findById(result[0].id, function(err, relationship){
+              if (relationship) {
+                if (options.properties)
+                  relationship.data = options.properties;
+                relationship.save(cb);
+              } else {
+                cb(err, relationship);
               }
-            });
+            })
           } else {
             // we create a new one
             return _create_relationship_by_options(options);
