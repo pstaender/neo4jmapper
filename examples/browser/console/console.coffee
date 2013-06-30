@@ -51,13 +51,15 @@ $(document).ready ->
   $input  = $('#input')
   $output = $('#output')
 
+  $('#input, #output').width($(window).width()/2 - 60)
+
   window.query = (o) ->
     window.puts o?.toCypherQuery()
 
   window.puts = ->
     for arg, i in arguments
       # first argument is taken for drawing as well
-      window.drawNodes(arg) if i is 0
+      # window.drawNodes(arg) if i is 0
       if config.useToObject
         if typeof arg.toObject is 'function'
           arg = arg.toObject()
@@ -66,7 +68,9 @@ $(document).ready ->
             arg[i] = o.toObject() if typeof o.toObject is 'function'
       
       output = if typeof arg is 'object' then js_beautify(JSON.stringify(arg), { indent_size: 2 }) else String(arg)
-      $output.text(output + '\n\n' + $output.text())
+      output = $output.text() + '\n' + output 
+      output = output.replace(/^\n+/g,'')
+      $output.text(output)
     stash.set('output', $output.text())
 
 

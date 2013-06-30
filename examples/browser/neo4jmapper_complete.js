@@ -3527,7 +3527,7 @@
   }
   
   Relationship.prototype.toObject = function() {
-    return {
+    var o = {
       id: this.id,
       data: _.extend(this.data),
       start: this.start,
@@ -3537,6 +3537,11 @@
       uri: this.uri,
       type: this.type
     };
+    if ( (o.from) && (typeof o.from.toObject === 'function') )
+      o.from = o.from.toObject();
+    if ( (o.to)   && (typeof o.to.toObject === 'function') )
+      o.to   = o.to.toObject();
+    return o;
   }
   
   /*

@@ -1,29 +1,45 @@
 body {
-  background: #fff;
+  background: #eee;
   font-family: Lucida, 'Lucida Grande';
   font-size: 10px;
 }
-
-#input {
-  height: 1em;
-  width: 98%;
-  height: 20em;
+html, body, #input, #output, #Console {
+  height: 100%;
 }
-input, textarea, #inputContainer {
-  font-family: 'Menlo', Courier;
-  background: #333;
-  font-size: 1em;
-  color: #fff;
-  text-shadow: 1px 1px 0px #000;
-  border: 0px;
-  padding: 1em;
+#Console {
+  width: 4000px;
+}
+
+input, #input, #inputContainer {
+  
+
+  /*text-shadow: 1px 1px 0px #fff;*/
 }
 input, textarea {
   outline: none;
 }
 #output {
-  color: #666;
+  /*font-size: 0.8em;*/
 }
-#Console {
-  width: 50em;
+#input {
+  margin-right: 10px;
+}
+#input, #output {
+  font-size: 1em;
+  font-family: 'Menlo', Courier;
+  margin: 0;
+  /*width: 46%;*/
+  float: left;
+  height: 90%;
+  background: none;
+  /*box-shadow: inset 0px 0px 50px rgba(100,100,100,0.1);*/
+  /*border: 1px solid #fff;*/
+  border: 0;
+  transition: background 0.2s;
+  transition: color 0.2s;
+  padding: 15px 20px;
+}
+#input:focus, #input:hover, #output:focus, #output:hover {
+  background: #fff;
+  color: #000;
 }
