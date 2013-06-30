@@ -32,7 +32,7 @@ client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLo
 version = client.version
 graphdb = null # will be initialized in before()
 
-if process.env.TRAVIS
+if process?.env?.TRAVIS
   # cancel tests because travis doesn't support neo4j v2, yet
   return describe 'Neo4jMapper', ->
     it "expect to have a neo4j with version >= 2 but found #{client.exact_version} … pending tests", ->

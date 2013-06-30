@@ -130,8 +130,17 @@ Path.prototype.toObject = function() {
 
 var initPath = function(neo4jrestful) {
 
-  if (typeof neo4jrestful === 'object')
-    Path.prototype.neo4jrestful = neo4jrestful;
+  if (typeof neo4jrestful === 'object') {
+    if (typeof window === 'object') {
+      // browser
+      window.Neo4jMapper.Path.prototype.neo4jrestful = neo4jrestful;
+      return window.Neo4jMapper.Path;
+    } else {
+      // nodejs
+      Path.prototype.neo4jrestful = neo4jrestful;
+      return Path;
+    }
+  }
 
   return Path;
 
@@ -139,4 +148,6 @@ var initPath = function(neo4jrestful) {
 
 if (typeof window !== 'object') {
   module.exports = exports = initPath;
+} else {
+  window.Neo4jMapper.Path = Path;
 }

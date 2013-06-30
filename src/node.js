@@ -1674,8 +1674,16 @@ var initNode = function(neo4jrestful) {
 
   // we can only check for object type,
   // better would be to check for constructor neo4jrestful
-  if (typeof neo4jrestful === 'object')
-    Node.prototype.neo4jrestful = neo4jrestful;
+  if (typeof neo4jrestful === 'object') {
+    if (typeof window === 'object') {
+      window.Neo4jMapper.Node.prototype.neo4jrestful = neo4jrestful;
+      return window.Neo4jMapper.Node;
+    }
+    else {
+      Node.prototype.neo4jrestful = neo4jrestful;
+      return Node;
+    }
+  }    
 
   return Node;
 
@@ -1683,4 +1691,6 @@ var initNode = function(neo4jrestful) {
 
 if (typeof window !== 'object') {
   module.exports = exports = initNode;
+} else {
+  window.Neo4jMapper.Node = Node;
 }

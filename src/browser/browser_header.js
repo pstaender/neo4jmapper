@@ -14,4 +14,14 @@ if (typeof window._ === 'undefined')
 if (typeof window.jQuery === 'undefined')
   throw Error('Include of jQuery library is needed')
 
-
+window.Neo4jMapper = Neo4jMapper = {
+  init: null,
+  Neo4jRestful: null,
+  neo4jrestful: null, // TODO: this is redundant /w client, check where it's needed
+  Node: null,
+  Relationship: null,
+  Graph: null,
+  Path: null,
+  helpers: null,
+  client: null
+};

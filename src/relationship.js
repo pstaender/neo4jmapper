@@ -313,15 +313,20 @@ Relationship.findById = function(id, cb) {
 var initRelationship = function(neo4jrestful) {
 
   if (typeof neo4jrestful === 'object') {
-    Relationship.prototype.neo4jrestful = neo4jrestful;
     if (typeof window === 'object') {
-      // browser
+      // browser      
       Node = initNode(neo4jrestful);
+      window.Neo4jMapper.Relationship.prototype.neo4jrestful = neo4jrestful;
+      window.Neo4jMapper.Relationship.prototype.applyDefaultValues = window.Neo4jMapper.Node.prototype.applyDefaultValues;
+      return window.Neo4jMapper.Relationship;
     } else {
       // nodejs
       Node = require('./node')(neo4jrestful);
+      Relationship.prototype.neo4jrestful = neo4jrestful;
+      Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;
+      return Relationship;
     }
-    Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;
+    
   }
 
   return Relationship;
@@ -330,4 +335,6 @@ var initRelationship = function(neo4jrestful) {
 
 if (typeof window !== 'object') {
   module.exports = exports = initRelationship;
+} else {
+  window.Neo4jMapper.Relationship = Relationship;
 }
