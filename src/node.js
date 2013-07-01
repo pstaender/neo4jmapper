@@ -1033,6 +1033,12 @@ Node.prototype.distinct = function(cb) {
 
 Node.prototype.orderBy = function(property, direction, cb) {
   this._modified_query = true;
+  if (typeof property === 'object') {
+    var key = Object.keys(property)[0];
+    cb = direction;
+    direction = property[key];
+    property = key;
+  }
   if (typeof direction === 'string')
     this.cypher.order_direction = direction;
   this.cypher.order_by = property;

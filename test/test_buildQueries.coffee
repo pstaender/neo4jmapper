@@ -87,6 +87,12 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node::findAll().orderBy('n.name', 'ASC'),
             'START n = node(*) RETURN n ORDER BY n.name ASC;'
           ]
+
+        "Node::findAll().orderBy( { 'n.name': 'DESC' } )":
+          [
+             Node::findAll().orderBy( { 'n.name': 'DESC' }),
+            'START n = node(*) RETURN n ORDER BY n.name DESC;'
+          ]
         
         'Node::findAll().incomingRelationships()':
           [
