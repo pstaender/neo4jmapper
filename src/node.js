@@ -124,6 +124,8 @@ Node.prototype.labels = null;
 Node.prototype.label = null;
 Node.prototype.constructor_name = null;
 
+Node.prototype.load_on_process = true;
+
 Node.prototype.__models__ = {};
 Node.prototype.__already_initialized__ = false; // flag to avoid many initializations
 
@@ -841,9 +843,10 @@ Node.prototype.query = function(cypherQuery, options, cb) {
           break;
         }
         var basicNode = self.neo4jrestful.createObjectFromResponseData(data.data[x][0], DefaultConstructor);
-        (function(x){
+        (function(x,basicNode){
           sequence.then(function(next) {
-            if (typeof basicNode.load === 'function') {
+            // TODO: reduce load / calls, currently it's way too slow…
+            if ( (self.load_on_process) && (typeof basicNode.load === 'function')) {
               basicNode.load(function(err, node) {
                 if ((err) || (!node))
                   errors.push(err);
@@ -859,7 +862,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
               next();
             }
           });
-        })(x);
+        })(x, basicNode);
       }
       sequence.then(function(next){
         //finally
@@ -880,6 +883,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
 
   if (typeof cypherQuery === 'string') {
     return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
+      //if (cypherQuery === 'START n = node(4590) MATCH (n)<-[r:recommend]-()   RETURN r;')
       _processData(err, data, debug, cb);
     });
   } else if (typeof cypherQuery === 'object') {

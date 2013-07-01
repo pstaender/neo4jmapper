@@ -811,6 +811,16 @@ describe 'Neo4jMapper', ->
                   done()
 
 
+  # describe.only 'Problem', ->
+  #   it 'expect to get all tweets', (done) ->
+  #     class User extends Node
+  #     Node::register_model User
+  #     User.findOne (err, user) ->
+  #       user.incomingRelationships 'recommend', (err, relationships) ->
+  #         for relationship in relationships
+  #           console.log relationship.from.id
+  #         done()
+
   describe 'helpers', ->
 
     describe 'escapeString', ->
