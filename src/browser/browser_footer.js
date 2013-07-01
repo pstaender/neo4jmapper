@@ -9,12 +9,6 @@ window.Neo4jMapper.init = function(urlOrOptions) {
   this.helpers       = neo4jmapper_helpers;
   // to make it more convinient to use Neo4jMapper
   // we move Node, Relationship and Path to global scope if they are not used, yet
-  if (typeof window.Node === 'undefined')
-    window.Node = this.Node;
-  if (typeof window.Relationship === 'undefined')
-    window.Relationship = this.Relationship;
-  if (typeof window.Node === 'undefined')
-    window.Path = this.Path;
   return this;
 }
 

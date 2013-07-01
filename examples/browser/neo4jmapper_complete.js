@@ -1506,6 +1506,8 @@
   Node.prototype.label = null;
   Node.prototype.constructor_name = null;
   
+  Node.prototype.load_on_process = true;
+  
   Node.prototype.__models__ = {};
   Node.prototype.__already_initialized__ = false; // flag to avoid many initializations
   
@@ -2223,9 +2225,10 @@
             break;
           }
           var basicNode = self.neo4jrestful.createObjectFromResponseData(data.data[x][0], DefaultConstructor);
-          (function(x){
+          (function(x,basicNode){
             sequence.then(function(next) {
-              if (typeof basicNode.load === 'function') {
+              // TODO: reduce load / calls, currently it's way too slow…
+              if ( (self.load_on_process) && (typeof basicNode.load === 'function')) {
                 basicNode.load(function(err, node) {
                   if ((err) || (!node))
                     errors.push(err);
@@ -2241,7 +2244,7 @@
                 next();
               }
             });
-          })(x);
+          })(x, basicNode);
         }
         sequence.then(function(next){
           //finally
@@ -2262,6 +2265,7 @@
   
     if (typeof cypherQuery === 'string') {
       return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
+        //if (cypherQuery === 'START n = node(4590) MATCH (n)<-[r:recommend]-()   RETURN r;')
         _processData(err, data, debug, cb);
       });
     } else if (typeof cypherQuery === 'object') {
@@ -3703,12 +3707,6 @@
     this.helpers       = neo4jmapper_helpers;
     // to make it more convinient to use Neo4jMapper
     // we move Node, Relationship and Path to global scope if they are not used, yet
-    if (typeof window.Node === 'undefined')
-      window.Node = this.Node;
-    if (typeof window.Relationship === 'undefined')
-      window.Relationship = this.Relationship;
-    if (typeof window.Node === 'undefined')
-      window.Path = this.Path;
     return this;
   }
   
