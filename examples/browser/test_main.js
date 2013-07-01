@@ -34,9 +34,7 @@ graphdb = null;
 
 if (typeof process !== "undefined" && process !== null ? (_ref1 = process.env) != null ? _ref1.TRAVIS : void 0 : void 0) {
   return describe('Neo4jMapper', function() {
-    return it("expect to have a neo4j with version >= 2 but found " + client.exact_version + " … pending tests", function() {
-      return expect(err).to.be.an('object');
-    });
+    return it("expect to have a neo4j database above version 2.0");
   });
 }
 
@@ -46,6 +44,7 @@ describe('Neo4jMapper', function() {
     return client.checkAvailability(function(err, exact_version) {
       expect(err).to.be(null);
       expect(exact_version).to.be.a('string');
+      expect(client.version >= 2).to.be(true);
       return done();
     });
   });

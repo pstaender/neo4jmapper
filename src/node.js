@@ -1191,9 +1191,19 @@ Node.prototype.delete = function(cb) {
     return cb(Error('To delete a node, use remove(). delete() is for queries.'),null);
   this._modified_query = true;
   this.cypher.action = 'DELETE';
-  this.cypher.limit = '';
+  if (this.cypher.limit)
+    throw Error("You can't use a limit on a delete, use WHERE instead to specify your limit");
   this.exec(cb);
   return this; // return self for chaining
+}
+
+Node.prototype.deleteIncludingRelationships = function(cb) {
+  var label = (this.label) ? ":"+this.label : "";
+  if (!this.cypher.start)
+    this.cypher.start = this.__type_identifier__ + " = " + this.__type__+"(*)";
+  this.cypher.match.push([ this.__type_identifier__+label+"-[r?]-()" ]);
+  this.cypher.return_properties = [ "n", "r" ];
+  return this.delete(cb);
 }
 
 Node.prototype.remove = function(cb) {

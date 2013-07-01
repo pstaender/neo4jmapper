@@ -1410,7 +1410,7 @@
     to: null,
     direction: null,
     order_by: '',
-    order_direction: 'ASC',
+    order_direction: '', // ASC or DESC
     relation: '',
     outgoing: null,
     incoming: null,
@@ -2413,13 +2413,56 @@
     return this; // return self for chaining
   }
   
-  Node.prototype.orderBy = function(property, direction, cb) {
+  Node.prototype.orderBy = function(property, direction, cb, identifier) {
     this._modified_query = true;
-    if (typeof direction === 'string')
-      this.cypher.order_direction = direction;
-    this.cypher.order_by = property;
+    if (typeof property === 'object') {
+      var key = Object.keys(property)[0];
+      cb = direction;
+      direction = property[key];
+      property = key;
+      if ( (typeof direction === 'string') && ((/^(ASC|DESC)$/i).test(direction)) ) {
+        this.cypher.order_direction = direction;
+      }
+      
+      if ((typeof identifier === 'string') && (/^[nmr]$/i.test(identifier))) {
+        if (identifier === 'n') this.whereNodeHasProperty(property);
+        if (identifier === 'm') this.whereEndNodeHasProperty(property);
+        if (identifier === 'r') this.whereRelationshipHasProperty(property);
+      } else {
+        identifier = null;
+      }
+  
+      if (identifier) {
+        // s.th. like ORDER BY n.`name` ASC
+        // escape property
+        this.cypher.order_by = identifier + ".`"+property+"`";
+      } else {
+        // s.th. like ORDER BY n.name ASC
+        this.cypher.order_by = property;
+      }
+    } else if (typeof property === 'string') {
+      // custom statement, no process at all
+      // we use 1:1 the string
+      this.cypher.order_by = property;
+    }
     this.exec(cb);
     return this; // return self for chaining
+  }
+  
+  Node.prototype.orderNodeBy = function(property, direction, cb) {
+    return this.orderBy(property, direction, cb, 'n');
+  }
+  
+  Node.prototype.orderStartNodeBy = function(property, direction, cb) {
+    return this.orderNodeBy(property, direction, cb);
+  }
+  
+  Node.prototype.orderEndNodeBy = function(property, direction, cb) {
+    return this.orderBy(property, direction, cb, 'm');
+  }
+  
+  Node.prototype.orderRelationshipBy = function(property, direction, cb) {
+    return this.orderBy(property, direction, cb, 'r');
   }
   
   Node.prototype.match = function(string, cb) {
@@ -2530,9 +2573,19 @@
       return cb(Error('To delete a node, use remove(). delete() is for queries.'),null);
     this._modified_query = true;
     this.cypher.action = 'DELETE';
-    this.cypher.limit = '';
+    if (this.cypher.limit)
+      throw Error("You can't use a limit on a delete, use WHERE instead to specify your limit");
     this.exec(cb);
     return this; // return self for chaining
+  }
+  
+  Node.prototype.deleteIncludingRelationships = function(cb) {
+    var label = (this.label) ? ":"+this.label : "";
+    if (!this.cypher.start)
+      this.cypher.start = this.__type_identifier__ + " = " + this.__type__+"(*)";
+    this.cypher.match.push([ this.__type_identifier__+label+"-[r?]-()" ]);
+    this.cypher.return_properties = [ "n", "r" ];
+    return this.delete(cb);
   }
   
   Node.prototype.remove = function(cb) {

@@ -33,6 +33,23 @@ _trim = (s) -> s.trim().replace(/\s+/g, ' ')
 
 describe 'Neo4jMapper (cypher queries)', ->
 
+    it 'expect to throw an error on some specific chaining cases', ->
+      err = null
+      try
+        Node.findOne().deleteIncludingRelationships ->
+      catch e
+        err = e
+      expect(err).not.to.be null
+      err = null
+      try
+        Node.findOne().deleteIncludingRelationships().limit 1 ->
+      catch e
+        err = e
+      expect(err).not.to.be null
+      
+      # expect(Node.findOne().deleteIncludingRelationships).withArgs(->).to.throwError()
+      # expect(Node.find().deleteIncludingRelationships().limit).withArgs(1, ->).to.throwError()
+
     it 'expect to build various kind of queries', ->
       class Actor extends Node
       Node::register_model(Actor)
@@ -199,15 +216,28 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node::findById(123).incomingRelationships().delete().toCypherQuery()":
           [
              Node::findById(123).incomingRelationships().delete(),
-            'START n = node(123) MATCH (n)<-[r]-() DELETE r;'
+            "START n = node(123) MATCH (n)<-[r]-() DELETE r;"
           ]
         
         "Node::findById(123).allRelationships().delete()":
           [
              Node::findById(123).allRelationships().delete(),
-            'MATCH n-[r]-() WHERE id(n) = 123 DELETE r;'
+            "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"
           ]
 
+        "Node.find().deleteIncludingRelationships()":
+          [
+             Node.find().deleteIncludingRelationships(),
+            "START n = node(*) MATCH n-[r?]-() DELETE n, r;"
+          ]
+
+        "Actor.findById(123).deleteIncludingRelationships()":
+          [
+             Actor.find().deleteIncludingRelationships(),
+            "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
+          ]
+
+      # check all other queries
       for functionCall of map
         todo = map[functionCall]
         if todo?[2] is null

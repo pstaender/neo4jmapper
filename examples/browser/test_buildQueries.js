@@ -33,6 +33,25 @@ _trim = function(s) {
 };
 
 describe('Neo4jMapper (cypher queries)', function() {
+  it('expect to throw an error on some specific chaining cases', function() {
+    var e, err;
+
+    err = null;
+    try {
+      Node.findOne().deleteIncludingRelationships(function() {});
+    } catch (_error) {
+      e = _error;
+      err = e;
+    }
+    expect(err).not.to.be(null);
+    try {
+      Node.findOne().deleteIncludingRelationships().limit(function() {});
+    } catch (_error) {
+      e = _error;
+      err = e;
+    }
+    return expect(err).not.to.be(null);
+  });
   return it('expect to build various kind of queries', function() {
     var Actor, functionCall, map, node, query, results, todo, _ref1, _results;
 
@@ -58,7 +77,17 @@ describe('Neo4jMapper (cypher queries)', function() {
       "Node::findAll().match('n:Person')": [Node.prototype.findAll().match('n:Person'), "MATCH n:Person RETURN n;"],
       "Actor::findAll()": [Actor.prototype.findAll(), "START n = node(*) MATCH n:Actor RETURN n;"],
       "Node::findAll().skip(5)": [Node.prototype.findAll().skip(5), 'START n = node(*) RETURN n SKIP 5;'],
-      "Node::findAll().orderBy('n.name', 'ASC')": [Node.prototype.findAll().orderBy('n.name', 'ASC'), 'START n = node(*) RETURN n ORDER BY n.name ASC;'],
+      "Node::findAll().orderBy('n.name ASC')": [Node.prototype.findAll().orderBy('n.name ASC'), 'START n = node(*) RETURN n ORDER BY n.name ASC;'],
+      "Node::findAll().orderBy( { 'n.name': 'DESC' } )": [
+        Node.prototype.findAll().orderBy({
+          'n.name': 'DESC'
+        }), 'START n = node(*) RETURN n ORDER BY n.name DESC;'
+      ],
+      "Node::findAll().orderNodeBy({'name': 'ASC'})": [
+        Node.prototype.findAll().orderNodeBy({
+          'name': 'ASC'
+        }), 'START n = node(*) WHERE ( HAS (n.`name`) ) RETURN n ORDER BY n.`name` ASC;'
+      ],
       'Node::findAll().incomingRelationships()': [Node.prototype.findAll().incomingRelationships(), 'START n = node(*) MATCH (n)<-[r]-() RETURN r;'],
       'Actor::findAll().incomingRelationships()': [Actor.prototype.findAll().incomingRelationships(), 'START n = node(*) MATCH (n:Actor)<-[r]-() RETURN r;'],
       'Node::findAll().outgoingRelationships()': [Node.prototype.findAll().outgoingRelationships(), 'START n = node(*) MATCH (n)-[r]->() RETURN r;'],
@@ -92,7 +121,7 @@ describe('Neo4jMapper (cypher queries)', function() {
           'regex': /[a-z]/
         }), "START n = node(*) WHERE ( HAS (n.`boolean_a`) ) AND ( HAS (n.`boolean_b`) ) AND ( HAS (n.`string_a`) ) AND ( HAS (n.`number_a`) ) AND ( HAS (n.`number_b`) ) AND ( HAS (n.`string_b`) ) AND ( HAS (n.`regex`) ) AND ( n.`boolean_a` = true AND n.`boolean_b` = false AND n.`string_a` = 'true' AND n.`number_a` = 123.2 AND n.`number_b` = 123 AND n.`string_b` = '123' AND n.`regex` =~ '[a-z]' ) RETURN n;"
       ],
-      "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC')": [
+      "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name DESC')": [
         Node.prototype.find().where({
           $or: [
             {
@@ -101,9 +130,9 @@ describe('Neo4jMapper (cypher queries)', function() {
               'n.name': /bob/i
             }
           ]
-        }).skip(2).limit(10).orderBy('n.name', 'DESC'), "START n = node(*) WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+        }).skip(2).limit(10).orderBy('n.name DESC'), "START n = node(*) WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
       ],
-      "Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name', 'DESC')": [
+      "Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name DESC')": [
         Actor.prototype.find().where({
           $or: [
             {
@@ -112,7 +141,7 @@ describe('Neo4jMapper (cypher queries)', function() {
               'n.name': /bob/i
             }
           ]
-        }).skip(2).limit(10).orderBy('n.name', 'DESC'), "START n = node(*) MATCH n:Actor WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+        }).skip(2).limit(10).orderBy('n.name DESC'), "START n = node(*) MATCH n:Actor WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
       ],
       "Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }": [
         Node.prototype.findOne().whereHasProperty('name').andWhere({
@@ -157,8 +186,10 @@ describe('Neo4jMapper (cypher queries)', function() {
           }
         ]), "START n = node(*) WHERE ( HAS (n.`city`) ) AND ( HAS (n.`name`) ) AND ( n.`city` = 'berlin' AND ( n.`name` = 'peter' AND NOT ( n.`name` = 'pedro' ) ) ) RETURN n LIMIT 1;"
       ],
-      "Node::findById(123).incomingRelationships().delete().toCypherQuery()": [Node.prototype.findById(123).incomingRelationships()["delete"](), 'START n = node(123) MATCH (n)<-[r]-() DELETE r;'],
-      "Node::findById(123).allRelationships().delete()": [Node.prototype.findById(123).allRelationships()["delete"](), 'MATCH n-[r]-() WHERE id(n) = 123 DELETE r;']
+      "Node::findById(123).incomingRelationships().delete().toCypherQuery()": [Node.prototype.findById(123).incomingRelationships()["delete"](), "START n = node(123) MATCH (n)<-[r]-() DELETE r;"],
+      "Node::findById(123).allRelationships().delete()": [Node.prototype.findById(123).allRelationships()["delete"](), "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"],
+      "Node.find().deleteIncludingRelationships()": [Node.find().deleteIncludingRelationships(), "START n = node(*) MATCH n-[r?]-() DELETE n, r;"],
+      "Actor.findById(123).deleteIncludingRelationships()": [Actor.find().deleteIncludingRelationships(), "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"]
     };
     _results = [];
     for (functionCall in map) {
