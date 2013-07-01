@@ -35,8 +35,7 @@ graphdb = null # will be initialized in before()
 if process?.env?.TRAVIS
   # cancel tests because travis doesn't support neo4j v2, yet
   return describe 'Neo4jMapper', ->
-    it "expect to have a neo4j with version >= 2 but found #{client.exact_version} … pending tests", ->
-      expect(err).to.be.an 'object'
+    it "expect to have a neo4j database above version 2.0"
 
 describe 'Neo4jMapper', ->
 
@@ -45,6 +44,7 @@ describe 'Neo4jMapper', ->
     client.checkAvailability (err, exact_version) ->
       expect(err).to.be null
       expect(exact_version).to.be.a 'string'
+      expect(client.version >= 2).to.be true
       done()
 
   describe 'graph', ->

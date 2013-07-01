@@ -74,16 +74,22 @@ $(document).ready ->
     stash.set('output', $output.text())
 
 
-  $input.val """
+  $input.val stash.get('input') or """
+    # Neo4jMapper Console for quick + easy testing
+    # • to get the result of a cb we can use the streamline syntax `_`
+    # • to display the result use `>` analogue to console.log
+    # • to execute the code hit `ctr + shift + enter`
+    # … you can nearly do anything you can do with CoffeeScript/JS …
+    
     {Node,Graph,client,graph} = Neo4jMapper.init('http://localhost:7474')
 
-    # to get the result of a cb we can use the streamline syntax `_`
-
-    aboutGraph = new Graph().about _
-
-    # to display the result use `>` analogue to `console.log`
+    aboutGraph = new Graph().about(_)
 
     > aboutGraph, "Neo4j version: #\{aboutGraph.neo4j_version\}"
+
+    class Person extends Node
+
+    > Person::findOne(_)
   """
   $output.text stash.get('output') or ''
 
