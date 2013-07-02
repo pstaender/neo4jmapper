@@ -113,6 +113,13 @@ describe 'Neo4jMapper', ->
             expect(count).to.be.equal count
             done()
 
+  # describe 'call', ->
+
+  #   it.only 'expect to make a restfule request', (done) ->
+  #     client.get '/db/data/node/0', (err, res) ->
+  #       console.log err, res
+  #       done()
+
   describe 'node', ->
 
     it 'expect to allow inheritance', (done) ->
@@ -259,13 +266,18 @@ describe 'Neo4jMapper', ->
     it 'expect to get all nodes', (done) ->
       n = new Node()
       n = n.findAll().limit(100).where("HAS (n.collection) AND n.collection = 'users'")
-      n.stream (err,data) ->
+      n.exec (err,data) ->
         n = new Node()
         n = n.findAll().limit(10).whereHasProperty('collection').andWhere("n.collection = 'users'")
-        n.stream (err,found) ->
+        n.exec (err,found) ->
           n = n.findAll().limit(10).where [ $and: [ { 'HAS (n.collection)' }, { 'n.collection': /^users$/i } ] ]
           n.exec ->
             done()
+
+    it 'expect to get all nodes as stream', (done) ->
+      Node.findAll().limit(100).stream (err, found) ->
+        expect(err).to.be null
+        done()
 
     it 'expect to get null if node is not found', (done) ->
       Node.findById 1234567890, (err, found) ->

@@ -42,7 +42,8 @@
   },
   "dependencies": {
     "underscore": "~1.4",
-    "jquery": "~1.8"
+    "jquery": "~1.8",
+    "superagent": "~0.15.1"
   },
   "licenses": {
     "type": "GPL"

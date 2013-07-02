@@ -16,8 +16,8 @@
     throw Error('This file is for browser use, not for nodejs');
   if (typeof window._ === 'undefined')
     throw Error('Include of underscore.js library is needed')
-  if (typeof window.jQuery === 'undefined')
-    throw Error('Include of jQuery library is needed')
+  if (typeof window.superagent === 'undefined')
+    throw Error('Include of superagent library is needed')
   
   window.Neo4jMapper = Neo4jMapper = {
     init: null,
@@ -911,6 +911,7 @@
       , helpers             = null
       , _                   = null
       , jQuery              = null
+      , request             = null
       , Sequence            = null;
   
     if (typeof window === 'object') {
@@ -922,6 +923,7 @@
       _            = window._;
       jQuery       = window.jQuery;
       Sequence     = window.Sequence;
+      request      = window.superagent;
     } else {
       // nodejs
       helpers      = require('./helpers');
@@ -931,6 +933,7 @@
       relationship = require('./relationship');
       path         = require('./path');
       Sequence     = require('./lib/sequence');
+      request      = require('superagent');
     }
   
     // Base for QueryError and CypherQueryError
@@ -1052,7 +1055,7 @@
         this.post('/db/data/cypher',{
           data: {
             query: cypher,
-            params: {}
+            params: options.params || {}
           }
         }, function(err, result, debug){
           return cb(err, result, debug);
@@ -1062,25 +1065,19 @@
   
     Neo4jRestful.prototype.checkAvailability = function(cb) {
       var self = this;
-      jQuery.ajax({
-        url: self.baseUrl+'db/data/',
-        type: 'GET',
-        cache: false,
-        timeout: this.timeout,
-        success: function(res,status) {
-          if ((status === 'success')&&(res)&&(res.neo4j_version)) {
-            self.exact_version = res.neo4j_version;
+      request.get(self.baseUrl+'db/data/')
+        .timeout(this.timeout)
+        .end(function(err, res) {
+          var body = (res) ? res.body : null;
+          if ((res.status === 200)&&(body)&&(body.neo4j_version)) {
+            self.exact_version = body.neo4j_version;
             self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
             var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
-            cb(error, res.neo4j_version);
+            cb(error, body.neo4j_version);
           } else {
-            cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url?"), null, null);
+            cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url? "+res.body), null, null);
           }
-        },
-        error: function(err) {
-          cb(err, false, err.status);
-        }
-      });
+        });
     }
   
     Neo4jRestful.prototype.absoluteUrl = function() {
@@ -1184,11 +1181,11 @@
             return null;
           // process queue only if we have a connection established
           if ((self.connection_established)&&(self._queue.stack.length > 0)) {
-            var request = self._queue.stack.pop();        
+            var req = self._queue.stack.pop();        
             self._queue.is_processing = true;
-            self.makeRequest(request.options, function(err, result, debug){
+            self.makeRequest(req.options, function(err, result, debug){
               self._queue.is_processing = false;
-              request.cb(err, result, debug);
+              req.cb(err, result, debug);
             });
             // stop interval if queue is empty
             if (self._queue.stack.length < 1) {
@@ -1246,11 +1243,14 @@
       }
   
       try {
-        // try to extract the first <p> or <pre> from html body, else return error object for better debugging
-        if (jQuery(err.responseText).find('body pre:first, body p:first')[0])
-          err.responseText = jQuery(err.responseText).find('body pre:first, body p:first').first().text().trim().replace(/(\s|\n)+/g,' ');
-        else if (jQuery(err.responseText).text()) {
-          err.responseText = jQuery(err.responseText).text().trim();
+        // jquery is an optional features since superagent
+        if (jQuery) {
+          // try to extract the first <p> or <pre> from html body, else return error object for better debugging
+          if (jQuery(err.responseText).find('body pre:first, body p:first')[0])
+            err.responseText = jQuery(err.responseText).find('body pre:first, body p:first').first().text().trim().replace(/(\s|\n)+/g,' ');
+          else if (jQuery(err.responseText).text()) {
+            err.responseText = jQuery(err.responseText).text().trim();
+          }
         }
       } catch(e) {
         // ignore exception
@@ -1283,7 +1283,15 @@
     }
   
     Neo4jRestful.prototype.onBeforeSend = function(xhr) {
-      //if (this.header['X-Stream'] === 'true')
+      if (this.header['X-Stream'] === 'true') {
+        var readystatehook = xhr.onreadystatechange;
+  
+        xhr.onreadystatechange = function(){
+           readystatehook.apply(this, []);
+           console.log('fired');
+        };
+        return true;
+      }
       return null;
     }
   
@@ -1301,28 +1309,26 @@
       options.method = _options.type;
       options._debug = _options.debug;
   
-      jQuery.ajax({
-        url: options.absolute_url,
-        type: options.method,
-        headers: this.header,
-        data: data,
-        cache: _options.cache,
-        timeout: _options.timeout,
-        beforeSend: function(xhr) {
-          self.onBeforeSend(xhr);
-        },
-        success: function(res,status) {
-          self.onSuccess(cb, res, status, options);
-        },
-        error: function(err, res) {
-          self.onError(cb, err, res, options);
+      var req = request(options.method, options.absolute_url).set(this.header)
+      if (data)
+        req.send(data)
+      // send response
+      req.end(function(err, res) {
+        if (err) {
+          //console.log(err, res.body);
+          self.onError(cb, err, 'error', options);
+        } else {
+          if (res.statusType !== 2) {
+            // err
+            self.onError(cb, res.body, 'error', options);
+          } else {
+            self.onSuccess(cb, res.body, 'success', options);
+          }
         }
-      })
+      });
     }
   
     Neo4jRestful.prototype.get = function(url, options, cb) {
-      // TODO: distinct between jquery and request module
-      // shorthand, because it's copied on many methods
       var args;
       ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.type = 'GET' ) );
       return this.request(url, options, cb);
@@ -1892,7 +1898,6 @@
         if (labels.length === 1)
           node.label = labels[0]
         // convert node to it's model if it has a distinct label and differs from static method
-        // console.log(node.label, DefaultConstructor);
         if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
           node = Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
         next(null, node);
@@ -2994,7 +2999,7 @@
       // to reduce calls we'll make a specific restful request for one node
       return this.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
         if ((node) && (typeof self.load === 'function')) {
-          //  && (typeof node.load === 'function')  
+          //  && (typeof node.load === 'function')     
           node.load(cb);
         } else {
           cb(err, node);

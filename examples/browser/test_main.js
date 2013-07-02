@@ -364,10 +364,10 @@ describe('Neo4jMapper', function() {
 
       n = new Node();
       n = n.findAll().limit(100).where("HAS (n.collection) AND n.collection = 'users'");
-      return n.stream(function(err, data) {
+      return n.exec(function(err, data) {
         n = new Node();
         n = n.findAll().limit(10).whereHasProperty('collection').andWhere("n.collection = 'users'");
-        return n.stream(function(err, found) {
+        return n.exec(function(err, found) {
           n = n.findAll().limit(10).where([
             {
               $and: [
@@ -383,6 +383,12 @@ describe('Neo4jMapper', function() {
             return done();
           });
         });
+      });
+    });
+    it('expect to get all nodes as stream', function(done) {
+      return Node.findAll().limit(100).stream(function(err, found) {
+        expect(err).to.be(null);
+        return done();
       });
     });
     it('expect to get null if node is not found', function(done) {

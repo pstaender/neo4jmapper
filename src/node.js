@@ -502,7 +502,6 @@ Node.prototype.onBeforeLoad = function(node, next) {
       if (labels.length === 1)
         node.label = labels[0]
       // convert node to it's model if it has a distinct label and differs from static method
-      // console.log(node.label, DefaultConstructor);
       if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
         node = Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
       next(null, node);
@@ -1604,7 +1603,7 @@ Node.prototype.findById = function(id, cb) {
     // to reduce calls we'll make a specific restful request for one node
     return this.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
       if ((node) && (typeof self.load === 'function')) {
-        //  && (typeof node.load === 'function')  
+        //  && (typeof node.load === 'function')     
         node.load(cb);
       } else {
         cb(err, node);

@@ -394,7 +394,7 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
 
 ### Nodes
 
-All hooks can also be defined for specific classes, e.g.:
+All hooks can also be defined for specific ”classes“, e.g.:
 
 ```coffeescript
   Actor::onBeforeSave = (next) -> next(null, null)
@@ -437,7 +437,7 @@ Called once the model is being registered. For instance, to ensure autoindex on 
     next()
 ```
 
-#### Node.prototype.onAfterLoad = function(node, next) {
+#### onAfterLoad
 
 On all `Node.find*()` queries the results run through a load process (loading the label(s) which has to be an extra request for instance). You can define your own afterLoad process this way:
 
@@ -449,6 +449,8 @@ On all `Node.find*()` queries the results run through a load process (loading th
         # …
         done(err, null)
 ```
+
+**To reduce database requests you can switch load hooks on and off by Node::disableLoading() / Node::enableLoading()**
 
 ## LICENSE
 
