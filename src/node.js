@@ -21,6 +21,7 @@ var cypher_defaults = {
   sort: '',
   filter: '',
   match: '',
+  start: '',
   return_properties: [],
   where: [],
   // and_where: [],
@@ -1013,6 +1014,8 @@ Node.prototype.allRelationships = function(relation, cb) {
 Node.prototype.limit = function(limit, cb) {
   this._modified_query = true;
   this.cypher.limit = Number(limit);
+  if (this.cypher.action === 'DELETE')
+    throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
   this.exec(cb);
   return this; // return self for chaining
 }
@@ -1188,11 +1191,11 @@ Node.prototype.whereRelationshipHasProperty = function(property, cb) {
 
 Node.prototype.delete = function(cb) {
   if (this.hasId())
-    return cb(Error('To delete a node, use remove(). delete() is for queries.'),null);
+    return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
   this._modified_query = true;
   this.cypher.action = 'DELETE';
   if (this.cypher.limit)
-    throw Error("You can't use a limit on a delete, use WHERE instead to specify your limit");
+    throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
   this.exec(cb);
   return this; // return self for chaining
 }
@@ -1210,7 +1213,7 @@ Node.prototype.remove = function(cb) {
   var self = this;
   this.onBeforeRemove(function(err) {
     if (self.is_singleton)
-      return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced node."),null);
+      return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced node"),null);
     if (self.hasId()) {
       return self.neo4jrestful.delete('/db/data/node/'+self.id, cb);
     }
@@ -1353,7 +1356,7 @@ Node.prototype.createRelationshipBetween = function(node, type, properties, cb, 
       }, options);
     }, options);
   } else {
-    cb(Error("You need two instanced nodes as start and end point."), null);
+    cb(Error("You need two instanced nodes as start and end point"), null);
   }
   
 }

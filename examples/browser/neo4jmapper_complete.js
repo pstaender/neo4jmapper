@@ -2395,6 +2395,8 @@
   Node.prototype.limit = function(limit, cb) {
     this._modified_query = true;
     this.cypher.limit = Number(limit);
+    if (this.cypher.action === 'DELETE')
+      throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
     this.exec(cb);
     return this; // return self for chaining
   }
@@ -2574,7 +2576,7 @@
     this._modified_query = true;
     this.cypher.action = 'DELETE';
     if (this.cypher.limit)
-      throw Error("You can't use a limit on a delete, use WHERE instead to specify your limit");
+      throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
     this.exec(cb);
     return this; // return self for chaining
   }

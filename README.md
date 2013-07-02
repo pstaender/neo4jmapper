@@ -175,15 +175,22 @@ The query method names are heavily inspired by mongodb and mongoose - so most of
   * delete
   * allLabels, createLabel, createLabels, replaceLabels, removeLabels
 
+Neo4jMapper is using the following identifiers in cypher queries:
+
+  * `n` for a single *n*ode or a start node
+  * `m` for an end node (*m*atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~> `START n = node(32), m = node(12) MATCH (n)<-[r]-(m) RETURN r;`)
+  * `r` for relationship(s)
+  * `p` for a path (not implemented, yet)
+
 We distinct between **remove** and **delete**.
 
 **remove** always means to remove a current instanced node/relationship, **delete** means to perfom `DELETE` action on a query:
 
 ```coffeescript
   # Delete all nodes with the name `Bob`
-  Node::find().andWhereNode({ name: "Bob"}).delete()
+  Node.find().andWhereNode({ name: "Bob"}).delete()
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
-  Node::findOne().whereNode { name: "Bob"}, (err, bob) ->
+  Node.findOne().whereNode { name: "Bob"}, (err, bob) ->
     # Remove Bob node (if found)
     if bob
       bob.remove()
@@ -205,9 +212,9 @@ Here are the most needed methods that can be invoked by an instanced node:
 Like in mongodb you can use **AND** + **OR** operators for your where queries, also java-syntax compatible regex are supported:
 
 ```coffeescript
-  Node::find().whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]})
+  Node.find().whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]})
   ~> 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
-  Node::findOne().where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ])
+  Node.findOne().where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ])
   ~> 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
 ```
 
@@ -218,7 +225,7 @@ Like in mongodb you can use **AND** + **OR** operators for your where queries, a
 By default you should get clear and understandable error messages on wrong queries, e.g.:
 
 ```coffeescript
-  Node::find().where "wontWork LIKE 'this'", (err) ->
+  Node.find().where "wontWork LIKE 'this'", (err) ->
     # err ~>
       { name: 'QueryError',
         message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN # n;"\n                                           ^',
@@ -249,7 +256,7 @@ In case you want to inspect sended + received data and/or the process of mapping
 
 ```coffeescript
   # for all instanced node(s) via prototype
-  Node::neo4jrestful.debug = true
+  Node.neo4jrestful.debug = true
   # or better for specific objects
   node = new Node()
   node.neo4jrestful.debug = true
@@ -303,7 +310,7 @@ or in JavaScript:
 You can easiliy inspect the generated queries by invoking the `toCypherQuery()` method:
 
 ```coffeescript
-  Node::find().andWhereNode({ name: "Bob"}).delete().toCypherQuery()
+  Node.find().andWhereNode({ name: "Bob"}).delete().toCypherQuery()
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
 ```
 
@@ -326,7 +333,7 @@ For quick testing you can also use the nodejs or coffeescript console (this exam
   coffee> {Graph,Node} = require('./src/index.js')('http://localhost:7474')
   { Node: [Function: Node],
   …
-  coffee> Node::findOne().toCypherQuery()
+  coffee> Node.findOne().toCypherQuery()
   'START n = node(*)    RETURN n   LIMIT 1;'
 ```
 
@@ -385,7 +392,25 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
 
 ## Hooks
 
-### onBeforeSave
+### Nodes
+
+All hooks can also be defined for specific classes, e.g.:
+
+```coffeescript
+  Actor::onBeforeSave = (next) -> next(null, null)
+  # instead of
+  Node::onBeforeSave = (next) -> next(null, null)
+```
+
+Same in JavaScript:
+
+```js
+  Actor.prototype.onBeforeSave = function(next) { next(null, null); }
+  // instead of
+  Node.prototype.onBeforeSave = function(next) { next(null, null); }
+```
+
+#### onBeforeSave
 
 ```coffeescript
   Node::onBeforeSave = (next) ->
@@ -394,7 +419,7 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
     next()
 ```
 
-### onBeforeRemove
+#### onBeforeRemove
 
 ```coffeescript
   Node::onBeforeRemove = (next) ->
@@ -402,7 +427,7 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
     next()
 ```
 
-### onBeforeInitialize
+#### onBeforeInitialize
 
 Called once the model is being registered. For instance, to ensure autoindex on defined fields is done in this part:
 
@@ -410,6 +435,19 @@ Called once the model is being registered. For instance, to ensure autoindex on 
   Node::onBeforeInitialize = (next) ->
     # do s.th. before the Model gets initialized
     next()
+```
+
+#### Node.prototype.onAfterLoad = function(node, next) {
+
+On all `Node.find*()` queries the results run through a load process (loading the label(s) which has to be an extra request for instance). You can define your own afterLoad process this way:
+
+```coffeescript
+  Node::onAfterLoad = (node, done) ->
+    # do s.th. here, finnaly call done()
+    if node.id
+      @neo4jmapper.query "START …", (err, result) ->
+        …
+        done(err, null)
 ```
 
 ## LICENSE
