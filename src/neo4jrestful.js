@@ -382,6 +382,11 @@ var initNeo4jRestful = function() {
 
   }
 
+  Neo4jRestful.prototype.onBeforeSend = function(xhr) {
+    //if (this.header['X-Stream'] === 'true')
+    return null;
+  }
+
   Neo4jRestful.prototype.makeRequest = function(_options, cb) {
     _options = _.extend({
       cache: false,
@@ -403,6 +408,9 @@ var initNeo4jRestful = function() {
       data: data,
       cache: _options.cache,
       timeout: _options.timeout,
+      beforeSend: function(xhr) {
+        self.onBeforeSend(xhr);
+      },
       success: function(res,status) {
         self.onSuccess(cb, res, status, options);
       },

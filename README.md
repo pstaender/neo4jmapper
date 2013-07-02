@@ -445,8 +445,8 @@ On all `Node.find*()` queries the results run through a load process (loading th
   Node::onAfterLoad = (node, done) ->
     # do s.th. here, finnaly call done()
     if node.id
-      @neo4jmapper.query "START …", (err, result) ->
-        …
+      @neo4jrestful.query "START …", (err, result) ->
+        # …
         done(err, null)
 ```
 

@@ -721,7 +721,7 @@ describe('Neo4jMapper', function() {
       });
     });
   });
-  describe('label nodes', function() {
+  describe.only('label nodes', function() {
     it('expect to save labeled node and request label(s)', function(done) {
       var node;
 
@@ -872,6 +872,35 @@ describe('Neo4jMapper', function() {
       }).save(function(err, alice) {
         return Person.findById(alice.id, function(err, alice) {
           expect(alice.constructor_name).to.be.equal('Person');
+          expect(alice.label).to.be.equal('Person');
+          return done();
+        });
+      });
+    });
+    it('expect to enable and disable loading hook', function(done) {
+      var Person, _ref2;
+
+      Person = (function(_super) {
+        __extends(Person, _super);
+
+        function Person() {
+          _ref2 = Person.__super__.constructor.apply(this, arguments);
+          return _ref2;
+        }
+
+        return Person;
+
+      })(Node);
+      Node.prototype.disableLoading();
+      return new Person({
+        name: 'Alice'
+      }).save(function(err, alice) {
+        console.log(alice);
+        expect(err).to.be(null);
+        expect(alice.label).to.be(null);
+        Person.prototype.enableLoading();
+        return Person.prototype.findById(alice.id, function(err, alice) {
+          expect(err).to.be(null);
           expect(alice.label).to.be.equal('Person');
           return done();
         });

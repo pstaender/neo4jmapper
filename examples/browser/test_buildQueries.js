@@ -51,9 +51,7 @@ describe('Neo4jMapper (cypher queries)', function() {
       e = _error;
       err = e;
     }
-    expect(err).not.to.be(null);
-    expect(Node.findOne().deleteIncludingRelationships).withArgs(function() {}).to.throwError();
-    return expect(Node.find().deleteIncludingRelationships().limit).withArgs(1, function() {}).to.throwError();
+    return expect(err).not.to.be(null);
   });
   return it('expect to build various kind of queries', function() {
     var Actor, functionCall, map, node, query, results, todo, _ref1, _results;

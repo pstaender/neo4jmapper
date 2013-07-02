@@ -1282,6 +1282,11 @@
   
     }
   
+    Neo4jRestful.prototype.onBeforeSend = function(xhr) {
+      //if (this.header['X-Stream'] === 'true')
+      return null;
+    }
+  
     Neo4jRestful.prototype.makeRequest = function(_options, cb) {
       _options = _.extend({
         cache: false,
@@ -1303,6 +1308,9 @@
         data: data,
         cache: _options.cache,
         timeout: _options.timeout,
+        beforeSend: function(xhr) {
+          self.onBeforeSend(xhr);
+        },
         success: function(res,status) {
           self.onSuccess(cb, res, status, options);
         },
@@ -1403,6 +1411,7 @@
     sort: '',
     filter: '',
     match: '',
+    start: '',
     return_properties: [],
     where: [],
     // and_where: [],
@@ -1507,6 +1516,8 @@
   Node.prototype.constructor_name = null;
   
   Node.prototype.load_on_process = true;
+  
+  Node.prototype._load_hook_reference_ = null;
   
   Node.prototype.__models__ = {};
   Node.prototype.__already_initialized__ = false; // flag to avoid many initializations
@@ -1887,6 +1898,22 @@
   
   Node.prototype.onAfterLoad = function(node, next) {
     next(null, node);
+  }
+  
+  Node.prototype.disableLoading = function() {
+    if (typeof this.load === 'function') {
+      this._load_hook_reference_ = this.load;
+      this.load = null;
+    }
+    return this;
+  }
+  
+  Node.prototype.enableLoading = function() {
+    if (typeof this._load_hook_reference_ === 'function') {
+      this.load = this._load_hook_reference_;
+      this._load_hook_reference_ = null;
+    }
+    return this;
   }
   
   Node.prototype.populateWithDataFromResponse = function(data) {
@@ -2572,7 +2599,7 @@
   
   Node.prototype.delete = function(cb) {
     if (this.hasId())
-      return cb(Error('To delete a node, use remove(). delete() is for queries.'),null);
+      return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
     this._modified_query = true;
     this.cypher.action = 'DELETE';
     if (this.cypher.limit)
@@ -2594,7 +2621,7 @@
     var self = this;
     this.onBeforeRemove(function(err) {
       if (self.is_singleton)
-        return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced node."),null);
+        return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced node"),null);
       if (self.hasId()) {
         return self.neo4jrestful.delete('/db/data/node/'+self.id, cb);
       }
@@ -2737,7 +2764,7 @@
         }, options);
       }, options);
     } else {
-      cb(Error("You need two instanced nodes as start and end point."), null);
+      cb(Error("You need two instanced nodes as start and end point"), null);
     }
     
   }
