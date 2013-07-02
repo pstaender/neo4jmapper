@@ -12,7 +12,9 @@ var initNeo4jRestful = function() {
     , _                   = null
     , jQuery              = null
     , request             = null
-    , Sequence            = null;
+    , Sequence            = null
+    , EventEmitter        = null
+    , JSONStream          = require('JSONStream');
 
   if (typeof window === 'object') {
     // browser
@@ -24,6 +26,7 @@ var initNeo4jRestful = function() {
     jQuery       = window.jQuery;
     Sequence     = window.Sequence;
     request      = window.superagent;
+    EventEmitter = window.EventEmitter;
   } else {
     // nodejs
     helpers      = require('./helpers');
@@ -34,6 +37,7 @@ var initNeo4jRestful = function() {
     path         = require('./path');
     Sequence     = require('./lib/sequence');
     request      = require('superagent');
+    EventEmitter = require('events').EventEmitter;
   }
 
   // Base for QueryError and CypherQueryError
@@ -118,6 +122,7 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype.timeout = 5000;
   Neo4jRestful.prototype.baseUrl = null;
   Neo4jRestful.prototype.debug = null;
+  Neo4jRestful.prototype.stream = null;
   Neo4jRestful.prototype._absoluteUrl = null;
   Neo4jRestful.prototype.exact_version = null;
   Neo4jRestful.prototype.version = null;
@@ -379,20 +384,11 @@ var initNeo4jRestful = function() {
       // console.log('(!!!')
       return cb(err, null, options._debug);
     }
-
   }
 
-  Neo4jRestful.prototype.onBeforeSend = function(xhr) {
-    if (this.header['X-Stream'] === 'true') {
-      var readystatehook = xhr.onreadystatechange;
-
-      xhr.onreadystatechange = function(){
-         readystatehook.apply(this, []);
-         console.log('fired');
-      };
-      return true;
-    }
-    return null;
+  Neo4jRestful.prototype.stream = function(cypher, options, cb) {
+    this.header['X-Stream'] = 'true';
+    return this.query(cypher, options, cb);
   }
 
   Neo4jRestful.prototype.makeRequest = function(_options, cb) {
@@ -410,22 +406,45 @@ var initNeo4jRestful = function() {
     options._debug = _options.debug;
 
     var req = request(options.method, options.absolute_url).set(this.header)
-    if (data)
+    
+    if (data) {
       req.send(data)
-    // send response
-    req.end(function(err, res) {
-      if (err) {
-        //console.log(err, res.body);
-        self.onError(cb, err, 'error', options);
-      } else {
-        if (res.statusType !== 2) {
-          // err
-          self.onError(cb, res.body, 'error', options);
-        } else {
-          self.onSuccess(cb, res.body, 'success', options);
+    }
+    
+    // stream
+    if (this.header['X-Stream'] === 'true') {
+
+      var stream = JSONStream.parse(['data', true]);
+
+      stream.on('data', cb);
+      stream.on('end', cb);
+
+      stream.on('root', function(root, count) {
+        if (!count) {
+          cb(Error('No matches found', null, root));
         }
-      }
-    });
+      });
+
+      req.pipe(stream);
+    } else if (this.header['X-Stream']) {
+      // otherwise remove x-stream from header
+      delete this.header['X-Stream'];
+    }
+    // or send response
+    else {
+      req.end(function(err, res) {
+        if (err) {
+          self.onError(cb, err, 'error', options);
+        } else {
+          if (res.statusType !== 2) {
+            // err
+            self.onError(cb, res.body, 'error', options);
+          } else {
+            self.onSuccess(cb, res.body, 'success', options);
+          }
+        }
+      });
+    }
   }
 
   Neo4jRestful.prototype.get = function(url, options, cb) {

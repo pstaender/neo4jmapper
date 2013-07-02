@@ -851,20 +851,21 @@ Node.prototype.query = function(cypherQuery, options, cb) {
     return cb(err, sortedData, debug);
   } 
 
-  var _processData = function(err, data, debug, cb) {
-    if ((err)||(data === null))
-      return cb(err, data, debug);
+  var _processData = function(err, result, debug, cb) {
+    if ((err)||(!result))
+      return cb(err, result, debug);
     else {
       var sortedData = [];
       var errors = [];
       // we are using the 
       var sequence = Sequence.create();
       // we iterate through the results
-      for (var x=0; x < data.data.length; x++) {
-        if (typeof data.data[x][0] === 'undefined') {
+      var data = (result.data) ? result.data : result;
+      for (var x=0; x < data.length; x++) {
+        if (typeof data[x][0] === 'undefined') {
           break;
         }
-        var basicNode = self.neo4jrestful.createObjectFromResponseData(data.data[x][0], DefaultConstructor);
+        var basicNode = self.neo4jrestful.createObjectFromResponseData(data[x][0], DefaultConstructor);
         (function(x,basicNode){
           sequence.then(function(next) {
             // TODO: reduce load / calls, currently it's way too slow…
@@ -885,8 +886,8 @@ Node.prototype.query = function(cypherQuery, options, cb) {
       }
       sequence.then(function(next){
         //finally
-        if ( (data.data[0]) && (typeof data.data[0][0] !== 'object') )
-          sortedData = data.data[0][0];
+        if ( (data[0]) && (typeof data[0][0] !== 'object') )
+          sortedData = data[0][0];
         return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
       });
     }
@@ -1557,7 +1558,11 @@ Node.prototype.toObject = function() {
 Node.prototype.stream = function(cb) {
   this.neo4jrestful.header['X-Stream'] = 'true';
   this.exec(cb);
-  return this; // return self for chaining
+  return this;
+}
+
+Node.prototype.each = function(cb) {
+  return this.stream(cb);
 }
 
 /*

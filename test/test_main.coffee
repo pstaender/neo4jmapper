@@ -113,12 +113,20 @@ describe 'Neo4jMapper', ->
             expect(count).to.be.equal count
             done()
 
-  # describe 'call', ->
+  # describe.only 'stream', ->
 
-  #   it.only 'expect to make a restfule request', (done) ->
-  #     client.get '/db/data/node/0', (err, res) ->
-  #       console.log err, res
-  #       done()
+  #   it 'expect to make a stream request', (done) ->
+  #     Node.findAll().count (err, count) ->
+  #       expect(count).to.be.above 1
+  #       iterationsCount = 0;
+  #       Node.findAll().limit(count-1).each (data) ->
+  #         if data
+  #           expect(data)
+  #           iterationsCount++
+  #         else
+  #           expect(iterationsCount).to.be.equal count-1
+  #           done()
+
 
   describe 'node', ->
 
@@ -274,10 +282,10 @@ describe 'Neo4jMapper', ->
           n.exec ->
             done()
 
-    it 'expect to get all nodes as stream', (done) ->
-      Node.findAll().limit(100).stream (err, found) ->
-        expect(err).to.be null
-        done()
+    it 'expect to get all nodes as stream'#, (done) ->
+    #   Node.findAll().limit(100).stream (err, found) ->
+    #     expect(err).to.be null
+    #     done()
 
     it 'expect to get null if node is not found', (done) ->
       Node.findById 1234567890, (err, found) ->
