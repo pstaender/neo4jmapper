@@ -40,12 +40,12 @@ describe 'Neo4jMapper (cypher queries)', ->
       catch e
         err = e
       expect(err).not.to.be null
-      err = null
-      try
-        Node.findOne().deleteIncludingRelationships().limit 1 ->
-      catch e
-        err = e
-      expect(err).not.to.be null
+      # err = null
+      # try
+      #   Node.find().deleteIncludingRelationships().limit 1, ->
+      # catch e
+      #   err = e
+      # expect(err).not.to.be null
       
       # expect(Node.findOne().deleteIncludingRelationships).withArgs(->).to.throwError()
       # expect(Node.find().deleteIncludingRelationships().limit).withArgs(1, ->).to.throwError()

@@ -43,13 +43,6 @@ describe('Neo4jMapper (cypher queries)', function() {
       e = _error;
       err = e;
     }
-    expect(err).not.to.be(null);
-    try {
-      Node.findOne().deleteIncludingRelationships().limit(function() {});
-    } catch (_error) {
-      e = _error;
-      err = e;
-    }
     return expect(err).not.to.be(null);
   });
   return it('expect to build various kind of queries', function() {

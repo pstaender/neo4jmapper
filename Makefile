@@ -5,6 +5,10 @@ test:test-build
 test-build:
 	coffee -mcb test/
 
+browser-build:test-build
+	npm run clean
+	cake clientsidejs:build
+
 test-coverage:test-build
 	mocha --require blanket -R html-cov > test/coverage.html
 	npm run clean
