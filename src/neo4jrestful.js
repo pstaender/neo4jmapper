@@ -453,12 +453,12 @@ var initNeo4jRestful = function() {
     if (typeof Class !== 'function')
       Class = Node;
     if (uri) {
-      if (/\/db\/data\/node\/[1-9]{1}[0-9]*\/*$/.test(uri)) {
+      if (/\/db\/data\/node\/[0-9]+\/*$/.test(uri)) {
         // we have a node or an inheriated class
         var n = new Class();
         n = n.populateWithDataFromResponse(responseData);
         return n;
-      } else if (/\/db\/data\/relationship\/[1-9]{1}[0-9]*\/*$/.test(uri)) {
+      } else if (/\/db\/data\/relationship\/[0-9]+\/*$/.test(uri)) {
         // we have a relationship
         var r = new Relationship();
         r = r.populateWithDataFromResponse(responseData);

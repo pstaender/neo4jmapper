@@ -1353,12 +1353,12 @@
       if (typeof Class !== 'function')
         Class = Node;
       if (uri) {
-        if (/\/db\/data\/node\/[1-9]{1}[0-9]*\/*$/.test(uri)) {
+        if (/\/db\/data\/node\/[0-9]+\/*$/.test(uri)) {
           // we have a node or an inheriated class
           var n = new Class();
           n = n.populateWithDataFromResponse(responseData);
           return n;
-        } else if (/\/db\/data\/relationship\/[1-9]{1}[0-9]*\/*$/.test(uri)) {
+        } else if (/\/db\/data\/relationship\/[0-9]+\/*$/.test(uri)) {
           // we have a relationship
           var r = new Relationship();
           r = r.populateWithDataFromResponse(responseData);
@@ -1514,8 +1514,6 @@
   Node.prototype.labels = null;
   Node.prototype.label = null;
   Node.prototype.constructor_name = null;
-  
-  Node.prototype.load_on_process = true;
   
   Node.prototype._load_hook_reference_ = null;
   
@@ -1882,13 +1880,21 @@
   }
   
   Node.prototype.onBeforeLoad = function(node, next) {
+    var self = this;
     if (node.hasId()) {
+      var DefaultConstructor = this.recommendConstructor();
+      // To check that it's invoked by Noder::find() or Person::find()
+      var constructorNameOfStaticMethod = helpers.constructorNameOfFunction(DefaultConstructor);
       node.allLabels(function(err, labels, debug) {
         if (err)
           return next(err, labels);
         node.labels = _.clone(labels);
         if (labels.length === 1)
           node.label = labels[0]
+        // convert node to it's model if it has a distinct label and differs from static method
+        // console.log(node.label, DefaultConstructor);
+        if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
+          node = Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
         next(null, node);
       });
     } else {
@@ -2225,8 +2231,6 @@
     var self = this;
     
     var DefaultConstructor = this.recommendConstructor();
-    // To check that it's invoked by Noder::find() or Person::find()
-    var constructorNameOfStaticMethod = helpers.constructorNameOfFunction(DefaultConstructor);
   
     var _deliverResultset = function(self, cb, err, sortedData, debug) {
       if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
@@ -2255,13 +2259,10 @@
           (function(x,basicNode){
             sequence.then(function(next) {
               // TODO: reduce load / calls, currently it's way too slow…
-              if ( (self.load_on_process) && (typeof basicNode.load === 'function')) {
+              if (typeof basicNode.load === 'function') {
                 basicNode.load(function(err, node) {
                   if ((err) || (!node))
                     errors.push(err);
-                  // convert node to it's model if it has a distinct label and differs from static method
-                  else if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
-                    Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
                   sortedData[x] = node;
                   next();
                 });
@@ -2989,8 +2990,20 @@
     var self = this;
     if (!self.is_singleton)
       self = this.singleton(undefined, this);
-    self.cypher.by_id = Number(id);
-    return self.findByUniqueKeyValue('id', id, cb);
+    if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
+      // to reduce calls we'll make a specific restful request for one node
+      return this.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
+        if ((node) && (typeof self.load === 'function')) {
+          //  && (typeof node.load === 'function')  
+          node.load(cb);
+        } else {
+          cb(err, node);
+        }
+      });
+    } else {
+      self.cypher.by_id = Number(id);
+      return self.findByUniqueKeyValue('id', id, cb);
+    } 
   }
   
   Node.prototype.findByUniqueKeyValue = function(key, value, cb) {

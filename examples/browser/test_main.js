@@ -721,7 +721,7 @@ describe('Neo4jMapper', function() {
       });
     });
   });
-  describe.only('label nodes', function() {
+  describe('label nodes', function() {
     it('expect to save labeled node and request label(s)', function(done) {
       var node;
 
@@ -891,18 +891,19 @@ describe('Neo4jMapper', function() {
         return Person;
 
       })(Node);
-      Node.prototype.disableLoading();
+      Person.prototype.disableLoading();
       return new Person({
         name: 'Alice'
-      }).save(function(err, alice) {
-        console.log(alice);
-        expect(err).to.be(null);
-        expect(alice.label).to.be(null);
-        Person.prototype.enableLoading();
-        return Person.prototype.findById(alice.id, function(err, alice) {
+      }).save(function(err, a) {
+        return Person.prototype.findById(a.id, function(err, alice) {
           expect(err).to.be(null);
-          expect(alice.label).to.be.equal('Person');
-          return done();
+          expect(alice.label).to.be(null);
+          Person.prototype.enableLoading();
+          return Person.prototype.findById(alice.id, function(err, alice) {
+            expect(err).to.be(null);
+            expect(alice.label).to.be.equal('Person');
+            return done();
+          });
         });
       });
     });
