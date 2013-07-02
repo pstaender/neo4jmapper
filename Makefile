@@ -9,6 +9,10 @@ browser-build:test-build
 	npm run clean
 	cake clientsidejs:build
 
+browser-build-watch:
+	nodemon -e coffee --exec 'make browser-build'
+
+
 test-coverage:test-build
 	mocha --require blanket -R html-cov > test/coverage.html
 	npm run clean
