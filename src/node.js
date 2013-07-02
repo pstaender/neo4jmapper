@@ -1603,7 +1603,8 @@ Node.prototype.findById = function(id, cb) {
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
     return this.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
-      if ((node) && (typeof node.load === 'function')) {        
+      if ((node) && (typeof self.load === 'function')) {
+        //  && (typeof node.load === 'function')  
         node.load(cb);
       } else {
         cb(err, node);
