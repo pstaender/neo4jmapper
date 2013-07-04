@@ -109,6 +109,8 @@ var initNeo4jRestful = function() {
     self._queue = _.extend({},Neo4jRestful.prototype._queue);
 
     self._queue.stack = [];
+    // copy header
+    self.header = _.extend({}, Neo4jRestful.prototype.header);
     self.checkAvailability(function(err, isAvailable, debug) {
       self.connection_established = isAvailable;
     });
@@ -381,7 +383,6 @@ var initNeo4jRestful = function() {
       // we ignore by default notfound exceptions, because they are no "syntactical" errors
       return cb(null, null, options._debug);
     } else {
-      // console.log('(!!!')
       return cb(err, null, options._debug);
     }
   }
@@ -405,8 +406,8 @@ var initNeo4jRestful = function() {
     options.method = _options.type;
     options._debug = _options.debug;
 
-    var req = request(options.method, options.absolute_url).set(this.header)
-    
+    var req = request(options.method, options.absolute_url).set(this.header);
+
     if (data) {
       req.send(data)
     }
@@ -420,15 +421,14 @@ var initNeo4jRestful = function() {
       stream.on('end', cb);
 
       stream.on('root', function(root, count) {
+        // remove x-stream from header
+        delete self.header['X-Stream'];
         if (!count) {
-          cb(Error('No matches found', null, root));
+          cb(Error('No matches in stream found ('+ root +')'));
         }
       });
 
       req.pipe(stream);
-    } else if (this.header['X-Stream']) {
-      // otherwise remove x-stream from header
-      delete this.header['X-Stream'];
     }
     // or send response
     else {

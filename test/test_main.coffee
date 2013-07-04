@@ -113,19 +113,31 @@ describe 'Neo4jMapper', ->
             expect(count).to.be.equal count
             done()
 
-  # describe.only 'stream', ->
+  describe.only 'stream', ->
 
-  #   it 'expect to make a stream request', (done) ->
-  #     Node.findAll().count (err, count) ->
-  #       expect(count).to.be.above 1
-  #       iterationsCount = 0;
-  #       Node.findAll().limit(count-1).each (data) ->
-  #         if data
-  #           expect(data)
-  #           iterationsCount++
-  #         else
-  #           expect(iterationsCount).to.be.equal count-1
-  #           done()
+    it 'expect to make a stream request', (done) ->
+      Node.findAll().count (err, count) ->
+        console.log err, count
+        expect(count).to.be.above 1
+        iterationsCount = 0;
+        count = 10 if count > 10
+        Node.findAll().limit(count-1).each (data) ->
+          console.log(data);
+          if data
+            expect(data._response.self).to.be.a 'string'
+            expect(data.labels.constructor).to.be.equal Array
+            iterationsCount++
+          else
+            expect(iterationsCount).to.be.equal count-1
+            done()
+    # it 'expect to make a stream request', (done) ->
+    #   Node.findAll().limit(2).each (data) ->
+    #     if data
+    #       console.log(data)
+    #       # expect(data._response.self).to.be.a 'string'
+    #       # expect(data.labels.constructor).to.be.equal Array
+    #     #else
+    #     #  done()
 
 
   describe 'node', ->
@@ -646,7 +658,9 @@ describe 'Neo4jMapper', ->
                     expect(relationship).to.be.an 'object'
                     graphdb.countRelationships (err, countedRelationshipsFinally) ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
+                      # console.log bob.neo4jrestful.header
                       bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
+
                         expect(err).to.be null
                         expect(relationship).to.be.an 'object'
                         expect(relationship.type).to.be.equal 'follows'

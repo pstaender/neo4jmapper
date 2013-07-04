@@ -251,7 +251,7 @@ Relationship.prototype.loadFromAndToNodes = function(cb) {
   var errors = [];
   for (var i = 0; i < 2; i++) {
     (function(point){
-      Node.prototype.findById(self[point].id,function(err,node) {
+      Node.findById(self[point].id,function(err,node) {
         self[point] = node;
         if (err)
           errors.push(err);

@@ -52,7 +52,7 @@ Node = function Node(data, id) {
   if (!this.constructor_name)
     this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
   // each node object has it's own restful client
-  this.neo4jrestful = _.extend(Node.prototype.neo4jrestful);
+  //this.neo4jrestful = new Node.prototype.neo4jrestful.constructor(Node.prototype.neo4jrestful.baseUrl);
   this.init(data, id);
 }
 
@@ -842,25 +842,50 @@ Node.prototype.query = function(cypherQuery, options, cb) {
   var DefaultConstructor = this.recommendConstructor();
 
   var _deliverResultset = function(self, cb, err, sortedData, debug) {
-    if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
-      sortedData = sortedData[0];
-    else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
-      sortedData = sortedData[0];
-    else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
-      sortedData = null;
-    return cb(err, sortedData, debug);
+    if (self.neo4jrestful.header['X-Stream']) {
+      // we return only one/first array element
+      return cb(sortedData[0], debug);
+    } else {
+      if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
+        sortedData = sortedData[0];
+      else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
+        sortedData = sortedData[0];
+      else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
+        sortedData = null;
+      // s.th. like [ 3 ] as result for instance
+      if ( (_.isArray(sortedData)) && (sortedData.length === 1) && (typeof sortedData[0] !== 'object') )
+        sortedData = sortedData[0];
+      // if ( (sortedData[0]) && (sortedData[0] !== 'object') )
+      //   sortedData = sortedData[0];
+      // if ( (sortedData[0]) && (sortedData[0][0]) && (typeof sortedData[0][0] !== 'object') )
+      //   sortedData = sortedData[0][0];
+      // if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
+      //   sortedData = sortedData[0];
+      // else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
+      //   sortedData = sortedData[0];
+      // else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
+      //   sortedData = null;
+      return cb(err, sortedData, debug);
+    }
   } 
 
   var _processData = function(err, result, debug, cb) {
-    if ((err)||(!result))
+    if ((err)&&(self.neo4jrestful.header['X-Stream'])) {
+      // in this case `err` is the result because we are having stream result here
+      result = err;
+      err = null;
+    }
+    if ((err)||(!result)) {
       return cb(err, result, debug);
-    else {
+    } else {
       var sortedData = [];
       var errors = [];
       // we are using the 
       var sequence = Sequence.create();
       // we iterate through the results
-      var data = (result.data) ? result.data : result;
+      var data = (result.data) ? result.data : [ result ];
+      // because we are making a seperate request we instanciate another client
+      // var neo4jrestful = new Node.prototype.neo4jrestful.constructor(self.neo4jrestful.baseUrl);
       for (var x=0; x < data.length; x++) {
         if (typeof data[x][0] === 'undefined') {
           break;
@@ -886,8 +911,8 @@ Node.prototype.query = function(cypherQuery, options, cb) {
       }
       sequence.then(function(next){
         //finally
-        if ( (data[0]) && (typeof data[0][0] !== 'object') )
-          sortedData = data[0][0];
+        if ( (data.data) && (data.data[0]) && (typeof data.data[0][0] !== 'object') )
+          sortedData = data.data[0][0];
         return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
       });
     }
@@ -1470,8 +1495,9 @@ Node.prototype.labelsAsArray = function() {
 }
 
 Node.prototype.allLabels = function(cb) {
-  if ( (this.hasId()) && (_.isFunction(cb)) )
+  if ( (this.hasId()) && (_.isFunction(cb)) ) {
     return this.neo4jrestful.get('/db/data/node/'+this.id+'/labels', cb);
+  }
 }
 
 Node.prototype.createLabel = function(label, cb) {
@@ -1606,7 +1632,7 @@ Node.prototype.findById = function(id, cb) {
     self = this.singleton(undefined, this);
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
-    return this.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
+    return self.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
       if ((node) && (typeof self.load === 'function')) {
         //  && (typeof node.load === 'function')     
         node.load(cb);
