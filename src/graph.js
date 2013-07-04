@@ -21,10 +21,14 @@ var initGraph = function(neo4jrestful) {
   Graph.prototype.info = null;
 
   /*
-   * Shorthand for neo4jrestul.query
+   * Shorthands for neo4jrestul.*
    */
   Graph.prototype.query = function(cypher, options, cb) {
     return neo4jrestful.query(cypher,options,cb);
+  }
+
+  Graph.prototype.stream = function(cypher, options, cb) {
+    return neo4jrestful.stream(cypher,options,cb);
   }
 
   /*

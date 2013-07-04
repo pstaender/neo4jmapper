@@ -385,6 +385,8 @@ var initNeo4jRestful = function() {
   }
 
   Neo4jRestful.prototype.stream = function(cypher, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
     this.header['X-Stream'] = 'true';
     var self = this;
     var todo = 0;

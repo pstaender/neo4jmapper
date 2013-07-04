@@ -133,13 +133,18 @@ describe 'Neo4jMapper', ->
             done()
 
     it 'expect to make a stream request on the graph', (SkipInBrowser) (done) ->
-      count = 0
-      client.stream 'START n=node(*) RETURN n LIMIT 5;', (node) ->
-        unless node
-          expect(count).to.be.equal 5
-          done()
-        else
-          count++
+      Node.findAll().count (err, count) ->
+        expect(count).to.be.above 1
+        iterationsCount = 0;
+        count = 10 if count > 10
+        graph = new Graph() # alternate: client.stream
+        graph.stream "START n=node(*) RETURN n LIMIT #{count};", (node) ->
+          unless node
+            expect(count).to.be.equal count
+            done()
+          else
+            expect(node.id).to.be.a 'number'
+            count++
 
   describe 'node', ->
 
@@ -758,7 +763,7 @@ describe 'Neo4jMapper', ->
 
   describe 'path algorithms', ->
 
-    it 'expect to find shortest path from one node to an other node', (done) ->
+    it 'expect to find shortest path between two nodes', (done) ->
       a = new Node({name: 'Alice'})
       a.save (err) ->
         b = new Node({name: 'Bob'})
