@@ -13,8 +13,7 @@ var initNeo4jRestful = function() {
     , jQuery              = null
     , request             = null
     , Sequence            = null
-    , EventEmitter        = null
-    , JSONStream          = require('JSONStream');
+    , JSONStream          = null;
 
   if (typeof window === 'object') {
     // browser
@@ -26,7 +25,6 @@ var initNeo4jRestful = function() {
     jQuery       = window.jQuery;
     Sequence     = window.Sequence;
     request      = window.superagent;
-    EventEmitter = window.EventEmitter;
   } else {
     // nodejs
     helpers      = require('./helpers');
@@ -37,7 +35,7 @@ var initNeo4jRestful = function() {
     path         = require('./path');
     Sequence     = require('./lib/sequence');
     request      = require('superagent');
-    EventEmitter = require('events').EventEmitter;
+    JSONStream   = require('JSONStream');
   }
 
   // Base for QueryError and CypherQueryError

@@ -32,6 +32,9 @@ client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLo
 version = client.version
 graphdb = null # will be initialized in before()
 
+SkipInNode = (a) -> unless window? then null else a 
+SkipInBrowser = (a) -> if window? then null else a
+
 if process?.env?.TRAVIS
   # cancel tests because travis doesn't support neo4j v2, yet
   return describe 'Neo4jMapper', ->
@@ -115,7 +118,7 @@ describe 'Neo4jMapper', ->
 
   describe 'stream', ->
 
-    it 'expect to make a stream request on nodes', (done) ->
+    it 'expect to make a stream request on nodes', (SkipInBrowser) (done) ->
       Node.findAll().count (err, count) ->
         expect(count).to.be.above 1
         iterationsCount = 0;
@@ -129,7 +132,7 @@ describe 'Neo4jMapper', ->
             expect(iterationsCount).to.be.equal count-1
             done()
 
-    it 'expect to make a stream request on the graph', (done) ->
+    it 'expect to make a stream request on the graph', (SkipInBrowser) (done) ->
       count = 0
       client.stream 'START n=node(*) RETURN n LIMIT 5;', (node) ->
         unless node
@@ -291,11 +294,6 @@ describe 'Neo4jMapper', ->
           n = n.findAll().limit(10).where [ $and: [ { 'HAS (n.collection)' }, { 'n.collection': /^users$/i } ] ]
           n.exec ->
             done()
-
-    it 'expect to get all nodes as stream'#, (done) ->
-    #   Node.findAll().limit(100).stream (err, found) ->
-    #     expect(err).to.be null
-    #     done()
 
     it 'expect to get null if node is not found', (done) ->
       Node.findById 1234567890, (err, found) ->

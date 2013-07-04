@@ -912,7 +912,8 @@
       , _                   = null
       , jQuery              = null
       , request             = null
-      , Sequence            = null;
+      , Sequence            = null
+      , JSONStream          = null;
   
     if (typeof window === 'object') {
       // browser
@@ -934,6 +935,7 @@
       path         = require('./path');
       Sequence     = require('./lib/sequence');
       request      = require('superagent');
+      JSONStream   = require('JSONStream');
     }
   
     // Base for QueryError and CypherQueryError
@@ -1005,6 +1007,8 @@
       self._queue = _.extend({},Neo4jRestful.prototype._queue);
   
       self._queue.stack = [];
+      // copy header
+      self.header = _.extend({}, Neo4jRestful.prototype.header);
       self.checkAvailability(function(err, isAvailable, debug) {
         self.connection_established = isAvailable;
       });
@@ -1276,23 +1280,37 @@
         // we ignore by default notfound exceptions, because they are no "syntactical" errors
         return cb(null, null, options._debug);
       } else {
-        // console.log('(!!!')
         return cb(err, null, options._debug);
       }
-  
     }
   
-    Neo4jRestful.prototype.onBeforeSend = function(xhr) {
-      if (this.header['X-Stream'] === 'true') {
-        var readystatehook = xhr.onreadystatechange;
-  
-        xhr.onreadystatechange = function(){
-           readystatehook.apply(this, []);
-           console.log('fired');
-        };
-        return true;
-      }
-      return null;
+    Neo4jRestful.prototype.stream = function(cypher, options, cb) {
+      this.header['X-Stream'] = 'true';
+      var self = this;
+      var todo = 0;
+      var done = 0;
+      return this.query(cypher, options, function(data) {
+        if (data) {
+          if (typeof self.onProcess === 'function') {
+            todo++;
+            self.onProcess(data, function(err, data) {
+              if ( (data) && (data.length === 1) )
+                data = data[0];
+              if (done >= todo) {
+                // done
+                cb(data);
+                cb(null);
+              } else {
+                cb(data);
+              }
+            })
+          } else {
+            cb(data);
+          }
+        } else {
+          cb(null);
+        }
+      });
     }
   
     Neo4jRestful.prototype.makeRequest = function(_options, cb) {
@@ -1309,23 +1327,52 @@
       options.method = _options.type;
       options._debug = _options.debug;
   
-      var req = request(options.method, options.absolute_url).set(this.header)
-      if (data)
+      var req = request(options.method, options.absolute_url).set(this.header);
+  
+      if (data) {
         req.send(data)
-      // send response
-      req.end(function(err, res) {
-        if (err) {
-          //console.log(err, res.body);
-          self.onError(cb, err, 'error', options);
-        } else {
-          if (res.statusType !== 2) {
-            // err
-            self.onError(cb, res.body, 'error', options);
-          } else {
-            self.onSuccess(cb, res.body, 'success', options);
+      }
+      
+      // stream
+      if (this.header['X-Stream'] === 'true') {
+  
+        var stream = JSONStream.parse(['data', true]);
+  
+        stream.on('data', cb);
+        stream.on('end', function() {
+          // prevent to pass undefined, but maybe an undefined is more clear
+          cb(null);
+        });
+  
+        // stream.on('end', function(data) {
+        //   cb(data, options._debug);
+        // });
+  
+        stream.on('root', function(root, count) {
+          // remove x-stream from header
+          delete self.header['X-Stream'];
+          if (!count) {
+            cb(Error('No matches in stream found ('+ root +')'));
           }
-        }
-      });
+        });
+  
+        req.pipe(stream);
+      }
+      // or send response
+      else {
+        req.end(function(err, res) {
+          if (err) {
+            self.onError(cb, err, 'error', options);
+          } else {
+            if (res.statusType !== 2) {
+              // err
+              self.onError(cb, res.body, 'error', options);
+            } else {
+              self.onSuccess(cb, res.body, 'success', options);
+            }
+          }
+        });
+      }
     }
   
     Neo4jRestful.prototype.get = function(url, options, cb) {
@@ -1448,7 +1495,7 @@
     if (!this.constructor_name)
       this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
     // each node object has it's own restful client
-    this.neo4jrestful = _.extend(Node.prototype.neo4jrestful);
+    //this.neo4jrestful = new Node.prototype.neo4jrestful.constructor(Node.prototype.neo4jrestful.baseUrl);
     this.init(data, id);
   }
   
@@ -1471,6 +1518,9 @@
     if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
       this.label = this.cypher.label = this.constructor_name;
     }
+    // each node gets it's own client
+    this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
+    this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);
   }
   
   /*
@@ -1512,6 +1562,7 @@
   Node.prototype.uri = null;
   Node.prototype._response = null;
   Node.prototype._modified_query = false;
+  Node.prototype._stream_ = null; // flag for processing result data
   Node.prototype.is_singleton = false;
   Node.prototype.is_persisted = false;
   Node.prototype.cypher = {};
@@ -1537,7 +1588,6 @@
   Node.prototype.singleton = function(id) {
     var Class = this.constructor;
     var node = new Class({},id);
-    node.neo4jrestful = _.extend(Node.prototype.neo4jrestful);
     node.resetQuery();
     node.is_singleton = true;
     node.resetQuery();
@@ -2244,23 +2294,29 @@
         sortedData = sortedData[0];
       else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
         sortedData = null;
+      // s.th. like [ 3 ] as result for instance
+      if ( (_.isArray(sortedData)) && (sortedData.length === 1) && (typeof sortedData[0] !== 'object') )
+        sortedData = sortedData[0];
       return cb(err, sortedData, debug);
     } 
   
-    var _processData = function(err, data, debug, cb) {
-      if ((err)||(data === null))
-        return cb(err, data, debug);
-      else {
+    var _processData = function(err, result, debug, cb) {
+      if ((err)||(!result)) {
+        return cb(err, result, debug);
+      } else {
         var sortedData = [];
         var errors = [];
         // we are using the 
         var sequence = Sequence.create();
         // we iterate through the results
-        for (var x=0; x < data.data.length; x++) {
-          if (typeof data.data[x][0] === 'undefined') {
+        var data = (result.data) ? result.data : [ result ];
+        // because we are making a seperate request we instanciate another client
+        // var neo4jrestful = new Node.prototype.neo4jrestful.constructor(self.neo4jrestful.baseUrl);
+        for (var x=0; x < data.length; x++) {
+          if (typeof data[x][0] === 'undefined') {
             break;
           }
-          var basicNode = self.neo4jrestful.createObjectFromResponseData(data.data[x][0], DefaultConstructor);
+          var basicNode = self.neo4jrestful.createObjectFromResponseData(data[x][0], DefaultConstructor);
           (function(x,basicNode){
             sequence.then(function(next) {
               // TODO: reduce load / calls, currently it's way too slow…
@@ -2281,7 +2337,7 @@
         }
         sequence.then(function(next){
           //finally
-          if ( (data.data[0]) && (typeof data.data[0][0] !== 'object') )
+          if ( (data.data) && (data.data[0]) && (typeof data.data[0][0] !== 'object') )
             sortedData = data.data[0][0];
           return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
         });
@@ -2297,10 +2353,27 @@
       options.label = this.label;
   
     if (typeof cypherQuery === 'string') {
-      return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
-        //if (cypherQuery === 'START n = node(4590) MATCH (n)<-[r:recommend]-()   RETURN r;')
-        _processData(err, data, debug, cb);
-      });
+      // check for stream flag
+      // in stream case we use stream() instead of query()
+      var query = null;
+      if (this._stream_) {
+        return this.neo4jrestful.stream(cypherQuery, options, function(data, debug) {
+          if ( (data) && (data[0]) ) {
+            var basicNode = Node.singleton().neo4jrestful.createObjectFromResponseData(data[0], DefaultConstructor);
+            basicNode.load(function(err, node) {
+              return cb(data[0]);
+            });
+            
+          } else {
+            return cb(data);
+          }
+        });
+      }
+      else {
+        return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
+          _processData(err, data, debug, cb);
+        });
+      }
     } else if (typeof cypherQuery === 'object') {
       // we expect a raw request object here
       // this is used to make get/post/put restful request
@@ -2865,8 +2938,9 @@
   }
   
   Node.prototype.allLabels = function(cb) {
-    if ( (this.hasId()) && (_.isFunction(cb)) )
+    if ( (this.hasId()) && (_.isFunction(cb)) ) {
       return this.neo4jrestful.get('/db/data/node/'+this.id+'/labels', cb);
+    }
   }
   
   Node.prototype.createLabel = function(label, cb) {
@@ -2951,9 +3025,13 @@
    */
   
   Node.prototype.stream = function(cb) {
-    this.neo4jrestful.header['X-Stream'] = 'true';
+    this._stream_ = true;
     this.exec(cb);
-    return this; // return self for chaining
+    return this;
+  }
+  
+  Node.prototype.each = function(cb) {
+    return this.stream(cb);
   }
   
   /*
@@ -2997,7 +3075,7 @@
       self = this.singleton(undefined, this);
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
       // to reduce calls we'll make a specific restful request for one node
-      return this.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
+      return self.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
         if ((node) && (typeof self.load === 'function')) {
           //  && (typeof node.load === 'function')     
           node.load(cb);
@@ -3592,7 +3670,7 @@
     var errors = [];
     for (var i = 0; i < 2; i++) {
       (function(point){
-        Node.prototype.findById(self[point].id,function(err,node) {
+        Node.findById(self[point].id,function(err,node) {
           self[point] = node;
           if (err)
             errors.push(err);
