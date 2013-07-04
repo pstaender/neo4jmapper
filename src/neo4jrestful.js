@@ -124,7 +124,6 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype.timeout = 5000;
   Neo4jRestful.prototype.baseUrl = null;
   Neo4jRestful.prototype.debug = null;
-  Neo4jRestful.prototype.stream = null;
   Neo4jRestful.prototype._absoluteUrl = null;
   Neo4jRestful.prototype.exact_version = null;
   Neo4jRestful.prototype.version = null;
@@ -389,7 +388,31 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.stream = function(cypher, options, cb) {
     this.header['X-Stream'] = 'true';
-    return this.query(cypher, options, cb);
+    var self = this;
+    var todo = 0;
+    var done = 0;
+    return this.query(cypher, options, function(data) {
+      if (data) {
+        if (typeof self.onProcess === 'function') {
+          todo++;
+          self.onProcess(data, function(err, data) {
+            if ( (data) && (data.length === 1) )
+              data = data[0];
+            if (done >= todo) {
+              // done
+              cb(data);
+              cb(null);
+            } else {
+              cb(data);
+            }
+          })
+        } else {
+          cb(data);
+        }
+      } else {
+        cb(null);
+      }
+    });
   }
 
   Neo4jRestful.prototype.makeRequest = function(_options, cb) {
@@ -418,7 +441,14 @@ var initNeo4jRestful = function() {
       var stream = JSONStream.parse(['data', true]);
 
       stream.on('data', cb);
-      stream.on('end', cb);
+      stream.on('end', function() {
+        // prevent to pass undefined, but maybe an undefined is more clear
+        cb(null);
+      });
+
+      // stream.on('end', function(data) {
+      //   cb(data, options._debug);
+      // });
 
       stream.on('root', function(root, count) {
         // remove x-stream from header

@@ -75,6 +75,9 @@ Node.prototype.init = function(data, id) {
   if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
     this.label = this.cypher.label = this.constructor_name;
   }
+  // each node gets it's own client
+  this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
+  this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);
 }
 
 /*
@@ -116,6 +119,7 @@ Node.prototype.fields = {
 Node.prototype.uri = null;
 Node.prototype._response = null;
 Node.prototype._modified_query = false;
+Node.prototype._stream_ = null; // flag for processing result data
 Node.prototype.is_singleton = false;
 Node.prototype.is_persisted = false;
 Node.prototype.cypher = {};
@@ -141,7 +145,6 @@ Node.prototype.__type_identifier__ = 'n';
 Node.prototype.singleton = function(id) {
   var Class = this.constructor;
   var node = new Class({},id);
-  node.neo4jrestful = _.extend(Node.prototype.neo4jrestful);
   node.resetQuery();
   node.is_singleton = true;
   node.resetQuery();
@@ -842,39 +845,19 @@ Node.prototype.query = function(cypherQuery, options, cb) {
   var DefaultConstructor = this.recommendConstructor();
 
   var _deliverResultset = function(self, cb, err, sortedData, debug) {
-    if (self.neo4jrestful.header['X-Stream']) {
-      // we return only one/first array element
-      return cb(sortedData[0], debug);
-    } else {
-      if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
-        sortedData = sortedData[0];
-      else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
-        sortedData = sortedData[0];
-      else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
-        sortedData = null;
-      // s.th. like [ 3 ] as result for instance
-      if ( (_.isArray(sortedData)) && (sortedData.length === 1) && (typeof sortedData[0] !== 'object') )
-        sortedData = sortedData[0];
-      // if ( (sortedData[0]) && (sortedData[0] !== 'object') )
-      //   sortedData = sortedData[0];
-      // if ( (sortedData[0]) && (sortedData[0][0]) && (typeof sortedData[0][0] !== 'object') )
-      //   sortedData = sortedData[0][0];
-      // if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
-      //   sortedData = sortedData[0];
-      // else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
-      //   sortedData = sortedData[0];
-      // else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
-      //   sortedData = null;
-      return cb(err, sortedData, debug);
-    }
+    if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
+      sortedData = sortedData[0];
+    else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
+      sortedData = sortedData[0];
+    else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
+      sortedData = null;
+    // s.th. like [ 3 ] as result for instance
+    if ( (_.isArray(sortedData)) && (sortedData.length === 1) && (typeof sortedData[0] !== 'object') )
+      sortedData = sortedData[0];
+    return cb(err, sortedData, debug);
   } 
 
   var _processData = function(err, result, debug, cb) {
-    if ((err)&&(self.neo4jrestful.header['X-Stream'])) {
-      // in this case `err` is the result because we are having stream result here
-      result = err;
-      err = null;
-    }
     if ((err)||(!result)) {
       return cb(err, result, debug);
     } else {
@@ -927,10 +910,27 @@ Node.prototype.query = function(cypherQuery, options, cb) {
     options.label = this.label;
 
   if (typeof cypherQuery === 'string') {
-    return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
-      //if (cypherQuery === 'START n = node(4590) MATCH (n)<-[r:recommend]-()   RETURN r;')
-      _processData(err, data, debug, cb);
-    });
+    // check for stream flag
+    // in stream case we use stream() instead of query()
+    var query = null;
+    if (this._stream_) {
+      return this.neo4jrestful.stream(cypherQuery, options, function(data, debug) {
+        if ( (data) && (data[0]) ) {
+          var basicNode = Node.singleton().neo4jrestful.createObjectFromResponseData(data[0], DefaultConstructor);
+          basicNode.load(function(err, node) {
+            return cb(data[0]);
+          });
+          
+        } else {
+          return cb(data);
+        }
+      });
+    }
+    else {
+      return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
+        _processData(err, data, debug, cb);
+      });
+    }
   } else if (typeof cypherQuery === 'object') {
     // we expect a raw request object here
     // this is used to make get/post/put restful request
@@ -1582,7 +1582,7 @@ Node.prototype.toObject = function() {
  */
 
 Node.prototype.stream = function(cb) {
-  this.neo4jrestful.header['X-Stream'] = 'true';
+  this._stream_ = true;
   this.exec(cb);
   return this;
 }
