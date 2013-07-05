@@ -150,16 +150,28 @@ You can query nodes (relationships may follow) easily like as usual in other Obj
 Also with more customized queries in mongodb query style
 
 ```coffeescript
-  Node::find().where(
+  Node.find().where(
     { $or : [
       { 'n.name': /alice/i },
       { 'n.name': /bob/i }
     ] }
-  ).skip(2).limit(10).orderBy 'n.name', 'DESC', (err, result) ->
+  ).skip(2).limit(10).orderBy { 'n.name': 'DESC' }, (err, result) ->
 ```
 
 ```coffeescript
-  Node::findOne().whereNodeHasProperty('name').andWhereNode { 'city': 'berlin' },  (err, result) ->
+  Node.findOne().whereNodeHasProperty('name').andWhereNode { 'city': 'berlin' },  (err, result) ->
+```
+
+### Itreate the stream on large results
+
+You can iterate instantly on your results asynchronously with the `each` method:
+
+```coffeescript
+  Node.findAll().each (node) ->
+    if node
+      console.log(node.toObject())
+    else
+      console.log "Done"
 ```
 
 ## Naming conventions

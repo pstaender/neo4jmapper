@@ -1,5 +1,7 @@
 test:test-build
 	mocha
+
+test-complete:test
 	npm run clean
 
 test-build:
