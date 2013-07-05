@@ -237,6 +237,18 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
           ]
 
+        "Node.findById(123).update({ name: 'Alice' })":
+          [
+             Node.findById(123).update({ 'name': 'Alice' }),
+            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;"
+          ]
+
+        "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":
+          [
+             Node.findById(123).update({ 'name': 'Alice', 'age': 20 }),
+            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice', n.`age` = 20 RETURN n;"
+          ]
+
       # check all other queries
       for functionCall of map
         todo = map[functionCall]

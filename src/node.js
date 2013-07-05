@@ -22,6 +22,7 @@ var cypher_defaults = {
   filter: '',
   match: '',
   start: '',
+  set: '',
   return_properties: [],
   where: [],
   // and_where: [],
@@ -41,7 +42,7 @@ var cypher_defaults = {
   // flasgs
   _count: null,
   _distinct: null,
-  _find_by_id: null
+  by_id: null
 };
 
 /*
@@ -469,17 +470,19 @@ Node.prototype.onAfterSave = function(node, next, debug) {
 
 Node.prototype.update = function(data, cb) {
   var self = this;
-  if (this._id_ > 0) {
-    if (helpers.isValidData(data)) {
-      // we apply the data upon the current data
-      this.data = _.extend(this.data, data);
-    } else {
-      cb = data;
-    }
-    this.save(cb);
+  if (this.hasId()) {
+    throw Error('update() is for query operations only, not for instanced nodes. Use save() instead')
   } else {
-    return cb(Error('You have to save() the node one time before you can perform an update'), null);
+    if (helpers.isValidData(data)) {
+      data = helpers.flattenObject(data);
+      this.cypher.set = [];
+      for (var attribute in data) {
+        this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
+      }
+    }
   }
+  this.exec(cb);
+  return this;
 }
 
 Node.prototype.load = function(cb) {
@@ -762,6 +765,8 @@ Node.prototype.toCypherQuery = function() {
     template += "MATCH %(match)s ";
     template += "%(With)s ";
     template += "%(where)s ";
+  if (query.set)
+    template += "SET %(set)s ";
     template += "%(action)s %(return_properties)s ";
   if (query.order_by)
     template += "ORDER BY %(order_by)s ";
@@ -779,6 +784,7 @@ Node.prototype.toCypherQuery = function() {
     action:             (query.action) ? query.action : 'RETURN'+((query._distinct) ? ' DISTINCT ' : ''),
     return_properties:  query.return_properties,
     where:              ((query.where)&&(query.where.length > 0)) ? 'WHERE '+query.where.join(' AND ') : '',
+    set:                (query.set) ? query.set.join(', ') : '', 
     to:                 '',
     order_by:           (query.order_by) ? query.order_by+' '+query.order_direction : '',
     limit:              query.limit,
@@ -845,7 +851,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
   var DefaultConstructor = this.recommendConstructor();
 
   var _deliverResultset = function(self, cb, err, sortedData, debug) {
-    if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
+    if ( (self.cypher.by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
       sortedData = sortedData[0];
     else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
       sortedData = sortedData[0];

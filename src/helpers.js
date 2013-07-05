@@ -125,8 +125,13 @@ var neo4jmapper_helpers = {};
   }
 
   var cypherKeyValueToString = function(key, value, identifier) {
-    if (typeof identifier === 'string')
-      key = identifier+'.`'+key+'`';
+    if (typeof identifier === 'string') {
+      if (/^[nmr]\./.test(key))
+        // we have already an identifier
+        key = key;
+      else
+        key = identifier+'.`'+key+'`';
+    }
     if (_.isRegExp(value)) {
       var s = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
       return key+" =~ '"+s+"'";

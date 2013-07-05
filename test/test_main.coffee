@@ -335,7 +335,7 @@ describe 'Neo4jMapper', ->
         id = node.id
         Node.findById id, (err, found) ->
           found.data.title = 'How are you?'
-          found.update (err, savedNode) ->
+          found.save (err, savedNode) ->
             expect(savedNode.data.title).to.be.equal 'How are you?'
             expect(err).to.be null
             Node.findById id, (err, foundAgain) ->
@@ -345,21 +345,20 @@ describe 'Neo4jMapper', ->
                 node.remove ->
                   done()
 
-    it 'expect to update data of a node with changing accidently id', (done) ->
+    it 'expect to update data of a node by id', (done) ->
       new Node({ name: 'Dave Grohl', origin: { country: 'USA', state: '' } }).save (err, dave) ->
         expect(err).to.be null
         expect(dave.data.name).to.be.equal 'Dave Grohl'
         expect(dave.data.origin.state).to.be.equal ''
         expect(dave.data.origin.country).to.be.equal 'USA'
         id = dave.id
-        dave.id = -2
         expect(id).to.be.above 0
-        dave.update { origin: { state: 'Ohio'} }, (err, daveSaved) ->
+        Node.findById(id).update { origin: { state: 'Ohio'} }, (err, daveSaved) ->
           expect(err).to.be null
-          expect(dave.data.name).to.be.equal 'Dave Grohl'
-          expect(dave.data.origin.state).to.be.equal 'Ohio'
-          expect(dave.data.origin.country).to.be undefined
-          expect(dave.id).to.be id
+          expect(daveSaved.data.name).to.be.equal 'Dave Grohl'
+          expect(daveSaved.data.origin.state).to.be.equal 'Ohio'
+          expect(daveSaved.data.origin.country).to.be.equal 'USA'
+          expect(daveSaved.id).to.be id
           done()
 
     it 'expect to execute onBeforeSave hook if defined', (done) ->
