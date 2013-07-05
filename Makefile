@@ -1,8 +1,8 @@
-test:test-build
-	mocha
-
-test-complete:test
+test:test-run
 	npm run clean
+
+test-run:test-build
+	mocha
 
 test-build:
 	coffee -mcb test/

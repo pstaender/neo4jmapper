@@ -767,6 +767,7 @@ var neo4jmapper_helpers = {};
   return neo4jmapper_helpers = {
     sortStringAndOptionsArguments: sortStringAndOptionsArguments,
     sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
+    sortStringAndCallbackArguments: sortStringAndCallbackArguments,
     flattenObject: flattenObject,
     unflattenObject: unflattenObject,
     conditionalParameterToString: conditionalParameterToString,

@@ -162,7 +162,7 @@ Also with more customized queries in mongodb query style
   Node.findOne().whereNodeHasProperty('name').andWhereNode { 'city': 'berlin' },  (err, result) ->
 ```
 
-### Itreate the stream on large results
+### Iterate the stream on large results
 
 You can iterate instantly on your results asynchronously with the `each` method:
 
