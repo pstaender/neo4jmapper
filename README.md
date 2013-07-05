@@ -162,9 +162,9 @@ Also with more customized queries in mongodb query style
   Node.findOne().whereNodeHasProperty('name').andWhereNode { 'city': 'berlin' },  (err, result) ->
 ```
 
-### Iterate the stream on large results
+### Iterate on large results
 
-You can iterate instantly on your results asynchronously with the `each` method:
+You can iterate instantly on results asynchronously with the `each` method, it processes the stream of the response:
 
 ```coffeescript
   Node.findAll().each (node) ->
@@ -172,6 +172,17 @@ You can iterate instantly on your results asynchronously with the `each` method:
       console.log(node.toObject())
     else
       console.log "Done"
+```
+
+You can also process ”raw” queries with streaming:
+
+```coffeescript
+  client.stream 'START n=node(*) RETURN n;', (node) ->
+    # process each node async
+    if node
+      console.log node.toObject()
+    else
+      console.log 'Done'
 ```
 
 ## Naming conventions
@@ -189,10 +200,10 @@ The query method names are heavily inspired by mongodb and mongoose - so most of
 
 Neo4jMapper is using the following identifiers in cypher queries:
 
-  * `n` for a single *n*ode or a start node
-  * `m` for an end node (*m*atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~> `START n = node(32), m = node(12) MATCH (n)<-[r]-(m) RETURN r;`)
-  * `r` for relationship(s)
-  * `p` for a path (not implemented, yet)
+  * `n` for a single [n]ode or a start node
+  * `m` for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~> `START n = node(32), m = node(12) MATCH (n)<-[r]-(m) RETURN r;`)
+  * `r` for [r]elationship(s)
+  * `p` for a [p]ath (not implemented, yet)
 
 We distinct between **remove** and **delete**.
 
