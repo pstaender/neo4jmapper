@@ -173,13 +173,13 @@ var initNeo4jRestful = function() {
       .timeout(this.timeout)
       .end(function(err, res) {
         var body = (res) ? res.body : null;
-        if ((res.status === 200)&&(body)&&(body.neo4j_version)) {
+        if ((typeof res !== 'undefined') && (res.status === 200)&&(body)&&(body.neo4j_version)) {
           self.exact_version = body.neo4j_version;
           self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
           var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
           cb(error, body.neo4j_version);
         } else {
-          cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url? "+res.body), null, null);
+          throw Error("Can't detect neo4j… Sure your using correct url / neo4j service is available? ("+self.baseUrl+")");
         }
       });
   }
@@ -443,18 +443,14 @@ var initNeo4jRestful = function() {
       stream.on('data', cb);
       stream.on('end', function() {
         // prevent to pass undefined, but maybe an undefined is more clear
-        cb(null);
+        cb(null, null);
       });
-
-      // stream.on('end', function(data) {
-      //   cb(data, options._debug);
-      // });
 
       stream.on('root', function(root, count) {
         // remove x-stream from header
         delete self.header['X-Stream'];
         if (!count) {
-          cb(Error('No matches in stream found ('+ root +')'));
+          cb(null, Error('No matches in stream found ('+ root +')'));
         }
       });
 

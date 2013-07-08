@@ -185,6 +185,8 @@ You can also process ”raw” queries with streaming:
       console.log 'Done'
 ```
 
+**Currently the streaming feature is not available on browsers** because there are several dependencies on other modules which have to be included as well.
+
 ## Naming conventions
 
 The query method names are heavily inspired by mongodb and mongoose - so most of them should sound familiar in case you have worked with them:
@@ -342,8 +344,10 @@ You can easiliy inspect the generated queries by invoking the `toCypherQuery()` 
 There are some steps to take, especially some methods for daily use are missing, yet. But the basic set of operations are already implemented and tested.
 
   * implement: relationship (index)
-  * measure code coverage
+  * fix Relationship::update()
+  * stream: browser compatible, debug options
   * nice(r) Documentation
+  * remove queue feature
 
 ## Terminal usage
 

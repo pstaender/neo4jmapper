@@ -155,6 +155,9 @@ Relationship.prototype.save = function(cb) {
   }
 }
 
+// Relationship.prototype.update = Node.prototype.update;
+
+// TODO: save  functionality as Node.update() asap!!!
 Relationship.prototype.update = function(data, cb) {
   var self = this;
   if (helpers.isValidData(data)) {
