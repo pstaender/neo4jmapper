@@ -235,8 +235,13 @@
     }
   
     var cypherKeyValueToString = function(key, value, identifier) {
-      if (typeof identifier === 'string')
-        key = identifier+'.`'+key+'`';
+      if (typeof identifier === 'string') {
+        if (/^[nmr]\./.test(key))
+          // we have already an identifier
+          key = key;
+        else
+          key = identifier+'.`'+key+'`';
+      }
       if (_.isRegExp(value)) {
         var s = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
         return key+" =~ '"+s+"'";
@@ -877,6 +882,7 @@
     return neo4jmapper_helpers = {
       sortStringAndOptionsArguments: sortStringAndOptionsArguments,
       sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
+      sortStringAndCallbackArguments: sortStringAndCallbackArguments,
       flattenObject: flattenObject,
       unflattenObject: unflattenObject,
       conditionalParameterToString: conditionalParameterToString,
@@ -1073,13 +1079,13 @@
         .timeout(this.timeout)
         .end(function(err, res) {
           var body = (res) ? res.body : null;
-          if ((res.status === 200)&&(body)&&(body.neo4j_version)) {
+          if ((typeof res !== 'undefined') && (res.status === 200)&&(body)&&(body.neo4j_version)) {
             self.exact_version = body.neo4j_version;
             self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
             var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
             cb(error, body.neo4j_version);
           } else {
-            cb(Error("Connection established, but can't detect neo4j database version… Sure it's neo4j url? "+res.body), null, null);
+            throw Error("Can't detect neo4j… Sure your using correct url / neo4j service is available? ("+self.baseUrl+")");
           }
         });
     }
@@ -1285,6 +1291,8 @@
     }
   
     Neo4jRestful.prototype.stream = function(cypher, options, cb) {
+      var args;
+      ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
       this.header['X-Stream'] = 'true';
       var self = this;
       var todo = 0;
@@ -1341,18 +1349,14 @@
         stream.on('data', cb);
         stream.on('end', function() {
           // prevent to pass undefined, but maybe an undefined is more clear
-          cb(null);
+          cb(null, null);
         });
-  
-        // stream.on('end', function(data) {
-        //   cb(data, options._debug);
-        // });
   
         stream.on('root', function(root, count) {
           // remove x-stream from header
           delete self.header['X-Stream'];
           if (!count) {
-            cb(Error('No matches in stream found ('+ root +')'));
+            cb(null, Error('No matches in stream found ('+ root +')'));
           }
         });
   
@@ -1465,6 +1469,7 @@
     filter: '',
     match: '',
     start: '',
+    set: '',
     return_properties: [],
     where: [],
     // and_where: [],
@@ -1484,7 +1489,7 @@
     // flasgs
     _count: null,
     _distinct: null,
-    _find_by_id: null
+    by_id: null
   };
   
   /*
@@ -1912,17 +1917,21 @@
   
   Node.prototype.update = function(data, cb) {
     var self = this;
-    if (this._id_ > 0) {
-      if (helpers.isValidData(data)) {
-        // we apply the data upon the current data
-        this.data = _.extend(this.data, data);
-      } else {
-        cb = data;
-      }
-      this.save(cb);
-    } else {
-      return cb(Error('You have to save() the node one time before you can perform an update'), null);
+    if (!helpers.isValidData(data)) {
+      cb(Error('To perform an update you need to pass valid data for updating as first argument'), null);
     }
+    else if (this.hasId()) {
+      this.findById(this._id_).update(data, cb);
+      return this;
+    } else {
+      data = helpers.flattenObject(data);
+      this.cypher.set = [];
+      for (var attribute in data) {
+        this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
+      }
+    }
+    this.exec(cb);
+    return this;
   }
   
   Node.prototype.load = function(cb) {
@@ -2205,6 +2214,8 @@
       template += "MATCH %(match)s ";
       template += "%(With)s ";
       template += "%(where)s ";
+    if (query.set)
+      template += "SET %(set)s ";
       template += "%(action)s %(return_properties)s ";
     if (query.order_by)
       template += "ORDER BY %(order_by)s ";
@@ -2222,6 +2233,7 @@
       action:             (query.action) ? query.action : 'RETURN'+((query._distinct) ? ' DISTINCT ' : ''),
       return_properties:  query.return_properties,
       where:              ((query.where)&&(query.where.length > 0)) ? 'WHERE '+query.where.join(' AND ') : '',
+      set:                (query.set) ? query.set.join(', ') : '', 
       to:                 '',
       order_by:           (query.order_by) ? query.order_by+' '+query.order_direction : '',
       limit:              query.limit,
@@ -2288,7 +2300,7 @@
     var DefaultConstructor = this.recommendConstructor();
   
     var _deliverResultset = function(self, cb, err, sortedData, debug) {
-      if ( (self.cypher._find_by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
+      if ( (self.cypher.by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
         sortedData = sortedData[0];
       else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
         sortedData = sortedData[0];
@@ -3574,6 +3586,9 @@
     }
   }
   
+  // Relationship.prototype.update = Node.prototype.update;
+  
+  // TODO: save  functionality as Node.update() asap!!!
   Relationship.prototype.update = function(data, cb) {
     var self = this;
     if (helpers.isValidData(data)) {
@@ -3788,10 +3803,14 @@
     Graph.prototype.info = null;
   
     /*
-     * Shorthand for neo4jrestul.query
+     * Shorthands for neo4jrestul.*
      */
     Graph.prototype.query = function(cypher, options, cb) {
       return neo4jrestful.query(cypher,options,cb);
+    }
+  
+    Graph.prototype.stream = function(cypher, options, cb) {
+      return neo4jrestful.stream(cypher,options,cb);
     }
   
     /*
@@ -3808,8 +3827,6 @@
         query = "START n=node(*) RETURN count(n);"
       else if (/^r(elationship)*$/i.test(type))
         query = "START r=relationship(*) RETURN count(r);";
-      else if (type[0] === 'path')
-        query = "START p=path(*) RETURN count(p);"
       else if (/^[nr]\:.+/.test(type))
         // count labels
         query = "MATCH "+type+" RETURN "+type[0]+";";
@@ -3836,14 +3853,6 @@
   
     Graph.prototype.countAll = function(cb) {
       return this.countAllOfType('all', cb);
-    }
-  
-    // Graph.prototype.countWithLabel = function() { }
-  
-    Graph.prototype.indexLabel = function(label, field, cb) {
-      if ((!_.isString(label))&&(!_.isString(field)))
-        return cb(Error('label and field are mandatory arguments to create index on'))
-      this.query('CREATE INDEX ON :'+label+'('+field+');', cb);
     }
   
     Graph.prototype.about = function(cb) {

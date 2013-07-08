@@ -359,7 +359,13 @@ describe 'Neo4jMapper', ->
           expect(daveSaved.data.origin.state).to.be.equal 'Ohio'
           expect(daveSaved.data.origin.country).to.be.equal 'USA'
           expect(daveSaved.id).to.be id
-          done()
+          daveSaved.update { 'origin.country': 'United States of America' }, (err, daveSaved) ->
+            expect(err).to.be null
+            expect(daveSaved.data.name).to.be.equal 'Dave Grohl'
+            expect(daveSaved.data.origin.state).to.be.equal 'Ohio'
+            expect(daveSaved.data.origin.country).to.be.equal 'United States of America'
+            expect(daveSaved.id).to.be id
+            done()
 
     it 'expect to execute onBeforeSave hook if defined', (done) ->
       n = new Node()
@@ -854,5 +860,10 @@ describe 'Neo4jMapper', ->
                   expect(updatedRelationship.data.city).to.be.equal 'Cologne'
                   expect(relationship.data.since).to.be.equal 'months'
                   expect(relationship.data.city).to.be.equal 'Cologne'
-                  done()
+                  relationship.update { since: 'weeks' }, (err, updatedRelationship) ->
+                    expect(err).to.be null
+                    expect(relationship.id).to.equal id
+                    expect(updatedRelationship.data.since).to.be.equal 'weeks'
+                    expect(updatedRelationship.data.city).to.be.equal 'Cologne'
+                    done()
 

@@ -190,7 +190,18 @@ describe('Neo4jMapper (cypher queries)', function() {
       "Node::findById(123).incomingRelationships().delete().toCypherQuery()": [Node.prototype.findById(123).incomingRelationships()["delete"](), "START n = node(123) MATCH (n)<-[r]-() DELETE r;"],
       "Node::findById(123).allRelationships().delete()": [Node.prototype.findById(123).allRelationships()["delete"](), "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"],
       "Node.find().deleteIncludingRelationships()": [Node.find().deleteIncludingRelationships(), "START n = node(*) MATCH n-[r?]-() DELETE n, r;"],
-      "Actor.findById(123).deleteIncludingRelationships()": [Actor.find().deleteIncludingRelationships(), "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"]
+      "Actor.findById(123).deleteIncludingRelationships()": [Actor.find().deleteIncludingRelationships(), "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"],
+      "Node.findById(123).update({ name: 'Alice' })": [
+        Node.findById(123).update({
+          'name': 'Alice'
+        }), "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;"
+      ],
+      "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })": [
+        Node.findById(123).update({
+          'name': 'Alice',
+          'age': 20
+        }), "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice', n.`age` = 20 RETURN n;"
+      ]
     };
     _results = [];
     for (functionCall in map) {

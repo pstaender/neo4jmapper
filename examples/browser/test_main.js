@@ -181,16 +181,24 @@ describe('Neo4jMapper', function() {
       });
     }));
     return it('expect to make a stream request on the graph', SkipInBrowser(function(done) {
-      var count;
+      return Node.findAll().count(function(err, count) {
+        var graph, iterationsCount;
 
-      count = 0;
-      return client.stream('START n=node(*) RETURN n LIMIT 5;', function(node) {
-        if (!node) {
-          expect(count).to.be.equal(5);
-          return done();
-        } else {
-          return count++;
+        expect(count).to.be.above(1);
+        iterationsCount = 0;
+        if (count > 10) {
+          count = 10;
         }
+        graph = new Graph();
+        return graph.stream("START n=node(*) RETURN n LIMIT " + count + ";", function(node) {
+          if (!node) {
+            expect(count).to.be.equal(count);
+            return done();
+          } else {
+            expect(node.id).to.be.a('number');
+            return count++;
+          }
+        });
       });
     }));
   });
@@ -491,7 +499,7 @@ describe('Neo4jMapper', function() {
         id = node.id;
         return Node.findById(id, function(err, found) {
           found.data.title = 'How are you?';
-          return found.update(function(err, savedNode) {
+          return found.save(function(err, savedNode) {
             expect(savedNode.data.title).to.be.equal('How are you?');
             expect(err).to.be(null);
             return Node.findById(id, function(err, foundAgain) {
@@ -507,7 +515,7 @@ describe('Neo4jMapper', function() {
         });
       });
     });
-    it('expect to update data of a node with changing accidently id', function(done) {
+    it('expect to update data of a node by id', function(done) {
       return new Node({
         name: 'Dave Grohl',
         origin: {
@@ -522,19 +530,27 @@ describe('Neo4jMapper', function() {
         expect(dave.data.origin.state).to.be.equal('');
         expect(dave.data.origin.country).to.be.equal('USA');
         id = dave.id;
-        dave.id = -2;
         expect(id).to.be.above(0);
-        return dave.update({
+        return Node.findById(id).update({
           origin: {
             state: 'Ohio'
           }
         }, function(err, daveSaved) {
           expect(err).to.be(null);
-          expect(dave.data.name).to.be.equal('Dave Grohl');
-          expect(dave.data.origin.state).to.be.equal('Ohio');
-          expect(dave.data.origin.country).to.be(void 0);
-          expect(dave.id).to.be(id);
-          return done();
+          expect(daveSaved.data.name).to.be.equal('Dave Grohl');
+          expect(daveSaved.data.origin.state).to.be.equal('Ohio');
+          expect(daveSaved.data.origin.country).to.be.equal('USA');
+          expect(daveSaved.id).to.be(id);
+          return daveSaved.update({
+            'origin.country': 'United States of America'
+          }, function(err, daveSaved) {
+            expect(err).to.be(null);
+            expect(daveSaved.data.name).to.be.equal('Dave Grohl');
+            expect(daveSaved.data.origin.state).to.be.equal('Ohio');
+            expect(daveSaved.data.origin.country).to.be.equal('United States of America');
+            expect(daveSaved.id).to.be(id);
+            return done();
+          });
         });
       });
     });
@@ -1248,7 +1264,7 @@ describe('Neo4jMapper', function() {
     });
   });
   describe('path algorithms', function() {
-    return it('expect to find shortest path from one node to an other node', function(done) {
+    return it('expect to find shortest path between two nodes', function(done) {
       var a;
 
       a = new Node({
@@ -1297,7 +1313,7 @@ describe('Neo4jMapper', function() {
       });
     });
   });
-  describe('relationship', function() {
+  return describe('relationship', function() {
     it('expect to get a relationship by id, update and remove it', function(done) {
       return new Node().save(function(err, a) {
         return new Node().save(function(err, b) {
@@ -1394,190 +1410,6 @@ describe('Neo4jMapper', function() {
             });
           });
         });
-      });
-    });
-  });
-  return describe('helpers', function() {
-    describe('escapeString', function() {});
-    describe('cypherKeyValueToString', function() {});
-    describe('unflattenObject', function() {});
-    describe('flattenObject', function() {});
-    describe('sortStringAndOptionsArguments', function() {});
-    describe('sortOptionsAndCallbackArguments', function() {});
-    describe('sortStringAndCallbackArguments', function() {});
-    describe('getIdFromObject', function() {});
-    describe('constructorNameOfFunction', function() {
-      return it('expect to get the correct constructor name', function() {
-        var Person, node, _ref2;
-
-        node = new Node;
-        Person = (function(_super) {
-          __extends(Person, _super);
-
-          function Person() {
-            _ref2 = Person.__super__.constructor.apply(this, arguments);
-            return _ref2;
-          }
-
-          return Person;
-
-        })(Node);
-        var Movie = (function(Node) {
-
-        function Movie() {
-          // this is necessary to give the constructed node a name context
-          this.init.apply(this, arguments);
-        }
-        
-        _.extend(Movie.prototype, Node.prototype);
-        
-        Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
-
-        Movie.prototype.fields = {
-          defaults: {
-            genre: 'Blockbuster'
-          }
-        };
-        
-        return Movie;
-      })(Node);
-        expect(helpers.constructorNameOfFunction(Movie)).to.be.equal('Movie');
-        expect(helpers.constructorNameOfFunction(Person)).to.be.equal('Person');
-        return expect(helpers.constructorNameOfFunction(node)).to.be.equal('Node');
-      });
-    });
-    describe('extractAttributesFromCondition', function() {
-      return it('expect to extract all attributes from a condition', function() {
-        var attrs, condition;
-
-        condition = [
-          {
-            $and: [
-              {
-                'n.name': /Alice/i
-              }, {
-                $or: [
-                  {
-                    'n.email': "alice@home.com"
-                  }, {
-                    $and: [
-                      {
-                        'n.email': "alice@home.de"
-                      }, {
-                        'n.country': "de_DE"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ];
-        attrs = helpers.extractAttributesFromCondition(condition);
-        expect(attrs[0]).to.be('name');
-        expect(attrs[1]).to.be('email');
-        expect(attrs[2]).to.be('country');
-        condition = [
-          {
-            'city': 'Berlin'
-          }, {
-            $and: [
-              {
-                'name': /^bob.+/i
-              }, {
-                $not: [
-                  {
-                    'name': /^Bobby$/
-                  }
-                ]
-              }
-            ]
-          }
-        ];
-        attrs = helpers.extractAttributesFromCondition(condition);
-        expect(attrs[0]).to.be('city');
-        return expect(attrs[1]).to.be('name');
-      });
-    });
-    return describe('conditionalParameterToString', function() {
-      it('expect to leave a string as it is', function() {
-        var condition;
-
-        condition = "n.name = 'Alice' AND HAS(n.email)";
-        return expect(helpers.conditionalParameterToString(condition)).to.be.equal('( ' + condition + ' )');
-      });
-      it('expect to transform an key-value object to cypher query', function() {
-        var condition, resultShouldBe;
-
-        condition = [
-          {
-            "n.name": "Alice's"
-          }, "HAS(n.email))"
-        ];
-        resultShouldBe = "( n.name = 'Alice\\'s' AND HAS(n.email)) )";
-        return expect(helpers.conditionalParameterToString(condition)).to.be.equal(resultShouldBe);
-      });
-      it('expect to transform an key-value-object to with $OR and $AND operators', function() {
-        var condition, resultShouldBe;
-
-        resultShouldBe = "( ( n.name =~ '(?i)Alice' AND ( n.email = 'alice@home.com' OR ( n.email = 'alice@home.de' AND n.country = 'de_DE' ) ) ) )";
-        condition = [
-          {
-            $and: [
-              {
-                'n.name': /Alice/i
-              }, {
-                $or: [
-                  {
-                    'n.email': "alice@home.com"
-                  }, {
-                    $and: [
-                      {
-                        'n.email': "alice@home.de"
-                      }, {
-                        'n.country': "de_DE"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ];
-        return expect(helpers.conditionalParameterToString(condition)).to.be.equal(resultShouldBe);
-      });
-      return it('expect to transform an key-value-object with identifier', function() {
-        var condition, resultShouldBe;
-
-        resultShouldBe = "( ( n.name =~ '(?i)Alice' AND r.since = 'years' AND ( n.email = 'alice@home.com' OR ( n.`email` = 'alice@home.de' AND n.`country` = 'de_DE' ) ) ) )";
-        condition = [
-          {
-            $and: [
-              {
-                'n.name': /Alice/i
-              }, {
-                'r.since': 'years'
-              }, {
-                $or: [
-                  {
-                    'n.email': "alice@home.com"
-                  }, {
-                    $and: [
-                      {
-                        'email': "alice@home.de"
-                      }, {
-                        'country': "de_DE"
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ];
-        return expect(helpers.conditionalParameterToString(condition, void 0, {
-          identifier: 'n'
-        })).to.be.equal(resultShouldBe);
       });
     });
   });

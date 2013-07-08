@@ -470,15 +470,17 @@ Node.prototype.onAfterSave = function(node, next, debug) {
 
 Node.prototype.update = function(data, cb) {
   var self = this;
-  if (this.hasId()) {
-    throw Error('update() is for query operations only, not for instanced nodes. Use save() instead')
+  if (!helpers.isValidData(data)) {
+    cb(Error('To perform an update you need to pass valid data for updating as first argument'), null);
+  }
+  else if (this.hasId()) {
+    this.findById(this._id_).update(data, cb);
+    return this;
   } else {
-    if (helpers.isValidData(data)) {
-      data = helpers.flattenObject(data);
-      this.cypher.set = [];
-      for (var attribute in data) {
-        this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
-      }
+    data = helpers.flattenObject(data);
+    this.cypher.set = [];
+    for (var attribute in data) {
+      this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
     }
   }
   this.exec(cb);
@@ -1263,9 +1265,9 @@ Node.prototype.remove = function(cb) {
   var self = this;
   this.onBeforeRemove(function(err) {
     if (self.is_singleton)
-      return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced node"),null);
+      return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
     if (self.hasId()) {
-      return self.neo4jrestful.delete('/db/data/node/'+self.id, cb);
+      return self.neo4jrestful.delete('/db/data/'+self.__type__+'/'+self.id, cb);
     }
   })
   return this;
@@ -1566,7 +1568,7 @@ Node.prototype.addIndex = function(namespace, key, value, cb) {
   if (!this.hasId())
     return cb(Error('You need to persist the node before you can index it.'),null);
   if (typeof cb === 'function')
-    return this.neo4jrestful.post('/db/data/index/node/'+namespace, { data: { key: key, value: value, uri: this.uri } }, cb);
+    return this.neo4jrestful.post('/db/data/index/'+this.__type__+'/'+namespace, { data: { key: key, value: value, uri: this.uri } }, cb);
   else
     return null;
   return keys;
@@ -1638,7 +1640,7 @@ Node.prototype.findById = function(id, cb) {
     self = this.singleton(undefined, this);
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
-    return self.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
+    return self.neo4jrestful.get('/db/data/'+this.__type__+'/'+id, function(err, node) {
       if ((node) && (typeof self.load === 'function')) {
         //  && (typeof node.load === 'function')     
         node.load(cb);
@@ -1717,7 +1719,7 @@ Node.prototype.findByIndex = function(namespace, key, value, cb) {
   if ((namespace)&&(key)&&(value)&&(typeof cb === 'function')) {
     // values = { key: value };
     // TODO: implement
-    return self.neo4jrestful.get('/db/data/index/node/'+namespace+'/'+key+'/'+value+'/', function(err, result, debug) {
+    return self.neo4jrestful.get('/db/data/index/'+this.__type__+'/'+namespace+'/'+key+'/'+value+'/', function(err, result, debug) {
       if (err) {
         cb(err, result, debug);
       } else {
