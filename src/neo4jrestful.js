@@ -347,7 +347,7 @@ var initNeo4jRestful = function() {
     }
 
     try {
-      // jquery is an optional features since superagent
+      // jquery is an optional feature since superagent
       if (jQuery) {
         // try to extract the first <p> or <pre> from html body, else return error object for better debugging
         if (jQuery(err.responseText).find('body pre:first, body p:first')[0])

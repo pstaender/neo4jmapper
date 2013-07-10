@@ -119,18 +119,20 @@ describe 'Neo4jMapper', ->
   describe 'stream', ->
 
     it 'expect to make a stream request on nodes', (SkipInBrowser) (done) ->
-      Node.findAll().count (err, count) ->
-        expect(count).to.be.above 1
-        iterationsCount = 0;
-        count = 10 if count > 10
-        Node.findAll().limit(count-1).each (data) ->
-          if data
-            expect(data._response.self).to.be.a 'string'
-            expect(data.labels.constructor).to.be.equal Array
-            iterationsCount++
-          else
-            expect(iterationsCount).to.be.equal count-1
-            done()
+      new Node().save ->
+        Node.findAll().count (err, count) ->
+          expect(err).to.be null
+          expect(count).to.be.above 1
+          iterationsCount = 0;
+          count = 10 if count > 10
+          Node.findAll().limit(count-1).each (data) ->
+            if data
+              expect(data._response.self).to.be.a 'string'
+              expect(data.labels.constructor).to.be.equal Array
+              iterationsCount++
+            else
+              expect(iterationsCount).to.be.equal count-1
+              done()
 
     it 'expect to make a stream request on the graph', (SkipInBrowser) (done) ->
       Node.findAll().count (err, count) ->
@@ -435,6 +437,29 @@ describe 'Neo4jMapper', ->
           expect(found.constructor_name).to.be.equal 'Director'
 
           done()
+
+    it 'expect to ensure, get and delete index', (done) ->
+      class Person extends Node
+      Person.dropEntireIndex (err, res) ->
+        expect(err).to.be null
+        Person::fields =
+          indexes:
+            uid: true
+            name: true
+        Person.getIndex (err, res) ->
+          expect(err).to.be null
+          expect(res).to.have.length 0
+          Person.ensureIndex (err, res) ->
+            expect(err).to.be null
+            Person.getIndex (err, res) ->
+              expect(err).to.be null
+              expect(res).to.have.length 2
+              Person.dropIndex (err, res) ->
+                expect(err).to.be null
+                Person.getIndex (err, res) ->
+                  expect(err).to.be null
+                  expect(res).to.have.length 0
+                  done()
 
     it 'expect to autoindex models', (done) ->
       ###

@@ -337,6 +337,30 @@ var initRelationship = function(neo4jrestful) {
     
   }
 
+  /* from Node */
+
+  Relationship.recommendConstructor = function() {
+    return Relationship;
+  }
+
+  Relationship.prototype.copy_of = Node.prototype.copy_of;
+  
+  // Relationship.find = function(where, cb) {
+
+  // }
+  
+  // Relationship.findOne = function(id, cb) {
+
+  // }
+  
+  // Relationship.findAll = Relationship.find;
+  // Relations.find: [Function],
+  //   findOne: [Function],
+  //   findById: [Function],
+  //   findByUniqueKeyValue: [Function],
+  //   findAll: [Function],
+  //   findByIndex: [Function],
+
   return Relationship;
 
 }

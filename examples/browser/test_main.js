@@ -1404,7 +1404,15 @@ describe('Neo4jMapper', function() {
                   expect(updatedRelationship.data.city).to.be.equal('Cologne');
                   expect(relationship.data.since).to.be.equal('months');
                   expect(relationship.data.city).to.be.equal('Cologne');
-                  return done();
+                  return relationship.update({
+                    since: 'weeks'
+                  }, function(err, updatedRelationship) {
+                    expect(err).to.be(null);
+                    expect(relationship.id).to.equal(id);
+                    expect(updatedRelationship.data.since).to.be.equal('weeks');
+                    expect(updatedRelationship.data.city).to.be.equal('Cologne');
+                    return done();
+                  });
                 });
               });
             });

@@ -143,9 +143,11 @@ Node.prototype.__type__ = 'node';
 Node.prototype.__type_identifier__ = 'n';
 
 
-Node.prototype.singleton = function(id) {
+Node.prototype.singleton = function(id, label) {
   var Class = this.constructor;
   var node = new Class({},id);
+  if (typeof label === 'string')
+    node.label = label;
   node.resetQuery();
   node.is_singleton = true;
   node.resetQuery();
@@ -341,15 +343,25 @@ Node.prototype.fieldsToIndex = function() {
   return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? helpers.flattenObject(this.fields.indexes) : null;
 }
 
+Node.prototype.fieldsForAutoindex = function() {
+  var fields = this.fieldsToIndex();
+  var keys = [];
+  _.each(fields, function(toBeIndexed, field) {
+    if (toBeIndexed === true) 
+      keys.push(field);
+  });
+  return keys;
+}
+
 Node.prototype.fieldsWithUniqueValues = function() {
   return ( (this.fields.unique) && (_.keys(this.fields.unique).length > 0) ) ? this.fields.unique : null;
 }
 
 Node.prototype.indexFields = function(cb) {
-  if (this.hasFieldsToIndex()) {
+  var fieldsToIndex = this.fieldsToIndex();
+  if (fieldsToIndex) {
     // var join = Join.create();
     var doneCount = 0;
-    var fieldsToIndex = this.fieldsToIndex();
     var todoCount = 0;
     // var max = Object.keys(fieldsToIndex).length;
     for (var key in fieldsToIndex) {
@@ -371,13 +383,104 @@ Node.prototype.indexFields = function(cb) {
   return null;
 }
 
-Node.prototype.index_schema = function(namespace, fields, cb) {
-  // POST http://localhost:7474/db/data/schema/index/person
+/*
+ * http://docs.neo4j.org/chunked/milestone/rest-api-schema-indexes.html#rest-api-list-indexes-for-a-label
+ */
+Node.prototype.ensureIndex = function(options, cb) {
+  var args;
+  ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
+  options = _.extend({
+    label: this.label,
+    fields: this.fieldsForAutoindex(),
+    action: null
+  }, options);
+  var self    = this;
+  var keys    = options.fields;
+  var todo    = keys.length;
+  var done    = 0;
+  var errors  = [];
+  var results = [];
+  if (!options.label)
+    return cb(Error('Label is mandatory, you can set the label as options as well'), null);
+  var url = '/db/data/schema/index/'+options.label;
+  if (keys.length === 0)
+    return cb(Error("No keys for indexing found in schema"), null);
+  _.each(keys, function(key){
+    self.neo4jrestful.post(url, { data: { property_keys: [ key ] } }, function(err, res) {
+      done++;
+      if ((typeof err === 'object') && (err !== null)) {
+        if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException'))
+          // we ignore this "error"
+          results.push(res);
+        else
+          errors.push(err);
+      } else {
+        results.push(res);
+      }
+      if (done === todo)
+        cb((errors.length > 0) ? errors : null, results);
+    });
+  });
+}
+
+Node.prototype.dropIndex = function(fields, cb) {
   var self = this;
-  if (_.isString(namespace) && _.isArray(fields)) {
-    self.neo4jrestful.post('/db/data/schema/index/'+namespace, { data: fields }, cb);
+  if (typeof fields === 'function') {
+    cb = fields;
+    fields = this.fieldsForAutoindex();
   }
-  return null;
+  if (!this.label)
+    return cb(Error("You need to set a label on `node.label` to work with autoindex"), null);
+  var todo = fields.length;
+  var done = 0;
+  var url  = '/db/data/schema/index/'+this.label;
+  // skip if no fields
+  if (todo === 0)
+    return cb(null, null);
+  var errors  = [];
+  var results = [];
+  if (todo===0)
+    return cb(Error("No fields for indexing found", null));
+  _.each(fields, function(field) {
+    self.neo4jrestful.delete(url+'/'+field, function(err, res){
+      done++;
+      // if (err)
+      //   errors.push(err);
+      // else
+      //   results.push(res);
+      if (done === todo)
+        cb(null, null);
+    });
+  });
+  return this;
+}
+
+Node.prototype.dropEntireIndex = function(cb) {
+  var self = this;
+  this.getIndex(function(err, fields){
+    if (err)
+      return cb(err, fields);
+    return self.dropIndex(fields, cb);
+  });
+}
+
+Node.prototype.getIndex = function(cb) {
+  var label = this.label;
+  if (!label)
+    return cb(Error("You need to set a label on `node.label` to work with autoindex"), null);
+  var url = '/db/data/schema/index/'+this.label;
+  return this.neo4jrestful.get(url, function(err, res){
+    if ((typeof res === 'object') && (res !== null)) {
+      var keys = [];
+      _.each(res, function(data){
+        if (data.label === label)
+          keys.push(data['property-keys']);
+      });
+      return cb(null, _.flatten(keys));
+    } else {
+      return cb(err, res);
+    }
+  });
 }
 
 Node.prototype.save = function(cb) {
@@ -1746,8 +1849,8 @@ Node.prototype.copy_of = function(that) {
 
 // TODO: maybe better to replace manual argument passing with .apply method?!
 
-Node.singleton = function(id) {
-  return this.prototype.singleton(id);
+Node.singleton = function(id, label) {
+  return this.prototype.singleton(id, label);
 }
 
 Node.find = function(where, cb) {
@@ -1797,7 +1900,21 @@ Node.convert_node_to_model = function(node, model, fallbackModel) {
   return this.prototype.convert_node_to_model(node, model, fallbackModel);
 }
 
+Node.ensureIndex = function(cb) {
+  return this.singleton().ensureIndex(cb);
+}
 
+Node.dropIndex = function(fields, cb) {
+  return this.singleton().dropIndex(fields, cb);
+}
+
+Node.dropEntireIndex = function(cb) {
+  return this.singleton().dropEntireIndex(cb);
+}
+
+Node.getIndex = function(cb) {
+  return this.singleton().getIndex(cb);
+}
 
 var initNode = function(neo4jrestful) {
 

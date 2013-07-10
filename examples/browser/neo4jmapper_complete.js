@@ -1793,10 +1793,10 @@
   }
   
   Node.prototype.indexFields = function(cb) {
-    if (this.hasFieldsToIndex()) {
+    var fieldsToIndex = this.fieldsToIndex();
+    if (fieldsToIndex) {
       // var join = Join.create();
       var doneCount = 0;
-      var fieldsToIndex = this.fieldsToIndex();
       var todoCount = 0;
       // var max = Object.keys(fieldsToIndex).length;
       for (var key in fieldsToIndex) {
@@ -1818,13 +1818,26 @@
     return null;
   }
   
-  Node.prototype.index_schema = function(namespace, fields, cb) {
-    // POST http://localhost:7474/db/data/schema/index/person
+  /*
+   * http://docs.neo4j.org/chunked/milestone/rest-api-schema-indexes.html#rest-api-list-indexes-for-a-label
+   */
+  Node.prototype.ensureIndex = function(label, fields, cb) {
     var self = this;
-    if (_.isString(namespace) && _.isArray(fields)) {
-      self.neo4jrestful.post('/db/data/schema/index/'+namespace, { data: fields }, cb);
+    var url = '/db/data/schema/index/'+label;
+    // use fields from "fields" if none as argument
+    if (typeof label  === 'function') {
+  
     }
-    return null;
+    if (typeof fields === 'function') {
+      cb = fields;
+      fields = this.fieldsToIndex();
+    }
+    var keys      = [];
+    _.each(fieldsToIndex, function(toBeIndexed, field) {
+      if (toBeIndexed === true)
+        keys.push(field);
+    });
+    self.neo4jrestful.post(url, { data: { property_keys: keys } }, cb);
   }
   
   Node.prototype.save = function(cb) {
@@ -2712,9 +2725,9 @@
     var self = this;
     this.onBeforeRemove(function(err) {
       if (self.is_singleton)
-        return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced node"),null);
+        return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
       if (self.hasId()) {
-        return self.neo4jrestful.delete('/db/data/node/'+self.id, cb);
+        return self.neo4jrestful.delete('/db/data/'+self.__type__+'/'+self.id, cb);
       }
     })
     return this;
@@ -3015,7 +3028,7 @@
     if (!this.hasId())
       return cb(Error('You need to persist the node before you can index it.'),null);
     if (typeof cb === 'function')
-      return this.neo4jrestful.post('/db/data/index/node/'+namespace, { data: { key: key, value: value, uri: this.uri } }, cb);
+      return this.neo4jrestful.post('/db/data/index/'+this.__type__+'/'+namespace, { data: { key: key, value: value, uri: this.uri } }, cb);
     else
       return null;
     return keys;
@@ -3087,7 +3100,7 @@
       self = this.singleton(undefined, this);
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
       // to reduce calls we'll make a specific restful request for one node
-      return self.neo4jrestful.get('/db/data/node/'+id, function(err, node) {
+      return self.neo4jrestful.get('/db/data/'+this.__type__+'/'+id, function(err, node) {
         if ((node) && (typeof self.load === 'function')) {
           //  && (typeof node.load === 'function')     
           node.load(cb);
@@ -3166,7 +3179,7 @@
     if ((namespace)&&(key)&&(value)&&(typeof cb === 'function')) {
       // values = { key: value };
       // TODO: implement
-      return self.neo4jrestful.get('/db/data/index/node/'+namespace+'/'+key+'/'+value+'/', function(err, result, debug) {
+      return self.neo4jrestful.get('/db/data/index/'+this.__type__+'/'+namespace+'/'+key+'/'+value+'/', function(err, result, debug) {
         if (err) {
           cb(err, result, debug);
         } else {
@@ -3767,6 +3780,30 @@
       }
       
     }
+  
+    /* from Node */
+  
+    Relationship.recommendConstructor = function() {
+      return Relationship;
+    }
+  
+    Relationship.prototype.copy_of = Node.prototype.copy_of;
+    
+    // Relationship.find = function(where, cb) {
+  
+    // }
+    
+    // Relationship.findOne = function(id, cb) {
+  
+    // }
+    
+    // Relationship.findAll = Relationship.find;
+    // Relations.find: [Function],
+    //   findOne: [Function],
+    //   findById: [Function],
+    //   findByUniqueKeyValue: [Function],
+    //   findAll: [Function],
+    //   findByIndex: [Function],
   
     return Relationship;
   

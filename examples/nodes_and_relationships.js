@@ -31,7 +31,7 @@ var Movie = (function(Node) {
 
 })(Node);
 
-Node.prototype.register_model(Movie);
+Node.register_model(Movie);
 
 pulpFiction = new Movie({
   title: 'Pulp Fiction' 
@@ -42,6 +42,24 @@ pulpFiction.data.year = 1994;
 pulpFiction.save(function(err,movie){
   console.log('Created movie: ', movie.toObject());
 });
+
+/*
+ * EXAMPLE #1a
+ * a more simpler but **not** the recommend way
+ * -> not recommend because the local constructor differs from Node constructor and can't be registered + instantiate through model register
+ */
+
+var Actor = function(data) {
+  var node = new Node(data);
+  node.label = 'Actor';
+  return node;
+}
+
+harvey = new Actor({name: 'Harvey Keitel', role: 'Winston Wolf'});
+harvey.save(function(err, harvey){
+  console.log('Created actor: ', harvey.toObject());
+});
+
 
 /*
  * EXAMPLE #2
@@ -86,3 +104,6 @@ alice.save(function(err, alice){
     })
   })
 })
+
+
+
