@@ -173,36 +173,20 @@ Node.prototype.onAfterInitialize = function(cb) {
   var self = this;
   this.__already_initialized__ = true;
   // Index fields
-  var fieldsToIndex = this.fieldsToIndex();
+  var fieldsToIndex = this.fieldsForAutoindex();
   var fieldsWithUniqueValues = this.fieldsWithUniqueValues();
   // we create an object to get the label
   var node = new this.constructor();
   var label = node.label;
   if (label) {
-    if (fieldsToIndex) {
-      var jobsToBeDone = Object.keys(fieldsToIndex).length;
-      var errors  = [];
-      var results = [];
-      var debugs  = []
-      _.each(fieldsToIndex, function(toBeIndexed, field) {
-        if (toBeIndexed === true) {
-          self.neo4jrestful.query('CREATE INDEX ON :'+label+'(`'+field+'`);', function(err, result, debug) {
-            if (err)
-              errors.push(err);
-            if (result)
-              results.push(result);
-            if (debug)
-              debugs.push(debugs);
-            jobsToBeDone--;
-            if (jobsToBeDone === 0) {
-              cb((errors.length > 0) ? errors : null, results, (debugs.length > 0) ? debugs : null);
-            }
-          });
-        }
+    if (fieldsToIndex.length > 0) {
+      this.ensureIndex(function(err){
+        cb(null, null);
       });
     }
     // inactive
     // http://docs.neo4j.org/chunked/snapshot/query-constraints.html
+    /*
     if (fieldsWithUniqueValues === 'deactivated, because it´s not implemented in neo4j, yet') {
       _.each(fieldsWithUniqueValues, function(isUnique, field) {
         if (isUnique)
@@ -212,7 +196,7 @@ Node.prototype.onAfterInitialize = function(cb) {
             cb(err, result, debug);
           });
       });
-    }
+    }*/
   } else {
     cb(Error('No label found'), null);
   }

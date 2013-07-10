@@ -45,8 +45,9 @@ pulpFiction.save(function(err,movie){
 
 /*
  * EXAMPLE #1a
- * a more simpler but **not** the recommend way
+ * a quick + dirty workaround
  * -> not recommend because the local constructor differs from Node constructor and can't be registered + instantiate through model register
+ *    that means you'll **not** get the full flabel / object mapping support
  */
 
 var Actor = function(data) {
