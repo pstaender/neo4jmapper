@@ -336,6 +336,12 @@ var initNeo4jRestful = function() {
   }
 
   Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
+    // in some (rare) case, we get an empty {} as error
+    // e.g. 7b5ec0f0424d676adc67a477d0500c6d6a35799d:test_main.coffee:675 on initial tests
+    // for now we ignore those errors until we how to deal with them
+    if ( (typeof responseError === 'object') && (Object.keys(responseError).length === 0) ) {
+      return cb(null, res.body || null, options._debug);
+    }
     var err = responseError;
     var self = this;
     var statusCode = err.status;

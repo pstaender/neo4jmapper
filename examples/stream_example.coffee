@@ -13,21 +13,16 @@ summary = (count, countAll) ->
 
 console.error "Querying all nodes… please standby…"
 
-console.log Node.prototype
-
-for attr in Node.prototype
-  console.log attr
-
-# graph = new Graph()
-# graph.countNodes (err, countAll) ->
-#   perc = 100/countAll
-#   Node.findAll().each (node) ->
-#     if node is null
-#       summary(count, countAll)
-#     else
-#       count++
-#       if displayProgress
-#         console.error (Math.floor(count*perc))+"%"
-#       console.log node.toObject()
+graph = new Graph()
+graph.countNodes (err, countAll) ->
+  perc = 100/countAll
+  Node.findAll().each (node) ->
+    if node is null
+      summary(count, countAll)
+    else
+      count++
+      if displayProgress
+        console.error (Math.floor(count*perc))+"%"
+      console.log node.toObject()
       
 
