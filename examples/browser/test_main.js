@@ -160,23 +160,26 @@ describe('Neo4jMapper', function() {
   });
   describe('stream', function() {
     it('expect to make a stream request on nodes', SkipInBrowser(function(done) {
-      return Node.findAll().count(function(err, count) {
-        var iterationsCount;
+      return new Node().save(function() {
+        return Node.findAll().count(function(err, count) {
+          var iterationsCount;
 
-        expect(count).to.be.above(1);
-        iterationsCount = 0;
-        if (count > 10) {
-          count = 10;
-        }
-        return Node.findAll().limit(count - 1).each(function(data) {
-          if (data) {
-            expect(data._response.self).to.be.a('string');
-            expect(data.labels.constructor).to.be.equal(Array);
-            return iterationsCount++;
-          } else {
-            expect(iterationsCount).to.be.equal(count - 1);
-            return done();
+          expect(err).to.be(null);
+          expect(count).to.be.above(1);
+          iterationsCount = 0;
+          if (count > 10) {
+            count = 10;
           }
+          return Node.findAll().limit(count - 1).each(function(data) {
+            if (data) {
+              expect(data._response.self).to.be.a('string');
+              expect(data.labels.constructor).to.be.equal(Array);
+              return iterationsCount++;
+            } else {
+              expect(iterationsCount).to.be.equal(count - 1);
+              return done();
+            }
+          });
         });
       });
     }));
@@ -674,6 +677,49 @@ describe('Neo4jMapper', function() {
           found = Node.convert_node_to_model(found, Director);
           expect(found.constructor_name).to.be.equal('Director');
           return done();
+        });
+      });
+    });
+    it('expect to ensure, get and delete index', function(done) {
+      var Person, _ref2;
+
+      Person = (function(_super) {
+        __extends(Person, _super);
+
+        function Person() {
+          _ref2 = Person.__super__.constructor.apply(this, arguments);
+          return _ref2;
+        }
+
+        return Person;
+
+      })(Node);
+      return Person.dropEntireIndex(function(err, res) {
+        expect(err).to.be(null);
+        Person.prototype.fields = {
+          indexes: {
+            uid: true,
+            name: true
+          }
+        };
+        return Person.getIndex(function(err, res) {
+          expect(err).to.be(null);
+          expect(res).to.have.length(0);
+          return Person.ensureIndex(function(err, res) {
+            expect(err).to.be(null);
+            return Person.getIndex(function(err, res) {
+              expect(err).to.be(null);
+              expect(res).to.have.length(2);
+              return Person.dropIndex(function(err, res) {
+                expect(err).to.be(null);
+                return Person.getIndex(function(err, res) {
+                  expect(err).to.be(null);
+                  expect(res).to.have.length(0);
+                  return done();
+                });
+              });
+            });
+          });
         });
       });
     });
