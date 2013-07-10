@@ -625,17 +625,20 @@ describe 'Neo4jMapper', ->
             expect(count).to.be.equal countBefore+1
             done()
 
-    it.only 'expect to find or create a node', (done) ->
+    it 'expect to find or create a node', (done) ->
       uid = new Date().getTime()
-      Node.findOrCreate { uid: uid }, (err, found) ->
+      Node.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
         expect(err).to.be null
         expect(found.data.uid).to.be.equal uid
+        expect(found.data.name).to.be.equal 'Node'
         expect(found.id).to.be.above 0
         id = found.id
         Node.findOrCreate { uid: uid }, (err, found) ->
           expect(err).to.be null
           expect(found.id).to.be.equal id
-          done()
+          Node.findOrCreate { name: 'Node' }, (err) ->
+            expect(err.message).to.be.a 'string'
+            done()
 
   describe 'index', ->
 
