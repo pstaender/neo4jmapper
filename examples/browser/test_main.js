@@ -1021,7 +1021,7 @@ describe('Neo4jMapper', function() {
         });
       });
     });
-    return it('expect to find labeled nodes', function(done) {
+    it('expect to find labeled nodes', function(done) {
       var Person, person, _ref2;
 
       Person = (function(_super) {
@@ -1045,6 +1045,28 @@ describe('Neo4jMapper', function() {
             expect(count).to.be.equal(countBefore + 1);
             return done();
           });
+        });
+      });
+    });
+    return it.only('expect to find or create a node', function(done) {
+      var uid;
+
+      uid = new Date().getTime();
+      return Node.findOrCreate({
+        uid: uid
+      }, function(err, found) {
+        var id;
+
+        expect(err).to.be(null);
+        expect(found.data.uid).to.be.equal(uid);
+        expect(found.id).to.be.above(0);
+        id = found.id;
+        return Node.findOrCreate({
+          uid: uid
+        }, function(err, found) {
+          expect(err).to.be(null);
+          expect(found.id).to.be.equal(id);
+          return done();
         });
       });
     });

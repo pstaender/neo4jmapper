@@ -1242,6 +1242,12 @@
     }
   
     Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
+      // in some (rare) case, we get an empty {} as error
+      // e.g. 7b5ec0f0424d676adc67a477d0500c6d6a35799d:test_main.coffee:675 on initial tests
+      // for now we ignore those errors until we how to deal with them
+      if ( (typeof responseError === 'object') && (Object.keys(responseError).length === 0) ) {
+        return cb(null, res.body || null, options._debug);
+      }
       var err = responseError;
       var self = this;
       var statusCode = err.status;
@@ -2686,8 +2692,15 @@
   
   Node.prototype.andWhere = function(where, cb, _options) {
     this._modified_query = true;
-    if ((_.isObject(where))&&(!_.isArray(where)))
-      where = [ where ];
+    if (_.isObject(where)) {
+      if (Object.keys(where).length === 0) {
+        // return here
+        this.exec(cb);
+        return this;
+      }
+      if (!_.isArray(where))
+        where = [ where ];
+    }
     var attributes = helpers.extractAttributesFromCondition(_.extend(where));
     for (var i = 0; i < attributes.length; i++) {
       this.whereHasProperty(attributes[i]);
@@ -3266,6 +3279,21 @@
     }
   }
   
+  Node.prototype.findOrCreate = function(where, cb) {
+    var self = this;
+    this.findOne(where,function(err, found, debug) {
+      if (err)
+        return cb(err, found, debug);
+      else {
+        if (found)
+          return cb(null, found, debug);
+        // else
+        node = new self.constructor(where);
+        node.save(cb);  
+      }
+    });
+  }
+  
   /*
    * Static methods (misc)
    */
@@ -3309,6 +3337,10 @@
   
   Node.find = function(where, cb) {
     return this.prototype.find(where, cb);
+  }
+  
+  Node.findOrCreate = function(where, cb) {
+    return this.prototype.findOrCreate(where, cb);
   }
   
   Node.register_model = function(Class, label, cb) {
