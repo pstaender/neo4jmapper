@@ -1239,8 +1239,15 @@ Node.prototype.where = function(where, cb) {
 
 Node.prototype.andWhere = function(where, cb, _options) {
   this._modified_query = true;
-  if ((_.isObject(where))&&(!_.isArray(where)))
-    where = [ where ];
+  if (_.isObject(where)) {
+    if (Object.keys(where).length === 0) {
+      // return here
+      this.exec(cb);
+      return this;
+    }
+    if (!_.isArray(where))
+      where = [ where ];
+  }
   var attributes = helpers.extractAttributesFromCondition(_.extend(where));
   for (var i = 0; i < attributes.length; i++) {
     this.whereHasProperty(attributes[i]);
@@ -1819,6 +1826,21 @@ Node.prototype.findByIndex = function(namespace, key, value, cb) {
   }
 }
 
+Node.prototype.findOrCreate = function(where, cb) {
+  var self = this;
+  this.findOne(where,function(err, found, debug) {
+    if (err)
+      return cb(err, found, debug);
+    else {
+      if (found)
+        return cb(null, found, debug);
+      // else
+      node = new self.constructor(where);
+      node.save(cb);  
+    }
+  });
+}
+
 /*
  * Static methods (misc)
  */
@@ -1862,6 +1884,10 @@ Node.findOne = function(where, cb) {
 
 Node.find = function(where, cb) {
   return this.prototype.find(where, cb);
+}
+
+Node.findOrCreate = function(where, cb) {
+  return this.prototype.findOrCreate(where, cb);
 }
 
 Node.register_model = function(Class, label, cb) {
