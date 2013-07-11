@@ -1836,7 +1836,7 @@ Node.prototype.findOrCreate = function(where, cb) {
       else if (count > 1)
         return cb(Error("More than one node found… You have query one distinct result"), null);
       // else
-      node = new self.constructor(where);
+      var node = new self.constructor(where);
       node.save(cb);  
     }
   });
