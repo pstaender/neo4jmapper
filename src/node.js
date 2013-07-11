@@ -1073,7 +1073,6 @@ Node.prototype.outgoingRelationships = function(relation, cb) {
   self._modified_query = true;
   if (typeof relation !== 'function') {
     self.cypher.relationship = relation;
-    cb = relation;
   } else {
     cb = relation;
   }
