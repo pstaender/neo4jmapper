@@ -2526,7 +2526,6 @@
     self._modified_query = true;
     if (typeof relation !== 'function') {
       self.cypher.relationship = relation;
-      cb = relation;
     } else {
       cb = relation;
     }
@@ -3281,12 +3280,14 @@
   
   Node.prototype.findOrCreate = function(where, cb) {
     var self = this;
-    this.findOne(where,function(err, found, debug) {
+    this.find(where).count(function(err, count, debug) {
       if (err)
-        return cb(err, found, debug);
+        return cb(err, count, debug);
       else {
-        if (found)
-          return cb(null, found, debug);
+        if (count === 1)
+          return self.findOne(where, cb);
+        else if (count > 1)
+          return cb(Error("More than one node found… You have query one distinct result"), null);
         // else
         node = new self.constructor(where);
         node.save(cb);  

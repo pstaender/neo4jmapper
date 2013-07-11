@@ -1048,17 +1048,19 @@ describe('Neo4jMapper', function() {
         });
       });
     });
-    return it.only('expect to find or create a node', function(done) {
+    return it('expect to find or create a node', function(done) {
       var uid;
 
       uid = new Date().getTime();
       return Node.findOrCreate({
-        uid: uid
+        uid: uid,
+        name: 'Node'
       }, function(err, found) {
         var id;
 
         expect(err).to.be(null);
         expect(found.data.uid).to.be.equal(uid);
+        expect(found.data.name).to.be.equal('Node');
         expect(found.id).to.be.above(0);
         id = found.id;
         return Node.findOrCreate({
@@ -1066,7 +1068,12 @@ describe('Neo4jMapper', function() {
         }, function(err, found) {
           expect(err).to.be(null);
           expect(found.id).to.be.equal(id);
-          return done();
+          return Node.findOrCreate({
+            name: 'Node'
+          }, function(err) {
+            expect(err.message).to.be.a('string');
+            return done();
+          });
         });
       });
     });
