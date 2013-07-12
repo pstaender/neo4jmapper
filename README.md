@@ -164,10 +164,14 @@ To get relationships for instance:
 You can query nodes (relationships may follow) easily like as usual in other Object Mappers
 
 ```js
-  alice.incomingRelationshipsFrom(bob).where({'r.since': 'years'}).limit(1, function(err) { });
+  alice.incomingRelationshipsFrom(bob)
+    .where({'r.since': 'years'})
+    .limit(1, function(err, relationships) {
+      /* … */
+    });
 ```
 
-Also with more customized queries in mongodb query style
+Also with customized queries in mongodb query style
 
 ```js
   Node.find().where(
@@ -175,23 +179,28 @@ Also with more customized queries in mongodb query style
       { 'n.name': /alice/i },
       { 'n.name': /bob/i }
     ] }
-  ).skip(2).limit(10).orderBy({ 'n.name': 'DESC' }, function(err, result) {} );
+  ).skip(2)
+   .limit(10)
+   .orderBy({ 'n.name': 'DESC' }, function(err, result) { /* … */ });
 ```
 
 ```js
-  Node.findOne().whereNodeHasProperty('name').andWhereNode({ 'city': 'berlin' },  function(err, result) { });
+  Node.findOne()
+    .whereNodeHasProperty('name')
+    .andWhereNode({ 'city': 'berlin' }, function(err, result) { /* … */ });
 ```
 
 ### Iterate on large results
 
 You can iterate instantly on results asynchronously with the `each` method, it processes the stream of the response:
 
-```coffeescript
-  Node.findAll().each (node) ->
-    if node
-      console.log(node.toObject())
+```js
+  Node.findAll().each(function(node) {
+    if (node)
+      console.log(node.toObject());
     else
-      console.log "Done"
+      console.log("Done");
+  });
 ```
 
 You can also process ”raw” queries with streaming:
@@ -234,9 +243,12 @@ We distinct between **remove** and **delete**.
 
 ```js
   // Delete all nodes with the name `Bob`
-  Node.find().andWhereNode({ name: "Bob"}).delete();
+  Node.find()
+    .andWhereNode({ name: "Bob"})
+    .delete();
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
-  Node.findOne().whereNode({ name: "Bob"}, function(err, bob) {
+  Node.findOne()
+    .whereNode({ name: "Bob"}, function(err, bob) {
     // Remove Bob node (if found)
     if (bob)
       bob.remove();
@@ -258,11 +270,11 @@ Here are the most needed methods that can be invoked by an instanced node:
 
 Like in mongodb you can use **AND** + **OR** operators for your where queries, also java-syntax compatible regex are supported:
 
-```coffeescript
-  Node.find().whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]})
-  ~> 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
-  Node.findOne().where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ])
-  ~> 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
+```js
+  Node.find().whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]});
+  ~> will execute 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
+  Node.findOne().where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ]);
+  ~> will execute 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
 ```
 
 ## Debugging
