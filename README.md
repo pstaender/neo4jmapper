@@ -29,7 +29,11 @@ To reduce code, the following examples are written in CoffeeScript. But neo4jmap
 ```js
   var Neo4j = require('neo4jmapper');
   var neo4j = new Neo4j('http://localhost:7474');
-  var Graph = neo4j.Graph, Node = neo4j.Node, Relationship = neo4j.Relationship;
+
+  var Graph        = neo4j.Graph
+    , Node         = neo4j.Node
+    , Relationship = neo4j.Relationship
+    , client       = neo4j.client;
 ```
 
 ### Cypher queries
@@ -295,7 +299,7 @@ By default you should get clear and understandable error messages on wrong queri
 
 ```js
   Node.find().where("wrongQuery LIKE 'this'", function(err) {
-    /* err ~>
+    err ~>
       { name: 'QueryError',
         message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wrongQuery LIKE \'this\' ) RETURN # n;"\n                                           ^',
        exception: 'SyntaxException',
@@ -317,7 +321,6 @@ By default you should get clear and understandable error messages on wrong queri
        url: 'http://localhost:7474/db/data/cypher',
        data: '{"query":"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN n;","params":{}}'
      }
-    */
   });
 ```
 
@@ -332,7 +335,7 @@ In case you want to inspect sended + received data and/or the process of mapping
   node = new Node();
   node.neo4jrestful.debug = true;
   node.save(function(err, result, debug) {
-    /* debug ~>
+    debug ~>
       { options: { type: 'POST', data: {}, no_processing: false, debug: true },
         requested_url: 'http://localhost:7474/db/data/node',
         type: 'POST',
@@ -358,7 +361,6 @@ In case you want to inspect sended + received data and/or the process of mapping
         status: 'success',
         err: null
       }
-    */
   });
 ```
 
