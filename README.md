@@ -174,18 +174,22 @@ You can query nodes (relationships may follow) easily like as usual in other Obj
 Also with customized queries in mongodb query style
 
 ```js
-  Node.find().where(
-    { $or : [
-      { 'n.name': /alice/i },
-      { 'n.name': /bob/i }
-    ] }
-  ).skip(2)
-   .limit(10)
-   .orderBy({ 'n.name': 'DESC' }, function(err, result) { /* … */ });
+  Node
+    .find()
+    .where(
+      { $or : [
+        { 'n.name': /alice/i },
+        { 'n.name': /bob/i }
+      ] }
+    )
+    .skip(2)
+    .limit(10)
+    .orderBy({ 'n.name': 'DESC' }, function(err, result) { /* … */ });
 ```
 
 ```js
-  Node.findOne()
+  Node
+    .findOne()
     .whereNodeHasProperty('name')
     .andWhereNode({ 'city': 'berlin' }, function(err, result) { /* … */ });
 ```
@@ -243,11 +247,13 @@ We distinct between **remove** and **delete**.
 
 ```js
   // Delete all nodes with the name `Bob`
-  Node.find()
+  Node
+    .find()
     .andWhereNode({ name: "Bob"})
     .delete();
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
-  Node.findOne()
+  Node
+    .findOne()
     .whereNode({ name: "Bob"}, function(err, bob) {
     // Remove Bob node (if found)
     if (bob)
@@ -271,9 +277,13 @@ Here are the most needed methods that can be invoked by an instanced node:
 Like in mongodb you can use **AND** + **OR** operators for your where queries, also java-syntax compatible regex are supported:
 
 ```js
-  Node.find().whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]});
+  Node
+    .find()
+    .whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]});
   ~> will execute 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
-  Node.findOne().where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ]);
+  Node
+    .findOne()
+    .where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ]);
   ~> will execute 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
 ```
 
