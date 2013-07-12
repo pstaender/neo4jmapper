@@ -242,12 +242,20 @@ describe 'Neo4jMapper', ->
             expect(nodes[0].constructor_name).to.be.equal 'Node'
             expect(nodes[1].constructor_name).to.be.equal 'Node'
             class Developer extends Node
-            Node.register_model(Developer)
-            Developer.find { group_id: groupid }, (err, nodes) ->
+              fields:
+                indexes:
+                  email: true
+            Developer.dropEntireIndex (err) ->
               expect(err).to.be null
-              expect(nodes).to.have.length 1
-              expect(nodes[0].data.name).to.be.equal 'Bob'
-              done()
+              Node.register_model(Developer)
+              Developer.find { group_id: groupid }, (err, nodes) ->
+                expect(err).to.be null
+                expect(nodes).to.have.length 1
+                expect(nodes[0].data.name).to.be.equal 'Bob'
+                Developer.getIndex (err, found) ->
+                  expect(found).to.have.length 1
+                  expect(found[0]).to.be.equal 'email'
+                  done()
 
 
     it 'expect to remove a node', (done) ->
