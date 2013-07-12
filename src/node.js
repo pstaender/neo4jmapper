@@ -1104,7 +1104,6 @@ Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
   self.cypher.return_properties = ['r'];
-  self.exec(cb);
   return self.outgoingRelationships(relation, cb);
 }
 
@@ -1450,7 +1449,7 @@ Node.prototype.createRelationship = function(options, cb) {
 
   if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
     if (options.distinct) {
-      this.neo4jrestful.get('/db/data/node/'+options.from_id+'/relationships/out/'+options.type, function(err, result) {
+      Node.findById(options.from_id).outgoingRelationshipsTo(options.to_id, options.type, function(err, result) {
         if (err)
           return cb(err, result);
         if (result.length === 1) {

@@ -26,45 +26,45 @@ To reduce code, the following examples are written in CoffeeScript. But neo4jmap
 
 ### Include files and establish db connection
 
-```coffeescript
-  Neo4j = require('neo4jmapper')
-  {Graph,Node,Relationship}  = new Neo4j('http://localhost:7474')
+```js
+  var Neo4j = require('neo4jmapper');
+  var neo4j = new Neo4j('http://localhost:7474');
+  var Graph = neo4j.Graph, Node = neo4j.Node, Relationship = neo4j.Relationship;
 ```
 
 ### Cypher queries
 
 Use the full power of the cypher query language:
 
-```coffeescript
-  graph = new Graph()
-  graph.query """
-    START n = node(*)
-    MATCH n-[r]-()
-    RETURN n;
-  """, (err, result) ->
-    console.log err, result
+```js
+  var graph = new Graph();
+  graph.query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
+    console.log(err, result);
+  });
 ```
 
 ### Create and save nodes
 
-```coffeescript
-  alice = new Node()
+```js
+  var alice = new Node();
   alice.data = {
     name: 'Alice',
     nested: {
       values: 'are allowed, but not recommend'
     }
     arrays: [ 'are', 'allowed', 'but', 'also', 'non-recommend']
-  }
-  alice.save (err, alice) ->
-    alice.toObject()
+  };
+  alice.save(function(err, alice) {
+    alice.toObject();
+  });
 ```
 
-or by shorthand
+or shorter with
 
-```coffeescript
-  new Node({ name: 'Bob' }).save (err, bob) ->
-    bob.toObject()
+```js
+  new Node({ name: 'Bob' }).save(function(err, bob) {
+    bob.toObject();
+  });
 ```
 
 ### Classes and Models
@@ -130,36 +130,56 @@ To extend the Node object in JavaScript you have to use an extend method (here I
   });
 ```
 
-### Connect Nodes in various kinds
+### Connect Nodes
 
-```coffeescript
-  alice.createRelationshipTo bob, 'knows', { since: 'years' }, ->
-    bob.createRelationshipTo alice, 'likes', { since: 'week' }, ->
-      console.log(alice.toObject())
-      console.log(bob.toObject())
+```js
+  alice.createRelationshipTo(bob, 'knows', { since: 'years' }, function(err) {
+    bob.createRelationshipTo(alice, 'likes', { since: 'week' }, function(err) {
+      console.log(alice.toObject());
+      console.log(bob.toObject());
+    });
+  });
+```
+
+You can also **create distinct relationships** with `createOrUpdateRelationshipBetween`, `createOrUpdateRelationshipTo`.
+
+### Query Relationship in various kinds
+
+To get relationships for instance:
+
+```js
+  alice.incomingRelationships('like|follow', function(err, r) {
+    /* all incoming relationships with 'like' or 'follow' */
+  });
+  alice.allRelationships(function(err, r){
+    /* all relationships of node alice */
+  });
+  alice.relationshipsBetween(bob, function(err, r){
+    /* all relationships between node alice and node bob */
+  });
 ```
 
 ### Advanced queries
 
 You can query nodes (relationships may follow) easily like as usual in other Object Mappers
 
-```coffeescript
-  alice.incomingRelationshipsFrom(bob).where({'r.since': 'years'}).limit 1, ->
+```js
+  alice.incomingRelationshipsFrom(bob).where({'r.since': 'years'}).limit(1, function(err) { });
 ```
 
 Also with more customized queries in mongodb query style
 
-```coffeescript
+```js
   Node.find().where(
     { $or : [
       { 'n.name': /alice/i },
       { 'n.name': /bob/i }
     ] }
-  ).skip(2).limit(10).orderBy { 'n.name': 'DESC' }, (err, result) ->
+  ).skip(2).limit(10).orderBy({ 'n.name': 'DESC' }, function(err, result) {} );
 ```
 
-```coffeescript
-  Node.findOne().whereNodeHasProperty('name').andWhereNode { 'city': 'berlin' },  (err, result) ->
+```js
+  Node.findOne().whereNodeHasProperty('name').andWhereNode({ 'city': 'berlin' },  function(err, result) { });
 ```
 
 ### Iterate on large results
@@ -176,13 +196,14 @@ You can iterate instantly on results asynchronously with the `each` method, it p
 
 You can also process ”raw” queries with streaming:
 
-```coffeescript
-  client.stream 'START n=node(*) RETURN n;', (node) ->
-    # process each node async
-    if node
-      console.log node.toObject()
+```js
+  client.stream("START n=node(*) RETURN n;", function(node) {
+    // process each node async
+    if (node)
+      console.log(node.toObject());
     else
-      console.log 'Done'
+      console.log('Done');
+  });
 ```
 
 **Currently the streaming feature is not available on browsers** because there are several dependencies on other modules which have to be included as well.
@@ -211,14 +232,15 @@ We distinct between **remove** and **delete**.
 
 **remove** always means to remove a current instanced node/relationship, **delete** means to perfom `DELETE` action on a query:
 
-```coffeescript
-  # Delete all nodes with the name `Bob`
-  Node.find().andWhereNode({ name: "Bob"}).delete()
+```js
+  // Delete all nodes with the name `Bob`
+  Node.find().andWhereNode({ name: "Bob"}).delete();
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
-  Node.findOne().whereNode { name: "Bob"}, (err, bob) ->
-    # Remove Bob node (if found)
-    if bob
-      bob.remove()
+  Node.findOne().whereNode({ name: "Bob"}, function(err, bob) {
+    // Remove Bob node (if found)
+    if (bob)
+      bob.remove();
+  });
 ```
 
 ##  CRUD and beyond
@@ -249,11 +271,11 @@ Like in mongodb you can use **AND** + **OR** operators for your where queries, a
 
 By default you should get clear and understandable error messages on wrong queries, e.g.:
 
-```coffeescript
-  Node.find().where "wontWork LIKE 'this'", (err) ->
-    # err ~>
+```js
+  Node.find().where("wrongQuery LIKE 'this'", function(err) {
+    /* err ~>
       { name: 'QueryError',
-        message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN # n;"\n                                           ^',
+        message: 'Unclosed parenthesis\n"START n = node(*)   WHERE ( wrongQuery LIKE \'this\' ) RETURN # n;"\n                                           ^',
        exception: 'SyntaxException',
        cypher: null,
        stacktrace:
@@ -273,20 +295,22 @@ By default you should get clear and understandable error messages on wrong queri
        url: 'http://localhost:7474/db/data/cypher',
        data: '{"query":"START n = node(*)   WHERE ( wontWork LIKE \'this\' ) RETURN n;","params":{}}'
      }
+    */
+  });
 ```
 
 ### Inspect sended + received data
 
 In case you want to inspect sended + received data and/or the process of mapping, you can set a debug flag:
 
-```coffeescript
-  # for all instanced node(s) via prototype
-  Node.neo4jrestful.debug = true
-  # or better for specific objects
-  node = new Node()
-  node.neo4jrestful.debug = true
-  node.save (err, result, debug) ->
-    # debug ~>
+```js
+  // for all instanced node(s) via prototype
+  Node.neo4jrestful.debug = true;
+  // or better for specific objects
+  node = new Node();
+  node.neo4jrestful.debug = true;
+  node.save(function(err, result, debug) {
+    /* debug ~>
       { options: { type: 'POST', data: {}, no_processing: false, debug: true },
         requested_url: 'http://localhost:7474/db/data/node',
         type: 'POST',
@@ -312,17 +336,13 @@ In case you want to inspect sended + received data and/or the process of mapping
         status: 'success',
         err: null
       }
+    */
+  });
 ```
 
 The debug object is always the third passed argument in the callback.
 
 You can also log all network connections to the database by defining a logger:
-
-```coffeescript
-  client.constructor::log = Graph::log = -> console.log(Array::slice.call(arguments).join(' '))
-```
-
-or in JavaScript:
 
 ```js
   client.constructor.prototype.log = Graph.prototype.log = function() {
@@ -334,8 +354,8 @@ or in JavaScript:
 
 You can easiliy inspect the generated queries by invoking the `toCypherQuery()` method:
 
-```coffeescript
-  Node.find().andWhereNode({ name: "Bob"}).delete().toCypherQuery()
+```js
+  Node.find().andWhereNode({ name: "Bob"}).delete().toCypherQuery();
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
 ```
 
@@ -380,24 +400,6 @@ or in the browser of your choice by opening the `examples/tests.html` file. You 
 
 Neo4jMapper is not a schema based mapper, but it includes some features which are similar to this.
 
-### Classes and inheritance
-
-You can extend the Node object with an other object. There is no difference whether you use the `_.extend()` method of underscorejs, the class pattern of coffeescript or similar method to extend your "class" (I prefer the CoffeeScript way to keep the code more clean…).
-
-This feature only works with Neo4j v2+ because it makes use of the label feature.
-
-```coffeescript
-
-  class Person extends Node
-
-    onBeforeSave: (next) ->
-      console.log('Do something before saving')
-      next()
-
-  alice = new Person({name: 'Alice'})
-  alice.save ->
-```
-
 ### Default values and fields to index
 
 ```coffeescript
@@ -417,67 +419,88 @@ This feature only works with Neo4j v2+ because it makes use of the label feature
     }
 ```
 
+```js
+
+  var Person = (function(Node) {
+
+    function Person(data, id) {
+      this.init.apply(this, arguments);
+    }
+
+    _.extend(Person.prototype, Node.prototype);
+      
+    return Movie;
+  
+  })(Node);
+
+  Person.prototype.fields = {
+    defaults: {
+      is_new: true,
+      uid: -> new Date().getTime()
+    },
+    indexes: {
+      email: true,
+      uid: 'my_person_index'
+    }
+  };
+```
+
 ## Hooks
 
 ### Nodes
 
 All hooks can also be defined for specific ”classes“, e.g.:
 
-```coffeescript
-  Actor::onBeforeSave = (next) -> next(null, null)
-  # instead of
-  Node::onBeforeSave = (next) -> next(null, null)
-```
-
-Same in JavaScript:
-
 ```js
-  Actor.prototype.onBeforeSave = function(next) { next(null, null); }
-  // instead of
-  Node.prototype.onBeforeSave = function(next) { next(null, null); }
+  Person.prototype.onBeforeSave = fucntion(next) { next(null, null); }
 ```
 
 #### onBeforeSave
 
-```coffeescript
-  Node::onBeforeSave = (next) ->
-    # do s.th. before the node will be persisted
-    # is called before initially save and update
-    next()
+```js
+  Node.prototype.onBeforeSave = function(next) {
+    // do s.th. before the node will be persisted
+    // is called before initially save and update
+    next();
+  }
 ```
 
 #### onBeforeRemove
 
-```coffeescript
-  Node::onBeforeRemove = (next) ->
-    # do s.th. before the node will be removed
-    next()
+```js
+  Node.prototype.onBeforeRemove = function(next) {
+    // do s.th. before the node will be removed
+    next();
+  }
 ```
 
 #### onBeforeInitialize
 
 Called once the model is being registered. For instance, to ensure autoindex on defined fields is done in this part:
 
-```coffeescript
-  Node::onBeforeInitialize = (next) ->
-    # do s.th. before the Model gets initialized
-    next()
+```js
+  Node.prototype.onBeforeInitialize = function(next) {
+    // do s.th. before the Model gets initialized
+    next();
+  }
 ```
 
 #### onAfterLoad
 
 On all `Node.find*()` queries the results run through a load process (loading the label(s) which has to be an extra request for instance). You can define your own afterLoad process this way:
 
-```coffeescript
-  Node::onAfterLoad = (node, done) ->
-    # do s.th. here, finnaly call done()
-    if node.id
-      @neo4jrestful.query "START …", (err, result) ->
-        # …
-        done(err, null)
+```js
+  Node.prototype.onAfterLoad = function(node, done) {
+    // do s.th. here, finnaly call done()
+    if (node.id)
+      this.neo4jrestful.query("START …", function(err, result) {
+        // …
+        done(err, null);
+      });
+  }
 ```
 
-**To reduce database requests you can switch load hooks on and off by Node::disableLoading() / Node::enableLoading()**
+**To reduce database requests you can switch load hooks on and off by Node.prototype.disableLoading() / Node.prototype.enableLoading()**
 
 ## LICENSE
 
