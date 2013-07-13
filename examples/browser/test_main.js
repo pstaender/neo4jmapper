@@ -356,17 +356,30 @@ describe('Neo4jMapper', function() {
                 return _ref2;
               }
 
+              Developer.prototype.fields = {
+                indexes: {
+                  email: true
+                }
+              };
+
               return Developer;
 
             })(Node);
-            Node.register_model(Developer);
-            return Developer.find({
-              group_id: groupid
-            }, function(err, nodes) {
+            return Developer.dropEntireIndex(function(err) {
               expect(err).to.be(null);
-              expect(nodes).to.have.length(1);
-              expect(nodes[0].data.name).to.be.equal('Bob');
-              return done();
+              Node.register_model(Developer);
+              return Developer.find({
+                group_id: groupid
+              }, function(err, nodes) {
+                expect(err).to.be(null);
+                expect(nodes).to.have.length(1);
+                expect(nodes[0].data.name).to.be.equal('Bob');
+                return Developer.getIndex(function(err, found) {
+                  expect(found).to.have.length(1);
+                  expect(found[0]).to.be.equal('email');
+                  return done();
+                });
+              });
             });
           });
         });

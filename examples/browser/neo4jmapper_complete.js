@@ -1010,9 +1010,6 @@
         // initially set singleton to first constructed connection
         _singleton_instance = this;
       }
-      self._queue = _.extend({},Neo4jRestful.prototype._queue);
-  
-      self._queue.stack = [];
       // copy header
       self.header = _.extend({}, Neo4jRestful.prototype.header);
       self.checkAvailability(function(err, isAvailable, debug) {
@@ -1032,15 +1029,6 @@
     Neo4jRestful.prototype.exact_version = null;
     Neo4jRestful.prototype.version = null;
     Neo4jRestful.prototype.ignore_exception_pattern = /^(Node|Relationship)NotFoundException$/;
-  
-    Neo4jRestful.prototype._queue = {
-      stack: null, // contains all queued requests
-      interval_id: null, // processes id of interval 
-      is_processing: false, // flag to avoid async queue process
-      ping_timeout: 10000, // to avoid endless waiting for a non available service set timeout to 10[s] by default
-      started_on: null, // used for avoiding endless waiting
-      max_queue_length: 63
-    };
   
     Neo4jRestful.prototype.connection_established = false;
   
@@ -1121,14 +1109,14 @@
       var requestedUrl = this.absoluteUrl();
       var type = options.type;
       var data = options.data;
-      var header = options.header;
+      this.header = _.extend({}, this.header, options.header);
   
       if ( (typeof data === 'object') && (data !== null) )
        data = JSON.stringify(options.data);
       
-      this.log('**debug**', 'URI:', type+":"+requestedUrl);
-      this.log('**debug**', 'sendedData:', data);
-      this.log('**debug**', 'sendedHeader:', header);
+      // this.log('**debug**', 'URI:', type+":"+requestedUrl);
+      // this.log('**debug**', 'sendedData:', data);
+      // this.log('**debug**', 'sendedHeader:', this.header);
   
       // we can set a debug flag on neo4jrestful
       // to avoid passing each time for every request a debug flag
@@ -1141,7 +1129,7 @@
           requested_url: requestedUrl,
           type: type,
           data: data,
-          header: header,
+          header: this.header,
           res: null,
           status: null,
           err: null
@@ -1157,62 +1145,7 @@
         url: url
       };
   
-      if (!this.connection_established) {
-        // add to queue
-        if (self._queue.stack.length < self._queue.max_queue_length)
-          self._queue.stack.push({options: _options, cb: cb});
-        // start interval process
-        this._processQueue(_options,cb);
-      } else {
-        return this.makeRequest(_options, cb);
-      }
-    }
-  
-    Neo4jRestful.prototype._processQueue = function() {
-      var intervalTime = 50;
-      var self = this;
-      if (!self._queue.started_on)
-        self._queue.started_on = new Date().getTime()
-      // only start one interval process per connection object
-      if (!self.query.interval_id) {
-        // initially we have to start an interval
-        // for checking constantly for an established connection
-        // and send the requests
-        self.query.interval_id = setInterval(function(){
-          if ( (self._queue.started_on+self._queue.ping_timeout) < new Date().getTime() ) {
-            // we reached the timeout
-            var timeoutReachedMessage = "Timeout of "+(Math.round((self._queue.ping_timeout)/100)/10)+"[s] for neo4j '"+self.baseUrl+"' reached";
-            clearInterval(self.query.interval_id);
-            self.query.interval_id = null;
-            throw Error(timeoutReachedMessage);
-          }
-          // abort here if we have a process running
-          if (self._queue.is_processing)
-            return null;
-          // process queue only if we have a connection established
-          if ((self.connection_established)&&(self._queue.stack.length > 0)) {
-            var req = self._queue.stack.pop();        
-            self._queue.is_processing = true;
-            self.makeRequest(req.options, function(err, result, debug){
-              self._queue.is_processing = false;
-              req.cb(err, result, debug);
-            });
-            // stop interval if queue is empty
-            if (self._queue.stack.length < 1) {
-              clearInterval(self.query.interval_id);
-              self.query.interval_id = null;
-            }
-          } else {
-            // check constantly availability
-            self._queue.is_processing = true;
-            self.checkAvailability(function(err, isAvailable, debug) {
-              self.connection_established = isAvailable;
-              self._queue.is_processing = false;
-            });
-          }
-          
-        }, intervalTime);
-      }
+      return this.makeRequest(_options, cb);
     }
   
     Neo4jRestful.prototype.onProcess = function(res, next, debug) {
@@ -1346,6 +1279,10 @@
       if (data) {
         req.send(data)
       }
+  
+      this.log('**debug**', 'URI:', options.method+":"+options.url);
+      this.log('**debug**', 'sendedData:', data);
+      this.log('**debug**', 'sendedHeader:', this.header);
       
       // stream
       if (this.header['X-Stream'] === 'true') {
@@ -1633,7 +1570,7 @@
     var label = node.label;
     if (label) {
       if (fieldsToIndex.length > 0) {
-        this.ensureIndex(function(err){
+        node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err){
           cb(null, null);
         });
       }
