@@ -27,7 +27,7 @@ else if window?
   {Graph,Node,helpers,client} = neo4jmapper
   Neo4j = Neo4jMapper.init
 
-describe 'helpers', ->
+describe 'Neo4jMapper (helpers)', ->
 
   it 'escapeString', ->
     s = helpers.escapeString("'a test's'")

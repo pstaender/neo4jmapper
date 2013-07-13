@@ -24,7 +24,7 @@ if (typeof root !== "undefined" && root !== null) {
   Neo4j = Neo4jMapper.init;
 }
 
-describe('helpers', function() {
+describe('Neo4jMapper (helpers)', function() {
   it('escapeString', function() {
     var s;
 

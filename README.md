@@ -416,7 +416,7 @@ You can run tests in nodejs:
   $ npm test
 ```
 
-or in the browser of your choice by opening the `examples/tests.html` file. You have to overwrite the `configForTest` values with your own config data.
+or in the browser of your choice by opening the `examples/browser/tests.html` file. You have to overwrite the `configForTest` values with your own config data.
 
 # Reference
 
