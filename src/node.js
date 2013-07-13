@@ -180,7 +180,7 @@ Node.prototype.onAfterInitialize = function(cb) {
   var label = node.label;
   if (label) {
     if (fieldsToIndex.length > 0) {
-      this.ensureIndex({ label: label, fields: fieldsToIndex }, function(err){
+      node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err){
         cb(null, null);
       });
     }
