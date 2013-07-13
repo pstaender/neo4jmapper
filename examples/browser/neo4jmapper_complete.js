@@ -239,6 +239,9 @@
         if (/^[nmr]\./.test(key))
           // we have already an identifier
           key = key;
+        else if (/[\?\!]$/.test(key))
+          // we have a default statement, escape without ! or ?
+          key = identifier+'.`'+key.replace(/[\?\!]$/,'')+'`'+key.substring(key.length-1)
         else
           key = identifier+'.`'+key+'`';
       }
@@ -317,7 +320,7 @@
         }
         if ( (!_is_operator.test(key)) && (/^[a-zA-Z\_\-\.]+$/.test(key)) ) {
           // remove identifiers if exists
-          attributes.push(key.replace(/^[abnr]{1}\./,''));
+          attributes.push(key.replace(/^[nmr]{1}\./,''));
         }
       });
       return _.uniq(attributes);
@@ -2400,12 +2403,11 @@
       var query = null;
       if (this._stream_) {
         return this.neo4jrestful.stream(cypherQuery, options, function(data, debug) {
-          if ( (data) && (data[0]) ) {
-            var basicNode = Node.singleton().neo4jrestful.createObjectFromResponseData(data[0], DefaultConstructor);
-            basicNode.load(function(err, node) {
-              return cb(data[0]);
-            });
-            
+          var object = null;
+          if ( (data) && (data.__type__) ) {
+            cb(
+              Node.singleton().neo4jrestful.createObjectFromResponseData(data._response, DefaultConstructor)
+            );
           } else {
             return cb(data);
           }
@@ -2561,8 +2563,9 @@
     return this; // return self for chaining
   }
   
-  Node.prototype.orderBy = function(property, direction, cb, identifier) {
+  Node.prototype.orderBy = function(property, cb, identifier) {
     this._modified_query = true;
+    var direction = '';
     if (typeof property === 'object') {
       var key = Object.keys(property)[0];
       cb = direction;
@@ -2571,26 +2574,30 @@
       if ( (typeof direction === 'string') && ((/^(ASC|DESC)$/i).test(direction)) ) {
         this.cypher.order_direction = direction;
       }
-      
-      if ((typeof identifier === 'string') && (/^[nmr]$/i.test(identifier))) {
-        if (identifier === 'n') this.whereNodeHasProperty(property);
-        if (identifier === 'm') this.whereEndNodeHasProperty(property);
-        if (identifier === 'r') this.whereRelationshipHasProperty(property);
-      } else {
-        identifier = null;
-      }
-  
-      if (identifier) {
-        // s.th. like ORDER BY n.`name` ASC
-        // escape property
-        this.cypher.order_by = identifier + ".`"+property+"`";
-      } else {
-        // s.th. like ORDER BY n.name ASC
-        this.cypher.order_by = property;
-      }
     } else if (typeof property === 'string') {
       // custom statement, no process at all
       // we use 1:1 the string
+      this.cypher.order_by = property;
+    } else if (typeof cb === 'string') {
+      identifier = cb;
+      cb = null;
+    }
+    if (typeof identifier === 'undefined')
+      identifier = this.__type_identifier__;
+    if ((typeof identifier === 'string') && (/^[nmr]$/i.test(identifier))) {
+      if (identifier === 'n') this.whereNodeHasProperty(property);
+      if (identifier === 'm') this.whereEndNodeHasProperty(property);
+      if (identifier === 'r') this.whereRelationshipHasProperty(property);
+    } else {
+      identifier = null;
+    }
+  
+    if (identifier) {
+      // s.th. like ORDER BY n.`name` ASC
+      // escape property
+      this.cypher.order_by = identifier + ".`"+property+"`";
+    } else {
+      // s.th. like ORDER BY n.name ASC
       this.cypher.order_by = property;
     }
     this.exec(cb);
@@ -2696,13 +2703,19 @@
       // we need a property to proceed
       return cb(Error('Property name is mandatory.'),null);
     }
-    if (this.cypher.return_properties.length === 0) {
-      this.findAll();
+    if (/^[nmr]\./.test(property))
+      // remove identifier
+      property = property.replace(/^[nmr]\./,'')
+    // if NOT default to true/false, no property condition is needed
+    if (!/[\!\?]$/.test(property)) {
+      if (this.cypher.return_properties.length === 0) {
+        this.findAll();
+      }
+      // no identifier found, guessing from return properties
+      if (typeof identifier !== 'string')
+        identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
+      this.andWhere('HAS ('+identifier+'.`'+property+'`)');
     }
-    // no identifier found, guessing from return properties
-    if (typeof identifier !== 'string')
-      identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
-    this.andWhere('HAS ('+identifier+'.`'+property+'`)');
     this.exec(cb);
     return this; // return self for chaining
   }

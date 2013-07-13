@@ -124,7 +124,7 @@ describe 'Neo4jMapper', ->
       new Person().save ->
         Person.findAll().count (err, count) ->
           expect(err).to.be null
-          expect(count).to.be.above 1
+          expect(count).to.be.above 0
           iterationsCount = 0;
           count = 10 if count > 10
           Person.findAll().limit(count-1).each (data) ->
@@ -658,6 +658,7 @@ describe 'Neo4jMapper', ->
           expect(err).to.be null
           expect(found.id).to.be.equal id
           Node.findOrCreate { name: 'Node' }, (err) ->
+            # TODO: fixme (1st testrun)
             expect(err.message).to.be.a 'string'
             done()
 

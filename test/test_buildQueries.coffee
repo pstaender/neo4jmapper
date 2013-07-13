@@ -99,16 +99,11 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*) RETURN n SKIP 5;'
           ]
         
-        "Node::findAll().orderBy('n.name ASC')":
-          [
-             Node::findAll().orderBy('n.name ASC'),
-            'START n = node(*) RETURN n ORDER BY n.name ASC;'
-          ]
 
-        "Node::findAll().orderBy( { 'n.name': 'DESC' } )":
+        "Node::findAll().orderBy( { 'name': 'DESC' } )":
           [
-             Node::findAll().orderBy( { 'n.name': 'DESC' }),
-            'START n = node(*) RETURN n ORDER BY n.name DESC;'
+             Node::findAll().orderBy( { 'name': 'DESC' }),
+            'START n = node(*) WHERE ( HAS (n.`name`) ) RETURN n ORDER BY n.`name` DESC;'
           ]
 
         "Node::findAll().orderNodeBy({'name': 'ASC'})":
@@ -153,6 +148,13 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*), m = node(2) MATCH (n)-[r:know|like]->(m) RETURN r LIMIT 1;'
           ]
 
+
+        "Node::findOne().where({ 'name?': 'Alice'})":
+          [
+             Node::findOne().where({ 'name?': 'Alice' }),
+            "START n = node(*) WHERE ( n.`name`? = 'Alice' ) RETURN n LIMIT 1;"
+          ]
+
         "Node::findOne().where({name: 'Alice'}).outgoingRelationships()":
           [
              Node::findOne().where({name: 'Alice'}).outgoingRelationships(),
@@ -183,16 +185,16 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) WHERE ( HAS (n.`boolean_a`) ) AND ( HAS (n.`boolean_b`) ) AND ( HAS (n.`string_a`) ) AND ( HAS (n.`number_a`) ) AND ( HAS (n.`number_b`) ) AND ( HAS (n.`string_b`) ) AND ( HAS (n.`regex`) ) AND ( n.`boolean_a` = true AND n.`boolean_b` = false AND n.`string_a` = 'true' AND n.`number_a` = 123.2 AND n.`number_b` = 123 AND n.`string_b` = '123' AND n.`regex` =~ '[a-z]' ) RETURN n;"
           ]
         
-        "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name DESC')":
+        "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
-             Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name DESC'),
-            "START n = node(*) WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+             Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'}),
+            "START n = node(*) WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) AND ( HAS (n.`name`) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
 
-        "Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name DESC')":
+        "Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
-             Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy('n.name DESC'),
-            "START n = node(*) MATCH n:Actor WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.name DESC SKIP 2 LIMIT 10;"
+             Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'}),
+            "START n = node(*) MATCH n:Actor WHERE ( HAS (n.`name`) ) AND ( ( n.name =~ '(?i)alice' OR n.name =~ '(?i)bob' ) ) AND ( HAS (n.`name`) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
         
         "Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }":

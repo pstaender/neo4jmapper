@@ -129,6 +129,9 @@ var neo4jmapper_helpers = {};
       if (/^[nmr]\./.test(key))
         // we have already an identifier
         key = key;
+      else if (/[\?\!]$/.test(key))
+        // we have a default statement, escape without ! or ?
+        key = identifier+'.`'+key.replace(/[\?\!]$/,'')+'`'+key.substring(key.length-1)
       else
         key = identifier+'.`'+key+'`';
     }
@@ -207,7 +210,7 @@ var neo4jmapper_helpers = {};
       }
       if ( (!_is_operator.test(key)) && (/^[a-zA-Z\_\-\.]+$/.test(key)) ) {
         // remove identifiers if exists
-        attributes.push(key.replace(/^[abnr]{1}\./,''));
+        attributes.push(key.replace(/^[nmr]{1}\./,''));
       }
     });
     return _.uniq(attributes);

@@ -159,25 +159,51 @@ describe('Neo4jMapper', function() {
     });
   });
   describe('stream', function() {
-    it('expect to make a stream request on nodes', SkipInBrowser(function(done) {
-      return new Node().save(function() {
-        return Node.findAll().count(function(err, count) {
+    it('expect to make a stream request on nodes and models', SkipInBrowser(function(done) {
+      var Person, _ref2;
+
+      Person = (function(_super) {
+        __extends(Person, _super);
+
+        function Person() {
+          _ref2 = Person.__super__.constructor.apply(this, arguments);
+          return _ref2;
+        }
+
+        return Person;
+
+      })(Node);
+      Node.register_model(Person);
+      return new Person().save(function() {
+        return Person.findAll().count(function(err, count) {
           var iterationsCount;
 
           expect(err).to.be(null);
-          expect(count).to.be.above(1);
+          expect(count).to.be.above(0);
           iterationsCount = 0;
           if (count > 10) {
             count = 10;
           }
-          return Node.findAll().limit(count - 1).each(function(data) {
+          return Person.findAll().limit(count - 1).each(function(data) {
+            var iteration;
+
             if (data) {
               expect(data._response.self).to.be.a('string');
               expect(data.labels.constructor).to.be.equal(Array);
+              expect(data.label).to.be.equal('Person');
               return iterationsCount++;
             } else {
               expect(iterationsCount).to.be.equal(count - 1);
-              return done();
+              iteration = 0;
+              return Node.findOne().each(function(node) {
+                iteration++;
+                if (node) {
+                  return expect(node.label).to.be(null);
+                } else {
+                  expect(iteration).to.be.equal(2);
+                  return done();
+                }
+              });
             }
           });
         });
@@ -324,6 +350,8 @@ describe('Neo4jMapper', function() {
     it('expect to find many nodes with different labels', function(done) {
       var groupid;
 
+      Node.unregister_model('Person');
+      Node.unregister_model('Developer');
       groupid = new Date().getTime();
       return new Node({
         name: 'Alice',

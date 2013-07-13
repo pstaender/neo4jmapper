@@ -404,7 +404,7 @@ There are some steps to take, especially some methods for daily use are missing,
   * fix Relationship::update()
   * stream: browser compatible, debug options
   * nice(r) Documentation
-  * remove queue feature
+  * fix test for first testrun
 
 ## Terminal usage
 
