@@ -1010,12 +1010,11 @@ Node.prototype.query = function(cypherQuery, options, cb) {
     var query = null;
     if (this._stream_) {
       return this.neo4jrestful.stream(cypherQuery, options, function(data, debug) {
-        if ( (data) && (data[0]) ) {
-          var basicNode = Node.singleton().neo4jrestful.createObjectFromResponseData(data[0], DefaultConstructor);
-          basicNode.load(function(err, node) {
-            return cb(data[0]);
-          });
-          
+        var object = null;
+        if ( (data) && (data.__type__) ) {
+          cb(
+            Node.singleton().neo4jrestful.createObjectFromResponseData(data._response, DefaultConstructor)
+          );
         } else {
           return cb(data);
         }

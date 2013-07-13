@@ -198,7 +198,7 @@ Also with customized queries in mongodb query style
     .andWhereNode({ 'city': 'berlin' }, function(err, result) { /* … */ });
 ```
 
-### Iterate on large results
+### Iterate on large results (streaming)
 
 You can iterate instantly on results asynchronously with the `each` method, it processes the stream of the response:
 
@@ -211,7 +211,7 @@ You can iterate instantly on results asynchronously with the `each` method, it p
   });
 ```
 
-You can also process ”raw” queries with streaming:
+You can also process ”raw” queries with streaming (`each` is here a synonym for `stream`):
 
 ```js
   client.stream("START n=node(*) RETURN n;", function(node) {
@@ -220,6 +220,19 @@ You can also process ”raw” queries with streaming:
       console.log(node.toObject());
     else
       console.log('Done');
+  });
+```
+
+Keep in mind that there is **no extra loading executed on stream results** to keep the performance and response time as good as possible. If you want to load a object from a streaming result (if you need labels for instance), you have to trigger it explicitly:
+
+```js
+  Person.findAll().each(function(person) {
+    if (person) {
+      person.load(function(err, load){
+        // person is now fully loaded
+        console.log(person.toObject());
+      });
+    }
   });
 ```
 

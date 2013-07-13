@@ -118,21 +118,32 @@ describe 'Neo4jMapper', ->
 
   describe 'stream', ->
 
-    it 'expect to make a stream request on nodes', (SkipInBrowser) (done) ->
-      new Node().save ->
-        Node.findAll().count (err, count) ->
+    it 'expect to make a stream request on nodes and models', (SkipInBrowser) (done) ->
+      class Person extends Node
+      Node.register_model(Person)
+      new Person().save ->
+        Person.findAll().count (err, count) ->
           expect(err).to.be null
           expect(count).to.be.above 1
           iterationsCount = 0;
           count = 10 if count > 10
-          Node.findAll().limit(count-1).each (data) ->
+          Person.findAll().limit(count-1).each (data) ->
             if data
               expect(data._response.self).to.be.a 'string'
               expect(data.labels.constructor).to.be.equal Array
+              expect(data.label).to.be.equal 'Person'
               iterationsCount++
             else
               expect(iterationsCount).to.be.equal count-1
-              done()
+              iteration = 0
+              # testing finding unspecific node(s)
+              Node.findOne().each (node) ->
+                iteration++
+                if node
+                  expect(node.label).to.be null
+                else
+                  expect(iteration).to.be.equal 2
+                  done()
 
     it 'expect to make a stream request on the graph', (SkipInBrowser) (done) ->
       Node.findAll().count (err, count) ->
@@ -227,6 +238,8 @@ describe 'Neo4jMapper', ->
         done()
 
     it 'expect to find many nodes with different labels', (done) ->
+      Node.unregister_model('Person')
+      Node.unregister_model('Developer')
       groupid = new Date().getTime()
       new Node(name: 'Alice', group_id: groupid).addLabel('Person').save (err, alice) ->
         expect(err).to.be null
