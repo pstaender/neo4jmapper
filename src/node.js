@@ -649,7 +649,13 @@ Node.prototype.populateWithDataFromResponse = function(data) {
     }
   }
   node.is_persisted = true;
+  if (typeof node.onAfterPopulate === 'function')
+    node.onAfterPopulate();
   return node;
+}
+
+Node.prototype.onAfterPopulate = function() {
+  return this;
 }
 
 /*
@@ -1898,6 +1904,10 @@ Node.find = function(where, cb) {
 
 Node.findOrCreate = function(where, cb) {
   return this.prototype.findOrCreate(where, cb);
+}
+
+Node.query = function(cypherQuery, options, cb) {
+  return this.prototype.singleton().query(cypherQuery, options, cb);
 }
 
 Node.register_model = function(Class, label, cb) {

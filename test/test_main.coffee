@@ -121,29 +121,30 @@ describe 'Neo4jMapper', ->
     it 'expect to make a stream request on nodes and models', (SkipInBrowser) (done) ->
       class Person extends Node
       Node.register_model(Person)
-      new Person().save ->
-        Person.findAll().count (err, count) ->
-          expect(err).to.be null
-          expect(count).to.be.above 0
-          iterationsCount = 0;
-          count = 10 if count > 10
-          Person.findAll().limit(count-1).each (data) ->
-            if data
-              expect(data._response.self).to.be.a 'string'
-              expect(data.labels.constructor).to.be.equal Array
-              expect(data.label).to.be.equal 'Person'
-              iterationsCount++
-            else
-              expect(iterationsCount).to.be.equal count-1
-              iteration = 0
-              # testing finding unspecific node(s)
-              Node.findOne().each (node) ->
-                iteration++
-                if node
-                  expect(node.label).to.be null
-                else
-                  expect(iteration).to.be.equal 2
-                  done()
+      new Person({name: 'A'}).save ->
+        new Person({name: 'B'}).save ->
+          Person.findAll().count (err, count) ->
+            expect(err).to.be null
+            expect(count).to.be.above 0
+            iterationsCount = 0;
+            count = 10 if count > 10
+            Person.findAll().limit(count-1).each (data) ->
+              if data
+                expect(data._response.self).to.be.a 'string'
+                expect(data.labels.constructor).to.be.equal Array
+                expect(data.label).to.be.equal 'Person'
+                iterationsCount++
+              else
+                expect(iterationsCount).to.be.equal count-1
+                iteration = 0
+                # testing finding unspecific node(s)
+                Node.findOne().each (node) ->
+                  iteration++
+                  if node
+                    expect(node.label).to.be null
+                  else
+                    expect(iteration).to.be.equal 2
+                    done()
 
     it 'expect to make a stream request on the graph', (SkipInBrowser) (done) ->
       Node.findAll().count (err, count) ->
@@ -707,7 +708,8 @@ describe 'Neo4jMapper', ->
     it 'expect to create a relationship between nodes in any direction', (done) ->
       alice = new Node name: 'Alice'
       bob = new Node name: 'Bob'
-      alice.save -> bob.save ->
+      charles = new Node name: 'Charles'
+      alice.save -> bob.save -> charles.save ->
         graphdb.countRelationships (err, countedRelationshipsBefore) ->
           alice.createRelationshipBetween bob, 'knows', { since: 'years' }, (err, result) ->
             expect(err).to.be null
@@ -728,7 +730,6 @@ describe 'Neo4jMapper', ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
                       # console.log bob.neo4jrestful.header
                       bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
-
                         expect(err).to.be null
                         expect(relationship).to.be.an 'object'
                         expect(relationship.type).to.be.equal 'follows'
@@ -745,8 +746,14 @@ describe 'Neo4jMapper', ->
                             expect(relationship.id).to.be.equal id
                             graphdb.countRelationships (err, count) ->
                               expect(count).to.be.equal countedRelationshipsFinally
-                              alice.removeWithRelationships -> bob.removeWithRelationships ->
-                                done()
+                              charles.createOrUpdateRelationshipTo bob, 'follows', { since: 'days' }, (err, relationship) ->
+                                expect(err).to.be null
+                                bob.incomingRelationships().count (err, count) ->
+                                  expect(count).to.be 3
+                                  graphdb.countRelationships (err, count) ->
+                                    expect(count).to.be.equal countedRelationshipsFinally + 1
+                                    alice.removeWithRelationships -> bob.removeWithRelationships -> charles.removeWithRelationships ->
+                                      done()
 
     it 'expect to create and get incoming, outgoing and bidirectional relationships between two nodes', (done) ->
       node = new Node()

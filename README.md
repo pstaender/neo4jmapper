@@ -73,15 +73,22 @@ or shorter with
 
 ### Classes and Models
 
-Since JavaScript has no classes, you must extend the `Node` object with your own constructor or extend with the `label` and `constructor_name` attributes, so that neo4jmapper can detect a name for your model. Alternatively you can create a Node object and set the `label` attribute with your model name each time you need it.
+Since JavaScript has no classes, you must extend the `Node` object with your own constructor so that neo4jmapper can detect a name for your model. You can also set the `label` property to enable label support.
 
-Every defined model will enjoy the label feature of neo4j by default. 
+Every defined model will enjoy the label feature of neo4j by default.
+
+Example in CoffeeScript:
 
 ```coffeescript
   # coffeescript and it`s class pattern
   # is the most convenient way to define models
 
   class Person extends Node
+    fields:
+      indexes:
+        email: true
+      defaults:
+        created_on: -> new Date().getTime()
     fullname: ->
       s = @firstName + " " + @surname
       s.trim()
@@ -99,53 +106,66 @@ Every defined model will enjoy the label feature of neo4j by default.
     
 ```
 
-To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well. The example demonstrates how to define a model (same as above) in JavaScript:
+To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well.
+
+The same as above in JavaScript:
 
 ```js
-  var Movie = (function(Node) {
+  var Person = (function(Node) {
 
-  function Movie(data, id) {
-    // this is necessary to give the constructed node a name context
-    this.init.apply(this, arguments);
-  }
+    function Person() {
+      // this is necessary to give the constructed node a name context
+      this.init.apply(this, arguments);
+    }
 
-    _.extend(Movie.prototype, Node.prototype);
+    _.extend(Person.prototype, Node.prototype);
 
-    Movie.prototype.fields = {
+    Person.prototype.fields = {
+      indexes: {
+        email: true
+      },
       defaults: {
-        genre: 'Blockbuster'
+        created_on: function() {
+          return new Date().getTime();
+        }
       }
     };
+
+    Person.prototype.fullname = function() {
+      var s = this.firstName + " " + this.surname
+      return s.trim();
+    }
     
-    return Movie;
+    return Person;
   })(Node);
 
-  Node.prototype.register_model(Movie);
+  Node.prototype.register_model(Person);
 
-  pulpFiction = new Movie({
-    title: 'Pulp Fiction' 
+  var alice = new Person({firstName: 'Alice', surname: 'Springs'});
+  alice.fullname();
+  ~> 'Alice Springs'
+  alice.save(function(err,alice) {
+    alice.label;
+    ~> 'Person'
   });
-
-  pulpFiction.data.director = 'Quentin Tarantino';
-  pulpFiction.data.year = 1994;
-  pulpFiction.save(function(err,movie){
-    console.log('Label: ', movie.label);
-    console.log('Created movie: ', movie.toObject());
-  });
+    
 ```
 
 ### Connect Nodes
 
 ```js
+  /* alice - knows -> bob */
   alice.createRelationshipTo(bob, 'knows', { since: 'years' }, function(err) {
+    /* bob - likes -> alice */
     bob.createRelationshipTo(alice, 'likes', { since: 'week' }, function(err) {
-      console.log(alice.toObject());
-      console.log(bob.toObject());
+      /* creates a relationship of type 'likes' if not exists, updates otherwise
+         alice - knows -> bob */
+      alice.createOrUpdateRelationshipTo(bob, 'knows', { since: 'a while' }, function(err, relationship) {
+        /* … */
+      })
     });
   });
 ```
-
-You can also **create distinct relationships** with `createOrUpdateRelationshipBetween`, `createOrUpdateRelationshipTo`.
 
 ### Query Relationship in various kinds
 
@@ -534,6 +554,18 @@ On all `Node.find*()` queries the results run through a load process (loading th
         // …
         done(err, null);
       });
+  }
+```
+
+#### onAfterPopulate
+
+If a node is populated with data from a response, you can process your node/data here. This method is called synchronous.
+
+```js
+  Node.prototype.onAfterPopulate = function() {
+    if ((this.data.firstname)&&(this.data.surname)) {
+      this.data.name = this.data.firstname + ' ' + this.data.surname;
+    }
   }
 ```
 
