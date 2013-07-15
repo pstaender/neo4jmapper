@@ -95,7 +95,7 @@ Example in CoffeeScript:
 
   # optional but strongly recommend
   # so that neo4jmapper can instantiate found labeled nodes with the respective model/constructor
-  Node::register_model(Person)
+  Node.register_model(Person)
 
   alice = new Person firstName: 'Alice', surname: 'Springs'
   alice.fullname()
@@ -108,40 +108,14 @@ Example in CoffeeScript:
 
 To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well.
 
-The same as above in JavaScript:
+The same as above in pure JavaScript:
 
 ```js
-  var Person = (function(Node) {
-
-    function Person() {
-      // this is necessary to give the constructed node a name context
-      this.init.apply(this, arguments);
-    }
-
-    _.extend(Person.prototype, Node.prototype);
-
-    Person.prototype.fields = {
-      indexes: {
-        email: true
-      },
-      defaults: {
-        created_on: function() {
-          return new Date().getTime();
-        }
-      }
-    };
-
-    Person.prototype.fullname = function() {
-      var s = this.firstName + " " + this.surname
-      return s.trim();
-    }
-    
-    return Person;
-  })(Node);
-
-  Node.prototype.register_model(Person);
+  // here we define a model by a string and not by constructor as shown in the coffeescript example 
+  var Person = Node.register_model('Person');
 
   var alice = new Person({firstName: 'Alice', surname: 'Springs'});
+  
   alice.fullname();
   ~> 'Alice Springs'
   alice.save(function(err,alice) {

@@ -1880,11 +1880,23 @@ Node.query = function(cypherQuery, options, cb) {
 }
 
 Node.register_model = function(Class, label, cb) {
-  var name = helpers.constructorNameOfFunction(Class);
-  if (typeof label === 'string') {
-    name = label; 
-  } else {
+  var name = null;
+  if (typeof Class === 'string') {
     cb = label;
+    label = name = Class;
+    // we define here an anonymous constructor
+    Class = function() {
+      this.init.apply(this, arguments);
+      this.label = this.constructor_name = label;
+    }
+    _.extend(Class.prototype, Node.prototype);
+  } else {
+    name = helpers.constructorNameOfFunction(Class);
+    if (typeof label === 'string') {
+      name = label; 
+    } else {
+      cb = label;
+    }
   }
   Node.__models__[name] = Class;
   Class.prototype.initialize(cb);
