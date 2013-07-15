@@ -185,14 +185,18 @@ Also with customized queries in mongodb query style
     )
     .skip(2)
     .limit(10)
-    .orderBy({ 'n.name': 'DESC' }, function(err, result) { /* … */ });
+    .orderBy({ 'n.name': 'DESC' }, function(err, result) {
+      /* … */
+    });
 ```
 
 ```js
   Node
     .findOne()
     .whereNodeHasProperty('name')
-    .andWhereNode({ 'city': 'berlin' }, function(err, result) { /* … */ });
+    .andWhereNode({ 'city': 'berlin' }, function(err, result) {
+      /* … */
+    });
 ```
 
 ### Iterate on large results (streaming)
@@ -264,15 +268,15 @@ We distinct between **remove** and **delete**.
   Node
     .find()
     .andWhereNode({ name: "Bob"})
-    .delete();
-  ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
+    .delete(cb);
+  ~> 'START n = node(*)  WHERE ( HAS (n.`name`) ) AND ( n.`name` = 'Bob' ) DELETE n;'
   Node
     .findOne()
     .whereNode({ name: "Bob"}, function(err, bob) {
-    // Remove Bob node (if found)
-    if (bob)
-      bob.remove();
-  });
+      // Remove Bob node (if found)
+      if (bob)
+        bob.remove();
+    });
 ```
 
 ##  CRUD and beyond
@@ -403,20 +407,9 @@ There are some steps to take, especially some methods for daily use are missing,
   * nice(r) Documentation
   * fix test for first testrun
 
-## Terminal usage
+## Testing on console in the browser
 
-For quick testing you can also use the nodejs or coffeescript console (this example is on the coffeescript console), but without the ability to make requests because you need to define callbacks for that:
-
-```sh
-  
-  $ coffeescript
-  
-  coffee> {Graph,Node} = require('./src/index.js')('http://localhost:7474')
-  { Node: [Function: Node],
-  …
-  coffee> Node.findOne().toCypherQuery()
-  'START n = node(*)    RETURN n   LIMIT 1;'
-```
+You'll find a ready-to-use-console in `examples/browser/console/console.html` or on https://pstaender.github.io/neo4jmapper/examples/browser/console/console.html
 
 ## Tests
 
