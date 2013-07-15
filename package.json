@@ -25,7 +25,8 @@
     "preinstall": "npm i -g coffee-script mocha-lcov-reporter",
     "blanket": {
       "pattern": "src"
-    }
+    },
+    "doc": "docco src/*.js"
   },
   "devDependencies": {
     "mocha": "~1.9",

@@ -7,3 +7,4 @@ test/*.map
 test/coverage.html
 src-cov/*
 coverage.lcov
+docs/*

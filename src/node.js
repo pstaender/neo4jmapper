@@ -1,62 +1,66 @@
+// ## Node Object
+//
+// The Node object is to create, connect and query all kind of Node(s).
+// You can register your own model
+
+// private variables
 var helpers = null
   , _ = null
   , Sequence = null;
 
+// requirements if browser
 if (typeof window === 'object') {
   // browser
   // TODO: find a solution for bson object id
   helpers  = neo4jmapper_helpers;
   _        = window._;
   Sequence = window.Sequence;
-} else {
-  // nodejs
+}
+// requirements if nodejs
+else {
   helpers  = require('./helpers');
   _        = require('underscore');
   Sequence = require('./lib/sequence');
 }
 
 var cypher_defaults = {
-  limit: '',
-  skip: '',
-  sort: '',
-  filter: '',
-  match: '',
-  start: '',
-  set: '',
-  return_properties: [],
-  where: [],
-  // and_where: [],
-  from: null,
-  to: null,
-  direction: null,
-  order_by: '',
-  order_direction: '', // ASC or DESC
-  relation: '',
-  outgoing: null,
-  incoming: null,
-  With: null,
-  distinct: null,
-  label: null,
-  node_identifier: null, // can be a|b|n
-  by_id: null,
-  // flasgs
+  limit: '',              // Number
+  skip: '',               // Number
+  filter: '',             // `FILTER`   statement
+  match: '',              // `MATCH`    statement
+  start: '',              // `START`    statement
+  set: '',                // `SET`      statement
+  With: null,             // `WITH`     statement
+  distinct: null,         // `DISTINCT` option
+  return_properties: [],  // [a|b|n|r|p], will be joined with `, `
+  where: [],              // `WHERE`  statements, will be joined with `AND`
+  from: null,             // Number
+  to: null,               // Number
+  direction: null,        // (incoming|outgoing|all)
+  order_by: '',           // $property
+  order_direction: '',    // (ASC|DESC)
+  relationship: '',       // String
+  outgoing: null,         // Boolean
+  incoming: null,         // Boolean
+  label: null,            // String
+  node_identifier: null,  // [a|b|n]
+  // Boolean flags
   _count: null,
   _distinct: null,
   by_id: null
 };
 
-/*
- * Constructor
- */
+// ### Constructor
+// calls this.init(data,id) to set all values to default
 Node = function Node(data, id) {
   // will be used for labels and classes
   if (!this.constructor_name)
     this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
   // each node object has it's own restful client
-  //this.neo4jrestful = new Node.prototype.neo4jrestful.constructor(Node.prototype.neo4jrestful.baseUrl);
   this.init(data, id);
 }
 
+// ### Initialize all values on node object
 Node.prototype.init = function(data, id) {
   this.id = id || null;
   this.data = _.extend({}, data);
@@ -81,11 +85,9 @@ Node.prototype.init = function(data, id) {
   this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);
 }
 
-/*
- * Instantiate a node from a specific model
- * Model can be a constructor() or a 'string'
- * and must be registered in Node::registered_models()
- */
+// ### Instantiate a node from a specific model
+// Model can be a constructor() or a String
+// and must be registered in Node.registered_models()
 Node.prototype.convert_node_to_model = function(node, model, fallbackModel) {
   if (node.hasId()) {
     if (typeof fallbackModel !== 'function')
@@ -107,34 +109,37 @@ Node.prototype.convert_node_to_model = function(node, model, fallbackModel) {
   return null;
 }
 
-Node.__models__ = {}; // contains globally all registeresd models
+Node.__models__ = {};                             // contains globally all registeresd models
 
-Node.prototype.neo4jrestful = null; // will be initialized
-Node.prototype.data = {};
-Node.prototype.id = null;
-Node.prototype._id_ = null; // _id_ is the private key store to ensure that this.id deosn't get manipulated accidently
+Node.prototype.neo4jrestful = null;               // will be initialized
+Node.prototype.data = {};                         // will contain all data for the node
+Node.prototype.id = null;                         // ”public“ id attribute
+Node.prototype._id_ = null;                       // ”public“ id attribute (to ensure that this.id deosn't get manipulated accidently)
+// can be used to define schema-like-behavior
+// TODO: implement unique
 Node.prototype.fields = {
   defaults: {},
   indexes: {},
   unique: {}
 };
 
-Node.prototype.uri = null;
-Node.prototype._response = null;
-Node.prototype._modified_query = false;
-Node.prototype._stream_ = null; // flag for processing result data
-Node.prototype.is_singleton = false;
-Node.prototype.is_persisted = false;
-Node.prototype.cypher = {};
-Node.prototype.is_instanced = null;
+Node.prototype.uri = null;                        // uri of the node
+Node.prototype._response = null;                  // original response object
+Node.prototype._modified_query_ = false;          // flag to remember that a query chaining method was invoked 
+Node.prototype._stream_ = null;                   // flag for processing result data
+Node.prototype.is_singleton = false;              // flag that this object is a singleton
+Node.prototype.is_persisted = false;              // flag that this object is stored at least once in the db
+Node.prototype.cypher = {};                       // will be overwritten with the default values of `cypher_defaults`
+Node.prototype.is_instanced = null;               // flag that this object is instanced
 
-Node.prototype.labels = null;
-Node.prototype.label = null;
-Node.prototype.constructor_name = null;
+Node.prototype.labels = null;                     // an array of all labels
+Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
+//TODO: check that it's still needed
+Node.prototype.constructor_name = null;           // will be with the name of the function of the constructor
 
-Node.prototype._load_hook_reference_ = null;
+Node.prototype._load_hook_reference_ = null;      // a reference to acticate or deactivate the load hook
 
-Node.prototype.__already_initialized__ = false; // flag to avoid many initializations
+Node.prototype.__already_initialized__ = false;   // flag to avoid many initializations of a model
 
 // you should **never** change this value
 // it's used to dictinct nodes and relationships
@@ -143,7 +148,11 @@ Node.prototype.__already_initialized__ = false; // flag to avoid many initializa
 Node.prototype.__type__ = 'node';
 Node.prototype.__type_identifier__ = 'n';
 
-
+// ### Create a singleton
+// Here a singleton is a node object that is used as
+// a placeholder to use all `static` methods on the node object.
+// To avoid conflicts on async usage, each singleton is it's own instance
+// Example Usage: `Node.singleton().findOne().where()`
 Node.prototype.singleton = function(id, label) {
   var Class = this.constructor;
   var node = new Class({},id);
@@ -155,8 +164,12 @@ Node.prototype.singleton = function(id, label) {
   return node;
 }
 
+// ### Initializes the model
+// Calls the onBeforeInitialize & onAfterInitialize hook
+// The callback can be used to ensure that all async processes are finished
 Node.prototype.initialize = function(cb) {
   var self = this;
+  // here a callback is optional
   if (typeof cb !== 'function')
     cb = function() { /* /dev/null */ };
   if (!this.__already_initialized__) {
@@ -168,8 +181,17 @@ Node.prototype.initialize = function(cb) {
   }
 }
 
-Node.prototype.onBeforeInitialize = function(next) { next(null,null); }
+// ### Hook: onBeforeInitialize
+// Can be monkey-pacthed and be used to execute code
+// on prototype base during registering a model
+// HINT: call the cb() finnaly  
+Node.prototype.onBeforeInitialize = function(next) {
+  next(null,null);
+}
 
+// ### Internal Hook: onAfterInitialize
+// Ensures indexes on all defined fields
+// TODO: implement ensure unique fields
 Node.prototype.onAfterInitialize = function(cb) {
   var self = this;
   this.__already_initialized__ = true;
@@ -203,9 +225,7 @@ Node.prototype.onAfterInitialize = function(cb) {
   }
 }
 
-/*
- * Copys only the relevant data(s) of a node to another object
- */
+// Copys only the node's relevant data(s) to another object
 Node.prototype.copyTo = function(n) {
   n.id = n._id_ = this._id_;
   n.data   = _.extend(this.data);
@@ -223,7 +243,7 @@ Node.prototype.resetQuery = function() {
   this.cypher.where = [];
   this.cypher.match = [];
   this.cypher.return_properties = [];
-  this._modified_query = false;
+  this._modified_query_ = false;
   if (this.id)
     this.cypher.from = this.id;
   return this; // return self for chaining
@@ -242,7 +262,7 @@ Node.prototype.flattenData = function(useReference) {
   // strongly recommend not to mutate attached node's data
   if (typeof useReference !== 'boolean')
     useReference = false;
-  this._modified_query = false;
+  this._modified_query_ = false;
   if ((typeof this.data === 'object') && (this.data !== null)) {
     var data = (useReference) ? this.data : _.extend(this.data);
     data = helpers.flattenObject(data);
@@ -260,7 +280,7 @@ Node.prototype.unflattenData = function(useReference) {
   // strongly recommend not to mutate attached node's data
   if (typeof useReference !== 'boolean')
     useReference = false;
-  this._modified_query = false;
+  this._modified_query_ = false;
   var data = (useReference) ? this.data : _.extend(this.data);
   return helpers.unflattenObject(data);
 }
@@ -457,7 +477,7 @@ Node.prototype.onSave = function(cb) {
     return cb(Error('Singleton instances can not be persisted'), null);
   if (!this.hasValidData())
     return cb(Error('Node does not contain valid data. `node.data` must be an object.'));
-  this._modified_query = false;
+  this._modified_query_ = false;
   this.applyDefaultValues();
   var method = null;
 
@@ -603,7 +623,7 @@ Node.prototype.populateWithDataFromResponse = function(data) {
     node = new Node();
   else
     node = this;
-  node._modified_query = false;
+  node._modified_query_ = false;
   if (data) {
     if (_.isObject(data) && (!_.isArray(data)))
       node._response = data;
@@ -636,7 +656,7 @@ Node.prototype.withLabel = function(label, cb) {
   // return here if we have an instances node
   if ( (self.hasId()) || (typeof label !== 'string') )
     return self; // return self for chaining
-  self._modified_query = true;
+  self._modified_query_ = true;
   self.cypher.label = label;
   self.exec(cb);
   return self; // return self for chaining
@@ -700,7 +720,7 @@ Node.prototype.pathBetween = function(start, end, options, cb) {
 }
 
 Node.prototype.count = function(identifier, cb) {
-  this._modified_query = true;
+  this._modified_query_ = true;
   this.cypher._count = true;
   if (typeof identifier === 'function') {
     cb = identifier;
@@ -761,8 +781,6 @@ Node.prototype._prepareQuery = function() {
 
   // build in/outgoing directions
   if ((query.incoming)||(query.outgoing)) {
-    // query.outgoing = (query.outgoing) ? query.outgoing : '-';
-    // query.incoming = (query.incoming) ? query.incoming : '-';
     var x = '';
     var y = '';
     if ((query.incoming)&&(query.outgoing))
@@ -1026,7 +1044,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
 
 Node.prototype.incomingRelationships = function(relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query = true;
+  self._modified_query_ = true;
   if (typeof relation !== 'function') {
     self.cypher.relationship = relation;
   } else {
@@ -1044,7 +1062,7 @@ Node.prototype.incomingRelationships = function(relation, cb) {
 
 Node.prototype.outgoingRelationships = function(relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query = true;
+  self._modified_query_ = true;
   if (typeof relation !== 'function') {
     self.cypher.relationship = relation;
   } else {
@@ -1062,7 +1080,7 @@ Node.prototype.outgoingRelationships = function(relation, cb) {
 
 Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query = true;
+  self._modified_query_ = true;
   self.cypher.from = self.id || null;
   self.cypher.to = helpers.getIdFromObject(node);
   if (typeof relation !== 'function')
@@ -1073,7 +1091,7 @@ Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
 
 Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query = true;
+  self._modified_query_ = true;
   self.cypher.to = helpers.getIdFromObject(node);
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
@@ -1083,7 +1101,7 @@ Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
 
 Node.prototype.allDirections = function(relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query = true;
+  self._modified_query_ = true;
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
   self.cypher.node_identifier = 'n';
@@ -1097,7 +1115,7 @@ Node.prototype.allDirections = function(relation, cb) {
 
 Node.prototype.relationshipsBetween = function(node, relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query = true;
+  self._modified_query_ = true;
   self.cypher.to = helpers.getIdFromObject(node);
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
@@ -1115,7 +1133,7 @@ Node.prototype.allRelationships = function(relation, cb) {
     cb = relation;
     relation = '';
   }
-  self._modified_query = true;
+  self._modified_query_ = true;
   self.cypher.match.push('n'+label+'-[r'+relation+']-()');
   self.cypher.return_properties = ['r'];
   self.exec(cb);
@@ -1123,7 +1141,7 @@ Node.prototype.allRelationships = function(relation, cb) {
 }
 
 Node.prototype.limit = function(limit, cb) {
-  this._modified_query = true;
+  this._modified_query_ = true;
   this.cypher.limit = Number(limit);
   if (this.cypher.action === 'DELETE')
     throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
@@ -1132,21 +1150,21 @@ Node.prototype.limit = function(limit, cb) {
 }
 
 Node.prototype.skip = function(skip, cb) {
-  this._modified_query = true;
+  this._modified_query_ = true;
   this.cypher.skip = Number(skip);
   this.exec(cb);
   return this; // return self for chaining
 }
 
 Node.prototype.distinct = function(cb) {
-  this._modified_query = true;
+  this._modified_query_ = true;
   this.cypher._distinct = true;
   this.exec(cb);
   return this; // return self for chaining
 }
 
 Node.prototype.orderBy = function(property, cb, identifier) {
-  this._modified_query = true;
+  this._modified_query_ = true;
   var direction = '';
   if (typeof property === 'object') {
     var key = Object.keys(property)[0];
@@ -1209,13 +1227,13 @@ Node.prototype.match = function(string, cb) {
 }
 
 Node.prototype.where = function(where, cb) {
-  this._modified_query = true;
+  this._modified_query_ = true;
   this.cypher.where = [];
   return this.andWhere(where, cb);
 }
 
 Node.prototype.andWhere = function(where, cb, _options) {
-  this._modified_query = true;
+  this._modified_query_ = true;
   if (_.isObject(where)) {
     if (Object.keys(where).length === 0) {
       // return here
@@ -1280,7 +1298,7 @@ Node.prototype.whereHasProperty = function(property, identifier, cb) {
     cb = identifier;
     identifier = null;
   }
-  this._modified_query = true;
+  this._modified_query_ = true;
   if (typeof property !== 'string') {
     // we need a property to proceed
     return cb(Error('Property name is mandatory.'),null);
@@ -1321,7 +1339,7 @@ Node.prototype.whereRelationshipHasProperty = function(property, cb) {
 Node.prototype.delete = function(cb) {
   if (this.hasId())
     return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
-  this._modified_query = true;
+  this._modified_query_ = true;
   this.cypher.action = 'DELETE';
   if (this.cypher.limit)
     throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
@@ -1639,7 +1657,7 @@ Node.prototype.removeLabels = function(cb) {
 Node.prototype.addIndex = function(namespace, key, value, cb) {
   if (this.is_singleton)
     return cb(Error('Singleton instance is not allowed to get persist.'), null);
-  this._modified_query = false;
+  this._modified_query_ = false;
   if ( (!namespace) || (!key) || (!value) || (!_.isFunction(cb)) )
     throw Error('namespace, key and value arguments are mandatory for indexing.');
   if (!this.hasId())
@@ -1684,7 +1702,7 @@ Node.prototype.find = function(where, cb) {
   var self = this;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
-  self._modified_query = true;
+  self._modified_query_ = true;
   if (self.label) self.withLabel(self.label);
   if ((typeof where === 'string')||(typeof where === 'object')) {
     self.where(where);
@@ -1780,7 +1798,7 @@ Node.prototype.findAll = function(cb) {
   var self = this;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
-  self._modified_query = true;
+  self._modified_query_ = true;
   self.cypher.limit = null;
   self.cypher.return_properties = ['n'];
   if (self.label) self.withLabel(self.label);
