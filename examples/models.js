@@ -14,5 +14,9 @@ pulpFiction = new Movie({
 pulpFiction.data.director = 'Quentin Tarantino';
 pulpFiction.data.year = 1994;
 pulpFiction.save(function(err,movie){
-  console.log('Created movie: ', movie.toObject());
+  console.log('created movie: ', movie.toObject());
+  Movie.findOne(function(err, movie) {
+    console.log('1st found movie: ', movie.toObject());
+  });
 });
+

@@ -67,7 +67,7 @@ describe('Neo4jMapper (cypher queries)', function() {
       return Actor;
 
     })(Node);
-    Node.prototype.register_model(Actor);
+    Node.register_model(Actor);
     node = new Node();
     results = [];
     map = {

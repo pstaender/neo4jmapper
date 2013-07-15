@@ -2,21 +2,19 @@
 
 [![Build Status](https://api.travis-ci.org/pstaender/neo4jmapper.png)](https://travis-ci.org/pstaender/neo4jmapper)
 
-Neo4jMapper is an **object mapper for neo4j databases**. It's written in JavaScript and ready for server- and clientside use.
+Neo4jMapper is an **object mapper for neo4j databases**. It's written in JavaScript and ready for server- and clientside use. All operations are performed asynchronously since it's using neo4j's REST api. 
 
 ## Why another neo4j client?
 
-What if working with neo4j feels natively and familiar as working with mongodb in javascript?
+Neo4jMapper offers query building and object mapping for the daily neo4j usage in JavaScript. If you have worked already with mongodb (in particular with mongoose) you'll find many similarities:
 
-And what if the same applies to building query for Nodes and Relationships?
+  * querying Nodes and Relationships (basic and advanced) by object-chaining
+  * using object modeling for label-, index-, default-value- and data-processing-support
+  * schema-less but with json to key-value-storage support (flatten/unflatten, escaping …)
 
-Neo4jMapper brings basic object-mapping and comfortable query building for the daily neo4j usage.
-
-**Neo4jMapper is currently Beta - api may change a bit for better usage - and works exclusively with Neo4j v2+** - there will be no support for earlier versions  because the label feature is essential for the mapping.
+**Neo4jMapper is beta until Neo4j v2 is officially released**. It's working exclusively with Neo4j v2+ and there will be no support for earlier versions because the label feature is essential for the mapping.
 
 ## How to use
-
-To reduce code, the following examples are written in CoffeeScript. But neo4jmapper is also designed for pure JavaScript usage.
 
 ### Installation
 
@@ -115,7 +113,7 @@ The same as above in pure JavaScript:
   var Person = Node.register_model('Person');
 
   var alice = new Person({firstName: 'Alice', surname: 'Springs'});
-  
+
   alice.fullname();
   ~> 'Alice Springs'
   alice.save(function(err,alice) {

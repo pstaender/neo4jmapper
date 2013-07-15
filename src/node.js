@@ -558,7 +558,7 @@ Node.prototype.onBeforeLoad = function(node, next) {
   if (node.hasId()) {
     var DefaultConstructor = this.recommendConstructor();
     // To check that it's invoked by Noder::find() or Person::find()
-    var constructorNameOfStaticMethod = helpers.constructorNameOfFunction(DefaultConstructor);
+    var constructorNameOfStaticMethod = this.label || helpers.constructorNameOfFunction(DefaultConstructor);
     node.allLabels(function(err, labels, debug) {
       if (err)
         return next(err, labels);
@@ -1889,7 +1889,8 @@ Node.register_model = function(Class, label, cb) {
       this.init.apply(this, arguments);
       this.label = this.constructor_name = label;
     }
-    _.extend(Class.prototype, Node.prototype);
+    _.extend(Class, Node); // 'static' methods
+    _.extend(Class.prototype, Node.prototype); // object methods
   } else {
     name = helpers.constructorNameOfFunction(Class);
     if (typeof label === 'string') {

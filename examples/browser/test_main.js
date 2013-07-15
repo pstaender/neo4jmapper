@@ -174,37 +174,43 @@ describe('Neo4jMapper', function() {
 
       })(Node);
       Node.register_model(Person);
-      return new Person().save(function() {
-        return Person.findAll().count(function(err, count) {
-          var iterationsCount;
+      return new Person({
+        name: 'A'
+      }).save(function() {
+        return new Person({
+          name: 'B'
+        }).save(function() {
+          return Person.findAll().count(function(err, count) {
+            var iterationsCount;
 
-          expect(err).to.be(null);
-          expect(count).to.be.above(0);
-          iterationsCount = 0;
-          if (count > 10) {
-            count = 10;
-          }
-          return Person.findAll().limit(count - 1).each(function(data) {
-            var iteration;
-
-            if (data) {
-              expect(data._response.self).to.be.a('string');
-              expect(data.labels.constructor).to.be.equal(Array);
-              expect(data.label).to.be.equal('Person');
-              return iterationsCount++;
-            } else {
-              expect(iterationsCount).to.be.equal(count - 1);
-              iteration = 0;
-              return Node.findOne().each(function(node) {
-                iteration++;
-                if (node) {
-                  return expect(node.label).to.be(null);
-                } else {
-                  expect(iteration).to.be.equal(2);
-                  return done();
-                }
-              });
+            expect(err).to.be(null);
+            expect(count).to.be.above(0);
+            iterationsCount = 0;
+            if (count > 10) {
+              count = 10;
             }
+            return Person.findAll().limit(count - 1).each(function(data) {
+              var iteration;
+
+              if (data) {
+                expect(data._response.self).to.be.a('string');
+                expect(data.labels.constructor).to.be.equal(Array);
+                expect(data.label).to.be.equal('Person');
+                return iterationsCount++;
+              } else {
+                expect(iterationsCount).to.be.equal(count - 1);
+                iteration = 0;
+                return Node.findOne().each(function(node) {
+                  iteration++;
+                  if (node) {
+                    return expect(node.label).to.be(null);
+                  } else {
+                    expect(iteration).to.be.equal(2);
+                    return done();
+                  }
+                });
+              }
+            });
           });
         });
       });
@@ -1090,30 +1096,58 @@ describe('Neo4jMapper', function() {
       });
     });
     return it('expect to find or create a node', function(done) {
-      var uid;
+      var User, uid, _ref2;
 
       uid = new Date().getTime();
-      return Node.findOrCreate({
-        uid: uid,
-        name: 'Node'
-      }, function(err, found) {
-        var id;
+      User = (function(_super) {
+        __extends(User, _super);
 
-        expect(err).to.be(null);
-        expect(found.data.uid).to.be.equal(uid);
-        expect(found.data.name).to.be.equal('Node');
-        expect(found.id).to.be.above(0);
-        id = found.id;
-        return Node.findOrCreate({
-          uid: uid
+        function User() {
+          _ref2 = User.__super__.constructor.apply(this, arguments);
+          return _ref2;
+        }
+
+        User.prototype.fields = {
+          indexes: {
+            uid: true,
+            name: true
+          }
+        };
+
+        return User;
+
+      })(Node);
+      return User.ensureIndex(function(err) {
+        return User.findOrCreate({
+          uid: uid,
+          name: 'Node'
         }, function(err, found) {
+          var id;
+
           expect(err).to.be(null);
-          expect(found.id).to.be.equal(id);
-          return Node.findOrCreate({
-            name: 'Node'
-          }, function(err) {
-            expect(err.message).to.be.a('string');
-            return done();
+          expect(found.data.uid).to.be.equal(uid);
+          expect(found.data.name).to.be.equal('Node');
+          expect(found.id).to.be.above(0);
+          id = found.id;
+          return User.findOrCreate({
+            uid: uid
+          }, function(err, found) {
+            expect(err).to.be(null);
+            expect(found.id).to.be.equal(id);
+            uid = new Date().getTime();
+            return User.findOrCreate({
+              uid: uid,
+              name: 'Node'
+            }, function(err, found) {
+              expect(err).to.be(null);
+              expect(found.data.uid).to.be.equal(uid);
+              return User.findOrCreate({
+                name: 'Node'
+              }, function(err, res) {
+                expect(err.message).to.be.equal('More than one node found… You have query one distinct result');
+                return done();
+              });
+            });
           });
         });
       });
@@ -1178,7 +1212,7 @@ describe('Neo4jMapper', function() {
   });
   describe('relationships (incoming, outgoing and between nodes)', function() {
     it('expect to create a relationship between nodes in any direction', function(done) {
-      var alice, bob;
+      var alice, bob, charles;
 
       alice = new Node({
         name: 'Alice'
@@ -1186,54 +1220,72 @@ describe('Neo4jMapper', function() {
       bob = new Node({
         name: 'Bob'
       });
+      charles = new Node({
+        name: 'Charles'
+      });
       return alice.save(function() {
         return bob.save(function() {
-          return graphdb.countRelationships(function(err, countedRelationshipsBefore) {
-            return alice.createRelationshipBetween(bob, 'knows', {
-              since: 'years'
-            }, function(err, result) {
-              expect(err).to.be(null);
-              expect(result).to.have.length(2);
-              return graphdb.countRelationships(function(err, countedRelationshipsIntermediate) {
-                expect(countedRelationshipsBefore + 2).to.be.equal(countedRelationshipsIntermediate);
-                return bob.createRelationshipTo(alice, 'liked', function(err, relationship) {
-                  expect(err).to.be(null);
-                  expect(relationship).to.be.an('object');
-                  expect(relationship.type).to.be.equal('liked');
-                  expect(relationship).to.be.an('object');
-                  return graphdb.countRelationships(function(err, countedRelationshipsFinally) {
-                    expect(countedRelationshipsBefore + 3).to.be.equal(countedRelationshipsFinally);
-                    return bob.createRelationshipFrom(alice, 'follows', function(err, relationship) {
-                      expect(err).to.be(null);
-                      expect(relationship).to.be.an('object');
-                      return graphdb.countRelationships(function(err, countedRelationshipsFinally) {
-                        expect(countedRelationshipsBefore + 4).to.be.equal(countedRelationshipsFinally);
-                        return bob.createOrUpdateRelationshipFrom(alice, 'follows', {
-                          since: 'years'
-                        }, function(err, relationship) {
-                          var id;
+          return charles.save(function() {
+            return graphdb.countRelationships(function(err, countedRelationshipsBefore) {
+              return alice.createRelationshipBetween(bob, 'knows', {
+                since: 'years'
+              }, function(err, result) {
+                expect(err).to.be(null);
+                expect(result).to.have.length(2);
+                return graphdb.countRelationships(function(err, countedRelationshipsIntermediate) {
+                  expect(countedRelationshipsBefore + 2).to.be.equal(countedRelationshipsIntermediate);
+                  return bob.createRelationshipTo(alice, 'liked', function(err, relationship) {
+                    expect(err).to.be(null);
+                    expect(relationship).to.be.an('object');
+                    expect(relationship.type).to.be.equal('liked');
+                    expect(relationship).to.be.an('object');
+                    return graphdb.countRelationships(function(err, countedRelationshipsFinally) {
+                      expect(countedRelationshipsBefore + 3).to.be.equal(countedRelationshipsFinally);
+                      return bob.createRelationshipFrom(alice, 'follows', function(err, relationship) {
+                        expect(err).to.be(null);
+                        expect(relationship).to.be.an('object');
+                        return graphdb.countRelationships(function(err, countedRelationshipsFinally) {
+                          expect(countedRelationshipsBefore + 4).to.be.equal(countedRelationshipsFinally);
+                          return bob.createOrUpdateRelationshipFrom(alice, 'follows', {
+                            since: 'years'
+                          }, function(err, relationship) {
+                            var id;
 
-                          expect(err).to.be(null);
-                          expect(relationship).to.be.an('object');
-                          expect(relationship.type).to.be.equal('follows');
-                          expect(relationship.data.since).to.be.equal('years');
-                          expect(relationship.id).to.be.a('number');
-                          id = relationship.id;
-                          return graphdb.countRelationships(function(err, count) {
-                            expect(count).to.be.equal(countedRelationshipsFinally);
-                            return bob.createOrUpdateRelationshipFrom(alice, 'follows', {
-                              since: 'months'
-                            }, function(err, relationship) {
-                              expect(err).to.be(null);
-                              expect(relationship).to.be.an('object');
-                              expect(relationship.type).to.be.a('string');
-                              expect(relationship.data.since).to.be.equal('months');
-                              expect(relationship.id).to.be.equal(id);
-                              return graphdb.countRelationships(function(err, count) {
-                                expect(count).to.be.equal(countedRelationshipsFinally);
-                                return alice.removeWithRelationships(function() {
-                                  return bob.removeWithRelationships(function() {
-                                    return done();
+                            expect(err).to.be(null);
+                            expect(relationship).to.be.an('object');
+                            expect(relationship.type).to.be.equal('follows');
+                            expect(relationship.data.since).to.be.equal('years');
+                            expect(relationship.id).to.be.a('number');
+                            id = relationship.id;
+                            return graphdb.countRelationships(function(err, count) {
+                              expect(count).to.be.equal(countedRelationshipsFinally);
+                              return bob.createOrUpdateRelationshipFrom(alice, 'follows', {
+                                since: 'months'
+                              }, function(err, relationship) {
+                                expect(err).to.be(null);
+                                expect(relationship).to.be.an('object');
+                                expect(relationship.type).to.be.a('string');
+                                expect(relationship.data.since).to.be.equal('months');
+                                expect(relationship.id).to.be.equal(id);
+                                return graphdb.countRelationships(function(err, count) {
+                                  expect(count).to.be.equal(countedRelationshipsFinally);
+                                  return charles.createOrUpdateRelationshipTo(bob, 'follows', {
+                                    since: 'days'
+                                  }, function(err, relationship) {
+                                    expect(err).to.be(null);
+                                    return bob.incomingRelationships().count(function(err, count) {
+                                      expect(count).to.be(3);
+                                      return graphdb.countRelationships(function(err, count) {
+                                        expect(count).to.be.equal(countedRelationshipsFinally + 1);
+                                        return alice.removeWithRelationships(function() {
+                                          return bob.removeWithRelationships(function() {
+                                            return charles.removeWithRelationships(function() {
+                                              return done();
+                                            });
+                                          });
+                                        });
+                                      });
+                                    });
                                   });
                                 });
                               });
