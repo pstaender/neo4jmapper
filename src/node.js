@@ -99,13 +99,15 @@ Node.prototype.convert_node_to_model = function(node, model, fallbackModel) {
     } else {
       throw Error('No model or label found')
     }
-    var Class = node.registered_model(model) || fallbackModel;
+    var Class = Node.registered_model(model) || fallbackModel;
     var singleton = new Class()
     // node.constructor_name = singleton.constructor_name;
     return node.copyTo(singleton);
   }
   return null;
 }
+
+Node.__models__ = {}; // contains globally all registeresd models
 
 Node.prototype.neo4jrestful = null; // will be initialized
 Node.prototype.data = {};
@@ -132,7 +134,6 @@ Node.prototype.constructor_name = null;
 
 Node.prototype._load_hook_reference_ = null;
 
-Node.prototype.__models__ = {};
 Node.prototype.__already_initialized__ = false; // flag to avoid many initializations
 
 // you should **never** change this value
@@ -214,38 +215,6 @@ Node.prototype.copyTo = function(n) {
   n.uri = this.uri;
   n._response = _.extend(this._response);
   return n;
-}
-
-// TODO: implement createByLabel(label)
-
-Node.prototype.register_model = function(Class, label, cb) {
-  var name = helpers.constructorNameOfFunction(Class);
-  if (typeof label === 'string') {
-    name = label; 
-  } else {
-    cb = label;
-  }
-  Node.prototype.__models__[name] = Class;
-  Class.prototype.initialize(cb);
-  return Class;
-}
-
-Node.prototype.unregister_model = function(Class) {
-  var name = (typeof Class === 'string') ? Class : helpers.constructorNameOfFunction(Class);
-  if (typeof Node.prototype.__models__[name] === 'function')
-    delete Node.prototype.__models__[name];
-  return Node.prototype.__models__;
-}
-
-Node.prototype.registered_models = function() {
-  return Node.prototype.__models__;
-}
-
-Node.prototype.registered_model = function(model) {
-  if (typeof model === 'function') {
-    model = helpers.constructorNameOfFunction(model);
-  }
-  return this.registered_models()[model] || null;
 }
 
 Node.prototype.resetQuery = function() {
@@ -1576,7 +1545,7 @@ Node.prototype.recommendConstructor = function(Fallback) {
   if (typeof Fallback !== 'function')
     Fallback = this.constructor;
   var label = (this.label) ? this.label : ( ((this.labels)&&(this.labels.length===1)) ? this.labels[0] : null );
-  return (label) ? this.registered_model(label) || Fallback : Fallback;
+  return (label) ? Node.registered_model(label) || Fallback : Fallback;
 }
 
 /*
@@ -1911,19 +1880,33 @@ Node.query = function(cypherQuery, options, cb) {
 }
 
 Node.register_model = function(Class, label, cb) {
-  return this.prototype.register_model(Class, label, cb);
+  var name = helpers.constructorNameOfFunction(Class);
+  if (typeof label === 'string') {
+    name = label; 
+  } else {
+    cb = label;
+  }
+  Node.__models__[name] = Class;
+  Class.prototype.initialize(cb);
+  return Class;
 }
 
 Node.unregister_model = function(Class) {
-  return this.prototype.unregister_model(Class);
+  var name = (typeof Class === 'string') ? Class : helpers.constructorNameOfFunction(Class);
+  if (typeof Node.__models__[name] === 'function')
+    delete Node.__models__[name];
+  return Node.__models__;
 }
 
 Node.registered_models = function() {
-  return this.prototype.registered_models();
+  return Node.__models__;
 }
 
 Node.registered_model = function(model) {
-  return this.prototype.registered_model(model);
+  if (typeof model === 'function') {
+    model = helpers.constructorNameOfFunction(model);
+  }
+  return Node.registered_models()[model] || null;
 }
 
 Node.convert_node_to_model = function(node, model, fallbackModel) {

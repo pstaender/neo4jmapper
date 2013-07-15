@@ -52,7 +52,7 @@ describe 'Neo4jMapper (cypher queries)', ->
 
     it 'expect to build various kind of queries', ->
       class Actor extends Node
-      Node::register_model(Actor)
+      Node.register_model(Actor)
       node = new Node()
       results = []
       map =
