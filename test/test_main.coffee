@@ -649,19 +649,29 @@ describe 'Neo4jMapper', ->
 
     it 'expect to find or create a node', (done) ->
       uid = new Date().getTime()
-      Node.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
-        expect(err).to.be null
-        expect(found.data.uid).to.be.equal uid
-        expect(found.data.name).to.be.equal 'Node'
-        expect(found.id).to.be.above 0
-        id = found.id
-        Node.findOrCreate { uid: uid }, (err, found) ->
+      class User extends Node
+        fields:
+          indexes:
+            uid: true
+            name: true
+      # we have to ensureIndex 
+      User.ensureIndex (err) ->
+        User.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
           expect(err).to.be null
-          expect(found.id).to.be.equal id
-          Node.findOrCreate { name: 'Node' }, (err) ->
-            # TODO: fixme (1st testrun)
-            expect(err.message).to.be.a 'string'
-            done()
+          expect(found.data.uid).to.be.equal uid
+          expect(found.data.name).to.be.equal 'Node'
+          expect(found.id).to.be.above 0
+          id = found.id
+          User.findOrCreate { uid: uid }, (err, found) ->
+            expect(err).to.be null
+            expect(found.id).to.be.equal id
+            uid = new Date().getTime()
+            User.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
+              expect(err).to.be null
+              expect(found.data.uid).to.be.equal uid
+              User.findOrCreate { name: 'Node' }, (err, res) ->
+                expect(err.message).to.be.equal 'More than one node found… You have query one distinct result'
+                done()
 
   describe 'index', ->
 
