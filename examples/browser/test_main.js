@@ -642,7 +642,7 @@ describe('Neo4jMapper', function() {
   });
   describe('classes and models', function() {
     it('expect to register and unregister models for nodes', function() {
-      var Person, _ref2;
+      var Movie, Person, movie, _ref2;
 
       Person = (function(_super) {
         __extends(Person, _super);
@@ -661,7 +661,11 @@ describe('Neo4jMapper', function() {
       expect(Node.registered_models()['Person']).to.be(void 0);
       Node.register_model(Person);
       Node.unregister_model('Person');
-      return expect(Node.registered_models()['Person']).to.be(void 0);
+      expect(Node.registered_models()['Person']).to.be(void 0);
+      Movie = Node.register_model('Movie');
+      movie = new Movie();
+      expect(movie.label).to.be.equal('Movie');
+      return expect(movie.constructor_name).to.be.equal('Movie');
     });
     it('expect to find corresponding node to each model', function(done) {
       var Movie, _ref2;

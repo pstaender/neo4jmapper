@@ -429,6 +429,10 @@ describe 'Neo4jMapper', ->
       Node.register_model(Person)
       Node.unregister_model('Person')
       expect(Node.registered_models()['Person']).to.be undefined
+      Movie = Node.register_model('Movie')
+      movie = new Movie()
+      expect(movie.label).to.be.equal 'Movie'
+      expect(movie.constructor_name).to.be.equal 'Movie'
 
     it 'expect to find corresponding node to each model', (done) ->
       class Movie extends Node
