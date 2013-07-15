@@ -151,18 +151,23 @@ The same as above in JavaScript:
     
 ```
 
-### Connect Nodes
+### Connect Nodes / Create Relationships
 
 ```js
   /* alice - knows -> bob */
   alice.createRelationshipTo(bob, 'knows', { since: 'years' }, function(err) {
     /* bob - likes -> alice */
     bob.createRelationshipTo(alice, 'likes', { since: 'week' }, function(err) {
-      /* creates a relationship of type 'likes' if not exists, updates otherwise
-         alice - knows -> bob */
-      alice.createOrUpdateRelationshipTo(bob, 'knows', { since: 'a while' }, function(err, relationship) {
-        /* … */
-      })
+      alice.incomingRelationships('knows').count(function(err, count) {
+        count;
+        ~> 1
+        alice.createOrUpdateRelationshipTo(bob, 'knows', { since: 'a while' }, function(err, relationship) {
+          alice.incomingRelationships('knows').count(function(err, count) {
+            count;
+            ~> 1
+          });
+        });
+      });
     });
   });
 ```
