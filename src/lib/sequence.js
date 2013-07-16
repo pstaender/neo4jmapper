@@ -1,4 +1,4 @@
-// originally from: https://github.com/coolaj86/futures
+// from: https://github.com/coolaj86/futures
 ;(function() {
 
   function isSequence(obj) {

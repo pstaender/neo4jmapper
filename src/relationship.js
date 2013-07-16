@@ -1,27 +1,26 @@
 /*
  * TODO:
- * + make query mapper from Node available for relationships as well
- * + make relationships queryable with custom queries
+ * * make query mapper from Node available for relationships as well
+ * * make relationships queryable with custom queries
  */
 
+// Requirements (for browser and nodejs):
+// * Node
+// * neo4jmapper helpres
+// * underscorejs
 var Node          = null // will be initialized
   , helpers       = null
   , _             = null;
 
 if (typeof window === 'object') {
-  // browser
   helpers = neo4jmapper_helpers;
   _       = window._;
 } else {
-  // nodejs
   helpers  = require('./helpers');
   _        = require('underscore');
 }
 
-/*
- * Constructor
- */
-
+// Constructor
 Relationship = function Relationship(data, start, end, id) {
   this.id = id || null;
   this.data = data || {};
@@ -182,29 +181,6 @@ Relationship.prototype.update = function(data, cb) {
   }
 }
 
-// Relationship.prototype.put = function(options, cb) {
-//   if ( (this.hasId() && ((point === 'start') || (point === 'end')) ) {
-//     return self.neo4jrestful.post('/db/data/node/'+options.from_id+'/relationships', {
-//       data: {
-//         to: new Node({},options.to_id).uri,
-//         type: options.type,
-//         data: options.properties
-//       }
-//     }, cb);
-//   } else {
-//     return cb(Error("You can only update a start or end point of an existing Relationship"), null);
-//   }
-// }
-
- // extensions: {},
- //  start: 'http://localhost:7419/db/data/node/169',
- //  property: 'http://localhost:7419/db/data/relationship/10/properties/{key}',
- //  self: 'http://localhost:7419/db/data/relationship/10',
- //  properties: 'http://localhost:7419/db/data/relationship/10/properties',
- //  type: 'KNOWS',
- //  end: 'http://localhost:7419/db/data/node/170',
- //  data: { since: 'years' } }
-
 Relationship.prototype.populateWithDataFromResponse = function(data, create) {
   create = (typeof create !== 'undefined') ? create : false;
   // if we are working on the prototype object
@@ -320,6 +296,10 @@ Relationship.findById = function(id, cb) {
 
 var initRelationship = function(neo4jrestful) {
 
+  // Ensure that we have a Neo4jRestful client we can work with
+  if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
+    throw Error('You have to use an Neo4jRestful object as argument');
+
   if (typeof neo4jrestful === 'object') {
     if (typeof window === 'object') {
       // browser      
@@ -344,22 +324,6 @@ var initRelationship = function(neo4jrestful) {
   }
 
   Relationship.prototype.copy_of = Node.prototype.copy_of;
-  
-  // Relationship.find = function(where, cb) {
-
-  // }
-  
-  // Relationship.findOne = function(id, cb) {
-
-  // }
-  
-  // Relationship.findAll = Relationship.find;
-  // Relations.find: [Function],
-  //   findOne: [Function],
-  //   findById: [Function],
-  //   findByUniqueKeyValue: [Function],
-  //   findAll: [Function],
-  //   findByIndex: [Function],
 
   return Relationship;
 

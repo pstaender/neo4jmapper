@@ -11,9 +11,7 @@ if (typeof window === 'object') {
   _       = require('underscore');
 }
 
-/*
- * Constructor
- */
+// Constructor
 Path = function Path(data) {
   this.nodes = [];
   this.relationships = [];
@@ -129,6 +127,10 @@ Path.prototype.toObject = function() {
 }
 
 var initPath = function(neo4jrestful) {
+
+  // Ensure that we have a Neo4jRestful client we can work with
+  if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
+    throw Error('You have to use an Neo4jRestful object as argument');
 
   if (typeof neo4jrestful === 'object') {
     if (typeof window === 'object') {

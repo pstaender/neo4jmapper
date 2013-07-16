@@ -71,7 +71,7 @@ var initNeo4jRestful = function() {
   /*
    * Constructor
    */
-  Neo4jRestful = function(url, options) {
+  Neo4jRestful = function Neo4jRestful(url, options) {
     var self = this;
     if (typeof options !== 'object') {
       options = (typeof url === 'object') ? url : {};

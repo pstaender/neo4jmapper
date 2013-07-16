@@ -3,21 +3,22 @@
 // The Node object is to create, connect and query all kind of Node(s).
 // You can register your own model
 
-// private variables
+
+// Requirements (for browser and nodejs):
+// * neo4jmapper helpers
+// * underscorejs
+// * sequence (https://github.com/coolaj86/futures)
 var helpers = null
   , _ = null
   , Sequence = null;
 
-// requirements if browser
 if (typeof window === 'object') {
   // browser
   // TODO: find a solution for bson object id
   helpers  = neo4jmapper_helpers;
   _        = window._;
   Sequence = window.Sequence;
-}
-// requirements if nodejs
-else {
+} else {
   helpers  = require('./helpers');
   _        = require('underscore');
   Sequence = require('./lib/sequence');
@@ -1967,6 +1968,10 @@ Node.getIndex = function(cb) {
 }
 
 var initNode = function(neo4jrestful) {
+
+  // Ensure that we have a Neo4jRestful client we can work with
+  if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
+    throw Error('You have to use an Neo4jRestful object as argument');
 
   // we can only check for object type,
   // better would be to check for constructor neo4jrestful

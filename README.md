@@ -110,7 +110,21 @@ The same as above in pure JavaScript:
 
 ```js
   // here we define a model by a string and not by constructor as shown in the coffeescript example 
-  var Person = Node.register_model('Person');
+  var Person = Node.register_model('Person', {
+    fields: {
+      indexes: {
+        email: true
+      }, defaults: {
+        created_on: function() {
+          return new Date().getTime();
+        }
+      }
+    },
+    fullname: function() {
+      var s = this.firstName + " " + this.surname;
+      return s.trim();
+    }
+  });
 
   var alice = new Person({firstName: 'Alice', surname: 'Springs'});
 
@@ -120,7 +134,6 @@ The same as above in pure JavaScript:
     alice.label;
     ~> 'Person'
   });
-    
 ```
 
 ### Connect Nodes / Create Relationships
@@ -409,7 +422,7 @@ There are some steps to take, especially some methods for daily use are missing,
 
 ## Testing on console in the browser
 
-You'll find a ready-to-use-console in `examples/browser/console/console.html` or on https://pstaender.github.io/neo4jmapper/examples/browser/console/console.html
+You'll find a ready-to-use-console in `examples/browser/console/console.html`. To use it with your local database you gave to ensure that you access the page from the same domain as your database to avoid `access-control-allow-origin` situation.
 
 ## Tests
 

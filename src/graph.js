@@ -1,5 +1,12 @@
+// **The Graph** respresents the database
+// You can perform basic actions and queries directly on the entire graphdatabase
+
+// Initialize the Graph object with a neo4jrestful client
 var initGraph = function(neo4jrestful) {
 
+  // Requirements (for browser and nodejs):
+  // * neo4jmapper helpers
+  // * underscorejs
   var _       = null
     , helpers = null;
 
@@ -11,34 +18,34 @@ var initGraph = function(neo4jrestful) {
     _       = require('underscore');
   }
 
-  /*
-   * Constructor
-   */
+  // Ensure that we have a Neo4jRestful client we can work with
+  if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
+    throw Error('You have to use an Neo4jRestful object as argument')
+
+  // Constructor
   Graph = function() {
-    // this.about();
   }
 
+  // Will contain the info response of the neo4j database
   Graph.prototype.info = null;
 
-  /*
-   * Shorthands for neo4jrestul.*
-   */
+  // Shortcut for neo4jrestul.query
   Graph.prototype.query = function(cypher, options, cb) {
     return neo4jrestful.query(cypher,options,cb);
   }
 
+  // Shortcut for neo4jrestul.stream
   Graph.prototype.stream = function(cypher, options, cb) {
     return neo4jrestful.stream(cypher,options,cb);
   }
 
-  /*
-   * Delete *all* nodes and *all* relationships
-   */ 
+  // Deletes *all* nodes and *all* relationships
   Graph.prototype.wipeDatabase = function(cb) {
     var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";
     return this.query(query,cb);
   }
 
+  // Counts all objects of a specific type: (all|node|relationship|[nr]:Movie)
   Graph.prototype.countAllOfType = function(type, cb) {
     var query = '';
     if      (/^n(ode)*$/i.test(type))
@@ -61,18 +68,22 @@ var initGraph = function(neo4jrestful) {
     });
   }
 
+  // Counts all relationships
   Graph.prototype.countRelationships = function(cb) {
     return this.countAllOfType('relationship', cb);
   }
 
+  // Counts all nodes
   Graph.prototype.countNodes = function(cb) {
     return this.countAllOfType('node', cb);
   }
 
+  // Counts all relationships and nodes
   Graph.prototype.countAll = function(cb) {
     return this.countAllOfType('all', cb);
   }
 
+  // Queries information of the database and stores it on `this.info` 
   Graph.prototype.about = function(cb) {
     var self = this;
     if (this.info)
