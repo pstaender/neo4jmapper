@@ -1,22 +1,57 @@
 var Neo4j = require('../src')
   , neo4j = new Neo4j('http://localhost:7420')
   , Node  = neo4j.Node
-  , Graph = neo4j.Graph
-  // underscore is used for extending
-  , _ = require('underscore');
+  , Graph = neo4j.Graph;
 
-var Movie = Node.register_model('Movie');
-
-pulpFiction = new Movie({
-  title: 'Pulp Fiction' 
+/*
+ * best way to register a model
+ * optional patch with your own methods and field definitions
+ */
+var Movie = Node.register_model('Movie', {
+  summary: function() {
+    return 'Directed by '+this.data.director+' in '+this.data.year;
+  },
+  fields: {
+    defaults: {
+      created_on: function() {
+        return new Date().getTime();
+      }
+    },
+    indexes: {
+      title: true
+    }
+  }
 });
 
-pulpFiction.data.director = 'Quentin Tarantino';
-pulpFiction.data.year = 1994;
-pulpFiction.save(function(err,movie){
-  console.log('created movie: ', movie.toObject());
-  Movie.findOne(function(err, movie) {
-    console.log('1st found movie: ', movie.toObject());
+/*
+ * the other way is to register your model first
+ * and then extends your model via prototyping
+ */
+var Director = Node.register_model('Director');
+
+// override an existing method, toObject() for example
+Director.prototype.toObject = function() {
+  var o = Node.prototype.toObject.apply(this, arguments);
+  o.data.summary = this.data.firstname + ' ' + this.data.surname + ' (* '+this.data.year+')';
+  return o;
+}
+
+quentin = new Director({
+  firstname: 'Quentin',
+  surname: 'Tarantino',
+  year: 1963
+})
+
+quentin.save(function(err, quentin) {
+  pulpFiction = new Movie({
+    title: 'Pulp Fiction' 
+  });
+  pulpFiction.data.year = 1994;
+  pulpFiction.save(function(err,pulbFiction) {
+    quentin.createRelationshipTo(pulbFiction, 'directed', function(err, relationship) {
+      quentin.outgoingRelationships('directed', function(err, movie) {
+        console.log(movie[0].toObject());
+      });
+    });
   });
 });
-

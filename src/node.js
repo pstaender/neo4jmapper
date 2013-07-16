@@ -177,7 +177,7 @@ Node.prototype.initialize = function(cb) {
       self.onAfterInitialize(cb);
     });
   } else {
-    return cb(null, null);
+    return cb(null, this);
   }
 }
 
@@ -204,7 +204,7 @@ Node.prototype.onAfterInitialize = function(cb) {
   if (label) {
     if (fieldsToIndex.length > 0) {
       node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err){
-        cb(null, null);
+        cb(null, self);
       });
     }
     // inactive
@@ -221,7 +221,7 @@ Node.prototype.onAfterInitialize = function(cb) {
       });
     }*/
   } else {
-    cb(Error('No label found'), null);
+    cb(Error('No label found'), this);
   }
 }
 
@@ -1897,10 +1897,16 @@ Node.query = function(cypherQuery, options, cb) {
   return this.prototype.singleton().query(cypherQuery, options, cb);
 }
 
-Node.register_model = function(Class, label, cb) {
+Node.register_model = function(Class, label, prototype, cb) {
   var name = null;
   if (typeof Class === 'string') {
-    cb = label;
+    if (typeof label === 'function') {
+      cb = label;
+      prototype = {};
+    } else if (typeof prototype === 'function') {
+      cb = prototype;
+      prototype = {};
+    }
     label = name = Class;
     // we define here an anonymous constructor
     Class = function() {
@@ -1908,12 +1914,12 @@ Node.register_model = function(Class, label, cb) {
       this.label = this.constructor_name = label;
     }
     _.extend(Class, Node); // 'static' methods
-    _.extend(Class.prototype, Node.prototype); // object methods
+    _.extend(Class.prototype, prototype, Node.prototype); // object methods
   } else {
-    name = helpers.constructorNameOfFunction(Class);
     if (typeof label === 'string') {
       name = label; 
     } else {
+      name = helpers.constructorNameOfFunction(Class);
       cb = label;
     }
   }
