@@ -71,16 +71,13 @@ or shorter with
 
 ### Classes and Models
 
-Since JavaScript has no classes, you must extend the `Node` object with your own constructor so that neo4jmapper can detect a name for your model. You can also set the `label` property to enable label support.
+Since JavaScript has no classes, we have to define models and extend it on the `Node` object - like you may know from backbonejs for instance. 
 
-Every defined model will enjoy the label feature of neo4j by default.
+Every defined model will enjoy the label support.
 
-Example in CoffeeScript:
+Coffeescript and it's class pattern is the most convenient way to define models:
 
 ```coffeescript
-  # coffeescript and it`s class pattern
-  # is the most convenient way to define models
-
   class Person extends Node
     fields:
       indexes:
@@ -91,8 +88,6 @@ Example in CoffeeScript:
       s = @firstName + " " + @surname
       s.trim()
 
-  # optional but strongly recommend
-  # so that neo4jmapper can instantiate found labeled nodes with the respective model/constructor
   Node.register_model(Person)
 
   alice = new Person firstName: 'Alice', surname: 'Springs'
@@ -101,15 +96,11 @@ Example in CoffeeScript:
   alice.save ->
     alice.label
     ~> 'Person'
-    
 ```
 
-To extend the Node object in JavaScript you have to use an extend method (here I choosed the underscore `_.extend` method), but similar methods should work as well.
-
-The same as above in pure JavaScript:
+The same in JavaScript:
 
 ```js
-  // here we define a model by a string and not by constructor as shown in the coffeescript example 
   var Person = Node.register_model('Person', {
     fields: {
       indexes: {
@@ -179,7 +170,7 @@ You can query nodes (relationships may follow) easily like as usual in other Obj
 
 ```js
   alice.incomingRelationshipsFrom(bob)
-    .where({'r.since': 'years'})
+    .whereRelaotionship({'since': 'years'})
     .limit(1, function(err, relationships) {
       /* … */
     });
@@ -192,13 +183,13 @@ Also with customized queries in mongodb query style
     .find()
     .where(
       { $or : [
-        { 'n.name': /alice/i },
-        { 'n.name': /bob/i }
+        { 'name': /alice/i },
+        { 'name': /bob/i }
       ] }
     )
     .skip(2)
     .limit(10)
-    .orderBy({ 'n.name': 'DESC' }, function(err, result) {
+    .orderBy({ 'name': 'DESC' }, function(err, result) {
       /* … */
     });
 ```
