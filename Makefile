@@ -35,6 +35,13 @@ test-coveralls:test-build
 	make test-clear
 	npm run clear
 
-travis:
-	npm run preinstall
-	make test
+installneo4j:
+	rm -rf neo4jserver
+	mkdir neo4jserver
+	cd neo4jserver && wget http://dist.neo4j.org/neo4j-community-2.0.0-M03-unix.tar.gz
+	cd neo4jserver && tar -zxvf neo4j-community-2.0.0-M03-unix.tar.gz
+	sed -i 's/HEADLESS=false/HEADLESS=true/g' ./neo4jserver/neo4j-community-2.0.0-M03/bin/neo4j
+	./neo4jserver/neo4j-community-2.0.0-M03/bin/neo4j -u neo4j install
+	service neo4j-service status
+	service neo4j-service start
+	sleep 3

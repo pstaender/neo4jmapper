@@ -35,10 +35,10 @@ graphdb = null # will be initialized in before()
 SkipInNode = (a) -> unless window? then null else a 
 SkipInBrowser = (a) -> if window? then null else a
 
-if process?.env?.TRAVIS
-  # cancel tests because travis doesn't support neo4j v2, yet
-  return describe 'Neo4jMapper', ->
-    it "expect to have a neo4j database above version 2.0"
+# if process?.env?.TRAVIS
+#   # cancel tests because travis doesn't support neo4j v2, yet
+#   return describe 'Neo4jMapper', ->
+#     it "expect to have a neo4j database above version 2.0"
 
 describe 'Neo4jMapper', ->
 
