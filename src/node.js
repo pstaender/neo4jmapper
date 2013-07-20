@@ -75,7 +75,9 @@ Node.prototype.init = function(data, id) {
     indexes: _.extend({}, this.fields.indexes),
     unique: _.extend({}, this.fields.unique)
   });
-  this.labels = [];
+  // copy array
+  this.labels = _.uniq(this.labels);
+
   this.is_instanced = true;
   // we will use a label by default if we have defined an inherited class of node
   if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
@@ -137,6 +139,7 @@ Node.prototype.labels = null;                     // an array of all labels
 Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
 //TODO: check that it's still needed
 Node.prototype.constructor_name = null;           // will be with the name of the function of the constructor
+Node.prototype._parent_constructors_ = null;      // an array of parent constructors (e.g. Director extends Person -> 'Director','Person')
 
 Node.prototype._load_hook_reference_ = null;      // a reference to acticate or deactivate the load hook
 
@@ -459,12 +462,16 @@ Node.prototype.getIndex = function(cb) {
 
 Node.prototype.save = function(cb) {
   var self = this;
+  var labels = (self.labels.length > 0) ? self.labels : null;
   self.onBeforeSave(self, function(err) {
     // don't execute if an error is passed through
     if ((typeof err !== 'undefined')&&(err !== null))
       cb(err, null);
     else
       self.onSave(function(err, node, debug) {
+        // assign labels back
+        if (labels)
+          self.labels = labels;
         self.onAfterSave(self, cb, debug);
       });
   });
@@ -523,7 +530,8 @@ Node.prototype.onSave = function(cb) {
 }
 
 Node.prototype.onAfterSave = function(node, next, debug) {
-  var labels = node.labelsAsArray();
+  // we use labelsAsArray to avoid duplicate labels
+  var labels = node.labels = node.labelsAsArray();
   if ((typeof err !== 'undefined')&&(err !== null)) {
     return next(err, node, debug);
   } else {
@@ -583,7 +591,7 @@ Node.prototype.onBeforeLoad = function(node, next) {
     node.allLabels(function(err, labels, debug) {
       if (err)
         return next(err, labels);
-      node.labels = _.clone(labels);
+      node.labels = labels;
       if (labels.length === 1)
         node.label = labels[0]
       // convert node to it's model if it has a distinct label and differs from static method
@@ -1580,7 +1588,7 @@ Node.prototype.requestLabels = function(cb) {
 
 Node.prototype.setLabels = function(labels) {
   if (_.isArray(labels)) {
-    this.labels = _.clone(labels);
+    this.labels = labels;
   }
   // if we have only one label we set this to default label
   if ((_.isArray(this.labels))&&(this.labels.length === 1)) {
@@ -1595,7 +1603,8 @@ Node.prototype.labelsAsArray = function() {
     labels = [];
   if (this.label)
     labels.push(this.label);
-  return _.uniq(labels);
+  labels = _.uniq(labels);
+  return labels;
 }
 
 Node.prototype.allLabels = function(cb) {
@@ -1907,16 +1916,44 @@ Node.register_model = function(Class, label, prototype, cb) {
     } else if (typeof prototype === 'function') {
       cb = prototype;
       prototype = {};
+    } else if (typeof label === 'object') {
+      prototype = label;
+      label = null;
     }
+    if (typeof prototype !== 'object')
+      prototype = {};
     label = name = Class;
     // we define here an anonymous constructor
     Class = function() {
       this.init.apply(this, arguments);
       this.label = this.constructor_name = label;
     }
-    _.extend(Class, Node); // 'static' methods
-    _.extend(Class.prototype, prototype, Node.prototype); // object methods
+
+    _.extend(Class, this); // 'static' methods
+
+    if ((prototype) && (prototype.fields)) {
+      // extend each field defintion on prototype
+      // e.g. indexes, defaults…
+      var fieldDefinitions = prototype.fields;
+      _.extend(Class.prototype, prototype, this.prototype);
+      for (var attribute in fieldDefinitions) {
+        if ((this.prototype.fields)&&(this.prototype.fields[attribute]))
+          Class.prototype.fields[attribute] = _.extend(fieldDefinitions[attribute], this.prototype.fields[attribute]);
+      }
+    } else {
+      _.extend(Class.prototype, prototype, this.prototype);
+    }
+
+    _.extend(Class.prototype, prototype, this.prototype); // object methods
+
+    if (!Class.prototype.labels)
+      Class.prototype.labels = [];
+
+    Class.prototype.labels.unshift(label);
+
   } else {
+    // we expect to have a `class`-object as known from CoffeeScript
+    Class.prototype.labels = Class.getParentModels();
     if (typeof label === 'string') {
       name = label; 
     } else {
@@ -1927,6 +1964,28 @@ Node.register_model = function(Class, label, prototype, cb) {
   Node.__models__[name] = Class;
   Class.prototype.initialize(cb);
   return Class;
+}
+
+Node.getParentModels = function() {
+  var models = [];
+  models.push(helpers.constructorNameOfFunction(this));
+  if (this.__super__) {
+    var Class = this;
+    var i = 0;
+    var modelName = '';
+    while((Class.__super__) && (i < 10)) {
+      i++;
+      modelName = helpers.constructorNameOfFunction(Class.__super__);
+      
+      if (!/^(Node|Relationship|Path)/.test(modelName))
+        models.push(modelName);
+      if ((Class.prototype.labels)&&(Class.prototype.labels.length > 0))
+        models.push(Class.prototype.labels);
+      Class = Class.__super__;
+    }
+    // we have a "coffeescript class" object
+  }
+  return _.uniq(_.flatten(models));
 }
 
 Node.unregister_model = function(Class) {

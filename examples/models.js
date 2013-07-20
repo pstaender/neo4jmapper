@@ -23,6 +23,20 @@ var Movie = Node.register_model('Movie', {
   }
 });
 
+var Blockbuster = Movie.register_model('Blockbuster',{
+  fields: {
+    defaults: {
+      level: 'Blockbuster'
+    }
+  }
+});
+
+backToTheFuture = new Blockbuster({
+  title: 'Back to the Future',
+}).save(function(err, b2tf) {
+  console.log(b2tf.toObject());
+});
+
 /*
  * the other way is to register your model first
  * and then extends your model via prototyping

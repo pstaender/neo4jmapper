@@ -171,32 +171,56 @@ describe 'Neo4jMapper', ->
       expect(person.id).to.be null
       expect(person.cypher.label).to.be 'Person'
       expect(person.constructor_name).to.be 'Person'
-      # javascript
-      `var Movie = (function(Node) {
 
-      function Movie() {
-        // this is necessary to give the constructed node a name context
-        this.init.apply(this, arguments);
-      }
-      
-      _.extend(Movie.prototype, Node.prototype);
-      
-      Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
+      Movie = Node.register_model('Movie')
 
-      Movie.prototype.fields = {
-        defaults: {
-          genre: 'Blockbuster'
-        }
-      };
-      
-      return Movie;
-    })(Node)`
       movie = new Movie()
       expect(movie.label).to.be.equal 'Movie' 
       expect(movie.constructor_name).to.be.equal 'Movie' 
       expect(movie).to.be.an 'object'
       expect(movie.id).to.be null
       done()
+
+    it 'inheritance on coffescript class-objects', (done) ->
+      class Person extends Node
+      class Extra extends Person
+      class Actor extends Extra
+      class Director extends Actor
+      Node.register_model(Person)
+      Node.register_model(Actor)
+      Node.register_model(Director)
+      director = new Director
+      expect(director.labels).to.have.length 4
+      expect(director.labels[0]).to.be.equal 'Director'
+      expect(director.labels[1]).to.be.equal 'Actor'
+      expect(director.labels[2]).to.be.equal 'Extra'
+      expect(director.labels[3]).to.be.equal 'Person'
+      expect(director.label).to.be.equal 'Director'
+      #[ 'Director', 'Actor', 'Extra', 'Person' ] 'Director'
+      done()
+
+    it 'inheritance on models', (done) ->
+      Person   = Node.register_model('Person')
+      Extra    = Person.register_model('Extra')
+      Actor    = Extra.register_model('Actor')
+      Director = Actor.register_model('Director')
+      director = new Director
+      expect(director.labels).to.have.length 4
+      expect(director.labels[0]).to.be.equal 'Director'
+      expect(director.labels[1]).to.be.equal 'Actor'
+      expect(director.labels[2]).to.be.equal 'Extra'
+      expect(director.labels[3]).to.be.equal 'Person'
+      expect(director.label).to.be.equal 'Director'
+      uid = new Date
+      director.data =
+        name: 'Roman Polanski'
+        uid: uid
+      director.save (err, polanski) ->
+        expect(polanski.labels).to.have.length 4
+        expect(director.labels).to.have.length 4
+        expect(director.label).to.be.equal 'Director'
+        expect(polanski.label).to.be.equal 'Director'
+        done()
 
     it 'expect to create a node', (done) ->
       node = new Node title: new Date().toString()
@@ -601,13 +625,23 @@ describe 'Neo4jMapper', ->
                     expect(err).to.be null
                     expect(labels).to.have.length 1
                     expect(labels[0]).to.be.equal 'Person'
-                    Person.findOne().where { name: 'Jeff Bridges' }, (err, found) ->
+                    Person.findById jeff.id, (err, found) ->
                       expect(err).to.be null
                       found.load (err, jeff) ->
                         expect(jeff.label).to.be.equal 'Person'
                         expect(jeff.labels).to.have.length 1
                         expect(jeff.labels[0]).to.be.equal 'Person'
                         done()
+
+    it 'expect to set labels manually as array and persist them', (done) ->
+      n = new Node( date: new Date )
+      n.labels = [ 'Person', 'Actor' ]
+      n.save (err, node) ->
+        expect(err).to.be null
+        expect(node.labels).to.have.length 2
+        n.allLabels (err, labels) ->
+          expect(labels).to.have.length 2
+          done()
 
     it 'expect to find labeled node, with and without class', (done) ->
       class Person extends Node

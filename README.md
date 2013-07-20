@@ -75,7 +75,46 @@ Since JavaScript has no classes, we have to define models and extend it on the `
 
 Every defined model will enjoy the label support.
 
-Coffeescript and it's class pattern is the most convenient way to define models:
+```js
+  var Person = Node.register_model('Person', {
+    fields: {
+      indexes: {
+        email: true
+      },
+      defaults: {
+        created_on: function() {
+          return new Date().getTime();
+        }
+      }
+    },
+    fullname: function() {
+      var s = this.firstName + " " + this.surname;
+      return s.trim();
+    }
+  });
+
+  var alice = new Person({firstName: 'Alice', surname: 'Springs'});
+
+  alice.fullname();
+  ~> 'Alice Springs'
+  alice.save(function(err,alice) {
+    alice.label;
+    ~> 'Person'
+  });
+
+  // You can also enjoy multiple inheritance
+  // here: Director extends Person
+  // Director will have the labels [ 'Director', 'Person' ]
+  var Director = Person.register_model('Director', {
+    fields: {
+      defaults: {
+        job: 'Director'
+      }
+    }
+  });
+```
+
+Coffeescript and it's class pattern is maybe the most convenient way to define models:
 
 ```coffeescript
   class Person extends Node
@@ -96,35 +135,9 @@ Coffeescript and it's class pattern is the most convenient way to define models:
   alice.save ->
     alice.label
     ~> 'Person'
-```
 
-The same in JavaScript:
-
-```js
-  var Person = Node.register_model('Person', {
-    fields: {
-      indexes: {
-        email: true
-      }, defaults: {
-        created_on: function() {
-          return new Date().getTime();
-        }
-      }
-    },
-    fullname: function() {
-      var s = this.firstName + " " + this.surname;
-      return s.trim();
-    }
-  });
-
-  var alice = new Person({firstName: 'Alice', surname: 'Springs'});
-
-  alice.fullname();
-  ~> 'Alice Springs'
-  alice.save(function(err,alice) {
-    alice.label;
-    ~> 'Person'
-  });
+  class Director extends Person
+  Node.register_model(Director)
 ```
 
 ### Connect Nodes / Create Relationships
