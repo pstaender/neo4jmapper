@@ -711,6 +711,19 @@ describe 'Neo4jMapper', ->
                 expect(err.message).to.be.equal 'More than one node found… You have query one distinct result'
                 done()
 
+    it 'expect to see whether a node is persisted or not', (done) ->
+      n = new Node()
+      expect(n.isPersisted()).to.be false
+      n.save (err, node) ->
+        expect(node.isPersisted()).to.be true
+        node.data.name = 'changed value'
+        expect(node.isPersisted()).to.be false
+        node.save ->
+          expect(node.isPersisted()).to.be true
+          Node.findById node.id, (err, node) ->
+            expect(node.isPersisted()).to.be true
+            done()
+
   describe 'index', ->
 
     it 'expect to index and get an indexed node', (done) ->

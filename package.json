@@ -1,7 +1,7 @@
 {
   "name": "neo4jmapper",
   "description": "Neo4jMapper is a client- and serverside object mapper for neo4j graphdatabases",
-  "version": "0.8.11",
+  "version": "0.8.12",
   "author": "Philipp Staender <philipp.staender@gmail.com>",
   "homepage": "https://github.com/pstaender/neo4jmapper/",
   "main": "./src/index",
@@ -26,7 +26,8 @@
     "blanket": {
       "pattern": "src"
     },
-    "doc": "docco src/*.js"
+    "doc": "docco src/*.js",
+    "benchmark": "coffee benchmark/benchmark.coffee"
   },
   "devDependencies": {
     "mocha": "~1.9",
@@ -39,7 +40,9 @@
     "mocha-lcov-reporter": "0.0.1",
     "blanket": "~1.1.5",
     "jscoverage": "~0.3.7",
-    "coffee-script": "~1.6.3"
+    "coffee-script": "~1.6.3",
+    "optimist": "~0.6.0",
+    "benchmark": "~1.0.0"
   },
   "dependencies": {
     "underscore": "~1.4",

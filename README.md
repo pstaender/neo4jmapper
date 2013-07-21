@@ -558,6 +558,10 @@ If a node is populated with data from a response, you can process your node/data
 
 **To reduce database requests you can switch load hooks on and off by Node.prototype.disableLoading() / Node.prototype.enableLoading()**
 
+### Benchmarks
+
+Some basic benchmark tests are written. To get reasonable benchmark results we compare neo4jmapper with the node-neo4j library (a robust basic neo4j driver). You can execute them with `coffee benchmark/benchmark.coffee` (beware that a lot of nodes will be written and kept in your database).
+
 ## LICENSE
 
 © 2013 by Philipp Staender under the GNU General Public License

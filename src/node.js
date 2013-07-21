@@ -131,7 +131,7 @@ Node.prototype._response = null;                  // original response object
 Node.prototype._modified_query_ = false;          // flag to remember that a query chaining method was invoked 
 Node.prototype._stream_ = null;                   // flag for processing result data
 Node.prototype.is_singleton = false;              // flag that this object is a singleton
-Node.prototype.is_persisted = false;              // flag that this object is stored at least once in the db
+Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
 Node.prototype.cypher = {};                       // will be overwritten with the default values of `cypher_defaults`
 Node.prototype.is_instanced = null;               // flag that this object is instanced
 
@@ -460,6 +460,25 @@ Node.prototype.getIndex = function(cb) {
   });
 }
 
+Node.prototype._hashData_ = function() {
+  if (this.hasValidData())
+    return helpers.md5(JSON.stringify(this.data));
+  else
+    return null;
+} 
+
+Node.prototype.isPersisted = function(setToTrueOrFalse) {
+  if (typeof setToTrueOrFalse !== 'undefined') {
+    // use as setter
+    if (setToTrueOrFalse) {
+      this._hashedData_ = this._hashData_();
+    } else {
+      this._hashedData_ = null;
+    }
+  }
+  return (this._hashedData_) ? (this._hashData_() === this._hashedData_) : false;
+}
+
 Node.prototype.save = function(cb) {
   var self = this;
   var labels = (self.labels.length > 0) ? self.labels : null;
@@ -495,7 +514,7 @@ Node.prototype.onSave = function(cb) {
     data = self;
     self.is_singleton = false;
     self.is_instanced = true;
-    self.is_persisted = true;
+    self.isPersisted(true);
     // if we have defined fields to index
     // we need to call the cb after indexing
     if (self.hasFieldsToIndex()) {
@@ -646,7 +665,7 @@ Node.prototype.populateWithDataFromResponse = function(data) {
       node.id = node._id_ = Number(node._response.self.match(/[0-9]+$/)[0]);
     }
   }
-  node.is_persisted = true;
+  node.isPersisted(true);
   if (typeof node.onAfterPopulate === 'function')
     node.onAfterPopulate();
   return node;
