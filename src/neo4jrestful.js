@@ -294,6 +294,10 @@ var initNeo4jRestful = function() {
         else if (jQuery(err.responseText).text()) {
           err.responseText = jQuery(err.responseText).text().trim();
         }
+      } else {
+        // remove all tags to get plain message
+        // TODO: find a real jQuery replacement
+        err.responseText = err.responseText.replace(/(<([^>]+)>)/ig,'').trim();
       }
     } catch(e) {
       // ignore exception
