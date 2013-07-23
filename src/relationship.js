@@ -48,7 +48,8 @@ Relationship = function Relationship(data, start, end, id) {
     defaults: _.extend({}, this.fields.defaults)
   });
   // each relationship object has it's own restful client
-  this.neo4jrestful = _.extend(Relationship.prototype.neo4jrestful);
+  this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
+  this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);
   this.is_instanced = true;
 }
 
@@ -61,6 +62,7 @@ Relationship.prototype.from = null;
 Relationship.prototype.to = null;
 Relationship.prototype.id = null;
 Relationship.prototype._id_ = null;
+Relationship.prototype._hashedData_ = null;
 Relationship.prototype.uri = null;
 Relationship.prototype._response = null;
 // Relationship.prototype._modified_query = false;
@@ -77,15 +79,9 @@ Relationship.prototype.__type_identifier__ = 'r';
 
 Relationship.prototype.singleton = function() {
   var relationship = new Relationship();
-  relationship.neo4jrestful = _.extend(Relationship.prototype.neo4jrestful);
   relationship.is_singleton = true;
   // relationship.resetQuery();
   return relationship;
-}
-
-
-Relationship.prototype.hasId = function() {
-  return ((this.is_instanced) && (this.id > 0)) ? true : false;
 }
 
 Relationship.prototype.setPointUriById = function(startOrEnd, id) {
@@ -111,56 +107,32 @@ Relationship.prototype.setPointIdByUri = function(startOrEnd, uri) {
   }
 }
 
-Relationship.prototype.setUriById = function(id) {
-  if (_.isNumber(id))
-    return this.uri = this.neo4jrestful.baseUrl+'db/data/relationship/'+id;
-}
-
 Relationship.prototype.applyDefaultValues = null; // will be initialized
 
 Relationship.prototype.findById = function(id, cb) {
   var self = this;
   if (!self.is_singleton)
-    self = this.singleton();
-  return this.neo4jrestful.get('/db/data/relationship/'+Number(id), function(err, relationship) {
-    if ((err)||(!relationship))
-      return cb(err, relationship);
-    else {
-      relationship.load(cb);
-    }
-  });
-}
-
-Relationship.prototype.save = function(cb) {
-  var self = this;
-  if (this.is_singleton)
-    return cb(Error('Singleton instances can not be persisted'), null);
-  this._modified_query = false;
-  this.applyDefaultValues();
-  if (this._id_) {
-    // copy 'private' _id_ to public
-    this.id = this._id_;
-    return this.update(cb);
-  } else {
-    var url = '/db/relationship/relationship';
-    this.neo4jrestful.post(url, { data: helpers.flattenObject(this.data) }, function(err,data){
-      if (err)
-        cb(err,data);
-      else {
-        self.populateWithDataFromResponse(data);
-        return cb(null, data);
+    self = this.singleton(undefined, this);
+  if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
+    // to reduce calls we'll make a specific restful request for one node
+    return self.neo4jrestful.get('/db/data/'+this.__type__+'/'+id, function(err, object) {
+      if ((object) && (typeof self.load === 'function')) {
+        //  && (typeof node.load === 'function')     
+        object.load(cb);
+      } else {
+        cb(err, object);
       }
     });
   }
+  return this;
 }
 
-// Relationship.prototype.update = Node.prototype.update;
-
-// TODO: save  functionality as Node.update() asap!!!
+// // // TODO: save  functionality as Node.update() asap!!!
 Relationship.prototype.update = function(data, cb) {
   var self = this;
   if (helpers.isValidData(data)) {
     this.data = _.extend(this.data, data);
+    data = this.flattenData();
   } else {
     cb = data;
   }
@@ -170,7 +142,7 @@ Relationship.prototype.update = function(data, cb) {
   if (this.hasId()) {
     // copy 'private' _id_ to public
     this.id = this._id_;
-    this.neo4jrestful.put('/db/data/relationship/'+this.id+'/properties', { data: helpers.flattenObject(this.data) }, function(err,data){
+    this.neo4jrestful.put('/db/data/'+this.__type__+'/'+this.id+'/properties', { data: data }, function(err,data){
       if (err)
         return cb(err, data);
       else
@@ -179,6 +151,19 @@ Relationship.prototype.update = function(data, cb) {
   } else {
     return cb(Error('You have to save() the relationship before you can perform an update'), null);
   }
+}
+
+Relationship.prototype.save = function(cb) {
+  var self = this;
+  self.onBeforeSave(self, function(err) {
+    // don't execute if an error is passed through
+    if ((typeof err !== 'undefined')&&(err !== null))
+      cb(err, null);
+    else
+      self.onSave(function(err, node, debug) {
+        self.onAfterSave(self, cb, debug);
+      });
+  });
 }
 
 Relationship.prototype.populateWithDataFromResponse = function(data, create) {
@@ -211,6 +196,7 @@ Relationship.prototype.populateWithDataFromResponse = function(data, create) {
     }
   }
   relationship.is_persisted = true;
+  relationship.isPersisted(true);
   return relationship;
 }
 
@@ -286,12 +272,24 @@ Relationship.prototype.toObject = function() {
   return o;
 }
 
+Relationship.prototype.onBeforeSave = function(node, next) {
+  next(null, null);
+}
+
+Relationship.prototype.onAfterSave = function(node, next, debug) {
+  return next(null, node, debug);
+}
+
 /*
  * Static singleton methods
  */
 
 Relationship.findById = function(id, cb) {
   return this.prototype.findById(id, cb);
+}
+
+Relationship.recommendConstructor = function() {
+  return Relationship;
 }
 
 var initRelationship = function(neo4jrestful) {
@@ -306,24 +304,26 @@ var initRelationship = function(neo4jrestful) {
       Node = initNode(neo4jrestful);
       window.Neo4jMapper.Relationship.prototype.neo4jrestful = neo4jrestful;
       window.Neo4jMapper.Relationship.prototype.applyDefaultValues = window.Neo4jMapper.Node.prototype.applyDefaultValues;
-      return window.Neo4jMapper.Relationship;
+      // return window.Neo4jMapper.Relationship;
     } else {
       // nodejs
       Node = require('./node')(neo4jrestful);
       Relationship.prototype.neo4jrestful = neo4jrestful;
       Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;
-      return Relationship;
     }
     
   }
 
   /* from Node */
 
-  Relationship.recommendConstructor = function() {
-    return Relationship;
-  }
-
-  Relationship.prototype.copy_of = Node.prototype.copy_of;
+  Relationship.prototype.copy_of          = Node.prototype.copy_of;
+  Relationship.prototype.onSave           = Node.prototype.onSave;
+  Relationship.prototype.hasValidData     = Node.prototype.hasValidData;
+  Relationship.prototype.flattenData      = Node.prototype.flattenData;
+  Relationship.prototype.setUriById       = Node.prototype.setUriById;
+  Relationship.prototype.isPersisted      = Node.prototype.isPersisted;
+  Relationship.prototype.hasId            = Node.prototype.hasId;
+  Relationship.prototype._hashData_       = Node.prototype._hashData_;
 
   return Relationship;
 

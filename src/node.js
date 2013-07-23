@@ -259,7 +259,7 @@ Node.prototype.hasId = function() {
 
 Node.prototype.setUriById = function(id) {
   if (_.isNumber(id))
-    return this.uri = this.neo4jrestful.baseUrl+'db/data/node/'+id;
+    return this.uri = this.neo4jrestful.baseUrl+'db/data/'+this.__type__+'/'+id;
 }
 
 Node.prototype.flattenData = function(useReference) {
@@ -503,7 +503,7 @@ Node.prototype.onSave = function(cb) {
   if (this.is_singleton)
     return cb(Error('Singleton instances can not be persisted'), null);
   if (!this.hasValidData())
-    return cb(Error('Node does not contain valid data. `node.data` must be an object.'));
+    return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
   this._modified_query_ = false;
   this.applyDefaultValues();
   var method = null;
@@ -514,7 +514,8 @@ Node.prototype.onSave = function(cb) {
     data = self;
     self.is_singleton = false;
     self.is_instanced = true;
-    self.isPersisted(true);
+    if (!err)
+      self.isPersisted(true);
     // if we have defined fields to index
     // we need to call the cb after indexing
     if (self.hasFieldsToIndex()) {
@@ -532,7 +533,7 @@ Node.prototype.onSave = function(cb) {
 
   if (this.id > 0) {
     method = 'update';
-    this.neo4jrestful.put('/db/data/node/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+    this.neo4jrestful.put('/db/data/'+this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
       if ((err) || (!node))
         return cb(err, node);
       self.populateWithDataFromResponse(node._response);
@@ -540,7 +541,7 @@ Node.prototype.onSave = function(cb) {
     });
   } else {
     method = 'create';   
-    this.neo4jrestful.post('/db/data/node', { data: this.flattenData() }, function(err, node, debug) {
+    this.neo4jrestful.post('/db/data/'+this.__type__, { data: this.flattenData() }, function(err, node, debug) {
       if ((err) || (!node))
         return cb(err, node);
       _prepareData(err, node, debug);
@@ -1764,12 +1765,12 @@ Node.prototype.findById = function(id, cb) {
     self = this.singleton(undefined, this);
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
-    return self.neo4jrestful.get('/db/data/'+this.__type__+'/'+id, function(err, node) {
-      if ((node) && (typeof self.load === 'function')) {
+    return self.neo4jrestful.get('/db/data/'+this.__type__+'/'+id, function(err, object) {
+      if ((object) && (typeof self.load === 'function')) {
         //  && (typeof node.load === 'function')     
-        node.load(cb);
+        object.load(cb);
       } else {
-        cb(err, node);
+        cb(err, object);
       }
     });
   } else {

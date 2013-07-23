@@ -25,6 +25,9 @@ if (typeof root !== "undefined" && root !== null) {
 }
 
 describe('Neo4jMapper (helpers)', function() {
+  it('expect to generate md5 hashes', function() {
+    return expect(helpers.md5('Hellö World!')).to.be.equal('909bba9bc963cd9f20d8d9e29d16c7f2');
+  });
   it('escapeString', function() {
     var s;
     s = helpers.escapeString("'a test's'");

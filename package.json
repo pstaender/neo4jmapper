@@ -21,13 +21,14 @@
   ],
   "scripts": {
     "test": "coffee -mcb test/ && mocha; npm run clean",
-    "clean": "find test -name '*.js' -delete -o -name '*.map' -delete",
+    "clean": "find test -maxdepth 1 -name 'test_*.js' -delete -o -name '*.map' -delete",
     "preinstall": "npm i -g coffee-script mocha-lcov-reporter",
     "blanket": {
       "pattern": "src"
     },
     "doc": "docco src/*.js",
-    "benchmark": "coffee benchmark/benchmark.coffee"
+    "benchmark": "coffee benchmark/benchmark.coffee",
+    "compress": "cake clientsidejs:build && uglifyjs examples/browser/neo4jmapper_complete.js -c -o examples/browser/neo4jmapper_complete.min.js"
   },
   "devDependencies": {
     "mocha": "~1.9",
@@ -42,7 +43,8 @@
     "jscoverage": "~0.3.7",
     "coffee-script": "~1.6.3",
     "optimist": "~0.6.0",
-    "benchmark": "~1.0.0"
+    "benchmark": "~1.0.0",
+    "uglify-js": "~2.3.6"
   },
   "dependencies": {
     "underscore": "~1.4",

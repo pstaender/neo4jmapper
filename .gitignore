@@ -8,3 +8,5 @@ test/coverage.html
 src-cov/*
 coverage.lcov
 docs/*
+examples/browser/neo4jmapper_complete.js
+examples/browser/neo4jmapper_complete.min.js

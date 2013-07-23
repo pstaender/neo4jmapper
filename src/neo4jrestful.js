@@ -29,7 +29,7 @@ var initNeo4jRestful = function() {
     // nodejs
     helpers      = require('./helpers');
     _            = require('underscore');
-    jQuery       = require('jquery');
+    jQuery       = null;//require('jquery');
     node         = require('./node');
     relationship = require('./relationship');
     path         = require('./path');

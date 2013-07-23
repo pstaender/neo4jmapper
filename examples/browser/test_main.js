@@ -1126,7 +1126,7 @@ describe('Neo4jMapper', function() {
         });
       });
     });
-    return it('expect to find or create a node', function(done) {
+    it('expect to find or create a node', function(done) {
       var User, uid, _ref1;
       uid = new Date().getTime();
       User = (function(_super) {
@@ -1177,6 +1177,23 @@ describe('Neo4jMapper', function() {
                 return done();
               });
             });
+          });
+        });
+      });
+    });
+    return it('expect to see whether a node is persisted or not', function(done) {
+      var n;
+      n = new Node();
+      expect(n.isPersisted()).to.be(false);
+      return n.save(function(err, node) {
+        expect(node.isPersisted()).to.be(true);
+        node.data.name = 'changed value';
+        expect(node.isPersisted()).to.be(false);
+        return node.save(function() {
+          expect(node.isPersisted()).to.be(true);
+          return Node.findById(node.id, function(err, node) {
+            expect(node.isPersisted()).to.be(true);
+            return done();
           });
         });
       });

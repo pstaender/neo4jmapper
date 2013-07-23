@@ -15,18 +15,13 @@ module.exports = exports = function(urlOrOptions) {
   
   // Provide all necessary interfaces to use Noe4jMapper
   var Neo4jRestful = require('./neo4jrestful');
-
-  var Graph         = require('./graph');
-  var node          = require('./node');
-  var relationship  = require('./relationship');
-  var path          = require('./path');
-
   // Create a client from given URL
   var neo4jrestful  = new Neo4jRestful(urlOrOptions);
 
-  var Node          = node(neo4jrestful);
-  var Relationship  = relationship(neo4jrestful);
-  var Path          = path(neo4jrestful);
+  var Graph         = require('./graph');
+  var Node          = require('./node')(neo4jrestful);
+  var Relationship  = require('./relationship')(neo4jrestful);
+  var Path          = require('./path')(neo4jrestful);
 
   return {
     Node: Node,
