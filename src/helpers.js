@@ -166,40 +166,63 @@ var neo4jmapper_helpers = {};
       condition = [ condition ];
     if (typeof operator === 'undefined')
       operator = 'AND';
-    _.each(condition,function(value, key){
-      if ( (_is_operator.test(key)) && (_.isArray(condition[key])) ) {
-        condition[key] = conditionalParameterToString(condition[key], key.replace(/\$/g,' ').trim().toUpperCase(), options);
-      } else {
-        if (_.isObject(condition[key])) {
-          var properties = [];
-          var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
-          if ((firstKey)&&(_is_operator.test(firstKey))) {
-            properties.push(conditionalParameterToString(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
-          } else {
-            _.each(condition[key], function(value, key) {
-              if (value === key) {
-                properties.push(value);
-              } else {
-                properties.push(cypherKeyValueToString(
-                  key,
-                  value, 
-                  // only add an identifier if we have NOT s.th. like
-                  // n.name = ''  or r.since …
-                  (/^[a-zA-Z\_\-]+\./).test(key) ? null : options.identifier
-                ));
+    if (typeof condition === 'object')
+      for (var key in condition) {
+        var value = condition[key];
+        if ( (_is_operator.test(key)) && (_.isArray(condition[key])) ) {
+          condition[key] = conditionalParameterToString(condition[key], key.replace(/\$/g,' ').trim().toUpperCase(), options);
+        } else {
+          if (_.isObject(condition[key])) {
+            var properties = [];
+            var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
+            if ((firstKey)&&(_is_operator.test(firstKey))) {
+              properties.push(conditionalParameterToString(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
+            } else {
+              for (var k in condition[key]) {
+                var value = condition[key][k]; 
+                if (value === k) {
+                  properties.push(value);
+                } else {
+                  properties.push(cypherKeyValueToString(
+                    k,
+                    value, 
+                    // only add an identifier if we have NOT s.th. like
+                    // n.name = ''  or r.since …
+                    (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
+                  ));
+                }
               }
-            });
+            }
+            condition[key] = properties.join(' '+operator+' ');
           }
-          condition[key] = properties.join(' '+operator+' ');
         }
       }
-    });
+
     if ((condition.length === 1)&&(options.firstLevel === false)&&(/NOT/i.test(operator)))
       return operator + ' ( '+condition.join('')+' )';
     else
       return '( '+condition.join(' '+operator+' ')+' )';
   }
 
+  // var extractAttributesFromCondition = function(condition, attributes) {
+  //   if (typeof attributes === 'undefined')
+  //     attributes = [];
+  //   // _.each(condition, function(value, key) {
+  //   // if (typeof condition === 'object')
+  //   for (var key in condition) {
+  //     var value = condition[key];
+
+  //     if ((typeof value === 'object') && (value.constructor !== Array)) {
+  //       extractAttributesFromCondition(condition[key], attributes);
+  //     }
+  //     if ( (!_is_operator.test(key)) && (/^[a-zA-Z\_\-\.]+$/.test(key)) ) {
+  //       // remove identifiers if exists
+  //       attributes.push(key.replace(/^[nmr]{1}\./,''));
+  //     }
+  //   }
+  //   // });
+  // return _.uniq(attributes);
+  // }
   var extractAttributesFromCondition = function(condition, attributes) {
     if (typeof attributes === 'undefined')
       attributes = [];

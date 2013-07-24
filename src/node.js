@@ -2,7 +2,7 @@
 //
 // The Node object is to create, connect and query all kind of Node(s).
 // You can register your own model
-
+// TODO: better error message on createRelationship…
 
 // Requirements (for browser and nodejs):
 // * neo4jmapper helpers
@@ -35,6 +35,7 @@ var cypher_defaults = {
   distinct: null,         // `DISTINCT` option
   return_properties: [],  // [a|b|n|r|p], will be joined with `, `
   where: [],              // `WHERE`  statements, will be joined with `AND`
+  hasProperty: [],   
   from: null,             // Number
   to: null,               // Number
   direction: null,        // (incoming|outgoing|all)
@@ -245,6 +246,7 @@ Node.prototype.resetQuery = function() {
   this.cypher = {}
   _.extend(this.cypher, cypher_defaults);
   this.cypher.where = [];
+  this.cypher.hasProperty = [];
   this.cypher.match = [];
   this.cypher.return_properties = [];
   this._modified_query_ = false;
@@ -864,6 +866,14 @@ Node.prototype._prepareQuery = function() {
       query.where.push("id("+identifier+") = "+query.by_id);
     }
   }
+  // add all `HAS (property)` statements to where 
+  if (query.hasProperty.length > 0) {
+    // remove duplicate properties, not necessary but looks nicer
+    var whereHasProperties = _.uniq(query.hasProperty);
+    for (var i = whereHasProperties.length-1; i>=0; i--) {
+      query.where.unshift('HAS ('+whereHasProperties[i]+')');
+    }
+  }
   return query;
 }
 
@@ -1273,14 +1283,16 @@ Node.prototype.andWhere = function(where, cb, _options) {
       where = [ where ];
   }
   var attributes = helpers.extractAttributesFromCondition(_.extend(where));
-  for (var i = 0; i < attributes.length; i++) {
-    this.whereHasProperty(attributes[i]);
-  }
+
   if (typeof _options === 'undefined')
     _options = {};
   if (typeof _options.identifier !== 'string')
     // good or bad idea that we use by default n as identifier?
     _options.identifier = 'n';
+
+  for (var i = 0; i < attributes.length; i++) {
+    this.whereHasProperty(attributes[i], _options.identifier);
+  }
   this.cypher.where.push(helpers.conditionalParameterToString(_.extend(where),undefined,_options));
   this.exec(cb);
   return this; // return self for chaining
@@ -1318,7 +1330,7 @@ Node.prototype.andWhereNode = function(where, cb) {
   return this.andWhere(where, cb, { identifier: 'n' });
 }
 
-Node.prototype.andWereRelationship = function(where, cb) {
+Node.prototype.andWhereRelationship = function(where, cb) {
   return this.andWhere(where, cb, { identifier: 'r' });
 }
 
@@ -1343,7 +1355,7 @@ Node.prototype.whereHasProperty = function(property, identifier, cb) {
     // no identifier found, guessing from return properties
     if (typeof identifier !== 'string')
       identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
-    this.andWhere('HAS ('+identifier+'.`'+property+'`)');
+    this.cypher.hasProperty.push(identifier+'.`'+property+'`');
   }
   this.exec(cb);
   return this; // return self for chaining

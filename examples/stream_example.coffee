@@ -16,6 +16,7 @@ console.error "Querying all nodes… please standby…"
 graph = new Graph()
 graph.countNodes (err, countAll) ->
   perc = 100/countAll
+
   Node.findAll().each (node) ->
     if node is null
       summary(count, countAll)
