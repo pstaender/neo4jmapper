@@ -1470,6 +1470,8 @@ Node.prototype.createRelationship = function(options, cb) {
     properties: null,
     distinct: null
   }, options);
+  if (typeof options.type !== 'string')
+    throw Error("You have to give the type of relationship, e.g. 'knows|follows'");
   if (options.properties)
     options.properties = helpers.flattenObject(options.properties);
 

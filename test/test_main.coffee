@@ -772,6 +772,14 @@ describe 'Neo4jMapper', ->
       charles = new Node name: 'Charles'
       alice.save -> bob.save -> charles.save ->
         graphdb.countRelationships (err, countedRelationshipsBefore) ->
+          try
+            alice.createRelationshipBetween(bob, ->)
+          catch e
+            expect(e).to.be.an Error
+          try
+            alice.createRelationshipBetween(bob, { since: 'years' }, ->)
+          catch e
+            expect(e).to.be.an Error
           alice.createRelationshipBetween bob, 'knows', { since: 'years' }, (err, result) ->
             expect(err).to.be null
             expect(result).to.have.length 2

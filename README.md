@@ -8,7 +8,7 @@ Neo4jMapper is an **object mapper for neo4j databases**. It's written in JavaScr
 
 Neo4jMapper offers query building and object mapping for the daily neo4j usage in JavaScript. If you have worked already with mongodb (in particular with mongoose) you'll find many similarities:
 
-  * querying Nodes and Relationships (basic and advanced) by object-chaining
+  * querying nodes with relationships (basic and advanced) via object-chaining
   * using object modeling for label-, index-, default-value- and data-processing-support
   * schema-less but with json to key-value-storage support (flatten/unflatten, escaping …)
 
