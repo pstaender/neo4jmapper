@@ -116,6 +116,15 @@ describe 'Neo4jMapper', ->
             expect(count).to.be.equal count
             done()
 
+    it 'expect to measure time of request and response', (done) ->
+      graph = new Graph()
+      graph.countAll (err, count) ->
+        expect(err).to.be null
+        expect(graph.neo4jrestful.responseTime()).to.be.above 1
+        expect(graph.neo4jrestful.responseTimeAsString()).to.match /^\d+(\.\d+)*\[s\]$/
+        done()
+
+
   describe 'stream', ->
 
     it 'expect to make a stream request on nodes and models', (SkipInBrowser) (done) ->
@@ -1004,4 +1013,16 @@ describe 'Neo4jMapper', ->
                     expect(updatedRelationship.data.since).to.be.equal 'weeks'
                     expect(updatedRelationship.data.city).to.be.equal 'Cologne'
                     done()
+
+    it 'expect to have schema like behaviour on relationships', (done) ->
+      Relationship::fields.defaults =
+        created_on: -> String(new Date)
+        checked: true
+      new Node( name: 'Alice' ).save (err, a) ->
+        new Node( name: 'Bob' ).save (err, b) ->
+          a.createRelationshipTo b, 'knows', (err, r) ->
+            expect(err).to.be null
+            expect(r.data.created_on).to.be.a 'string'
+            expect(r.data.checked).to.be.equal true
+            done()
 

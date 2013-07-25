@@ -23,20 +23,25 @@ var initGraph = function(neo4jrestful) {
     throw Error('You have to use an Neo4jRestful object as argument')
 
   // Constructor
-  Graph = function() {
+  Graph = function Graph(url) {
+    if (url) {
+      this.neo4jrestful = new this.neo4jrestful.constructor(url);
+    }
   }
+
+  Graph.prototype.neo4jrestful = neo4jrestful;
 
   // Will contain the info response of the neo4j database
   Graph.prototype.info = null;
 
   // Shortcut for neo4jrestul.query
   Graph.prototype.query = function(cypher, options, cb) {
-    return neo4jrestful.query(cypher,options,cb);
+    return this.neo4jrestful.query(cypher,options,cb);
   }
 
   // Shortcut for neo4jrestul.stream
   Graph.prototype.stream = function(cypher, options, cb) {
-    return neo4jrestful.stream(cypher,options,cb);
+    return this.neo4jrestful.stream(cypher,options,cb);
   }
 
   // Deletes *all* nodes and *all* relationships
@@ -89,7 +94,7 @@ var initGraph = function(neo4jrestful) {
     if (this.info)
       return cb(null,info);
     else
-      return neo4jrestful.get('/db/data/', function(err, info){
+      return this.neo4jrestful.get('/db/data/', function(err, info){
         if (info) {
           self.info = info
         }

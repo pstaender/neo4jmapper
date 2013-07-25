@@ -45,7 +45,8 @@ Relationship = function Relationship(data, start, end, id) {
     this.setUriById(id);
   }
   this.fields = _.extend({},{
-    defaults: _.extend({}, this.fields.defaults)
+    defaults: _.extend({}, this.fields.defaults),
+    indexes: _.extend({}, this.fields.indexes) // TODO: implement
   });
   // each relationship object has it's own restful client
   this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
@@ -71,7 +72,8 @@ Relationship.prototype.is_persisted = false;
 Relationship.prototype.cypher = {};
 Relationship.prototype.is_instanced = null;
 Relationship.prototype.fields = {
-  defaults: {}
+  defaults: {},
+  indexes: {}
 };
 
 Relationship.prototype.__type__ = 'relationship';

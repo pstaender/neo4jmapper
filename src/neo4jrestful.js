@@ -124,6 +124,10 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype.version = null;
   Neo4jRestful.prototype.ignore_exception_pattern = /^(Node|Relationship)NotFoundException$/;
 
+  // is used for measurement of request-to-respond
+  Neo4jRestful.prototype._request_on_ = null;
+  Neo4jRestful.prototype._response_on_ = null;
+
   Neo4jRestful.prototype.connection_established = false;
 
   Neo4jRestful.prototype.singleton = function() {
@@ -381,6 +385,8 @@ var initNeo4jRestful = function() {
     this.log('**debug**', 'URI:', options.method+":"+options.url);
     this.log('**debug**', 'sendedData:', data);
     this.log('**debug**', 'sendedHeader:', this.header);
+
+    this._request_on_ = new Date().getTime();
     
     // stream
     if (this.header['X-Stream'] === 'true') {
@@ -394,6 +400,7 @@ var initNeo4jRestful = function() {
       });
 
       stream.on('root', function(root, count) {
+        self._response_on_ = new Date().getTime();
         // remove x-stream from header
         delete self.header['X-Stream'];
         if (!count) {
@@ -406,6 +413,7 @@ var initNeo4jRestful = function() {
     // or send response
     else {
       req.end(function(err, res) {
+        self._response_on_ = new Date().getTime();
         if (err) {
           self.onError(cb, err, 'error', options);
         } else {
@@ -471,6 +479,23 @@ var initNeo4jRestful = function() {
         return p;
       }
     return responseData;
+  }
+
+  Neo4jRestful.prototype.responseTime = function() {
+    if ((this._request_on_ > 0) && (this._response_on_ > 0)) {
+      return this._response_on_ - this._request_on_;
+    } else {
+      return null;
+    }
+  }
+
+  Neo4jRestful.prototype.responseTimeAsString = function() {
+    var time = this.responseTime();
+    if (time) {
+      return Math.floor(time/10)/100 + '[s]';
+    } else {
+      return '';
+    }
   }
 
   return Neo4jRestful;

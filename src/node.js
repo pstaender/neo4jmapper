@@ -3,6 +3,7 @@
 // The Node object is to create, connect and query all kind of Node(s).
 // You can register your own model
 // TODO: better error message on createRelationship…
+// TODO: using index on queries: `match p:Person using index p:Person(first_name) where …` (http://www.terminalstate.net/2013/05/labels-and-schema-indexes-in-neo4j.html)
 
 // Requirements (for browser and nodejs):
 // * neo4jmapper helpers
