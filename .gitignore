@@ -10,3 +10,4 @@ coverage.lcov
 docs/*
 examples/browser/neo4jmapper_complete.js
 examples/browser/neo4jmapper_complete.min.js
+examples/browser/test_*.js

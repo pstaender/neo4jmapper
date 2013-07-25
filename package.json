@@ -29,7 +29,7 @@
     "doc": "docco src/*.js",
     "benchmark": "coffee benchmark/benchmark.coffee",
     "compress": "cake clientsidejs:build && uglifyjs examples/browser/neo4jmapper_complete.js -c -o examples/browser/neo4jmapper_complete.min.js",
-    "prepareForPublish": "npm test && npm run doc && make test-coverage && npm run compress"
+    "prepare": "npm test && npm run doc && make test-coverage && npm run compress"
   },
   "devDependencies": {
     "mocha": "~1.9",
