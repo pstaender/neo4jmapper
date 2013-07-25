@@ -436,7 +436,7 @@ or in the browser of your choice by opening the `examples/browser/tests.html` fi
 
 ## Usage and Testing in Browser
 
-Nearly all features of the library are usable in modern Browsers as well (currently tested on newest Chrome and Firefox only, but IE and Safari should work as well). To give it a try yourself, run `npm run compress`, that will generate all needed js files. If you want to run the tests as well, use `npm run prepare`.
+Nearly all features of the library are usable in modern Browsers as well (currently tested on newest Chrome and Firefox only, but IE and Safari should work as well). To give it a try execute `npm run compress`, that will generate all needed js files. If you want to run the tests in the browser as well, use `npm run prepare` to let all test file be generated.
 
 You'll find a ready-to-use-console in `examples/browser/console/console.html`. To use it with your local database you gave to ensure that you access the page from the same domain as your database to avoid `access-control-allow-origin` situation.
 
