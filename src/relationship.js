@@ -54,6 +54,7 @@ Relationship = function Relationship(data, start, end, id) {
   this.is_instanced = true;
 }
 
+Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
 Relationship.prototype.neo4jrestful = null; // will be initialized
 Relationship.prototype.data = {};
 Relationship.prototype.start = null;
@@ -259,6 +260,7 @@ Relationship.prototype.onAfterLoad = function(relationship, next) {
 Relationship.prototype.toObject = function() {
   var o = {
     id: this.id,
+    classification: this.classification,
     data: _.extend(this.data),
     start: this.start,
     end: this.end,

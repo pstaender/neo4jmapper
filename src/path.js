@@ -27,6 +27,7 @@ Path = function Path(data) {
   this.neo4jrestful = _.extend(Path.prototype.neo4jrestful);
 }
 
+Path.prototype.classification = 'Path'; // only needed for toObject()
 Path.prototype.neo4jrestful = null; // will be initialized
 Path.prototype.from = null;
 Path.prototype.to = null;
@@ -117,6 +118,7 @@ Path.prototype.populateWithDataFromResponse = function(data) {
 
 Path.prototype.toObject = function() {
   return {
+    classification: this.classification,
     start: this.start,
     end: this.end,
     from: _.extend(this.from),

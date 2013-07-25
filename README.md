@@ -73,9 +73,14 @@ or shorter with
 
 Since JavaScript has no classes, we have to define models and extend it on the `Node` object - like you may know from backbonejs for instance. 
 
-Every defined model will enjoy the label support.
+Every model extended from `Node` will enjoy the label support.
 
 ```js
+  var Neo4j = require('../src')
+    , neo4j = new Neo4j('http://localhost:7420')
+    , Node  = neo4j.Node
+    , Graph = neo4j.Graph;
+
   var Person = Node.register_model('Person', {
     fields: {
       indexes: {
@@ -88,7 +93,7 @@ Every defined model will enjoy the label support.
       }
     },
     fullname: function() {
-      var s = this.firstName + " " + this.surname;
+      var s = this.data.firstName + " " + this.data.surname;
       return s.trim();
     }
   });
@@ -96,13 +101,22 @@ Every defined model will enjoy the label support.
   var alice = new Person({firstName: 'Alice', surname: 'Springs'});
 
   alice.fullname();
-  ~> 'Alice Springs'
-  alice.save(function(err,alice) {
-    alice.label;
-    ~> 'Person'
+  ~> Alice Springs
+
+  alice.save(function(err, alice) {
+    alice.toObject();
+    ~> { id: 81238,
+    classification: 'Node',
+    data:
+     { created_on: 1374758483622,
+       surname: 'Springs',
+       firstName: 'Alice' },
+    uri: 'http://localhost:7420/db/data/node/81238',
+    label: 'Person',
+    labels: [ 'Person' ] }
   });
 
-  // You can also enjoy multiple inheritance
+  // You can also use multiple inheritance
   // here: Director extends Person
   // Director will have the labels [ 'Director', 'Person' ]
   var Director = Person.register_model('Director', {
@@ -111,6 +125,21 @@ Every defined model will enjoy the label support.
         job: 'Director'
       }
     }
+  });
+
+  new Director({
+    name: 'Roman Polanski'
+  }).save(function(err, polanski) {
+    polanski.toObject();
+    ~> { id: 81239,
+    classification: 'Node',
+    data:
+     { created_on: 1374758483625,
+       name: 'Roman Polanski',
+       job: 'Director' },
+    uri: 'http://localhost:7420/db/data/node/81239',
+    label: 'Director',
+    labels: [ 'Director', 'Person' ] }
   });
 ```
 

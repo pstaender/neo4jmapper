@@ -116,6 +116,7 @@ Node.prototype.convert_node_to_model = function(node, model, fallbackModel) {
 
 Node.__models__ = {};                             // contains globally all registeresd models
 
+Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of object in daily usage
 Node.prototype.neo4jrestful = null;               // will be initialized
 Node.prototype.data = {};                         // will contain all data for the node
 Node.prototype.id = null;                         // ”public“ id attribute
@@ -1717,11 +1718,12 @@ Node.prototype.addIndex = function(namespace, key, value, cb) {
 Node.prototype.toObject = function() {
   var o = {
     id: this.id,
+    classification: this.classification,
     data: _.extend(this.data),
-    uri: this.uri
+    uri: this.uri,
+    label: (this.label) ? this.label : null,
+    labels: (this.labels.length > 0) ? _.clone(this.labels) : []
   };
-  if (this.label)
-    o.label = this.label;
   return o;
 }
 
