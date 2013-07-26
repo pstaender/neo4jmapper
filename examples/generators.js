@@ -1,31 +1,23 @@
 // exec: node --harmony examples/generators.js
 
-// Node.prototype.iterate = function*() {
-//   var self = this;
-//   this.exec(function* (err, res){
-//     yield err;
-//   }); 
-//   // return yield suspend(function* (resume) {
-//   //   return yield self.exec(resume);
-//   //   // return yield this.each(function());
-//   // })();
-// }
+var Neo4j = require('../src')
+  , neo4j = new Neo4j('http://localhost:7420')
+  , Node  = neo4j.Node
+  , Graph = neo4j.Graph
+  , suspend = require('suspend');
 
-// nodeVersion = Number(process.version.replace(/^v(\d+\.\d+).+$/, '$1'));
+var Band = Node.register_model('Band');
+var Song = Node.register_model('Song');
 
-// if (nodeVersion >= 0.11) {
-//   describe('Neo4jMapper yield', function() {
-//     it.only('expect to use generators', suspend(function* (resume){
-//       var nodes = yield Node.find().limit(10).each(resume);
-//       console.log('OK');
-//       console.log(nodes.next());
+suspend(function*(resume) {
+  var band = yield new Band({ name: 'Foo Fighter'}).save(resume);
+  var song = yield new Song({ title: 'Everlong' }).save(resume);
+  yield band.createRelationshipTo(song, 'plays', resume);
+  var relations = yield song.incomingRelationships('plays', resume);
+  console.log(relations[0].toObject());
+  done();
+})();
 
-//     }));
-//   })
-// } else {
-//   describe('Neo4jMapper yield', function(){
-//     it.skip('testing js generators, node v >= 0.11 is required');
-//   });
-// }
-
-
+var done = function() {
+  console.log('\ndone');
+}

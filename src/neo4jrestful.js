@@ -414,6 +414,8 @@ var initNeo4jRestful = function() {
     else {
       req.end(function(err, res) {
         self._response_on_ = new Date().getTime();
+        if (options._debug)
+          options._debug.responseTime = self.responseTime();
         if (err) {
           self.onError(cb, err, 'error', options);
         } else {
