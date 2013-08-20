@@ -357,6 +357,10 @@ var neo4jmapper_helpers = {};
       // assign some options if they exists to current object
       if (typeof this.options.valuesToParameters !== 'undefined')
         this.valuesToParameters = this.options.valuesToParameters;
+      if (typeof this.options.identifier !== 'undefined')
+        this.identifier = this.options.identifier;
+      if (typeof this.options.operator !== 'undefined')
+        this.operator = this.options.operator;
     }
     // convert initially
     this._s = this.convert();
