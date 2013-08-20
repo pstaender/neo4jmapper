@@ -173,3 +173,27 @@ describe 'Neo4jMapper (helpers)', ->
       ]
       expect(helpers.conditionalParameterToString(condition, undefined, { identifier: 'n' })).to.be.equal resultShouldBe
 
+    it 'expect to transform an key-value-object with parameters', ->
+      condition = [
+        { $and: [
+          { 'n.name': /Alice/i, },
+          { 'r.since' : 'years' },
+          $or: [
+            { 'n.email': "alice@home.com" },
+            $and: [
+              { 'email': "alice@home.de" },
+              { 'country': "de_DE" }
+            ],
+          ]
+        ]}
+      ]
+      con = new helpers.ConditionalParameters(condition, { identifier: 'n' })
+      expect(con.toString()).to.be.equal """
+        ( ( n.name =~ {0} AND r.since = {1} AND ( n.email = {2} OR ( n.`email` = {3} AND n.`country` = {4} ) ) ) )
+      """
+      expect(con.parameters).to.have.length 5
+      expect(con.parameters[0]).to.be.equal '(?i)Alice'
+      expect(con.parameters[1]).to.be.equal 'years'
+      expect(con.parameters[2]).to.be.equal 'alice@home.com'
+      expect(con.parameters[3]).to.be.equal 'alice@home.de'
+      expect(con.parameters[4]).to.be.equal 'de_DE'

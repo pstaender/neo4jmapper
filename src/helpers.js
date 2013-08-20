@@ -239,6 +239,129 @@ var neo4jmapper_helpers = {};
     return _.uniq(attributes);
   }
 
+  var ConditionalParameters = function ConditionalParameters(conditions, options) {
+
+    ConditionalParameters.prototype.operator            = 'AND';
+    ConditionalParameters.prototype.identifier          = 'n';
+    ConditionalParameters.prototype.conditions          = null;
+    ConditionalParameters.prototype.options             = null;
+    ConditionalParameters.prototype.parameters          = null;
+    ConditionalParameters.prototype.valuesToParameters  = true;
+    ConditionalParameters.prototype._s                  = '';
+
+    ConditionalParameters.prototype.addValue = function(value) {
+      if (!this.parameters)
+        this.parameters = [];
+      this.parameters.push(value);
+      return '{'+(this.parameters.length-1)+'}';
+    }
+
+    ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {
+      var value = originalValue;
+      var s = ''; // string that will be returned
+      var valuesToParameters = this.valuesToParameters;
+      if (typeof identifier === 'string') {
+        if (/^[nmr]\./.test(key))
+          // we have already an identifier
+          key = key;
+        else if (/[\?\!]$/.test(key))
+          // we have a default statement, escape without ! or ?
+          key = identifier+'.`'+key.replace(/[\?\!]$/,'')+'`'+key.substring(key.length-1)
+        else
+          key = identifier+'.`'+key+'`';
+      }
+      // this.valuesToParameters
+      if (_.isRegExp(value)) {
+        value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
+        value = (valuesToParameters) ? this.addValue(value) : "'"+value+"'";
+        s = key + " =~ " + value;
+      }
+      else {
+        // convert to string
+        if ((_.isNumber(value)) || (_.isBoolean(value)))
+          value = String(value);
+        // else escape
+        else
+          value = (valuesToParameters) ? this.addValue(value) : "'"+escapeString(value)+"'";
+        s = key + " = " + value;
+      }
+      
+      return s;
+    }
+
+    ConditionalParameters.prototype.convert = function(condition, operator) {
+      if (typeof condition === 'undefined')
+        condition = this.conditions;
+      var defaultOptions = {
+        firstLevel: true,
+        identifier: null
+      };
+      var options = _.extend({}, defaultOptions, this.options);
+      if (options.firstLevel)
+        options.firstLevel = false;
+      // TODO: if $not : [ {name: 'a'}] ~> NOT (name = a)
+      if (typeof condition === 'string')
+        condition = [ condition ];
+      if (typeof operator === 'undefined')
+        operator = this.operator; // AND
+      if (typeof condition === 'object')
+        for (var key in condition) {
+          var value = condition[key];
+          if ( (_is_operator.test(key)) && (_.isArray(condition[key])) ) {
+            condition[key] = this.convert(condition[key], key.replace(/\$/g,' ').trim().toUpperCase(), options);
+          } else {
+            if (_.isObject(condition[key])) {
+              var properties = [];
+              var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
+              if ((firstKey)&&(_is_operator.test(firstKey))) {
+                properties.push(this.convert(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
+              } else {
+                for (var k in condition[key]) {
+                  var value = condition[key][k]; 
+                  if (value === k) {
+                    properties.push(value);
+                  } else {
+                    properties.push(this.cypherKeyValueToString(
+                      k,
+                      value, 
+                      // only add an identifier if we have NOT s.th. like
+                      // n.name = ''  or r.since …
+                      (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
+                    ));
+                  }
+                }
+              }
+              condition[key] = properties.join(' '+operator+' ');
+            }
+          }
+        }
+
+      if ((condition.length === 1)&&(options.firstLevel === false)&&(/NOT/i.test(operator)))
+        return operator + ' ( '+condition.join('')+' )';
+      else
+        return '( '+condition.join(' '+operator+' ')+' )';
+    }
+
+    ConditionalParameters.prototype.toString = function() {
+      this._s = this.convert();
+      return this._s;
+    }
+    
+    // assign parameters and option(s)
+    if (typeof conditions === 'object')
+      this.conditions = (conditions) ? conditions : {};
+    else
+      throw Error('First argument must be an object with conditional parameters');
+    if (typeof options === 'object') {
+      this.options = options;
+      // assign some options if they exists to current object
+      if (typeof this.options.valuesToParameters !== 'undefined')
+        this.valuesToParameters = this.options.valuesToParameters;
+    }
+    // convert initially
+    this._s = this.convert();
+  }
+
   var constructorNameOfFunction = function(func) {
     var name = func.constructor.toString().match(/^function\s(.+?)\(/)[1];
     if (name === 'Function') {
@@ -1004,6 +1127,7 @@ var neo4jmapper_helpers = {};
     flattenObject: flattenObject,
     unflattenObject: unflattenObject,
     conditionalParameterToString: conditionalParameterToString,
+    ConditionalParameters: ConditionalParameters,
     extractAttributesFromCondition: extractAttributesFromCondition,
     getIdFromObject: getIdFromObject,
     escapeString: escapeString,
