@@ -1312,11 +1312,9 @@ Node.prototype.andWhere = function(where, cb, _options) {
 
   // use parameters for query or send an ordinary string?
   _options.valuesToParameters = Boolean(this.cypher._useParameters);
-
   var condition = new helpers.ConditionalParameters(_.extend(where),_options);
   this.cypher.where.push(condition.toString());
-
-  if (this.cypher._useParameters)
+  if (_options.valuesToParameters)
     this._addParametersToCypher(condition.parameters);
 
   this.exec(cb);
@@ -2084,6 +2082,14 @@ Node.dropEntireIndex = function(cb) {
 
 Node.getIndex = function(cb) {
   return this.singleton().getIndex(cb);
+}
+
+Node.disable_loading = function() {
+  Node.prototype.disableLoading();
+}
+
+Node.enable_loading = function() {
+  Node.prototype.enableLoading();
 }
 
 var initNode = function(neo4jrestful) {

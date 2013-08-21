@@ -52,9 +52,9 @@ Use the full power of the cypher query language:
   alice.data = {
     name: 'Alice',
     nested: {
-      values: 'are allowed, but not recommend'
+      values: 'are possible but not best-practice for a key-value-storage'
     }
-    arrays: [ 'are', 'allowed', 'but', 'also', 'non-recommend']
+    arrays: [ 'are', 'possible', 'but', 'also', 'non-recommend']
   };
   alice.save(function(err, alice) {
     alice.toObject();
@@ -64,8 +64,8 @@ Use the full power of the cypher query language:
 or shorter with
 
 ```js
-  new Node({ name: 'Bob' }).save(function(err, bob) {
-    bob.toObject();
+  new Node({ name: 'Alice' }).save(function(err, alice) {
+    alice.toObject();
   });
 ```
 
@@ -446,7 +446,7 @@ You can easiliy inspect the generated queries by invoking the `toCypherQuery()` 
 
 ## callback-less with generators
 
-In ECMAScript Harmony specification (nodejs >= 0.11 required) you can use generators, for instance via the suspend library:
+In harmony (nodejs >= 0.11 required) you can use generators to avoid callbacks, for instance via the suspend library:
 
 ```js
   var Neo4j = require('../src')
@@ -586,7 +586,7 @@ Called once the model is being registered. For instance, to ensure autoindex on 
 
 #### onAfterLoad
 
-On all `Node.find*()` queries the results run through a load process (loading the label(s) which has to be an extra request for instance). You can define your own afterLoad process this way:
+On all `Node.find…()` queries the results run through a load process (loading the label(s) which has to be an extra request for instance). You can define your own afterLoad process this way:
 
 ```js
   Node.prototype.onAfterLoad = function(node, done) {
@@ -611,7 +611,12 @@ If a node is populated with data from a response, you can process your node/data
   }
 ```
 
-**To reduce database requests you can switch load hooks on and off by Node.prototype.disableLoading() / Node.prototype.enableLoading()**
+### Performance Tweaks
+
+To reduce database requests you can switch load hooks on and off
+
+  * `Node.prototype.disableLoading()` / `Node.prototype.enableLoading()` 
+  * `Node.disable_loading()` / `Node.enable_loading()` in global context
 
 ### Benchmarks
 
