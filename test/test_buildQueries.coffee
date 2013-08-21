@@ -51,6 +51,12 @@ describe 'Neo4jMapper (cypher queries)', ->
       # expect(Node.find().deleteIncludingRelationships().limit).withArgs(1, ->).to.throwError()
 
     it 'expect to build various kind of queries', ->
+
+      # we will deactivate temporarily parameter seperating for testing the query building
+      # http://docs.neo4j.org/chunked/stable/rest-api-cypher.html#rest-api-send-queries-with-parameters
+      expect(Node::cypher._useParameters).to.be true
+      Node::cypher._useParameters = false
+
       class Actor extends Node
       Node.register_model(Actor)
       node = new Node()
@@ -269,3 +275,6 @@ describe 'Neo4jMapper (cypher queries)', ->
           #expect(query).to.be.equal _trim(todo[1])
         else
           console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())
+
+      # set the parameter flag to the value it had before this test
+      Node::cypher._useParameters = true

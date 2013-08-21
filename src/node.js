@@ -25,36 +25,6 @@ if (typeof window === 'object') {
   Sequence = require('./lib/sequence');
 }
 
-var cypher_defaults = {
-  limit: '',              // Number
-  skip: '',               // Number
-  filter: '',             // `FILTER`   statement
-  match: '',              // `MATCH`    statement
-  start: '',              // `START`    statement
-  set: '',                // `SET`      statement
-  With: null,             // `WITH`     statement
-  distinct: null,         // `DISTINCT` option
-  return_properties: [],  // [a|b|n|r|p], will be joined with `, `
-  where: [],              // `WHERE`  statements, will be joined with `AND`
-  hasProperty: [],   
-  from: null,             // Number
-  to: null,               // Number
-  direction: null,        // (incoming|outgoing|all)
-  order_by: '',           // $property
-  order_direction: '',    // (ASC|DESC)
-  relationship: '',       // String
-  outgoing: null,         // Boolean
-  incoming: null,         // Boolean
-  label: null,            // String
-  node_identifier: null,  // [a|b|n]
-  parameters: null,       // will contain parameters for query
-  // Boolean flags
-  _useParameters: null,
-  _count: null,
-  _distinct: null,
-  by_id: null
-};
-
 // ### Constructor
 // calls this.init(data,id) to set all values to default
 Node = function Node(data, id) {
@@ -137,7 +107,38 @@ Node.prototype._modified_query_ = false;          // flag to remember that a que
 Node.prototype._stream_ = null;                   // flag for processing result data
 Node.prototype.is_singleton = false;              // flag that this object is a singleton
 Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
-Node.prototype.cypher = {};                       // will be overwritten with the default values of `cypher_defaults`
+
+// cypher property will be **copied** on each new objects node.cypher in resetQuery()
+Node.prototype.cypher = {
+  limit: '',              // Number
+  skip: '',               // Number
+  filter: '',             // `FILTER`   statement
+  match: '',              // `MATCH`    statement
+  start: '',              // `START`    statement
+  set: '',                // `SET`      statement
+  With: null,             // `WITH`     statement
+  distinct: null,         // `DISTINCT` option
+  return_properties: [],  // [a|b|n|r|p], will be joined with `, `
+  where: [],              // `WHERE`  statements, will be joined with `AND`
+  hasProperty: [],   
+  from: null,             // Number
+  to: null,               // Number
+  direction: null,        // (incoming|outgoing|all)
+  order_by: '',           // $property
+  order_direction: '',    // (ASC|DESC)
+  relationship: '',       // String
+  outgoing: null,         // Boolean
+  incoming: null,         // Boolean
+  label: null,            // String
+  node_identifier: null,  // [a|b|n]
+  parameters: null,       // will contain parameters for query
+  // Boolean flags
+  _useParameters: true,
+  _count: null,
+  _distinct: null,
+  by_id: null
+};
+
 Node.prototype.is_instanced = null;               // flag that this object is instanced
 
 Node.prototype.labels = null;                     // an array of all labels
@@ -247,8 +248,8 @@ Node.prototype.copyTo = function(n) {
 }
 
 Node.prototype.resetQuery = function() {
-  this.cypher = {}
-  _.extend(this.cypher, cypher_defaults);
+  // we have to copy the cypher values on each object
+  this.cypher = _.extend({}, this.cypher);
   this.cypher.where = [];
   this.cypher.hasProperty = [];
   this.cypher.match = [];
@@ -938,7 +939,7 @@ Node.prototype._end_node_id = function(fallback) {
 };
 
 Node.prototype._addParametersToCypher = function(parameters) {
-    if ( (typeof parameters === 'object') && (typeof parameters.constructor === Array) ) {
+    if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
       if (!this.cypher.parameters)
         this.cypher.parameters = [];
       for (var i=0; i < parameters.length; i++) {
@@ -1049,8 +1050,18 @@ Node.prototype.query = function(cypherQuery, options, cb) {
     cb = options;
     options = {};
   }
+  // apply option values from Node to request
   if (this.label)
     options.label = this.label;
+
+  if ((this.cypher._useParameters) && (this.cypher.parameters) && (this.cypher.parameters.length > 0)) {
+    options.params = {};
+    // we have to rebuild the array as a json map
+    // instead of [ 'a', 'b', 'c' ] => { value0: 'a', value1: 'b', value2: 'c' }
+    for (var i=0; i < this.cypher.parameters.length; i++) {
+      options.params['value'+i] = this.cypher.parameters[i];
+    }
+  }
 
   if (typeof cypherQuery === 'string') {
     // check for stream flag
@@ -1067,8 +1078,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
           return cb(data);
         }
       });
-    }
-    else {
+    } else {
       return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
         _processData(err, data, debug, cb);
       });
@@ -1076,7 +1086,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
   } else if (typeof cypherQuery === 'object') {
     // we expect a raw request object here
     // this is used to make get/post/put restful request
-    // with the faeture of process node data
+    // with the feature of process node data
     var request = cypherQuery;
     if ( (!request.type) || (!request.data) || (!request.url) ) {
       return cb(Error("The 1st argument as request object must have the properties .url, .data and .type"), null);
@@ -1311,7 +1321,9 @@ Node.prototype.andWhere = function(where, cb, _options) {
   }
 
   // use parameters for query or send an ordinary string?
-  _options.valuesToParameters = Boolean(this.cypher._useParameters);
+  // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
+  if (typeof _options.valuesToParameters === 'undefined')
+    _options.valuesToParameters = Boolean(this.cypher._useParameters);
   var condition = new helpers.ConditionalParameters(_.extend(where),_options);
   this.cypher.where.push(condition.toString());
   if (_options.valuesToParameters)

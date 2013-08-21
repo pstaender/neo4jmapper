@@ -180,7 +180,7 @@ var neo4jmapper_helpers = {};
       if (!this.parameters)
         this.parameters = [];
       this.parameters.push(value);
-      return '{'+(this.parameters.length-1)+'}';
+      return '{value'+(this.parameters.length-1)+'}';
     }
 
     ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {

@@ -245,6 +245,16 @@ describe 'Neo4jMapper', ->
           node.remove ->
             done()
 
+    it 'expect to use parameters for queries by default and expect to add parameters to cypher query', ->
+      node = new Node title: new Date().toString()
+      expect(node.cypher._useParameters).to.be true # this is an option flag which is expected to be true!
+      expect(node.cypher.parameters).to.be null
+      node._addParametersToCypher [ 'a', 'b' ]
+      node._addParametersToCypher [ 'c', 'd' ]
+      shouldBe = [ 'a', 'b', 'c', 'd' ]
+      for value, i in node.cypher.parameters
+        expect(value).to.be.equal shouldBe[i]
+
     it 'expect to find one specific node by id', (done) ->
       node = new Node title: new Date().toString()
       node.save ->
