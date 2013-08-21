@@ -368,7 +368,7 @@ describe 'Neo4jMapper', ->
             done()
 
     it 'expect to get null if node is not found', (done) ->
-      Node.findById 1234567890, (err, found) ->
+      Node.findById Number('9'+Math.floor(Math.random()*1000000000)), (err, found) ->
         expect(err).to.be null
         expect(found).to.be null
         Node.findByUniqueKeyValue { key: new Date().getTime() }, (err, found) ->
@@ -782,6 +782,19 @@ describe 'Neo4jMapper', ->
             expect(err).to.be null
             expect(found.data.uid).to.be.equal uid
             done()
+
+    it 'expect to query nodes with more complex queries (regex for instance)', (done) ->
+      uid = new Date().getTime()
+      Person = Node.register_model('Person')
+      new Person( { uid: uid, name: 'Alice' } ).save (err, alice) ->
+        expect(err).to.be null
+        Person.find { uid: uid, name: /^alice$/i }, (err, found, debug) ->
+          expect(err).to.be null
+          expect(found).to.have.length 1
+          p = found[0]
+          expect(p.data.uid).to.be.equal uid
+          expect(p.data.name).to.be.equal alice.data.name
+          done()
 
   describe 'relationships (incoming, outgoing and between nodes)', ->
 

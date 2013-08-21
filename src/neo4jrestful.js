@@ -39,20 +39,36 @@ var initNeo4jRestful = function() {
   }
 
   // Base for QueryError and CypherQueryError
-  var CustomError = function(message) {
+  var CustomError = function CustomError(message) {
+    CustomError.prototype.message = '';
+    CustomError.prototype.name = '';
+    CustomError.prototype.exception = null;
+    CustomError.prototype.cypher = null;
+    CustomError.prototype.stacktrace = null;
+    CustomError.prototype.statusCode = null;
+    CustomError.prototype.method = null;
+    CustomError.prototype.url = null;
+    CustomError.prototype.data = null;
     if (typeof message === 'string')
       this.message = message;
   }
 
-  CustomError.prototype.message = '';
-  CustomError.prototype.name = '';
-  CustomError.prototype.exception = null;
-  CustomError.prototype.cypher = null;
-  CustomError.prototype.stacktrace = null;
-  CustomError.prototype.statusCode = null;
-  CustomError.prototype.method = null;
-  CustomError.prototype.url = null;
-  CustomError.prototype.data = null;
+  // will be used to debug request+response
+  var RequestDebug = function RequestDebug(obj) {
+    RequestDebug.prototype.options        = null;
+    RequestDebug.prototype.requested_url  = '';
+    RequestDebug.prototype.type           = '';
+    RequestDebug.prototype.data           = null;
+    RequestDebug.prototype.header         = null;
+    RequestDebug.prototype.res            = null;
+    RequestDebug.prototype.status         = null;
+    RequestDebug.prototype.err            = null;
+    RequestDebug.prototype.responseTime   = null;
+    // apply given data to current object
+    if ((typeof obj === 'object') && (obj))
+      for (var key in obj)
+        this[key] = obj[key];
+  }
 
 
   var QueryError = function(message, options, name) {
@@ -111,24 +127,25 @@ var initNeo4jRestful = function() {
     });
   }
 
-  Neo4jRestful.prototype.options = null;
+  Neo4jRestful.prototype.options                    = null;
+  // template for the header of each request to neo4j
   Neo4jRestful.prototype.header = {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   };
-  Neo4jRestful.prototype.timeout = 5000;
-  Neo4jRestful.prototype.baseUrl = null;
-  Neo4jRestful.prototype.debug = null;
-  Neo4jRestful.prototype._absoluteUrl = null;
-  Neo4jRestful.prototype.exact_version = null;
-  Neo4jRestful.prototype.version = null;
-  Neo4jRestful.prototype.ignore_exception_pattern = /^(Node|Relationship)NotFoundException$/;
+  Neo4jRestful.prototype.timeout                    = 5000;
+  Neo4jRestful.prototype.baseUrl                    = null;
+  Neo4jRestful.prototype.debug                      = true; // can be deactivated but will not make any performance difference
+  Neo4jRestful.prototype._absoluteUrl               = null;
+  Neo4jRestful.prototype.exact_version              = null;
+  Neo4jRestful.prototype.version                    = null;
+  Neo4jRestful.prototype.ignore_exception_pattern   = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found
 
   // is used for measurement of request-to-respond
-  Neo4jRestful.prototype._request_on_ = null;
-  Neo4jRestful.prototype._response_on_ = null;
+  Neo4jRestful.prototype._request_on_               = null;
+  Neo4jRestful.prototype._response_on_              = null;
 
-  Neo4jRestful.prototype.connection_established = false;
+  Neo4jRestful.prototype.connection_established     = false;
 
   Neo4jRestful.prototype.singleton = function() {
     if (_singleton_instance)
@@ -216,13 +233,11 @@ var initNeo4jRestful = function() {
     // this.log('**debug**', 'sendedData:', data);
     // this.log('**debug**', 'sendedHeader:', this.header);
 
-    // we can set a debug flag on neo4jrestful
-    // to avoid passing each time for every request a debug flag
     if (this.debug)
       options.debug = true;
 
     if (options.debug) {
-      debug = {
+      debug = new RequestDebug({
         options: options,
         requested_url: requestedUrl,
         type: type,
@@ -231,7 +246,7 @@ var initNeo4jRestful = function() {
         res: null,
         status: null,
         err: null
-      };
+      });
     }
 
     var _options = {

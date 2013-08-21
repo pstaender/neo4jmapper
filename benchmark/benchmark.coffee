@@ -2,9 +2,15 @@ sequence = require('futures').sequence.create()
 log = -> console.log(Array::slice.call(arguments).join(' '))
 {argv} = require('optimist')
 
-console.log '**Neo4jMapper Benchmark**'
-console.log '(c) 2013 by Philipp Staender'
-console.log 'Usage: coffee benchmark/benchmark.coffee (--reverse)'
+console.log """
+  **Neo4jMapper Benchmark**
+  (c) 2013 by Philipp Staender'
+  Usage: coffee benchmark/benchmark.coffee --run (--reverse)
+"""
+
+unless argv.run
+  console.log "To run benchmark suite, execute with argument --run"
+  process.exit(0)
 
 summary = (next, suite) ->
   log "\n"

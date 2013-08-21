@@ -206,7 +206,7 @@ var neo4jmapper_helpers = {};
       else {
         // convert to string
         if ((_.isNumber(value)) || (_.isBoolean(value)))
-          value = String(value);
+          value = (valuesToParameters) ? this.addValue(value) : String(value);
         // else escape
         else
           value = (valuesToParameters) ? this.addValue(value) : "'"+escapeString(value)+"'";
