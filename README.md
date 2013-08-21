@@ -440,6 +440,9 @@ You can also log all network connections to the database by defining a logger:
 You can easiliy inspect the generated queries by invoking the `toCypherQuery()` method:
 
 ```js
+  // disable that values will be written directly into the query
+  // which is in this case better for inspecting
+  Node.prototype.cypher._useParameters = false;
   Node.find().andWhereNode({ name: "Bob"}).delete().toCypherQuery();
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
 ```
