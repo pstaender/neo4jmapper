@@ -147,82 +147,6 @@ var neo4jmapper_helpers = {};
       return key+" = '"+escapeString(value)+"'";
   }
 
-  /*
-   * Builds a string from mongodb-like-query object
-   */
-  var conditionalParameterToString = function(condition, operator, options) {
-    var defaultOptions = {
-      firstLevel: true,
-      identifier: null
-    };
-    if (typeof options === 'undefined')
-      options = defaultOptions;
-    else
-      options = _.extend({}, defaultOptions, options);
-    if (options.firstLevel)
-      options.firstLevel = false;
-    // TODO: if $not : [ {name: 'a'}] ~> NOT (name = a)
-    if (typeof condition === 'string')
-      condition = [ condition ];
-    if (typeof operator === 'undefined')
-      operator = 'AND';
-    if (typeof condition === 'object')
-      for (var key in condition) {
-        var value = condition[key];
-        if ( (_is_operator.test(key)) && (_.isArray(condition[key])) ) {
-          condition[key] = conditionalParameterToString(condition[key], key.replace(/\$/g,' ').trim().toUpperCase(), options);
-        } else {
-          if (_.isObject(condition[key])) {
-            var properties = [];
-            var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
-            if ((firstKey)&&(_is_operator.test(firstKey))) {
-              properties.push(conditionalParameterToString(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
-            } else {
-              for (var k in condition[key]) {
-                var value = condition[key][k]; 
-                if (value === k) {
-                  properties.push(value);
-                } else {
-                  properties.push(cypherKeyValueToString(
-                    k,
-                    value, 
-                    // only add an identifier if we have NOT s.th. like
-                    // n.name = ''  or r.since …
-                    (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
-                  ));
-                }
-              }
-            }
-            condition[key] = properties.join(' '+operator+' ');
-          }
-        }
-      }
-
-    if ((condition.length === 1)&&(options.firstLevel === false)&&(/NOT/i.test(operator)))
-      return operator + ' ( '+condition.join('')+' )';
-    else
-      return '( '+condition.join(' '+operator+' ')+' )';
-  }
-
-  // var extractAttributesFromCondition = function(condition, attributes) {
-  //   if (typeof attributes === 'undefined')
-  //     attributes = [];
-  //   // _.each(condition, function(value, key) {
-  //   // if (typeof condition === 'object')
-  //   for (var key in condition) {
-  //     var value = condition[key];
-
-  //     if ((typeof value === 'object') && (value.constructor !== Array)) {
-  //       extractAttributesFromCondition(condition[key], attributes);
-  //     }
-  //     if ( (!_is_operator.test(key)) && (/^[a-zA-Z\_\-\.]+$/.test(key)) ) {
-  //       // remove identifiers if exists
-  //       attributes.push(key.replace(/^[nmr]{1}\./,''));
-  //     }
-  //   }
-  //   // });
-  // return _.uniq(attributes);
-  // }
   var extractAttributesFromCondition = function(condition, attributes) {
     if (typeof attributes === 'undefined')
       attributes = [];
@@ -239,6 +163,9 @@ var neo4jmapper_helpers = {};
     return _.uniq(attributes);
   }
 
+  /*
+   * Builds a string from mongodb-like-query object
+   */
   var ConditionalParameters = function ConditionalParameters(conditions, options) {
 
     ConditionalParameters.prototype.operator            = 'AND';
@@ -343,15 +270,21 @@ var neo4jmapper_helpers = {};
     }
 
     ConditionalParameters.prototype.toString = function() {
-      this._s = this.convert();
+      if (this.conditions)
+        this._s = this.convert();
       return this._s;
     }
     
     // assign parameters and option(s)
-    if (typeof conditions === 'object')
+    if (typeof conditions === 'object') {
       this.conditions = (conditions) ? conditions : {};
-    else
-      throw Error('First argument must be an object with conditional parameters');
+    } else if (typeof conditions === 'string') {
+      this.conditions = null;
+      this._s = '( ' + conditions + ' )';
+      return;
+    } else {
+      throw Error('First argument must be an object with conditional parameters or a plain string');
+    }
     if (typeof options === 'object') {
       this.options = options;
       // assign some options if they exists to current object
@@ -362,8 +295,6 @@ var neo4jmapper_helpers = {};
       if (typeof this.options.operator !== 'undefined')
         this.operator = this.options.operator;
     }
-    // convert initially
-    this._s = this.convert();
   }
 
   var constructorNameOfFunction = function(func) {
@@ -1130,7 +1061,6 @@ var neo4jmapper_helpers = {};
     sortStringAndCallbackArguments: sortStringAndCallbackArguments,
     flattenObject: flattenObject,
     unflattenObject: unflattenObject,
-    conditionalParameterToString: conditionalParameterToString,
     ConditionalParameters: ConditionalParameters,
     extractAttributesFromCondition: extractAttributesFromCondition,
     getIdFromObject: getIdFromObject,

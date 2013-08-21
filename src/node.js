@@ -47,7 +47,9 @@ var cypher_defaults = {
   incoming: null,         // Boolean
   label: null,            // String
   node_identifier: null,  // [a|b|n]
+  parameters: null,       // will contain parameters for query
   // Boolean flags
+  _useParameters: null,
   _count: null,
   _distinct: null,
   by_id: null
@@ -589,6 +591,7 @@ Node.prototype.update = function(data, cb) {
     data = helpers.flattenObject(data);
     this.cypher.set = [];
     for (var attribute in data) {
+      // OK
       this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
     }
   }
@@ -933,6 +936,17 @@ Node.prototype._end_node_id = function(fallback) {
     fallback = '*'
   return (this.cypher.to > 0) ? this.cypher.to : fallback; 
 };
+
+Node.prototype._addParametersToCypher = function(parameters) {
+    if ( (typeof parameters === 'object') && (typeof parameters.constructor === Array) ) {
+      if (!this.cypher.parameters)
+        this.cypher.parameters = [];
+      for (var i=0; i < parameters.length; i++) {
+        this.cypher.parameters.push(parameters[i]);
+      }
+    }
+    return this.cypher.parameters;
+  },
 
 Node.prototype.singletonForQuery = function(cypher) {
   var singleton = this.singleton()
@@ -1295,7 +1309,16 @@ Node.prototype.andWhere = function(where, cb, _options) {
   for (var i = 0; i < attributes.length; i++) {
     this.whereHasProperty(attributes[i], _options.identifier);
   }
-  this.cypher.where.push(helpers.conditionalParameterToString(_.extend(where),undefined,_options));
+
+  // use parameters for query or send an ordinary string?
+  _options.valuesToParameters = Boolean(this.cypher._useParameters);
+
+  var condition = new helpers.ConditionalParameters(_.extend(where),_options);
+  this.cypher.where.push(condition.toString());
+
+  if (this.cypher._useParameters)
+    this._addParametersToCypher(condition.parameters);
+
   this.exec(cb);
   return this; // return self for chaining
 }

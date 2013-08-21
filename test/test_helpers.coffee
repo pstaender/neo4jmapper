@@ -126,7 +126,7 @@ describe 'Neo4jMapper (helpers)', ->
 
     it 'expect to leave a string as it is', ->
       condition = "n.name = 'Alice' AND HAS(n.email)"
-      expect(helpers.conditionalParameterToString(condition)).to.be.equal '( '+condition+' )'
+      expect(new helpers.ConditionalParameters(condition).toString()).to.be.equal '( ' + condition + ' )'
 
     it 'expect to transform an key-value object to cypher query', ->
       condition = [
@@ -134,7 +134,7 @@ describe 'Neo4jMapper (helpers)', ->
         "HAS(n.email))"
       ]
       resultShouldBe = "( n.name = 'Alice\\'s' AND HAS(n.email)) )"
-      expect(helpers.conditionalParameterToString(condition)).to.be.equal resultShouldBe
+      expect(new helpers.ConditionalParameters(condition, { valuesToParameters: false }).toString()).to.be.equal resultShouldBe
     
     it 'expect to transform an key-value-object to with $OR and $AND operators', ->
       resultShouldBe = """
@@ -152,7 +152,7 @@ describe 'Neo4jMapper (helpers)', ->
           ]
         ]}
       ]
-      expect(helpers.conditionalParameterToString(condition)).to.be.equal resultShouldBe
+      expect(new helpers.ConditionalParameters(condition, { valuesToParameters: false }).toString()).to.be.equal resultShouldBe
 
     it 'expect to transform an key-value-object with identifier', ->
       resultShouldBe = """
@@ -171,7 +171,7 @@ describe 'Neo4jMapper (helpers)', ->
           ]
         ]}
       ]
-      expect(helpers.conditionalParameterToString(condition, undefined, { identifier: 'n' })).to.be.equal resultShouldBe
+      expect(new helpers.ConditionalParameters(condition, { identifier: 'n', valuesToParameters: false }).toString()).to.be.equal resultShouldBe
 
     it 'expect to transform an key-value-object with parameters', ->
       condition = [
