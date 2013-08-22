@@ -1749,7 +1749,7 @@ Node.prototype.addIndex = function(namespace, key, value, cb) {
 }
 
 Node.prototype.toObject = function() {
-  var o = {
+  return {
     id: this.id,
     classification: this.classification,
     data: _.extend(this.data),
@@ -1757,7 +1757,6 @@ Node.prototype.toObject = function() {
     label: (this.label) ? this.label : null,
     labels: (this.labels.length > 0) ? _.clone(this.labels) : []
   };
-  return o;
 }
 
 /*
@@ -1996,7 +1995,10 @@ Node.register_model = function(Class, label, prototype, cb) {
     // we define here an anonymous constructor
     Class = function() {
       this.init.apply(this, arguments);
-      this.label = this.constructor_name = label;
+      if (Class.prototype.label === null)
+        this.label = this.constructor_name = label;
+      else
+        this.label = this.constructor_name = Class.prototype.label;
     }
 
     _.extend(Class, this); // 'static' methods
