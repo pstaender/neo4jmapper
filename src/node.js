@@ -527,6 +527,7 @@ Node.prototype.onSave = function(cb) {
       self.isPersisted(true);
     // if we have defined fields to index
     // we need to call the cb after indexing
+    // TODO: remove that legacy feature later
     if (self.hasFieldsToIndex()) {
       return self.indexFields(function(){
         if (debug)
@@ -1896,6 +1897,13 @@ Node.prototype.findByIndex = function(namespace, key, value, cb) {
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
   var values = {};
+  if ( (typeof cb === 'undefined') && (typeof value === 'function') ) {
+    // we have no namespace give, so we are using the label as namespace
+    cb = value;
+    value = key;
+    key = namespace;
+    namespace = new this.constructor().label;
+  }
   if ((namespace)&&(key)&&(value)&&(typeof cb === 'function')) {
     // values = { key: value };
     // TODO: implement

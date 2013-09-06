@@ -764,6 +764,27 @@ describe 'Neo4jMapper', ->
               expect(result.id).to.be savedNode.id
               done()
 
+    it 'expect to build exact-index by model schema defintion', (done) ->
+      uid = -> new Date().getTime()
+      Band = Node.register_model 'Band', {
+        fields: {
+          defaults: {
+            genre: 'Indie'
+            uid: uid
+          }
+          indexes: {
+            uid: 'band'
+          }
+        }
+      }
+
+      new Band( { name: 'Maxïmo Park' } ).save (err, maximopark) ->
+        expect(err).to.be null
+        Band.findByIndex 'band', 'uid', maximopark.data.uid, (err, result) ->
+          expect(err).to.be null
+          expect(result.data.uid).to.be.equal maximopark.data.uid
+          done()
+
     it 'expect to set default values and index values', (done) ->
       Node::fields.defaults =
         uid: -> new Date().getTime()
