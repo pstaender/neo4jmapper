@@ -183,7 +183,7 @@ Node.prototype.initialize = function(cb) {
   if (typeof cb !== 'function')
     cb = function() { /* /dev/null */ };
   if (!this.__already_initialized__) {
-    return this.onBeforeInitialize(function(err){
+    return this.onBeforeInitialize(function(err) {
       self.onAfterInitialize(cb);
     });
   } else {
@@ -213,9 +213,11 @@ Node.prototype.onAfterInitialize = function(cb) {
   var label = node.label;
   if (label) {
     if (fieldsToIndex.length > 0) {
-      node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err){
+      node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err) {
         cb(null, self);
       });
+    } else {
+      cb(null, self);
     }
     // inactive
     // http://docs.neo4j.org/chunked/snapshot/query-constraints.html
@@ -754,6 +756,10 @@ Node.prototype.pathBetween = function(start, end, options, cb) {
 
   this.exec(cb);
   return this; // return self for chaining
+}
+
+Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) {
+
 }
 
 Node.prototype.count = function(identifier, cb) {
@@ -1978,16 +1984,19 @@ Node.query = function(cypherQuery, options, cb) {
 
 Node.register_model = function(Class, label, prototype, cb) {
   var name = null;
+
   if (typeof Class === 'string') {
+
     if (typeof label === 'function') {
       cb = label;
       prototype = {};
+    } else if (typeof label === 'object') {
+      cb = prototype;
+      prototype = label;
+      label = null;
     } else if (typeof prototype === 'function') {
       cb = prototype;
       prototype = {};
-    } else if (typeof label === 'object') {
-      prototype = label;
-      label = null;
     }
     if (typeof prototype !== 'object')
       prototype = {};

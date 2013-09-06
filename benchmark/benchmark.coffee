@@ -4,7 +4,7 @@ log = -> console.log(Array::slice.call(arguments).join(' '))
 
 console.log """
   **Neo4jMapper Benchmark**
-  (c) 2013 by Philipp Staender'
+  (c) 2013 by Philipp Staender
   Usage: coffee benchmark/benchmark.coffee --run (--reverse)
 """
 

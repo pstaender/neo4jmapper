@@ -181,14 +181,17 @@ describe 'Neo4jMapper', ->
       expect(person.cypher.label).to.be 'Person'
       expect(person.constructor_name).to.be 'Person'
 
-      Movie = Node.register_model('Movie')
+      Movie = Node.register_model 'Movie', { fields: { defaults: { category: 'Blockbuster' } } }, (err) ->
+        expect(err).to.be null
+        done()
 
       movie = new Movie()
       expect(movie.label).to.be.equal 'Movie' 
-      expect(movie.constructor_name).to.be.equal 'Movie' 
+      expect(movie.constructor_name).to.be.equal 'Movie'
+      expect(movie.fields.defaults.category).to.be.equal 'Blockbuster'
       expect(movie).to.be.an 'object'
+      
       expect(movie.id).to.be null
-      done()
 
     it 'inheritance on coffescript class-objects', (done) ->
       class Person extends Node
@@ -485,7 +488,7 @@ describe 'Neo4jMapper', ->
         expect(countBefore).to.be.a 'number'
         lebowski = new Movie title: 'The Big Lebowski'
         lebowski.save (err, lebowski) ->
-          expect(_.keys(lebowski.data)).to.have.length 1
+          expect(_.keys(lebowski.data)).to.have.length 2
           expect(err).to.be null
           Movie.findAll().count (err, countNow) ->
             expect(countBefore+1).to.be countNow

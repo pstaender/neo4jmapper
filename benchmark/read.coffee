@@ -9,12 +9,19 @@ Node.find().limit 2, (err, nodes) ->
   ids.push(nodes[0].id)
   ids.push(nodes[1].id)
 
-suite.add 'find one node                (node--neo4j)', (deferred) ->
+suite.add 'query 1st node              (node--neo4j)', (deferred) ->
   graph.query "START n=node(*) LIMIT 1 RETURN n;", (err, found) ->
     deferred.resolve()
 , defer: true
 
+suite.add 'query 1st node w/o loading  (neo4jmapper)', (deferred) ->
+  Node.disable_loading();
+  client.query "START n=node(*) LIMIT 1 RETURN n;", (err, found) ->
+    deferred.resolve()
+, defer: true
+
 suite.add 'findOne node                 (neo4jmapper)', (deferred) ->
+  Node.enable_loading();
   Node.findOne (err, found) ->
     deferred.resolve()
 , defer: true

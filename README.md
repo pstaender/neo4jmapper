@@ -480,6 +480,7 @@ There are some steps to take, especially some methods for daily use are missing,
   * nice(r) Documentation
   * fix test for first testrun
   * make endpoint url flexible
+  * traversals
 
 ## Tests
 

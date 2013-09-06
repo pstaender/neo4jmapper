@@ -1,11 +1,13 @@
 Benchmark = require('benchmark')
 
+url = 'http://localhost:7474'
+
 # neo4j
 neo4j  = require('neo4j')
-graph  = new neo4j.GraphDatabase('http://localhost:7420')
+graph  = new neo4j.GraphDatabase(url)
 
 # neo4jmapper
-neo4jmapper = require('../src')('http://localhost:7420')
+neo4jmapper = require('../src')(url)
 {Graph,Node,client} = neo4jmapper
 
 randomInteger = (floor = 0, ceiling = 1) -> Math.round(Math.random()*(ceiling-floor))+floor
