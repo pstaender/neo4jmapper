@@ -1912,7 +1912,12 @@ Node.prototype.findByIndex = function(namespace, key, value, cb) {
         cb(err, result, debug);
       } else {
         result = (result[0]) ? result[0] : null;
-        cb(null, result, debug);
+        if (result)
+          result.load(function(loadErr){
+            cb(err, result, debug);
+          });
+        else
+          cb(null, result, debug);
       }
     });
   } else {
