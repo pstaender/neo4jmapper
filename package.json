@@ -20,7 +20,7 @@
     "client"
   ],
   "scripts": {
-    "test": "coffee -mcb test/ && mocha; npm run clean",
+    "test": "make test",
     "clean": "find test -maxdepth 1 -name 'test_*.js' -delete -o -name '*.map' -delete",
     "preinstall": "npm i -g coffee-script mocha-lcov-reporter",
     "blanket": {

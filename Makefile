@@ -1,8 +1,12 @@
-test:test-run
-	npm run clean
+REPORTER = dot
+VERSION = 2.0.0-M05
+NEO4JFOLDER = neo4jserver
 
-test-run:test-build
-	mocha
+test:test-build
+	@NODE_ENV=test mocha --reporter $(REPORTER) --bail
+
+test-complete:test-run
+	npm run clean
 
 test-build:
 	coffee -mcb test/
@@ -14,9 +18,8 @@ browser-build:test-build
 browser-build-watch:
 	nodemon -e coffee --exec 'make browser-build'
 
-
 test-coverage:test-build
-	mocha --require blanket -R html-cov > test/coverage.html
+	@NODE_ENV=test mocha --require blanket -R html-cov > test/coverage.html
 	npm run clean
 
 test-clear:
@@ -31,16 +34,16 @@ test-coveralls:test-build
 	cp -r ./_tmp_ignore_files_for_jscoverage src/browser
 	cp -r src/browser src-cov/browser
 	coffee -mcb test/
-	@JSCOV=1 mocha -R mocha-lcov-reporter | ./node_modules/coveralls/bin/coveralls.js --verbose src-cov/
+	@JSCOV=1 @NODE_ENV=test mocha -R mocha-lcov-reporter | ./node_modules/coveralls/bin/coveralls.js --verbose src-cov/
 	make test-clear
 	npm run clear
 
 installneo4j:
-	rm -rf neo4jserver
-	mkdir neo4jserver
-	cd neo4jserver && wget http://dist.neo4j.org/neo4j-community-2.0.0-M04-unix.tar.gz
-	cd neo4jserver && tar -zxvf neo4j-community-2.0.0-M04-unix.tar.gz
-	sed -i 's/HEADLESS=false/HEADLESS=true/g' ./neo4jserver/neo4j-community-2.0.0-M04/bin/neo4j
-	./neo4jserver/neo4j-community-2.0.0-M04/bin/neo4j -u neo4j install
+	rm -rf $(NEO4JFOLDER)
+	mkdir $(NEO4JFOLDER)
+	cd $(NEO4JFOLDER) && wget http://dist.neo4j.org/neo4j-community-$(VERSION)-unix.tar.gz
+	cd $(NEO4JFOLDER) && tar -zxvf neo4j-community-$(VERSION)-unix.tar.gz
+	sed -i 's/HEADLESS=false/HEADLESS=true/g' ./$(NEO4JFOLDER)/neo4j-community-$(VERSION)/bin/neo4j
+	./$(NEO4JFOLDER)/neo4j-community-$(VERSION)/bin/neo4j -u neo4j install
 	service neo4j-service start
 	sleep 3
