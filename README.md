@@ -12,7 +12,7 @@ Neo4jMapper offers query building and object mapping for the daily neo4j usage i
   * using object modeling for label-, index-, default-value- and data-processing-support
   * schema-less but with json to key-value-storage support (flatten/unflatten, escaping …)
 
-**Neo4jMapper is beta until Neo4j v2 is officially released**. It's working exclusively with Neo4j v2+ and there will be no support for earlier versions because the label feature is essential for the mapping.
+**Neo4jMapper is not ready for productive environments until Neo4j v2 isn't finally released**. Neo4j v2 or above is mandatory. Currently it's tested against Neo4j Milestone 2.0.0-M05.
 
 ## How to use
 

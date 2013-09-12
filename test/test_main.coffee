@@ -307,15 +307,15 @@ describe 'Neo4jMapper', ->
                   email: true
             Developer.dropEntireIndex (err) ->
               expect(err).to.be null
-              Node.register_model(Developer)
-              Developer.find { group_id: groupid }, (err, nodes) ->
-                expect(err).to.be null
-                expect(nodes).to.have.length 1
-                expect(nodes[0].data.name).to.be.equal 'Bob'
-                Developer.getIndex (err, found) ->
-                  expect(found).to.have.length 1
-                  expect(found[0]).to.be.equal 'email'
-                  done()
+              Node.register_model Developer, ->
+                Developer.find { group_id: groupid }, (err, nodes) ->
+                  expect(err).to.be null
+                  expect(nodes).to.have.length 1
+                  expect(nodes[0].data.name).to.be.equal 'Bob'
+                  Developer.getIndex (err, found) ->
+                    expect(found).to.have.length 1
+                    expect(found[0]).to.be.equal 'email'
+                    done()
 
 
     it 'expect to remove a node', (done) ->
@@ -355,7 +355,7 @@ describe 'Neo4jMapper', ->
         expect(err).to.be.an 'object'
         # the following values may vary between versions
         # we'll keep the anyway as long we have no major difficulties
-        expect(/unclosed\s+parenth/i.test(err.message)).to.be true
+        expect(/^[A-Z]+[a-z]+/.test(err.message)).to.be true
         expect(/SyntaxException/i.test(err.exception)).to.be true
         done()
 
@@ -510,7 +510,7 @@ describe 'Neo4jMapper', ->
 
           done()
 
-    it 'expect to ensure, get and delete index', (done) ->
+    it 'expect to work with index (get and delete index)', (done) ->
       class Person extends Node
       Person.dropEntireIndex (err, res) ->
         expect(err).to.be null
@@ -581,22 +581,22 @@ describe 'Neo4jMapper', ->
             uid: -> new Date().getTime()
             is_movie: true
             director: 'Roman Polanski'
-      Node.register_model(Movie)
-      bitterMoon = new Movie title: 'Bitter Moon'
-      bitterMoon.save (err) ->
-        expect(err).to.be null
-        uid = bitterMoon.data.uid
-        expect(uid).to.be.a 'number'
-        Movie.findAll().where { uid: uid }, (err, found) ->
+      Node.register_model Movie, ->
+        bitterMoon = new Movie title: 'Bitter Moon'
+        bitterMoon.save (err) ->
           expect(err).to.be null
-          expect(found).to.have.length 1
-          expect(found[0].data.uid).to.be.equal uid
-          expect(found[0].data.title).to.be.equal 'Bitter Moon'
-          expect(found[0].data.is_movie).to.be true
-          expect(found[0].data.director).to.be.equal 'Roman Polanski'
-          expect(_.keys(found[0].data)).to.have.length 4
-          bitterMoon.remove ->
-            done()
+          uid = bitterMoon.data.uid
+          expect(uid).to.be.a 'number'
+          Movie.findAll().where { uid: uid }, (err, found) ->
+            expect(err).to.be null
+            expect(found).to.have.length 1
+            expect(found[0].data.uid).to.be.equal uid
+            expect(found[0].data.title).to.be.equal 'Bitter Moon'
+            expect(found[0].data.is_movie).to.be true
+            expect(found[0].data.director).to.be.equal 'Roman Polanski'
+            expect(_.keys(found[0].data)).to.have.length 4
+            bitterMoon.remove ->
+              done()
 
   describe 'label nodes', ->
 

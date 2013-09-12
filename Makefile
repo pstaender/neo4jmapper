@@ -1,9 +1,9 @@
-REPORTER = dot
+REPORTER = spec
 VERSION = 2.0.0-M05
 NEO4JFOLDER = neo4jserver
 
 test:test-build
-	@NODE_ENV=test mocha --reporter $(REPORTER) --bail
+	@NODE_ENV=test mocha --reporter $(REPORTER)
 
 test-complete:test-run
 	npm run clean
