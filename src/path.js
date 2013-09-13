@@ -3,7 +3,7 @@ var helpers = null
 
 if (typeof window === 'object') {
   // browser
-  helpers = neo4jmapper_helpers;
+  helpers = window.Neo4jMapper.helpers;
   _       = window._;
 } else {
   // nodejs
@@ -12,7 +12,7 @@ if (typeof window === 'object') {
 }
 
 // Constructor
-Path = function Path(data) {
+var Path = function Path() {
   this.nodes = [];
   this.relationships = [];
   this.from = {

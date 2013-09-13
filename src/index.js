@@ -8,7 +8,7 @@
 // All operations are performed asynchronously since it's using neo4j's REST api.
 //
 // This file is used for nodejs,
-// the browser equivalent is `./browser/browser_(header|footer).js`
+// the browser equivalent is `./browser/browser_(header|footer).js` (will be available through `window.Neo4jMapper`)
 
 
 module.exports = exports = function(urlOrOptions) {

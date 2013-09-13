@@ -4,6 +4,8 @@
 // Initialize the Graph object with a neo4jrestful client
 var initGraph = function(neo4jrestful) {
 
+  "use strict";
+
   // Requirements (for browser and nodejs):
   // * neo4jmapper helpers
   // * underscorejs
@@ -23,7 +25,7 @@ var initGraph = function(neo4jrestful) {
     throw Error('You have to use an Neo4jRestful object as argument')
 
   // Constructor
-  Graph = function Graph(url) {
+  var Graph = function Graph(url) {
     if (url) {
       this.neo4jrestful = new this.neo4jrestful.constructor(url);
     }
@@ -104,6 +106,9 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.prototype.log = function(){ /* > /dev/null */ };
+
+  if (typeof window === 'object')
+    window.Neo4jMapper.Graph = Graph;
 
   return Graph;
 }

@@ -7,6 +7,8 @@
  *
  */
 
+"use strict";
+
 if (typeof window !== 'object')
   throw Error('This file is for browser use, not for nodejs');
 if (typeof window._ === 'undefined')
@@ -14,7 +16,7 @@ if (typeof window._ === 'undefined')
 if (typeof window.superagent === 'undefined')
   throw Error('Include of superagent library is needed')
 
-window.Neo4jMapper = Neo4jMapper = {
+window.Neo4jMapper = {
   init: null,
   Neo4jRestful: null,
   neo4jrestful: null, // TODO: this is redundant /w client, check where it's needed

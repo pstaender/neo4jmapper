@@ -13,7 +13,7 @@ var Node          = null // will be initialized
   , _             = null;
 
 if (typeof window === 'object') {
-  helpers = neo4jmapper_helpers;
+  helpers = window.Neo4jMapper.helpers;
   _       = window._;
 } else {
   helpers  = require('./helpers');

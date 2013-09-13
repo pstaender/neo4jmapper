@@ -1,6 +1,8 @@
 var initNeo4jRestful = function() {
 
-  // will be initialized on first construction
+  "use strict";
+
+  // will be set with environment depending values below
   var Node                = null
     , Relationship        = null
     , Path                = null
@@ -13,11 +15,13 @@ var initNeo4jRestful = function() {
     , jQuery              = null
     , request             = null
     , Sequence            = null
-    , JSONStream          = null;
+    , JSONStream          = null
+    , global              = null; // will set to (global).root or (global).window
 
   if (typeof window === 'object') {
     // browser
-    helpers      = neo4jmapper_helpers;
+    global       = window;
+    helpers      = window.Neo4jMapper.helpers;
     node         = initNode;
     path         = initPath;
     relationship = initRelationship;
@@ -27,6 +31,7 @@ var initNeo4jRestful = function() {
     request      = window.superagent;
   } else {
     // nodejs
+    global       = root;
     helpers      = require('./helpers');
     _            = require('underscore');
     jQuery       = null;//require('jquery');
@@ -87,7 +92,7 @@ var initNeo4jRestful = function() {
   /*
    * Constructor
    */
-  Neo4jRestful = function Neo4jRestful(url, options) {
+  global.Neo4jRestful = function Neo4jRestful(url, options) {
     var self = this;
     if (typeof options !== 'object') {
       options = (typeof url === 'object') ? url : {};
@@ -122,7 +127,7 @@ var initNeo4jRestful = function() {
     }
     // copy header
     self.header = _.extend({}, Neo4jRestful.prototype.header);
-    self.checkAvailability(function(err, isAvailable, debug) {
+    self.checkAvailability(function(err, isAvailable) {
       self.connection_established = isAvailable;
     });
   }
@@ -161,7 +166,6 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.query = function(cypher, options, cb) {
     var args;
-    var self = this;
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
     if (typeof cypher === 'string') {
       this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
@@ -207,7 +211,6 @@ var initNeo4jRestful = function() {
   }
 
   Neo4jRestful.prototype.request = function(url, options, cb) {
-    var self = this;
     var debug = null;
     var defaultOptions = {
       type: 'GET',
@@ -472,7 +475,6 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
     var uri = (responseData) ? responseData.self : null;
-    var useLabels = true;
     if (typeof Class !== 'function')
       Class = Node;
     if (uri) {

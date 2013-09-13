@@ -1,5 +1,8 @@
 
 window.Neo4jMapper.init = function(urlOrOptions) {
+
+  "use strict";
+  
   this.Neo4jRestful  = initNeo4jRestful();
   this.neo4jrestful  = this.client = new this.Neo4jRestful(urlOrOptions);
   this.Node          = initNode(this.neo4jrestful);

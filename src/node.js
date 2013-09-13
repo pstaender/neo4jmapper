@@ -16,7 +16,7 @@ var helpers = null
 if (typeof window === 'object') {
   // browser
   // TODO: find a solution for bson object id
-  helpers  = neo4jmapper_helpers;
+  helpers  = window.Neo4jMapper.helpers;
   _        = window._;
   Sequence = window.Sequence;
 } else {
@@ -27,7 +27,7 @@ if (typeof window === 'object') {
 
 // ### Constructor
 // calls this.init(data,id) to set all values to default
-Node = function Node(data, id) {
+var Node = function Node(data, id) {
   // will be used for labels and classes
   if (!this.constructor_name)
     this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
@@ -184,7 +184,10 @@ Node.prototype.initialize = function(cb) {
     cb = function() { /* /dev/null */ };
   if (!this.__already_initialized__) {
     return this.onBeforeInitialize(function(err) {
-      self.onAfterInitialize(cb);
+      if (err)
+        cb(err, null);
+      else
+        self.onAfterInitialize(cb);
     });
   } else {
     return cb(null, this);
@@ -207,14 +210,13 @@ Node.prototype.onAfterInitialize = function(cb) {
   this.__already_initialized__ = true;
   // Index fields
   var fieldsToIndex = this.fieldsForAutoindex();
-  var fieldsWithUniqueValues = this.fieldsWithUniqueValues();
   // we create an object to get the label
   var node = new this.constructor();
   var label = node.label;
   if (label) {
     if (fieldsToIndex.length > 0) {
       node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err) {
-        cb(null, self);
+        cb(err, self);
       });
     } else {
       cb(null, self);
@@ -355,11 +357,13 @@ Node.prototype.indexFields = function(cb) {
       var value = this.data[key];
       if ((_.isString(namespace))&&(typeof value !== 'undefined')&&(value !== null)) {
         todoCount++;
-        this.addIndex(namespace, key, value, function(err, data, debug){
+        this.addIndex(namespace, key, value, function(err, data, debug) {
+          if (err)
+            return cb(err, data, debug);
           doneCount = doneCount+1;
           // done
           if (doneCount >= todoCount)
-            cb(null, doneCount);
+            return cb(null, doneCount, debug);
         });
       }
     }
@@ -423,17 +427,11 @@ Node.prototype.dropIndex = function(fields, cb) {
   // skip if no fields
   if (todo === 0)
     return cb(null, null);
-  var errors  = [];
-  var results = [];
   if (todo===0)
     return cb(Error("No fields for indexing found", null));
   _.each(fields, function(field) {
-    self.neo4jrestful.delete(url+'/'+field, function(err, res){
+    self.neo4jrestful.delete(url+'/'+field, function(/* err, res */) {
       done++;
-      // if (err)
-      //   errors.push(err);
-      // else
-      //   results.push(res);
       if (done === todo)
         cb(null, null);
     });
@@ -584,7 +582,6 @@ Node.prototype.onAfterSave = function(node, next, debug) {
 }
 
 Node.prototype.update = function(data, cb) {
-  var self = this;
   if (!helpers.isValidData(data)) {
     cb(Error('To perform an update you need to pass valid data for updating as first argument'), null);
   }
@@ -614,7 +611,6 @@ Node.prototype.load = function(cb) {
 }
 
 Node.prototype.onBeforeLoad = function(node, next) {
-  var self = this;
   if (node.hasId()) {
     var DefaultConstructor = this.recommendConstructor();
     // To check that it's invoked by Noder::find() or Person::find()
@@ -628,7 +624,7 @@ Node.prototype.onBeforeLoad = function(node, next) {
       // convert node to it's model if it has a distinct label and differs from static method
       if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
         node = Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
-      next(null, node);
+      next(null, node, debug);
     });
   } else {
     next(null, node);
@@ -714,11 +710,9 @@ Node.prototype.shortestPathTo = function(end, type, cb) {
     else
       return cb(err, result, debug);
   });
-  return null;
 }
 
 Node.prototype.pathBetween = function(start, end, options, cb) {
-  var self = this;
   var defaultOptions = {
     'max_depth': 0,
     'relationships': {
@@ -759,9 +753,7 @@ Node.prototype.pathBetween = function(start, end, options, cb) {
   return this; // return self for chaining
 }
 
-Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) {
-
-}
+// Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) { }
 
 Node.prototype.count = function(identifier, cb) {
   this._modified_query_ = true;
@@ -1043,7 +1035,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
           });
         })(x, basicNode);
       }
-      sequence.then(function(next){
+      sequence.then(function() {
         //finally
         if ( (data.data) && (data.data[0]) && (typeof data.data[0][0] !== 'object') )
           sortedData = data.data[0][0];
@@ -1073,16 +1065,14 @@ Node.prototype.query = function(cypherQuery, options, cb) {
   if (typeof cypherQuery === 'string') {
     // check for stream flag
     // in stream case we use stream() instead of query()
-    var query = null;
     if (this._stream_) {
       return this.neo4jrestful.stream(cypherQuery, options, function(data, debug) {
-        var object = null;
         if ( (data) && (data.__type__) ) {
           cb(
-            Node.singleton().neo4jrestful.createObjectFromResponseData(data._response, DefaultConstructor)
+            Node.singleton().neo4jrestful.createObjectFromResponseData(data._response, DefaultConstructor), debug
           );
         } else {
-          return cb(data);
+          return cb(data, debug);
         }
       });
     } else {
@@ -1441,7 +1431,7 @@ Node.prototype.deleteIncludingRelationships = function(cb) {
 
 Node.prototype.remove = function(cb) {
   var self = this;
-  this.onBeforeRemove(function(err) {
+  this.onBeforeRemove(function(/*err*/) {
     if (self.is_singleton)
       return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
     if (self.hasId()) {
@@ -1752,7 +1742,6 @@ Node.prototype.addIndex = function(namespace, key, value, cb) {
     return this.neo4jrestful.post('/db/data/index/'+this.__type__+'/'+namespace, { data: { key: key, value: value, uri: this.uri } }, cb);
   else
     return null;
-  return keys;
 }
 
 Node.prototype.toObject = function() {
@@ -1896,7 +1885,6 @@ Node.prototype.findByIndex = function(namespace, key, value, cb) {
   var self = this;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
-  var values = {};
   if ( (typeof cb === 'undefined') && (typeof value === 'function') ) {
     // we have no namespace give, so we are using the label as namespace
     cb = value;
@@ -1913,7 +1901,7 @@ Node.prototype.findByIndex = function(namespace, key, value, cb) {
       } else {
         result = (result[0]) ? result[0] : null;
         if (result)
-          result.load(function(loadErr){
+          result.load(function(/*loadErr*/) {
             cb(err, result, debug);
           });
         else

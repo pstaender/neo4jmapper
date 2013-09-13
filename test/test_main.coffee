@@ -582,7 +582,7 @@ describe 'Neo4jMapper', ->
         if err
           expect(err.constructor).to.be Array
           for error in err
-            expect(error.cause.exception).to.be.equal 'AddIndexFailureException'
+            expect(error.cause.exception).to.match /^(AddIndexFailureException|AlreadyIndexedException)$/i
         deathAndMaiden = new Movie title: 'Death and the Maiden'
         uid = new Date().getTime()
         deathAndMaiden.data.uid = uid
@@ -595,12 +595,12 @@ describe 'Neo4jMapper', ->
             deathAndMaiden.remove ->
               done()
 
-    it 'expect to have unique values'#, (done) ->
-      # client.query """
-      # INDEX CONSTRAINT ON (n:Movie) ASSERT n.uid IS UNIQUE;
-      # """, (err, result) ->
-      #   console.log err, result
-      #   done()
+    it.skip 'expect to have unique values', (done) ->
+      client.query """
+      INDEX CONSTRAINT ON (n:Movie) ASSERT n.uid IS UNIQUE;
+      """, (err, result) ->
+        console.log err, result
+        done()
 
     it 'expect to det default values on models', (done) ->
       # client.constructor::log = Graph::log = require('./log')
@@ -764,16 +764,19 @@ describe 'Neo4jMapper', ->
                 expect(err.message).to.be.equal 'More than one node found… You have query one distinct result'
                 done()
 
-    it 'expect to see whether a node is persisted or not', (done) ->
+    it 'expect to check if node is persisted', (done) ->
       n = new Node()
       expect(n.isPersisted()).to.be false
       n.save (err, node) ->
+        expect(err).to.be null
         expect(node.isPersisted()).to.be true
         node.data.name = 'changed value'
         expect(node.isPersisted()).to.be false
-        node.save ->
+        node.save (err, node) ->
+          expect(err).to.be null
           expect(node.isPersisted()).to.be true
           Node.findById node.id, (err, node) ->
+            expect(err).to.be null
             expect(node.isPersisted()).to.be true
             done()
 
