@@ -510,28 +510,55 @@ describe 'Neo4jMapper', ->
 
           done()
 
-    it 'expect to work with index (get and delete index)', (done) ->
+    it 'expect to drop entire index', (done) ->
       class Person extends Node
-      Person.dropEntireIndex (err, res) ->
-        expect(err).to.be null
-        Person::fields =
+        fields:
           indexes:
-            uid: true
+            email: true
+      class Band extends Node
+        fields:
+          indexes:
             name: true
+      Node.register_model Person, (err) ->
+        expect(err).to.be null
+        Node.register_model Band, ->
+          expect(err).to.be null
+          Person.getIndex (err, res) ->
+            expect(res).to.have.length 1
+            Band.getIndex (err, res) ->
+              expect(res).to.have.length 1
+              Person.dropEntireIndex (err, res) ->
+                Person.getIndex (err, res) ->
+                  expect(res).to.have.length 0
+                  # check that other indexes aren't affected
+                  Band.getIndex (err, res) ->
+                    expect(res).to.have.length 1
+                    done()
+
+
+    it 'expect to work with index (get and delete index)', (done) ->
+      # try to index via model registration and manually via ensureIndex()
+      Person = Node.register_model 'IndexedPerson', { fields: { indexes: { name: true } } }, (err) ->
+        expect(err).to.be null
         Person.getIndex (err, res) ->
           expect(err).to.be null
-          expect(res).to.have.length 0
-          Person.ensureIndex (err, res) ->
+          expect(res).to.have.length 1
+          Person.dropEntireIndex (err) ->
             expect(err).to.be null
             Person.getIndex (err, res) ->
               expect(err).to.be null
-              expect(res).to.have.length 2
-              Person.dropIndex (err, res) ->
+              expect(res).to.have.length 0
+              Person.ensureIndex (err, res) ->
                 expect(err).to.be null
                 Person.getIndex (err, res) ->
                   expect(err).to.be null
-                  expect(res).to.have.length 0
-                  done()
+                  expect(res).to.have.length 1
+                  Person.dropIndex (err, res) ->
+                    expect(err).to.be null
+                    Person.getIndex (err, res) ->
+                      expect(err).to.be null
+                      expect(res).to.have.length 0
+                      done()
 
     it 'expect to autoindex models', (done) ->
       ###
