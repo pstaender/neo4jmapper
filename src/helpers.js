@@ -1,4 +1,4 @@
-var neo4jmapper_helpers = {};
+var global = (typeof window === 'object') ? window : root;
 
 (function(){
 
@@ -647,7 +647,7 @@ var neo4jmapper_helpers = {};
     return temp.toLowerCase();
   }
 
-  return neo4jmapper_helpers = {
+  return global.Neo4jMapper.helpers = {
     sortStringAndOptionsArguments: sortStringAndOptionsArguments,
     sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
     sortStringAndCallbackArguments: sortStringAndCallbackArguments,
@@ -667,7 +667,5 @@ var neo4jmapper_helpers = {};
 })();
 
 if (typeof window !== 'object') {
-  module.exports = exports = neo4jmapper_helpers;
-} else {
-  window.Neo4jMapper.helpers = neo4jmapper_helpers;
+  module.exports = exports = global.Neo4jMapper.helpers;
 }

@@ -1,3 +1,5 @@
+var global = (typeof window === 'object') ? window : root;
+
 var helpers = null
   , _       = null
 
@@ -12,7 +14,7 @@ if (typeof window === 'object') {
 }
 
 // Constructor
-var Path = function Path() {
+var Path = global.Neo4jMapper.Path = function Path() {
   this.nodes = [];
   this.relationships = [];
   this.from = {
@@ -147,11 +149,15 @@ var initPath = function(neo4jrestful) {
   }
 
   return Path;
-
 }
 
 if (typeof window !== 'object') {
-  module.exports = exports = initPath;
+  module.exports = exports = {
+    Path: null,
+    init: function(neo4jrestful) {
+      return this.Path = initPath(neo4jrestful);
+    }
+  };
 } else {
-  window.Neo4jMapper.Path = Path;
+  window.Neo4jMapper.initPath = initPath;
 }

@@ -1,6 +1,8 @@
 // **The Graph** respresents the database
 // You can perform basic actions and queries directly on the entire graphdatabase
 
+var global = (typeof window === 'object') ? window : root;
+
 // Initialize the Graph object with a neo4jrestful client
 var initGraph = function(neo4jrestful) {
 
@@ -13,7 +15,7 @@ var initGraph = function(neo4jrestful) {
     , helpers = null;
 
   if (typeof window === 'object') {
-    helpers = neo4jmapper_helpers;
+    helpers = window.Neo4jMapper.helpers;
     _       = window._();
   } else {
     helpers = require('./helpers');
@@ -25,7 +27,8 @@ var initGraph = function(neo4jrestful) {
     throw Error('You have to use an Neo4jRestful object as argument')
 
   // Constructor
-  var Graph = function Graph(url) {
+
+  var Graph = global.Neo4jMapper.Graph = function Graph(url) {
     if (url) {
       this.neo4jrestful = new this.neo4jrestful.constructor(url);
     }
@@ -107,15 +110,16 @@ var initGraph = function(neo4jrestful) {
 
   Graph.prototype.log = function(){ /* > /dev/null */ };
 
-  if (typeof window === 'object')
-    window.Neo4jMapper.Graph = Graph;
-
   return Graph;
 }
 
 if (typeof window !== 'object') {
-  // nodejs
-  module.exports = exports = function(neo4jrestful) {
-    return initGraph(neo4jrestful);
-  }
+  module.exports = exports = {
+    Graph: null,
+    init: function(neo4jrestful) {
+      return exports.Graph = initGraph(neo4jrestful);
+    }
+  };
+} else {
+  window.Neo4jMapper.initGraph = initGraph;
 }

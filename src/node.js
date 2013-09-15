@@ -9,25 +9,30 @@
 // * neo4jmapper helpers
 // * underscorejs
 // * sequence (https://github.com/coolaj86/futures)
+
+var global = (typeof window === 'object') ? window : root;
+
 var helpers = null
   , _ = null
-  , Sequence = null;
+  , Sequence = null
+  , Relationship = null;
 
 if (typeof window === 'object') {
   // browser
   // TODO: find a solution for bson object id
-  helpers  = window.Neo4jMapper.helpers;
-  _        = window._;
-  Sequence = window.Sequence;
+  helpers      = window.Neo4jMapper.helpers;
+  _            = window._;
+  Sequence     = window.Sequence;
+
 } else {
-  helpers  = require('./helpers');
-  _        = require('underscore');
-  Sequence = require('./lib/sequence');
+  helpers      = require('./helpers');
+  _            = require('underscore');
+  Sequence     = require('./lib/sequence');
 }
 
 // ### Constructor
 // calls this.init(data,id) to set all values to default
-var Node = function Node(data, id) {
+var Node = global.Neo4jMapper.Node = function Node(data, id) {
   // will be used for labels and classes
   if (!this.constructor_name)
     this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
@@ -2127,20 +2132,26 @@ var initNode = function(neo4jrestful) {
   if (typeof neo4jrestful === 'object') {
     if (typeof window === 'object') {
       window.Neo4jMapper.Node.prototype.neo4jrestful = neo4jrestful;
+      Relationship = window.Neo4jMapper.Relationship;
       return window.Neo4jMapper.Node;
-    }
-    else {
+    } else {
+      Relationship = root.Neo4jMapper.Relationship;
       Node.prototype.neo4jrestful = neo4jrestful;
       return Node;
     }
-  }    
+  }
 
   return Node;
-
 }
 
 if (typeof window !== 'object') {
-  module.exports = exports = initNode;
+  module.exports = exports = {
+    Node: null,
+    init: function(neo4jrestful) {
+      return this.Node = initNode(neo4jrestful);
+    }
+  };
+
 } else {
-  window.Neo4jMapper.Node = Node;
+  window.Neo4jMapper.initNode = initNode;
 }

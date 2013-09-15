@@ -10,6 +10,8 @@
 // This file is used for nodejs,
 // the browser equivalent is `./browser/browser_(header|footer).js` (will be available through `window.Neo4jMapper`)
 
+if (typeof root.Neo4jMapper === 'undefined')
+  root.Neo4jMapper = {};
 
 module.exports = exports = function(urlOrOptions) {
   
@@ -18,16 +20,16 @@ module.exports = exports = function(urlOrOptions) {
   // Create a client from given URL
   var neo4jrestful  = new Neo4jRestful(urlOrOptions);
 
-  var Graph         = require('./graph');
-  var Node          = require('./node')(neo4jrestful);
-  var Relationship  = require('./relationship')(neo4jrestful);
-  var Path          = require('./path')(neo4jrestful);
+  var Graph         = require('./graph').init(neo4jrestful);
+  var Node          = require('./node').init(neo4jrestful);
+  var Relationship  = require('./relationship').init(neo4jrestful);
+  var Path          = require('./path').init(neo4jrestful);
 
   return {
     Node: Node,
     Relationship: Relationship,
     Path: Path,
-    Graph: Graph(neo4jrestful),
+    Graph: Graph,
     client: neo4jrestful,
     helpers: require('./helpers')
   };

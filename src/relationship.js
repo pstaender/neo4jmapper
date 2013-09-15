@@ -4,6 +4,8 @@
  * * make relationships queryable with custom queries
  */
 
+var global = (typeof window === 'object') ? window : root;
+
 // Requirements (for browser and nodejs):
 // * Node
 // * neo4jmapper helpres
@@ -21,7 +23,7 @@ if (typeof window === 'object') {
 }
 
 // Constructor
-Relationship = function Relationship(data, start, end, id) {
+var Relationship = global.Neo4jMapper.Relationship = function Relationship(data, start, end, id) {
   this.id = id || null;
   this.data = data || {};
   this.from = {
@@ -311,7 +313,7 @@ var initRelationship = function(neo4jrestful) {
       // return window.Neo4jMapper.Relationship;
     } else {
       // nodejs
-      Node = require('./node')(neo4jrestful);
+      Node = require('./node').init(neo4jrestful);
       Relationship.prototype.neo4jrestful = neo4jrestful;
       Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;
     }
@@ -330,11 +332,15 @@ var initRelationship = function(neo4jrestful) {
   Relationship.prototype._hashData_       = Node.prototype._hashData_;
 
   return Relationship;
-
 }
 
 if (typeof window !== 'object') {
-  module.exports = exports = initRelationship;
+  module.exports = exports = {
+    Relationship: null,
+    init: function(neo4jrestful) {
+      return this.Relationship = initRelationship(neo4jrestful);
+    }
+  };
 } else {
-  window.Neo4jMapper.Relationship = Relationship;
+  window.Neo4jMapper.initRelationship = initRelationship;
 }

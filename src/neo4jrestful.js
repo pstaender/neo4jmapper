@@ -15,29 +15,26 @@ var initNeo4jRestful = function() {
     , jQuery              = null
     , request             = null
     , Sequence            = null
-    , JSONStream          = null
-    , global              = null; // will set to (global).root or (global).window
+    , JSONStream          = null;
 
   if (typeof window === 'object') {
     // browser
-    global       = window;
     helpers      = window.Neo4jMapper.helpers;
-    node         = initNode;
-    path         = initPath;
-    relationship = initRelationship;
+    node         = window.Neo4jMapper.initNode;
+    path         = window.Neo4jMapper.initPath;
+    relationship = window.Neo4jMapper.initRelationship;
     _            = window._;
     jQuery       = window.jQuery;
     Sequence     = window.Sequence;
     request      = window.superagent;
   } else {
     // nodejs
-    global       = root;
     helpers      = require('./helpers');
     _            = require('underscore');
     jQuery       = null;//require('jquery');
-    node         = require('./node');
-    relationship = require('./relationship');
-    path         = require('./path');
+    node         = require('./node').init;
+    relationship = require('./relationship').init;
+    path         = require('./path').init;
     Sequence     = require('./lib/sequence');
     request      = require('superagent');
     JSONStream   = require('JSONStream');
@@ -92,7 +89,7 @@ var initNeo4jRestful = function() {
   /*
    * Constructor
    */
-  global.Neo4jRestful = function Neo4jRestful(url, options) {
+  var Neo4jRestful = function Neo4jRestful(url, options) {
     var self = this;
     if (typeof options !== 'object') {
       options = (typeof url === 'object') ? url : {};
@@ -517,12 +514,16 @@ var initNeo4jRestful = function() {
     }
   }
 
+  if (typeof window === 'object')
+    window.Neo4jMapper.Neo4jRestful = Neo4jRestful;
+
   return Neo4jRestful;
 
 };
 
 if (typeof window !== 'object') {
   // nodejs
-  initNeo4jRestful();
-  module.exports = exports = Neo4jRestful;
+  module.exports = exports = initNeo4jRestful();
+} else {
+  window.Neo4jMapper.Neo4jRestful = initNeo4jRestful();
 }
