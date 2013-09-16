@@ -10,6 +10,7 @@ var global = (typeof window === 'object') ? window : root;
 // * Node
 // * neo4jmapper helpres
 // * underscorejs
+
 var Node          = null // will be initialized
   , helpers       = null
   , _             = null;
@@ -132,7 +133,6 @@ Relationship.prototype.findById = function(id, cb) {
   return this;
 }
 
-// // // TODO: save  functionality as Node.update() asap!!!
 Relationship.prototype.update = function(data, cb) {
   var self = this;
   if (helpers.isValidData(data)) {
@@ -306,13 +306,10 @@ var initRelationship = function(neo4jrestful) {
 
   if (typeof neo4jrestful === 'object') {
     if (typeof window === 'object') {
-      // browser      
       Node = initNode(neo4jrestful);
       window.Neo4jMapper.Relationship.prototype.neo4jrestful = neo4jrestful;
       window.Neo4jMapper.Relationship.prototype.applyDefaultValues = window.Neo4jMapper.Node.prototype.applyDefaultValues;
-      // return window.Neo4jMapper.Relationship;
     } else {
-      // nodejs
       Node = require('./node').init(neo4jrestful);
       Relationship.prototype.neo4jrestful = neo4jrestful;
       Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;

@@ -90,7 +90,10 @@ var initNeo4jRestful = function() {
    * Constructor
    */
   var Neo4jRestful = function Neo4jRestful(url, options) {
-    var self = this;
+    var self = this
+      , urlPattern = /^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i
+      , urlMatches = null
+      , urlOptions = {};
     if (typeof options !== 'object') {
       options = (typeof url === 'object') ? url : {};
     }
@@ -102,13 +105,31 @@ var initNeo4jRestful = function() {
       // ensure one trailing slash
       options.url = options.url.replace(/\/*$/, '/');
       // stop here if we don't have a valid url
-      if (!/http(s)*\:\/\/.+(\:[0-9]+)*\//.test(options.url)) {
-        var message = "Your URL ("+url+") needs to match the default url pattern 'http(s)://domain(:port)/…'";
+      if (!urlPattern.test(options.url)) {
+        var message = "Your URL ("+url+") needs to match the default url pattern 'http(s)://(username:password@)domain(:port)/(endpoint)…'";
         throw Error(message);
+      }
+      // extract all parts from the given url
+      // TODO: use extractet Options
+      urlMatches = options.url.match(urlPattern);
+      urlOptions = {
+        'protocol': urlMatches[1],
+        'user': urlMatches[4] || null,
+        'password': urlMatches[5] || null,
+        'domain': urlMatches[6],
+        'port': urlMatches[8],
+        'endpoint': urlMatches[9] || null
+      }
+      if (urlOptions.endpoint) {
+        options.endpoint = urlOptions.endpoint;
+        // strip preceding slash(es)
+        options.endpoint = options.endpoint.replace(/^\/+/, '');
       }
     } else {
       throw Error('No url found. Argument must be either an URL as string or an option object including an `.url` property.');
     }
+    if (options.endpoint)
+      this.endpoint = options.endpoint;
 
     self.baseUrl = options.url;
 
@@ -135,6 +156,7 @@ var initNeo4jRestful = function() {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   };
+  Neo4jRestful.prototype.endpoint                   = "db/data/";
   Neo4jRestful.prototype.timeout                    = 5000;
   Neo4jRestful.prototype.baseUrl                    = null;
   Neo4jRestful.prototype.debug                      = true; // can be deactivated but will not make any performance difference
@@ -166,7 +188,7 @@ var initNeo4jRestful = function() {
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
     if (typeof cypher === 'string') {
       this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
-      this.post('/db/data/cypher',{
+      this.post('/'+this.endpoint+'cypher',{
         data: {
           query: cypher,
           params: options.params || {}
@@ -179,7 +201,7 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {
     var self = this;
-    request.get(self.baseUrl+'db/data/')
+    request.get(self.baseUrl+this.endpoint)
       .timeout(this.timeout)
       .end(function(err, res) {
         var body = (res) ? res.body : null;

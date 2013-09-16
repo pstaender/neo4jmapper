@@ -1,4 +1,3 @@
-var global = (typeof window === 'object') ? window : root;
 
 var helpers = null
   , _       = null
@@ -138,11 +137,9 @@ var initPath = function(neo4jrestful) {
 
   if (typeof neo4jrestful === 'object') {
     if (typeof window === 'object') {
-      // browser
       window.Neo4jMapper.Path.prototype.neo4jrestful = neo4jrestful;
       return window.Neo4jMapper.Path;
     } else {
-      // nodejs
       Path.prototype.neo4jrestful = neo4jrestful;
       return Path;
     }

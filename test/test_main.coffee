@@ -53,6 +53,7 @@ describe 'Neo4jMapper', ->
   describe 'graph', ->
 
     it 'expect to create a graph object, with all variants of arguments', (done) ->
+
       join = Join.create()
 
       neo4j = new Neo4j { url: configForTest.neo4jURL }
