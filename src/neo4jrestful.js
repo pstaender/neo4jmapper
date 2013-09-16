@@ -127,8 +127,6 @@ var initNeo4jRestful = function() {
       throw Error('No url found. Argument must be either an URL as string or an option object including an `.url` property.');
     }
 
-    self.baseUrl = options.url;
-
     if (Node === null)
       Node = node(self);
     if (Relationship === null)
@@ -202,7 +200,7 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {
     var self = this;
-    request.get(self.baseUrl+this.urlOptions.endpoint)
+    request.get(self.absoluteUrl('/'))
       .timeout(this.timeout)
       .end(function(err, res) {
         var body = (res) ? res.body : null;
@@ -212,7 +210,7 @@ var initNeo4jRestful = function() {
           var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
           cb(error, body.neo4j_version);
         } else {
-          throw Error("Can't detect neo4j… Sure your using correct url / neo4j service is available? ("+self.baseUrl+")");
+          throw Error("Can't detect neo4j… Sure your using correct url / neo4j service is available? ("+self.absoluteUrl('/')+")");
         }
       });
   }
@@ -221,7 +219,7 @@ var initNeo4jRestful = function() {
     if (typeof url !== 'string')
       url = '';
     if (!url)
-      url = this.url;
+      url = this.url || '/';
     if (url) {
       var baseUrl =
         this.urlOptions.protocol + '://'
