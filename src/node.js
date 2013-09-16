@@ -1949,6 +1949,7 @@ Node.register_model = function(Class, label, prototype, cb) {
       // e.g. indexes, defaults…
       var fieldDefinitions = prototype.fields;
       _.extend(Class.prototype, prototype, this.prototype);
+      Class.prototype.fields = {};
       for (var attribute in fieldDefinitions) {
         if ((this.prototype.fields)&&(this.prototype.fields[attribute]))
           Class.prototype.fields[attribute] = _.extend(fieldDefinitions[attribute], this.prototype.fields[attribute]);
@@ -1956,8 +1957,6 @@ Node.register_model = function(Class, label, prototype, cb) {
     } else {
       _.extend(Class.prototype, prototype, this.prototype);
     }
-
-    _.extend(Class.prototype, prototype, this.prototype); // object methods
 
     if (!Class.prototype.labels)
       Class.prototype.labels = [];

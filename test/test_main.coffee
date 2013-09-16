@@ -182,17 +182,14 @@ describe 'Neo4jMapper', ->
       expect(person.cypher.label).to.be 'Person'
       expect(person.constructor_name).to.be 'Person'
 
-      Movie = Node.register_model 'Movie', { fields: { defaults: { category: 'Blockbuster' } } }, (err) ->
-        expect(err).to.be null
+      Node.register_model 'Movie', { fields: { defaults: { category: 'Blockbuster' }, indexes: { category: true } } }, (err, Movie) ->
+        movie = new Movie()
+        expect(movie.label).to.be.equal 'Movie' 
+        expect(movie.constructor_name).to.be.equal 'Movie'
+        expect(movie.fields.defaults.category).to.be.equal 'Blockbuster'
+        expect(movie).to.be.an 'object'
+        expect(movie.id).to.be null
         done()
-
-      movie = new Movie()
-      expect(movie.label).to.be.equal 'Movie' 
-      expect(movie.constructor_name).to.be.equal 'Movie'
-      expect(movie.fields.defaults.category).to.be.equal 'Blockbuster'
-      expect(movie).to.be.an 'object'
-      
-      expect(movie.id).to.be null
 
     it 'inheritance on coffescript class-objects', (done) ->
       class Person extends Node
@@ -209,6 +206,9 @@ describe 'Neo4jMapper', ->
       expect(director.labels[2]).to.be.equal 'Extra'
       expect(director.labels[3]).to.be.equal 'Person'
       expect(director.label).to.be.equal 'Director'
+      expect(_.keys(director.fields.indexes)).to.have.length 0
+      expect(_.keys(director.fields.unique)).to.have.length 0
+      expect(_.keys(director.fields.defaults)).to.have.length 0
       #[ 'Director', 'Actor', 'Extra', 'Person' ] 'Director'
       done()
 
@@ -489,7 +489,7 @@ describe 'Neo4jMapper', ->
         expect(countBefore).to.be.a 'number'
         lebowski = new Movie title: 'The Big Lebowski'
         lebowski.save (err, lebowski) ->
-          expect(_.keys(lebowski.data)).to.have.length 2
+          expect(_.keys(lebowski.data)).to.have.length 1
           expect(err).to.be null
           Movie.findAll().count (err, countNow) ->
             expect(countBefore+1).to.be countNow
@@ -503,101 +503,56 @@ describe 'Neo4jMapper', ->
         expect(robert.constructor_name).to.be 'Director'
         expect(robert.label).to.be 'Director'
         Node.findById robert.id, (err, found) ->
-          # expect(found.constructor_name).to.be.equal 'Director'
           expect(found.label).to.be.equal 'Director'
           Node.register_model(Director)
           found = Node.convert_node_to_model(found, Director)
           expect(found.constructor_name).to.be.equal 'Director'
-
           done()
 
-    it 'expect to drop entire index', (done) ->
-      class Person extends Node
-        fields:
-          indexes:
-            email: true
-      class Band extends Node
-        fields:
-          indexes:
-            name: true
-      Person.dropEntireIndex ->
-        Band.dropEntireIndex ->
-          Node.register_model Person, (err) ->
-            expect(err).to.be null
-            Node.register_model Band, ->
-              expect(err).to.be null
-              Person.getIndex (err, res) ->
-                expect(res).to.have.length 1
-                Band.getIndex (err, res) ->
-                  expect(res).to.have.length 1
-                  Person.dropEntireIndex (err, res) ->
-                    Person.getIndex (err, res) ->
-                      expect(res).to.have.length 0
-                      # check that other indexes aren't affected
-                      Band.getIndex (err, res) ->
-                        expect(res).to.have.length 1
-                        done()
-
-
-    it 'expect to work with index (get and delete index)', (done) ->
-      # try to index via model registration and manually via ensureIndex()
-      class IndexedPerson extends Node
-      IndexedPerson.dropEntireIndex ->
-        Person = Node.register_model 'IndexedPerson', { fields: { indexes: { name: true } } }, (err) ->
+    it 'create, get and drop index', (done) ->
+      # random label name to ensure that new indexes are created on each test 
+      labelName = "Person#{new Date().getTime()}"
+      Node.register_model labelName, { fields: { indexes: { name: true } } }, (err, Person) ->
+        expect(err).to.be null
+        Person.getIndex (err, res) ->
           expect(err).to.be null
-          Person.getIndex (err, res) ->
+          expect(res).to.have.length 1
+          Person.dropEntireIndex (err) ->
             expect(err).to.be null
-            expect(res).to.have.length 1
-            Person.dropEntireIndex (err) ->
+            Person.getIndex (err, res) ->
               expect(err).to.be null
-              Person.getIndex (err, res) ->
+              expect(res).to.have.length 0
+              Person.ensureIndex (err, res) ->
                 expect(err).to.be null
-                expect(res).to.have.length 0
-                Person.ensureIndex (err, res) ->
+                Person.getIndex (err, res) ->
                   expect(err).to.be null
-                  Person.getIndex (err, res) ->
-                    expect(err).to.be null
-                    expect(res).to.have.length 1
-                    Person.dropIndex (err, res) ->
-                      expect(err).to.be null
-                      Person.getIndex (err, res) ->
-                        expect(err).to.be null
-                        expect(res).to.have.length 0
-                        done()
+                  expect(res).to.have.length 1
+                  done()
 
     it 'expect to autoindex models', (done) ->
-      ###
-        TODO: autoindex check for indexed field tests
-      ###
-      # client.constructor::log = Graph::log = require('./log')
-      class Movie extends Node
+      # random label name to ensure that new indexes are created on each test 
+      labelName = "Movie#{new Date().getTime()}"
+      Node.register_model labelName, {
         fields:
           indexes:
             uid: true
             nested:
               id: true
-      # using the cb is not mandatory but recommend
-      Node.register_model Movie, (err, result) ->
-        # neo4j returns an error, if field(s) have been indexed already
-        # in that case, we can ignore the errors -> so it'll be checked that we have only these expected errors
-        if err
-          expect(err.constructor).to.be Array
-          for error in err
-            expect(error.cause.exception).to.match /^(AddIndexFailureException|AlreadyIndexedException)$/i
-        deathAndMaiden = new Movie title: 'Death and the Maiden'
-        uid = new Date().getTime()
-        deathAndMaiden.data.uid = uid
-        deathAndMaiden.save (err) ->
-          expect(err).to.be null
-          Movie.findAll().where { uid: uid }, (err, found) ->
+        }, (err, Movie) ->
+          deathAndMaiden = new Movie title: 'Death and the Maiden'
+          uid = new Date().getTime()
+          deathAndMaiden.data.uid = uid
+          deathAndMaiden.save (err) ->
             expect(err).to.be null
-            expect(found).to.have.length 1
-            expect(found[0].data.uid).to.be.equal uid
-            deathAndMaiden.remove ->
-              done()
+            Movie.findAll().where { uid: uid }, (err, found) ->
+              expect(err).to.be null
+              expect(found).to.have.length 1
+              expect(found[0].data.uid).to.be.equal uid
+              deathAndMaiden.remove ->
+                done()
 
     it 'expect to have unique values', (done) ->
-      # We choose a random label name, to achieve new indizes on each test
+      # random label name to ensure that new indexes are created on each test
       labelName = "Label#{new Date().getTime()}"
       Node.register_model labelName, {
         fields:
@@ -619,17 +574,16 @@ describe 'Neo4jMapper', ->
               expect(found.length).to.be 1
               done()
 
-    it 'expect to det default values on models', (done) ->
-      # client.constructor::log = Graph::log = require('./log')
-      class Movie extends Node
+    it 'expect to set default values on models', (done) ->
+      # we unregister model because it was registered before
+      labelName = "Movie#{new Date().getTime()}"
+      Node.register_model labelName, {
         fields:
-          indexes:
-            uid: true
           defaults:
             uid: -> new Date().getTime()
             is_movie: true
             director: 'Roman Polanski'
-      Node.register_model Movie, ->
+      }, (err, Movie) ->
         bitterMoon = new Movie title: 'Bitter Moon'
         bitterMoon.save (err) ->
           expect(err).to.be null
