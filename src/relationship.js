@@ -121,7 +121,7 @@ Relationship.prototype.findById = function(id, cb) {
     self = this.singleton(undefined, this);
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
-    return self.neo4jrestful.get('/db/data/'+this.__type__+'/'+id, function(err, object) {
+    return self.neo4jrestful.get(this.__type__+'/'+id, function(err, object) {
       if ((object) && (typeof self.load === 'function')) {
         //  && (typeof node.load === 'function')     
         object.load(cb);
@@ -147,7 +147,7 @@ Relationship.prototype.update = function(data, cb) {
   if (this.hasId()) {
     // copy 'private' _id_ to public
     this.id = this._id_;
-    this.neo4jrestful.put('/db/data/'+this.__type__+'/'+this.id+'/properties', { data: data }, function(err,data){
+    this.neo4jrestful.put(this.__type__+'/'+this.id+'/properties', { data: data }, function(err,data){
       if (err)
         return cb(err, data);
       else
@@ -209,7 +209,7 @@ Relationship.prototype.remove = function(cb) {
   if (this.is_singleton)
     return cb(Error("To delete results of a query use delete(). remove() is for removing a relationship."),null);
   if (this.hasId()) {
-    return this.neo4jrestful.delete('/db/data/relationship/'+this.id, cb);
+    return this.neo4jrestful.delete('relationship/'+this.id, cb);
   }
   return this;
 }

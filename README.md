@@ -81,7 +81,7 @@ Every model extended from `Node` will enjoy the label support.
     , Node  = neo4j.Node
     , Graph = neo4j.Graph;
 
-  var Person = Node.register_model('Person', {
+  Node.register_model('Person', {
     fields: {
       indexes: {
         email: true
@@ -96,51 +96,56 @@ Every model extended from `Node` will enjoy the label support.
       var s = this.data.firstName + " " + this.data.surname;
       return s.trim();
     }
-  });
+  }, function(err, Person) {
 
-  var alice = new Person({firstName: 'Alice', surname: 'Springs'});
+    var alice = new Person({firstName: 'Alice', surname: 'Springs'});
 
-  alice.fullname();
-  ~> Alice Springs
+    alice.fullname();
+    ~> Alice Springs
 
-  alice.save(function(err, alice) {
-    alice.toObject();
-    ~> { id: 81238,
-    classification: 'Node',
-    data:
-     { created_on: 1374758483622,
-       surname: 'Springs',
-       firstName: 'Alice' },
-    uri: 'http://localhost:7420/db/data/node/81238',
-    label: 'Person',
-    labels: [ 'Person' ] }
-  });
+    alice.save(function(err, alice) {
+      alice.toObject();
+      ~> { id: 81238,
+      classification: 'Node',
+      data:
+       { created_on: 1374758483622,
+         surname: 'Springs',
+         firstName: 'Alice' },
+      uri: 'http://localhost:7420/db/data/node/81238',
+      label: 'Person',
+      labels: [ 'Person' ] }
+    });
 
-  // You can also use multiple inheritance
-  // here: Director extends Person
-  // Director will have the labels [ 'Director', 'Person' ]
-  var Director = Person.register_model('Director', {
-    fields: {
-      defaults: {
-        job: 'Director'
+    // You can also use multiple inheritance
+    // here: Director extends Person
+    // Director will have the labels [ 'Director', 'Person' ]
+
+    // You can skip the cb and work instantly with the registered model
+    // if you don't use index/uid fields on your schema
+    var Director = Person.register_model('Director', {
+      fields: {
+        defaults: {
+          job: 'Director'
+        }
       }
-    }
+    });
+
+    new Director({
+      name: 'Roman Polanski'
+    }).save(function(err, polanski) {
+      polanski.toObject();
+      ~> { id: 81239,
+      classification: 'Node',
+      data:
+       { created_on: 1374758483625,
+         name: 'Roman Polanski',
+         job: 'Director' },
+      uri: 'http://localhost:7420/db/data/node/81239',
+      label: 'Director',
+      labels: [ 'Director', 'Person' ] }
+    });
   });
 
-  new Director({
-    name: 'Roman Polanski'
-  }).save(function(err, polanski) {
-    polanski.toObject();
-    ~> { id: 81239,
-    classification: 'Node',
-    data:
-     { created_on: 1374758483625,
-       name: 'Roman Polanski',
-       job: 'Director' },
-    uri: 'http://localhost:7420/db/data/node/81239',
-    label: 'Director',
-    labels: [ 'Director', 'Person' ] }
-  });
 ```
 
 Coffeescript and it's class pattern is maybe the most convenient way to define models:
@@ -156,17 +161,17 @@ Coffeescript and it's class pattern is maybe the most convenient way to define m
       s = @data.firstName + " " + @data.surname
       s.trim()
 
-  Node.register_model(Person)
+  Node.register_model Person, (err) ->
 
-  alice = new Person firstName: 'Alice', surname: 'Springs'
-  alice.fullname()
-  ~> 'Alice Springs'
-  alice.save ->
-    alice.label
-    ~> 'Person'
+    alice = new Person firstName: 'Alice', surname: 'Springs'
+    alice.fullname()
+    ~> 'Alice Springs'
+    alice.save ->
+      alice.label
+      ~> 'Person'
 
-  class Director extends Person
-  Node.register_model(Director)
+    class Director extends Person
+    Node.register_model(Director)
 ```
 
 ### Connect Nodes / Create Relationships
@@ -458,10 +463,9 @@ In harmony (nodejs >= 0.11 required) you can use generators to avoid callbacks, 
     , Graph = neo4j.Graph
     , suspend = require('suspend');
 
-  var Band = Node.register_model('Band');
-  var Song = Node.register_model('Song');
-
   suspend(function*(resume) {
+    var Band = yield Node.register_model('Band', resume);
+    var Song = yield Node.register_model('Song', resume);
     var band = yield new Band({ name: 'Foo Fighter'}).save(resume);
     var song = yield new Song({ title: 'Everlong' }).save(resume);
     yield band.createRelationshipTo(song, 'plays', resume);
@@ -504,7 +508,30 @@ You'll find a ready-to-use-console in `examples/browser/console/console.html`. T
 
 Neo4jMapper is not a schema based mapper, but it includes some features which are similar to this.
 
-### Default values and fields to index
+### Default values, unique fields and autoindex
+
+To let buil Neo4j the index in the background for you, you just have to define the fields in the `indexes` property as you see below. If you want to ensure that the field is unique, add the fields to the `unique` property (keep in mind that unique fields are always ”indexes“ as well). The default properties has no effect on the database, it just will populate the object with default values if they aren't set.
+
+```js
+  Node.register_model('Person', {
+    fields = {
+      defaults: {
+        is_new: true,
+        uid: -> new Date().getTime()
+      },
+      indexes: {
+        email: true,
+        uid: 'my_person_index'
+      },
+      unique: {
+        uid: true
+      }
+    }
+  }, function(err, Person) {
+    // work with the registered and indexed model 'Person'
+    var polanski = new Person();
+  });
+```
 
 ```coffeescript
 
@@ -521,32 +548,21 @@ Neo4jMapper is not a schema based mapper, but it includes some features which ar
         uid: 'my_person_index' # will be indexed on the legacy way with 'my_person_index' namespace 
       }
     }
+
+  Node.register_model Person, (err) ->
+    polanski = new Person()
 ```
 
+### Drop indexes
+
+Neo4jMapper won't drop indexed or unique defined fields for you, because it doesn't have any migration features. But you can drop the index on a Model by yourself via:
+
 ```js
-
-  var Person = (function(Node) {
-
-    function Person(data, id) {
-      this.init.apply(this, arguments);
-    }
-
-    _.extend(Person.prototype, Node.prototype);
-      
-    return Movie;
-  
-  })(Node);
-
-  Person.prototype.fields = {
-    defaults: {
-      is_new: true,
-      uid: -> new Date().getTime()
-    },
-    indexes: {
-      email: true,
-      uid: 'my_person_index'
-    }
-  };
+  Node.register_model('Person', function(err, Person) {
+    Person.dropEntireIndex(function(err, Per) {
+      console.log("Dropped entire index for label 'Person'");
+    });
+  }); 
 ```
 
 ## Hooks

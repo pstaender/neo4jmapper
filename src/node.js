@@ -195,7 +195,7 @@ Node.prototype.initialize = function(cb) {
         self.onAfterInitialize(cb);
     });
   } else {
-    return cb(null, this);
+    return cb(null, this.constructor);
   }
 }
 
@@ -208,9 +208,10 @@ Node.prototype.onBeforeInitialize = function(next) {
 }
 
 // ### Internal Hook: onAfterInitialize
-// Ensures indexes on all defined fields
-// TODO: implement ensure unique fields
+// Ensures autoindex on the label
 Node.prototype.onAfterInitialize = function(cb) {
+  // here we return the constructor as 2nd argument in cb
+  // because it is expected at `Node.register_model('Label', cb)`
   var self = this;
   this.__already_initialized__ = true;
   // Index fields
@@ -221,26 +222,13 @@ Node.prototype.onAfterInitialize = function(cb) {
   if (label) {
     if (fieldsToIndex.length > 0) {
       node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err) {
-        cb(err, self);
+        cb(err, self.constructor);
       });
     } else {
-      cb(null, self);
+      cb(null, self.constructor);
     }
-    // inactive
-    // http://docs.neo4j.org/chunked/snapshot/query-constraints.html
-    /*
-    if (fieldsWithUniqueValues === 'deactivated, because it´s not implemented in neo4j, yet') {
-      _.each(fieldsWithUniqueValues, function(isUnique, field) {
-        if (isUnique)
-          //CREATE CONSTRAINT ON (book:Book) ASSERT book.isbn IS UNIQUE
-          self.neo4jrestful.query('CREATE CONSTRAINT ON (n:'+label+') ASSERT n.`'+field+'` IS UNIQUE;', function(err, result, debug) {
-            // maybe better ways how to report if an error occurs
-            cb(err, result, debug);
-          });
-      });
-    }*/
   } else {
-    cb(Error('No label found'), this);
+    cb(Error('No label found'), this.constructor);
   }
 }
 
@@ -256,6 +244,11 @@ Node.prototype.copyTo = function(n) {
   return n;
 }
 
+// Resets the query **but** should not be used since you should start from Node.… instead
+// Anyhow, e.g.:
+//
+// n = Node.findOne().where(cb)
+// n.resetQuery().findOne(otherCb)
 Node.prototype.resetQuery = function() {
   // we have to copy the cypher values on each object
   this.cypher = _.extend({}, this.cypher);
@@ -346,62 +339,52 @@ Node.prototype.fieldsForAutoindex = function() {
   return keys;
 }
 
-Node.prototype.fieldsWithUniqueValues = function() {
-  return ( (this.fields.unique) && (_.keys(this.fields.unique).length > 0) ) ? this.fields.unique : null;
+// Returns all fields that should be unique
+// They need to be defined in your model, e.g.:
+//
+// Node.register_model({
+//  fields: {
+//    unique: {
+//      email: true
+//    }
+// }});
+Node.prototype.uniqueFields = function() {
+  var keys = [];
+  _.each(this.fields.unique, function(isUnique, field) {
+    if (isUnique === true) 
+      keys.push(field);
+  });
+  return keys;
 }
 
-Node.prototype.indexFields = function(cb) {
-  var fieldsToIndex = this.fieldsToIndex();
-  if (fieldsToIndex) {
-    // var join = Join.create();
-    var doneCount = 0;
-    var todoCount = 0;
-    // var max = Object.keys(fieldsToIndex).length;
-    for (var key in fieldsToIndex) {
-      var namespace = this.fields.indexes[key];
-      var value = this.data[key];
-      if ((_.isString(namespace))&&(typeof value !== 'undefined')&&(value !== null)) {
-        todoCount++;
-        this.addIndex(namespace, key, value, function(err, data, debug) {
-          if (err)
-            return cb(err, data, debug);
-          doneCount = doneCount+1;
-          // done
-          if (doneCount >= todoCount)
-            return cb(null, doneCount, debug);
-        });
-      }
-    }
-    if (todoCount === 0)
-      cb(null, doneCount);
-  }
-  return null;
-}
-
-/*
- * http://docs.neo4j.org/chunked/milestone/rest-api-schema-indexes.html#rest-api-list-indexes-for-a-label
- */
+// # Autoindex
+// Check the `schema` of the model and builds an autoindex, optional with unique option
+// see for more details: http://docs.neo4j.org/chunked/milestone/query-constraints.html
+// TODO: only via cypher query, to simplify process
 Node.prototype.ensureIndex = function(options, cb) {
   var args;
   ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
   options = _.extend({
-    label: this.label,
-    fields: this.fieldsForAutoindex(),
-    action: null
+    label: this.label,                  // index must be connected to a label
+    fields: this.fieldsForAutoindex(),  // fields that have to be indexed
+    unique: this.uniqueFields() || []   // fields that have be indexed as unique
   }, options);
-  var self    = this;
-  var keys    = options.fields;
-  var todo    = keys.length;
-  var done    = 0;
-  var errors  = [];
-  var results = [];
+  var self    = this
+    , keys    = _.uniq(_.union(options.fields, options.unique)) // merge index + unique here
+    , todo    = keys.length
+    , done    = 0
+    , errors  = []
+    , results = [];
   if (!options.label)
     return cb(Error('Label is mandatory, you can set the label as options as well'), null);
-  var url = '/db/data/schema/index/'+options.label;
+  var url = 'schema/index/'+options.label;
+  var queryHead = "CREATE CONSTRAINT ON (n:" + options.label + ") ASSERT ";
   if (keys.length === 0)
     return cb(Error("No keys for indexing found in schema"), null);
   _.each(keys, function(key){
-    self.neo4jrestful.post(url, { data: { property_keys: [ key ] } }, function(err, res) {
+    var isUnique = (_.indexOf(options.unique, key) >= 0);
+    var query = queryHead + "n.`" + key + "`" + ( (isUnique) ? " IS UNIQUE" : "")+";";
+    var after = function(err, res) {
       done++;
       if ((typeof err === 'object') && (err !== null)) {
         if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException'))
@@ -414,7 +397,11 @@ Node.prototype.ensureIndex = function(options, cb) {
       }
       if (done === todo)
         cb((errors.length > 0) ? errors : null, results);
-    });
+    };
+    if (isUnique)
+      self.query(query, after);
+    else
+      self.neo4jrestful.post(url, { data: { property_keys: [ key ] } }, after);
   });
 }
 
@@ -428,7 +415,7 @@ Node.prototype.dropIndex = function(fields, cb) {
     return cb(Error("You need to set a label on `node.label` to work with autoindex"), null);
   var todo = fields.length;
   var done = 0;
-  var url  = '/db/data/schema/index/'+this.label;
+  var url  = 'schema/index/'+this.label;
   // skip if no fields
   if (todo === 0)
     return cb(null, null);
@@ -457,7 +444,7 @@ Node.prototype.getIndex = function(cb) {
   var label = this.label;
   if (!label)
     return cb(Error("You need to set a label on `node.label` to work with autoindex"), null);
-  var url = '/db/data/schema/index/'+this.label;
+  var url = 'schema/index/'+this.label;
   return this.neo4jrestful.get(url, function(err, res){
     if ((typeof res === 'object') && (res !== null)) {
       var keys = [];
@@ -503,7 +490,7 @@ Node.prototype.save = function(cb) {
         // assign labels back
         if (labels)
           self.labels = labels;
-        self.onAfterSave(self, cb, debug);
+        self.onAfterSave(err, self, cb, debug);
       });
   });
 }
@@ -528,25 +515,14 @@ Node.prototype.onSave = function(cb) {
     self.is_instanced = true;
     if (!err)
       self.isPersisted(true);
-    // if we have defined fields to index
-    // we need to call the cb after indexing
-    // TODO: remove that legacy feature later
-    if (self.hasFieldsToIndex()) {
-      return self.indexFields(function(){
-        if (debug)
-          debug.indexedFields = true;
-        cb(null, data, debug);
-      });
-    }
-    else
-      return cb(null, data, debug);
+    return cb(null, data, debug);
   }
   
   this.id = this._id_;
 
   if (this.id > 0) {
     method = 'update';
-    this.neo4jrestful.put('/db/data/'+this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
+    this.neo4jrestful.put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
       if ((err) || (!node))
         return cb(err, node);
       self.populateWithDataFromResponse(node._response);
@@ -554,7 +530,7 @@ Node.prototype.onSave = function(cb) {
     });
   } else {
     method = 'create';   
-    this.neo4jrestful.post('/db/data/'+this.__type__, { data: this.flattenData() }, function(err, node, debug) {
+    this.neo4jrestful.post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
       if ((err) || (!node))
         return cb(err, node);
       _prepareData(err, node, debug);
@@ -562,27 +538,26 @@ Node.prototype.onSave = function(cb) {
   }
 }
 
-Node.prototype.onAfterSave = function(node, next, debug) {
+Node.prototype.onAfterSave = function(err, node, next, debug) {
   // we use labelsAsArray to avoid duplicate labels
   var labels = node.labels = node.labelsAsArray();
-  if ((typeof err !== 'undefined')&&(err !== null)) {
+  // cancel if we have an error here
+  if (err)
     return next(err, node, debug);
+  if (labels.length > 0) {
+    // we need to post the label in an extra reqiuest
+    // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
+    node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
+      // add label err if we have one
+      if (labelError)
+        err = labelError;
+      // add debug label if we have one
+      if (debug)
+        debug = (debugLabel) ? [ debug, debugLabel ] : debug;
+      return next(err, node, debug);
+    });
   } else {
-    if (labels.length > 0) {
-      // we need to post the label in an extra reqiuest
-      // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
-      node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
-        // add label err if we have one
-        if (labelError)
-          err = (err) ? [ err, labelError ] : labelError;
-        // add debug label if we have one
-        if (debug)
-          debug = (debugLabel) ? [ debug, debugLabel ] : debug;
-        return next(labelError, node, debug);
-      });
-    } else {
-      return next(null, node, debug);
-    }
+    return next(err, node, debug);
   }
 }
 
@@ -1440,7 +1415,7 @@ Node.prototype.remove = function(cb) {
     if (self.is_singleton)
       return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
     if (self.hasId()) {
-      return self.neo4jrestful.delete('/db/data/'+self.__type__+'/'+self.id, cb);
+      return self.neo4jrestful.delete(self.__type__+'/'+self.id, cb);
     }
   })
   return this;
@@ -1513,7 +1488,7 @@ Node.prototype.createRelationship = function(options, cb) {
     options.properties = helpers.flattenObject(options.properties);
 
   var _create_relationship_by_options = function(options) {
-    return self.neo4jrestful.post('/db/data/node/'+options.from_id+'/relationships', {
+    return self.neo4jrestful.post('node/'+options.from_id+'/relationships', {
       data: {
         to: new Node({},options.to_id).uri,
         type: options.type,
@@ -1652,7 +1627,7 @@ Node.prototype.recommendConstructor = function(Fallback) {
 
 Node.prototype.requestLabels = function(cb) {
   if ((this.hasId())&&(typeof cb === 'function')) {
-    this.neo4jrestful.get('/db/data/node/'+this.id+'/labels', cb);
+    this.neo4jrestful.get('node/'+this.id+'/labels', cb);
   }
   return this;
 }
@@ -1680,7 +1655,7 @@ Node.prototype.labelsAsArray = function() {
 
 Node.prototype.allLabels = function(cb) {
   if ( (this.hasId()) && (_.isFunction(cb)) ) {
-    return this.neo4jrestful.get('/db/data/node/'+this.id+'/labels', cb);
+    return this.neo4jrestful.get('node/'+this.id+'/labels', cb);
   }
 }
 
@@ -1690,7 +1665,7 @@ Node.prototype.createLabel = function(label, cb) {
 
 Node.prototype.createLabels = function(labels, cb) {
   if ( (this.hasId()) && (_.isFunction(cb)) )
-    return this.neo4jrestful.post('/db/data/node/'+this.id+'/labels', { data: labels }, cb);
+    return this.neo4jrestful.post('node/'+this.id+'/labels', { data: labels }, cb);
 }
 
 Node.prototype.addLabels = function(labels, cb) {
@@ -1722,31 +1697,14 @@ Node.prototype.replaceLabels = function(labels, cb) {
   if ( (this.hasId()) && (_.isFunction(cb)) ) {
     if (!_.isArray(labels))
       labels = [ labels ];
-    return this.neo4jrestful.put('/db/data/node/'+this.id+'/labels', { data: labels }, cb);
+    return this.neo4jrestful.put('node/'+this.id+'/labels', { data: labels }, cb);
   }
 }
 
 Node.prototype.removeLabels = function(cb) {
   if ( (this.hasId()) && (_.isFunction(cb)) ) {
-    return this.neo4jrestful.delete('/db/data/node/'+this.id+'/labels', cb);
+    return this.neo4jrestful.delete('node/'+this.id+'/labels', cb);
   }
-}
-
-// Node.prototype.replaceLabel = function
-
-// TODO: autoindex? http://docs.neo4j.org/chunked/milestone/rest-api-configurable-auto-indexes.html
-Node.prototype.addIndex = function(namespace, key, value, cb) {
-  if (this.is_singleton)
-    return cb(Error('Singleton instance is not allowed to get persist.'), null);
-  this._modified_query_ = false;
-  if ( (!namespace) || (!key) || (!value) || (!_.isFunction(cb)) )
-    throw Error('namespace, key and value arguments are mandatory for indexing.');
-  if (!this.hasId())
-    return cb(Error('You need to persist the node before you can index it.'),null);
-  if (typeof cb === 'function')
-    return this.neo4jrestful.post('/db/data/index/'+this.__type__+'/'+namespace, { data: { key: key, value: value, uri: this.uri } }, cb);
-  else
-    return null;
 }
 
 Node.prototype.toObject = function() {
@@ -1815,7 +1773,7 @@ Node.prototype.findById = function(id, cb) {
     self = this.singleton(undefined, this);
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
-    return self.neo4jrestful.get('/db/data/'+this.__type__+'/'+id, function(err, object) {
+    return self.neo4jrestful.get(this.__type__+'/'+id, function(err, object) {
       if ((object) && (typeof self.load === 'function')) {
         //  && (typeof node.load === 'function')     
         object.load(cb);
@@ -1884,38 +1842,6 @@ Node.prototype.findAll = function(cb) {
   if (self.label) self.withLabel(self.label);
   self.exec(cb);
   return self;
-}
-
-Node.prototype.findByIndex = function(namespace, key, value, cb) {
-  var self = this;
-  if (!self.is_singleton)
-    self = this.singleton(undefined, this);
-  if ( (typeof cb === 'undefined') && (typeof value === 'function') ) {
-    // we have no namespace give, so we are using the label as namespace
-    cb = value;
-    value = key;
-    key = namespace;
-    namespace = new this.constructor().label;
-  }
-  if ((namespace)&&(key)&&(value)&&(typeof cb === 'function')) {
-    // values = { key: value };
-    // TODO: implement
-    return self.neo4jrestful.get('/db/data/index/'+this.__type__+'/'+namespace+'/'+key+'/'+value+'/', function(err, result, debug) {
-      if (err) {
-        cb(err, result, debug);
-      } else {
-        result = (result[0]) ? result[0] : null;
-        if (result)
-          result.load(function(/*loadErr*/) {
-            cb(err, result, debug);
-          });
-        else
-          cb(null, result, debug);
-      }
-    });
-  } else {
-    return cb(Error('Namespace, key, value and mandatory to find indexed nodes.'), null);
-  }
 }
 
 Node.prototype.findOrCreate = function(where, cb) {

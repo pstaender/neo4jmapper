@@ -596,12 +596,28 @@ describe 'Neo4jMapper', ->
             deathAndMaiden.remove ->
               done()
 
-    it.skip 'expect to have unique values', (done) ->
-      client.query """
-      INDEX CONSTRAINT ON (n:Movie) ASSERT n.uid IS UNIQUE;
-      """, (err, result) ->
-        console.log err, result
-        done()
+    it 'expect to have unique values', (done) ->
+      # We choose a random label name, to achieve new indizes on each test
+      labelName = "Label#{new Date().getTime()}"
+      Node.register_model labelName, {
+        fields:
+          indexes:
+            uid: true
+          unique:
+            uid: true
+          defaults:
+            uid: -> new Date().getTime()
+      }, (err, Model) ->
+        expect(err).to.be null
+        new Model().save (err, record) ->
+          expect(err).to.be null
+          uid = record.data.uid
+          expect(record.data.uid).to.be.a 'number'
+          new Model({ uid: uid }).save (err) ->
+            expect(err.message).to.be.a 'string'
+            Model.find { uid: uid }, (err, found) ->
+              expect(found.length).to.be 1
+              done()
 
     it 'expect to det default values on models', (done) ->
       # client.constructor::log = Graph::log = require('./log')
@@ -783,43 +799,6 @@ describe 'Neo4jMapper', ->
 
   describe 'index', ->
 
-    it 'expect to index and get an indexed node', (done) ->
-      node = new Node()
-      uid = new Date().getTime()
-      node.data.name = 'Peter'
-      node.data.city = 'Berlin'
-      node.addIndex 'test', 'city', 'cologne', (err) ->
-        expect(err.message).to.be.equal 'You need to persist the node before you can index it.'
-        node.save (err, savedNode) ->
-          expect(err).to.be null
-          savedNode.addIndex 'test', 'uid', uid, (err, result) ->
-            expect(err).to.be null
-            node.findByIndex 'test', 'uid', uid, (err, result) ->
-              expect(err).to.be null
-              expect(result.id).to.be savedNode.id
-              done()
-
-    it 'expect to build exact-index by model schema defintion', (done) ->
-      uid = -> new Date().getTime()
-      Band = Node.register_model 'Band', {
-        fields: {
-          defaults: {
-            genre: 'Indie'
-            uid: uid
-          }
-          indexes: {
-            uid: 'band'
-          }
-        }
-      }
-
-      new Band( { name: 'Maxïmo Park' } ).save (err, maximopark) ->
-        expect(err).to.be null
-        Band.findByIndex 'band', 'uid', maximopark.data.uid, (err, result) ->
-          expect(err).to.be null
-          expect(result.data.uid).to.be.equal maximopark.data.uid
-          done()
-
     it 'expect to set default values and index values', (done) ->
       Node::fields.defaults =
         uid: -> new Date().getTime()
@@ -831,16 +810,7 @@ describe 'Neo4jMapper', ->
         expect(err).to.be null
         expect(node.data.uid).to.be.above 0
         expect(node.data.nested.hasValue).to.be true
-        Node::fields.indexes.uid = 'collection'
-        node = new Node()
-        node.data.name = 'Bill'
-        node.save (err) ->  
-          uid = node.data.uid
-          expect(err).to.be null
-          Node.findByIndex 'collection', 'uid', uid, (err, found) ->
-            expect(err).to.be null
-            expect(found.data.uid).to.be.equal uid
-            done()
+        done()
 
     it 'expect to query nodes with more complex queries (regex for instance)', (done) ->
       uid = new Date().getTime()
