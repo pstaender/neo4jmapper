@@ -99,7 +99,7 @@ var initGraph = function(neo4jrestful) {
     if (this.info)
       return cb(null,info);
     else
-      return this.neo4jrestful.get('/'+this.neo4jrestful.endpoint, function(err, info){
+      return this.neo4jrestful.get('/'+this.neo4jrestful.urlOptions.endpoint, function(err, info){
         if (info) {
           self.info = info
         }

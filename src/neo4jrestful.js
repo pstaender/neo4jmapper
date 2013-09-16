@@ -92,8 +92,7 @@ var initNeo4jRestful = function() {
   var Neo4jRestful = function Neo4jRestful(url, options) {
     var self = this
       , urlPattern = /^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i
-      , urlMatches = null
-      , urlOptions = {};
+      , urlMatches = null;
     if (typeof options !== 'object') {
       options = (typeof url === 'object') ? url : {};
     }
@@ -112,24 +111,21 @@ var initNeo4jRestful = function() {
       // extract all parts from the given url
       // TODO: use extractet Options
       urlMatches = options.url.match(urlPattern);
-      urlOptions = {
+      this.urlOptions = _.defaults(this.urlOptions, {
         'protocol': urlMatches[1],
-        'user': urlMatches[4] || null,
-        'password': urlMatches[5] || null,
+        'user': urlMatches[4],
+        'password': urlMatches[5],
         'domain': urlMatches[6],
         'port': urlMatches[8],
-        'endpoint': urlMatches[9] || null
-      }
-      if (urlOptions.endpoint) {
-        options.endpoint = urlOptions.endpoint;
+        'endpoint': urlMatches[9]
+      });
+      if (this.urlOptions.endpoint) {
         // strip preceding slash(es)
-        options.endpoint = options.endpoint.replace(/^\/+/, '');
+        this.urlOptions.endpoint = this.urlOptions.endpoint.replace(/^\/+/, '');
       }
     } else {
       throw Error('No url found. Argument must be either an URL as string or an option object including an `.url` property.');
     }
-    if (options.endpoint)
-      this.endpoint = options.endpoint;
 
     self.baseUrl = options.url;
 
@@ -156,14 +152,19 @@ var initNeo4jRestful = function() {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   };
-  Neo4jRestful.prototype.endpoint                   = "db/data/";
   Neo4jRestful.prototype.timeout                    = 5000;
-  Neo4jRestful.prototype.baseUrl                    = null;
   Neo4jRestful.prototype.debug                      = true; // can be deactivated but will not make any performance difference
-  Neo4jRestful.prototype._absoluteUrl               = null;
   Neo4jRestful.prototype.exact_version              = null;
   Neo4jRestful.prototype.version                    = null;
   Neo4jRestful.prototype.ignore_exception_pattern   = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found
+  Neo4jRestful.prototype.urlOptions = {
+    protocol: 'http',
+    domain: 'localhost',
+    port: 7474,
+    user: '',
+    password: '',
+    endpoint: 'db/data/'
+  };
 
   // is used for measurement of request-to-respond
   Neo4jRestful.prototype._request_on_               = null;
@@ -188,7 +189,7 @@ var initNeo4jRestful = function() {
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
     if (typeof cypher === 'string') {
       this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
-      this.post('/'+this.endpoint+'cypher',{
+      this.post('/'+this.urlOptions.endpoint+'cypher',{
         data: {
           query: cypher,
           params: options.params || {}
@@ -201,7 +202,7 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {
     var self = this;
-    request.get(self.baseUrl+this.endpoint)
+    request.get(self.baseUrl+this.urlOptions.endpoint)
       .timeout(this.timeout)
       .end(function(err, res) {
         var body = (res) ? res.body : null;
@@ -216,16 +217,20 @@ var initNeo4jRestful = function() {
       });
   }
 
-  Neo4jRestful.prototype.absoluteUrl = function() {
-    if (this.url) {
-      if (/^(\/\/|http(s)*\:\/\/)/.test(this.url)) {
-        // TODO: check for http or https, but would cost a extra call
-        this._absoluteUrl = this.url.replace(/^\/\//,'http://').replace(/^\//,'');
-      }
-      else {
-        this._absoluteUrl = this.baseUrl + this.url.replace(/^\/{1}/,'');
-      }
-      return this._absoluteUrl;
+  Neo4jRestful.prototype.absoluteUrl = function(url) {
+    if (typeof url !== 'string')
+      url = '';
+    if (!url)
+      url = this.url;
+    if (url) {
+      var baseUrl =
+        this.urlOptions.protocol + '://'
+        + String(((this.urlOptions.user)&&(this.urlOptions.password)) ? this.urlOptions.user + ':' + this.urlOptions.password+'@' : '' )
+        + this.urlOptions.domain
+        + ':' + this.urlOptions.port
+        + '/' + this.urlOptions.endpoint;
+      // strip redundant endpoints if they exists
+      return baseUrl + url.replace(/^\/+/, '').replace(new RegExp('^'+this.urlOptions.endpoint.split('/').join('\\/')+'*'), '');
     }
   }
 
