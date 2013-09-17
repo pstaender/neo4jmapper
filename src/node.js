@@ -2048,22 +2048,12 @@ Node.enable_loading = function() {
 
 var initNode = function(neo4jrestful) {
 
-  // Ensure that we have a Neo4jRestful client we can work with
-  if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
+  // we can only check the name of the function, but should be sufficient in this case
+  if (helpers.constructorNameOfFunction(global.Neo4jMapper.Neo4jRestful) === 'Neo4jRestful') {
+    global.Neo4jMapper.Node.prototype.neo4jrestful = neo4jrestful;
+    Relationship = global.Neo4jMapper.Relationship;
+  } else {
     throw Error('You have to use an Neo4jRestful object as argument');
-
-  // we can only check for object type,
-  // better would be to check for constructor neo4jrestful
-  if (typeof neo4jrestful === 'object') {
-    if (typeof window === 'object') {
-      window.Neo4jMapper.Node.prototype.neo4jrestful = neo4jrestful;
-      Relationship = window.Neo4jMapper.Relationship;
-      return window.Neo4jMapper.Node;
-    } else {
-      Relationship = root.Neo4jMapper.Relationship;
-      Node.prototype.neo4jrestful = neo4jrestful;
-      return Node;
-    }
   }
 
   return Node;

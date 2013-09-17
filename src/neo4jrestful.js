@@ -539,8 +539,7 @@ var initNeo4jRestful = function() {
     }
   }
 
-  if (typeof window === 'object')
-    window.Neo4jMapper.Neo4jRestful = Neo4jRestful;
+  global.Neo4jMapper.Neo4jRestful = Neo4jRestful;
 
   return Neo4jRestful;
 

@@ -52,19 +52,19 @@ Use the full power of the cypher query language:
   alice.data = {
     name: 'Alice',
     nested: {
-      values: 'are possible but not best-practice for a key-value-storage'
+      values: 'are possible but not real key-value'
     }
-    arrays: [ 'are', 'possible', 'but', 'also', 'non-recommend']
+    arrays: [ 'are possible but', 'also not recommend']
   };
   alice.save(function(err, alice) {
     alice.toObject();
   });
 ```
 
-or shorter with
+or shorter in one line with
 
 ```js
-  new Node({ name: 'Alice' }).save(function(err, alice) {
+  new Node({ name: 'Alice' … }).save(function(err, alice) {
     alice.toObject();
   });
 ```
@@ -73,14 +73,9 @@ or shorter with
 
 Since JavaScript has no classes, we have to define models and extend it on the `Node` object - like you may know from backbonejs for instance. 
 
-Every model extended from `Node` will enjoy the label support.
+Every model extended from `Node` enjoys label support.
 
 ```js
-  var Neo4j = require('../src')
-    , neo4j = new Neo4j('http://localhost:7420')
-    , Node  = neo4j.Node
-    , Graph = neo4j.Graph;
-
   Node.register_model('Person', {
     fields: {
       indexes: {
@@ -288,7 +283,7 @@ Keep in mind that there is **no extra loading executed on stream results** to ke
   });
 ```
 
-**Currently the streaming feature is not available on browsers** because there are several dependencies on other modules which have to be included as well.
+**Currently the streaming feature is only available in nodejs** because there are several dependencies on other modules which aren't available for the browser, yet.
 
 ## Naming conventions
 
@@ -302,6 +297,7 @@ The query method names are heavily inspired by mongodb and mongoose - so most of
   * skip
   * delete
   * allLabels, createLabel, createLabels, replaceLabels, removeLabels
+  …
 
 Neo4jMapper is using the following identifiers in cypher queries:
 
@@ -309,6 +305,8 @@ Neo4jMapper is using the following identifiers in cypher queries:
   * `m` for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~> `START n = node(32), m = node(12) MATCH (n)<-[r]-(m) RETURN r;`)
   * `r` for [r]elationship(s)
   * `p` for a [p]ath (not implemented, yet)
+
+### Remove and Delete
 
 We distinct between **remove** and **delete**.
 
@@ -454,7 +452,7 @@ You can easiliy inspect the generated queries by invoking the `toCypherQuery()` 
 
 ## callback-less with generators
 
-In harmony (nodejs >= 0.11 required) you can use generators to avoid callbacks, for instance via the suspend library:
+In v8-harmony you can use generators in your js to avoid callbacks, for instance via the suspend library:
 
 ```js
   var Neo4j = require('../src')

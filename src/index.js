@@ -31,6 +31,7 @@ module.exports = exports = function(urlOrOptions) {
     Path: Path,
     Graph: Graph,
     client: neo4jrestful,
+    Neo4jRestful: Neo4jRestful,
     helpers: require('./helpers')
   };
 }
