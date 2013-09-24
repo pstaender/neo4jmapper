@@ -111,14 +111,14 @@ var initNeo4jRestful = function() {
       // extract all parts from the given url
       // TODO: use extractet Options
       urlMatches = options.url.match(urlPattern);
-      this.urlOptions = _.defaults(this.urlOptions, {
+      this.urlOptions = _.defaults({
         'protocol': urlMatches[1],
         'user': urlMatches[4],
         'password': urlMatches[5],
         'domain': urlMatches[6],
         'port': urlMatches[8],
         'endpoint': urlMatches[9]
-      });
+      }, this.urlOptions);
       if (this.urlOptions.endpoint) {
         // strip preceding slash(es)
         this.urlOptions.endpoint = this.urlOptions.endpoint.replace(/^\/+/, '');
@@ -422,7 +422,7 @@ var initNeo4jRestful = function() {
       req.send(data)
     }
 
-    this.log('**debug**', 'URI:', options.method+":"+options.url);
+    this.log('**debug**', 'URI:', options.method+":"+options.url+" ("+options.absolute_url+")");
     this.log('**debug**', 'sendedData:', data);
     this.log('**debug**', 'sendedHeader:', this.header);
 
