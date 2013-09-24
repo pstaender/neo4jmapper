@@ -140,7 +140,7 @@ describe 'Neo4jMapper', ->
             count = 10 if count > 10
             Person.findAll().limit(count-1).each (data) ->
               if data
-                expect(data._response.self).to.be.a 'string'
+                expect(data._response_.self).to.be.a 'string'
                 expect(data.labels.constructor).to.be.equal Array
                 expect(data.label).to.be.equal 'Person'
                 iterationsCount++

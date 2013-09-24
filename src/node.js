@@ -91,13 +91,13 @@ Node.prototype.convert_node_to_model = function(node, model, fallbackModel) {
   return null;
 }
 
-Node.__models__ = {};                             // contains globally all registeresd models
+Node.__models__ = {};                             // contains all globally registered models
 
-Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of object in daily usage
+Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of the object for the user
 Node.prototype.neo4jrestful = null;               // will be initialized
 Node.prototype.data = {};                         // will contain all data for the node
 Node.prototype.id = null;                         // ”public“ id attribute
-Node.prototype._id_ = null;                       // ”public“ id attribute (to ensure that this.id deosn't get manipulated accidently)
+Node.prototype._id_ = null;                       // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
 // can be used to define schema-like-behavior
 // TODO: implement unique
 Node.prototype.fields = {
@@ -107,7 +107,7 @@ Node.prototype.fields = {
 };
 
 Node.prototype.uri = null;                        // uri of the node
-Node.prototype._response = null;                  // original response object
+Node.prototype._response_ = null;                  // original response object
 Node.prototype._modified_query_ = false;          // flag to remember that a query chaining method was invoked 
 Node.prototype._stream_ = null;                   // flag for processing result data
 Node.prototype.is_singleton = false;              // flag that this object is a singleton
@@ -240,7 +240,7 @@ Node.prototype.copyTo = function(n) {
   if (this.label)
     n.label  = this.label;
   n.uri = this.uri;
-  n._response = _.extend(this._response);
+  n._response_ = _.extend(this._response_);
   return n;
 }
 
@@ -525,7 +525,7 @@ Node.prototype.onSave = function(cb) {
     this.neo4jrestful.put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
       if ((err) || (!node))
         return cb(err, node);
-      self.populateWithDataFromResponse(node._response);
+      self.populateWithDataFromResponse(node._response_);
       cb(err, node, debug);
     });
   } else {
@@ -642,15 +642,15 @@ Node.prototype.populateWithDataFromResponse = function(data) {
   node._modified_query_ = false;
   if (data) {
     if (_.isObject(data) && (!_.isArray(data)))
-      node._response = data;
+      node._response_ = data;
     else
-      node._response = data[0];
-    node.data = node._response.data;
+      node._response_ = data[0];
+    node.data = node._response_.data;
     node.data = node.unflattenData();
-    node.uri  = node._response.self;
+    node.uri  = node._response_.self;
     //'http://localhost:7474/db/data/node/3648'
-    if ((node._response.self) && (node._response.self.match(/[0-9]+$/))) {
-      node.id = node._id_ = Number(node._response.self.match(/[0-9]+$/)[0]);
+    if ((node._response_.self) && (node._response_.self.match(/[0-9]+$/))) {
+      node.id = node._id_ = Number(node._response_.self.match(/[0-9]+$/)[0]);
     }
   }
   node.isPersisted(true);
@@ -1049,7 +1049,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
       return this.neo4jrestful.stream(cypherQuery, options, function(data, debug) {
         if ( (data) && (data.__type__) ) {
           cb(
-            Node.singleton().neo4jrestful.createObjectFromResponseData(data._response, DefaultConstructor), debug
+            Node.singleton().neo4jrestful.createObjectFromResponseData(data._response_, DefaultConstructor), debug
           );
         } else {
           return cb(data, debug);
@@ -2039,11 +2039,11 @@ Node.getIndex = function(cb) {
 }
 
 Node.disable_loading = function() {
-  Node.prototype.disableLoading();
+  this.prototype.disableLoading();
 }
 
 Node.enable_loading = function() {
-  Node.prototype.enableLoading();
+  this.prototype.enableLoading();
 }
 
 var initNode = function(neo4jrestful) {

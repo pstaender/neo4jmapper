@@ -37,7 +37,7 @@ Path.prototype.end = null;
 Path.prototype.length = 0;
 Path.prototype.relationships = null;
 Path.prototype.nodes = null;
-Path.prototype._response = null;
+Path.prototype._response_ = null;
 Path.prototype.is_singleton = false;
 Path.prototype.is_persisted = false;
 Path.prototype.is_instanced = null;
@@ -68,9 +68,9 @@ Path.prototype.populateWithDataFromResponse = function(data) {
   var path = (this.is_instanced !== null) ? this : new Path();
   if (data) {
     if (_.isObject(data) && (!_.isArray(data)))
-      path._response = data;
+      path._response_ = data;
     else
-      path._response = data[0];
+      path._response_ = data[0];
 
     if (_.isArray(data.nodes)) {
       for (var i=0; i < data.nodes.length; i++) {

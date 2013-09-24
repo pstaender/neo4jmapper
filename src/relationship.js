@@ -69,7 +69,7 @@ Relationship.prototype.id = null;
 Relationship.prototype._id_ = null;
 Relationship.prototype._hashedData_ = null;
 Relationship.prototype.uri = null;
-Relationship.prototype._response = null;
+Relationship.prototype._response_ = null;
 // Relationship.prototype._modified_query = false;
 Relationship.prototype.is_singleton = false;
 Relationship.prototype.is_persisted = false;
@@ -181,23 +181,23 @@ Relationship.prototype.populateWithDataFromResponse = function(data, create) {
   relationship._modified_query = false;
   if (data) {
     if (_.isObject(data) && (!_.isArray(data)))
-      relationship._response = data;
+      relationship._response_ = data;
     else
-      relationship._response = data[0];
-    relationship.data = relationship._response.data;
+      relationship._response_ = data[0];
+    relationship.data = relationship._response_.data;
     relationship.data = helpers.unflattenObject(this.data);
-    relationship.uri  = relationship._response.self;
-    relationship.type = relationship._response.type;
-    if ((relationship._response.self) && (relationship._response.self.match(/[0-9]+$/))) {
-      relationship.id = relationship._id_ = Number(relationship._response.self.match(/[0-9]+$/)[0]);
+    relationship.uri  = relationship._response_.self;
+    relationship.type = relationship._response_.type;
+    if ((relationship._response_.self) && (relationship._response_.self.match(/[0-9]+$/))) {
+      relationship.id = relationship._id_ = Number(relationship._response_.self.match(/[0-9]+$/)[0]);
     }
-    if ((relationship._response.start) && (relationship._response.start.match(/[0-9]+$/))) {
-      relationship.from.uri = relationship.start = relationship._response.start;
-      relationship.setPointIdByUri('from', relationship._response.start);
+    if ((relationship._response_.start) && (relationship._response_.start.match(/[0-9]+$/))) {
+      relationship.from.uri = relationship.start = relationship._response_.start;
+      relationship.setPointIdByUri('from', relationship._response_.start);
     }
-    if ((relationship._response.end) && (relationship._response.end.match(/[0-9]+$/))) {
-      relationship.to.uri = relationship.end = relationship._response.end;
-      relationship.setPointIdByUri('to', relationship._response.end);
+    if ((relationship._response_.end) && (relationship._response_.end.match(/[0-9]+$/))) {
+      relationship.to.uri = relationship.end = relationship._response_.end;
+      relationship.setPointIdByUri('to', relationship._response_.end);
     }
   }
   relationship.is_persisted = true;
