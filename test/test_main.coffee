@@ -556,8 +556,6 @@ describe 'Neo4jMapper', ->
       labelName = "Label#{new Date().getTime()}"
       Node.register_model labelName, {
         fields:
-          indexes:
-            uid: true
           unique:
             uid: true
           defaults:

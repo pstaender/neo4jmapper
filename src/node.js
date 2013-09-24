@@ -329,13 +329,19 @@ Node.prototype.fieldsToIndex = function() {
   return ( (this.fields.indexes) && (_.keys(this.fields.indexes).length > 0) ) ? helpers.flattenObject(this.fields.indexes) : null;
 }
 
+Node.prototype.fieldsToIndexUnique = function() {
+  return ( (this.fields.unique)  && (_.keys(this.fields.unique).length > 0) )  ? helpers.flattenObject(this.fields.unique) : null;
+}
+
 Node.prototype.fieldsForAutoindex = function() {
+  // we merge unique and indexes fields
   var fields = this.fieldsToIndex();
   var keys = [];
   _.each(fields, function(toBeIndexed, field) {
     if (toBeIndexed === true) 
       keys.push(field);
   });
+  keys = _.uniq(_.union(keys, this.uniqueFields()));
   return keys;
 }
 
@@ -379,30 +385,38 @@ Node.prototype.ensureIndex = function(options, cb) {
     return cb(Error('Label is mandatory, you can set the label as options as well'), null);
   var url = 'schema/index/'+options.label;
   var queryHead = "CREATE CONSTRAINT ON (n:" + options.label + ") ASSERT ";
-  if (keys.length === 0)
-    return cb(Error("No keys for indexing found in schema"), null);
-  _.each(keys, function(key){
-    var isUnique = (_.indexOf(options.unique, key) >= 0);
-    var query = queryHead + "n.`" + key + "`" + ( (isUnique) ? " IS UNIQUE" : "")+";";
-    var after = function(err, res) {
-      done++;
-      if ((typeof err === 'object') && (err !== null)) {
-        if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException'))
-          // we ignore this "error"
+  // get all indexes fields
+  // TODO: find a way to distinct index 
+  this.getIndex(function(err, indexedFields) {
+    // sort out fields that are already indexed
+    for (var i=0; i < indexedFields.length; i++) {
+      keys = _.without(keys, indexedFields[i]);
+    }
+    if (keys.length === 0)
+      return cb(Error("No fields to index"), null);
+    _.each(keys, function(key){
+      var isUnique = (_.indexOf(options.unique, key) >= 0);
+      var query = queryHead + "n.`" + key + "`" + ( (isUnique) ? " IS UNIQUE" : "")+";";
+      var after = function(err, res) {
+        done++;
+        if ((typeof err === 'object') && (err !== null)) {
+          if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException'))
+            // we ignore this "error"
+            results.push(res);
+          else
+            errors.push(err);
+        } else {
           results.push(res);
-        else
-          errors.push(err);
-      } else {
-        results.push(res);
-      }
-      if (done === todo)
-        cb((errors.length > 0) ? errors : null, results);
-    };
-    if (isUnique)
-      self.query(query, after);
-    else
-      self.neo4jrestful.post(url, { data: { property_keys: [ key ] } }, after);
-  });
+        }
+        if (done === todo)
+          cb((errors.length > 0) ? errors : null, results);
+      };
+      if (isUnique)
+        self.query(query, after);
+      else
+        self.neo4jrestful.post(url, { data: { property_keys: [ key ] } }, after);
+    });
+  })
 }
 
 Node.prototype.dropIndex = function(fields, cb) {
