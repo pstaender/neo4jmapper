@@ -392,8 +392,9 @@ Node.prototype.ensureIndex = function(options, cb) {
     for (var i=0; i < indexedFields.length; i++) {
       keys = _.without(keys, indexedFields[i]);
     }
+    // return without any arguments if there are no fields to index 
     if (keys.length === 0)
-      return cb(Error("No fields to index"), null);
+      return cb(null, null);
     _.each(keys, function(key){
       var isUnique = (_.indexOf(options.unique, key) >= 0);
       var query = queryHead + "n.`" + key + "`" + ( (isUnique) ? " IS UNIQUE" : "")+";";
