@@ -1930,7 +1930,8 @@ Node.query = function(cypherQuery, options, cb) {
 }
 
 Node.register_model = function(Class, label, prototype, cb) {
-  var name = null;
+  var name = null
+    , ParentModel = this;
 
   if (typeof Class === 'string') {
 
@@ -1957,24 +1958,27 @@ Node.register_model = function(Class, label, prototype, cb) {
         this.label = this.constructor_name = Class.prototype.label;
     }
 
-    _.extend(Class, this); // 'static' methods
+    _.extend(Class, ParentModel); // 'static' methods
 
     if ((prototype) && (prototype.fields)) {
       // extend each field defintion on prototype
       // e.g. indexes, defaults…
       var fieldDefinitions = prototype.fields;
-      _.extend(Class.prototype, prototype, this.prototype);
+      _.extend(Class.prototype, prototype, ParentModel.prototype);
       Class.prototype.fields = {};
       for (var attribute in fieldDefinitions) {
-        if ((this.prototype.fields)&&(this.prototype.fields[attribute]))
-          Class.prototype.fields[attribute] = _.extend(fieldDefinitions[attribute], this.prototype.fields[attribute]);
+        if ((ParentModel.prototype.fields)&&(ParentModel.prototype.fields[attribute]))
+          Class.prototype.fields[attribute] = _.extend(fieldDefinitions[attribute], ParentModel.prototype.fields[attribute]);
       }
     } else {
-      _.extend(Class.prototype, prototype, this.prototype);
+      _.extend(Class.prototype, prototype, ParentModel.prototype);
     }
 
     if (!Class.prototype.labels)
       Class.prototype.labels = [];
+    else
+      // copy (inherited) labels from parent class
+      Class.prototype.labels = ParentModel.prototype.labels.slice();
 
     Class.prototype.labels.unshift(label);
 

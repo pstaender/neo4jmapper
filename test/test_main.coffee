@@ -173,23 +173,31 @@ describe 'Neo4jMapper', ->
   describe 'node', ->
 
     it 'expect to allow inheritance', (done) ->
-      class Person extends Node
-        data:
-          label: 'a Person'
-      person = new Person()
-      expect(person).to.be.an 'object'
-      expect(person.id).to.be null
-      expect(person.cypher.label).to.be 'Person'
-      expect(person.constructor_name).to.be 'Person'
-
-      Node.register_model 'Movie', { fields: { defaults: { category: 'Blockbuster' }, indexes: { category: true } } }, (err, Movie) ->
-        movie = new Movie()
-        expect(movie.label).to.be.equal 'Movie' 
-        expect(movie.constructor_name).to.be.equal 'Movie'
-        expect(movie.fields.defaults.category).to.be.equal 'Blockbuster'
-        expect(movie).to.be.an 'object'
-        expect(movie.id).to.be null
-        done()
+      Node.register_model 'Person', (err, Person) ->
+        expect(err).to.be null
+        person = new Person()
+        expect(person).to.be.an 'object'
+        # expect(person.cypher.label).to.be 'Person'
+        expect(person.label).to.be 'Person'
+        expect(person.constructor_name).to.be 'Person'
+        Person.register_model 'Director', { fields: { defaults: { category: 'Blockbuster' }, indexes: { category: true } } }, (err, Director) ->
+          expect(err).to.be null
+          director = new Director()
+          expect(director.label).to.be.equal 'Director' 
+          expect(director.constructor_name).to.be.equal 'Director'
+          expect(director.fields.defaults.category).to.be.equal 'Blockbuster'
+          expect(director.labels).to.have.length 2
+          expect(director.labels[0]).to.be 'Director'
+          expect(director.labels[1]).to.be 'Person'
+          expect(director).to.be.an 'object'
+          expect(director.id).to.be null
+          Person.register_model 'Actor', (err, Actor) ->
+            expect(err).to.be null
+            actor = new Actor()
+            expect(actor.labels).to.have.length 2
+            expect(actor.labels[0]).to.be 'Actor'
+            expect(actor.labels[1]).to.be 'Person'
+            done()
 
     it 'inheritance on coffescript class-objects', (done) ->
       class Person extends Node
