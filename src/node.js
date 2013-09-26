@@ -1967,10 +1967,10 @@ Node.register_model = function(Class, label, prototype, cb) {
       _.extend(Class.prototype, prototype, ParentModel.prototype);
       // fields will be extended seperately
       Class.prototype.fields = {};
-      // iterate through defaults, indexes, unique …
-      for (var attribute in fieldDefinitions) {
+      // iterate and extend through defaults, indexes, unique …
+      for (var attribute in { indexes: {}, defaults: {},  unique: {} }) {
         if ((ParentModel.prototype.fields)&&(ParentModel.prototype.fields[attribute]))
-          Class.prototype.fields[attribute] = _.extend({}, ParentModel.prototype.fields[attribute], fieldDefinitions[attribute]);
+          Class.prototype.fields[attribute] = _.extend({}, ParentModel.prototype.fields[attribute], fieldDefinitions[attribute] || {});
       }
     } else {
       _.extend(Class.prototype, prototype, ParentModel.prototype);

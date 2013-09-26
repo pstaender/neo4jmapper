@@ -180,6 +180,9 @@ describe 'Neo4jMapper', ->
             income: 50000
             job: 'Laborer'
           }
+          indexes: {
+            job: true
+          }
         }
       }, (err, Person) ->
         expect(err).to.be null
@@ -205,6 +208,7 @@ describe 'Neo4jMapper', ->
           expect(director.fields.defaults.income).to.be.equal 80000
           expect(director.fields.defaults.job).to.be.equal 'Director'
           expect(director.fields.defaults.email).to.be.equal 'unknown'
+          expect(director.fields.indexes.job).to.be true
           expect(director.labels).to.have.length 2
           expect(director.labels[0]).to.be 'Director'
           expect(director.labels[1]).to.be 'Person'
