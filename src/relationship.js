@@ -319,14 +319,20 @@ var initRelationship = function(neo4jrestful) {
 
   /* from Node */
 
-  Relationship.prototype.copy_of          = Node.prototype.copy_of;
-  Relationship.prototype.onSave           = Node.prototype.onSave;
-  Relationship.prototype.hasValidData     = Node.prototype.hasValidData;
-  Relationship.prototype.flattenData      = Node.prototype.flattenData;
-  Relationship.prototype.setUriById       = Node.prototype.setUriById;
-  Relationship.prototype.isPersisted      = Node.prototype.isPersisted;
-  Relationship.prototype.hasId            = Node.prototype.hasId;
-  Relationship.prototype._hashData_       = Node.prototype._hashData_;
+  Relationship.prototype.copy_of                = Node.prototype.copy_of;
+  Relationship.prototype.onSave                 = Node.prototype.onSave;
+  Relationship.prototype.hasValidData           = Node.prototype.hasValidData;
+  Relationship.prototype.flattenData            = Node.prototype.flattenData;
+  Relationship.prototype.setUriById             = Node.prototype.setUriById;
+  Relationship.prototype.isPersisted            = Node.prototype.isPersisted;
+  Relationship.prototype.hasId                  = Node.prototype.hasId;
+  Relationship.prototype._hashData_             = Node.prototype._hashData_;
+  Relationship.prototype._load_hook_reference_  = null;
+
+  Relationship.disable_loading                  = Node.disable_loading;
+  Relationship.enable_loading                   = Node.enable_loading;
+  Relationship.prototype.disableLoading         = Node.prototype.disableLoading;
+  Relationship.prototype.enable                 = Node.prototype.enableLoading;
 
   return Relationship;
 }

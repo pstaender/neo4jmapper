@@ -173,30 +173,58 @@ describe 'Neo4jMapper', ->
   describe 'node', ->
 
     it 'expect to allow inheritance', (done) ->
-      Node.register_model 'Person', (err, Person) ->
+      Node.register_model 'Person', { 
+        fields: {
+          defaults: {
+            email: 'unknown'
+            income: 50000
+            job: 'Laborer'
+          }
+        }
+      }, (err, Person) ->
         expect(err).to.be null
         person = new Person()
         expect(person).to.be.an 'object'
-        # expect(person.cypher.label).to.be 'Person'
         expect(person.label).to.be 'Person'
         expect(person.constructor_name).to.be 'Person'
-        Person.register_model 'Director', { fields: { defaults: { category: 'Blockbuster' }, indexes: { category: true } } }, (err, Director) ->
+        expect(person.fields.defaults.income).to.be.equal 50000
+        expect(person.fields.defaults.job).to.be.equal 'Laborer'
+        expect(person.fields.defaults.email).to.be.equal 'unknown'
+        Person.register_model 'Director', { 
+          fields: {
+            defaults: {
+              income: 80000
+              job: 'Director'
+            }
+          }
+        }, (err, Director) ->
           expect(err).to.be null
           director = new Director()
           expect(director.label).to.be.equal 'Director' 
           expect(director.constructor_name).to.be.equal 'Director'
-          expect(director.fields.defaults.category).to.be.equal 'Blockbuster'
+          expect(director.fields.defaults.income).to.be.equal 80000
+          expect(director.fields.defaults.job).to.be.equal 'Director'
+          expect(director.fields.defaults.email).to.be.equal 'unknown'
           expect(director.labels).to.have.length 2
           expect(director.labels[0]).to.be 'Director'
           expect(director.labels[1]).to.be 'Person'
           expect(director).to.be.an 'object'
           expect(director.id).to.be null
-          Person.register_model 'Actor', (err, Actor) ->
+          Person.register_model 'Actor', { 
+            fields: {
+              defaults: {
+                job: 'Actor'
+              }
+            }
+          }, (err, Actor) ->
             expect(err).to.be null
             actor = new Actor()
             expect(actor.labels).to.have.length 2
             expect(actor.labels[0]).to.be 'Actor'
             expect(actor.labels[1]).to.be 'Person'
+            expect(actor.fields.defaults.income).to.be.equal 50000
+            expect(actor.fields.defaults.job).to.be.equal 'Actor'
+            expect(actor.fields.defaults.email).to.be.equal 'unknown'
             done()
 
     it 'inheritance on coffescript class-objects', (done) ->
@@ -204,9 +232,9 @@ describe 'Neo4jMapper', ->
       class Extra extends Person
       class Actor extends Extra
       class Director extends Actor
-      Node.register_model(Person)
-      Node.register_model(Actor)
-      Node.register_model(Director)
+      Person = Node.register_model(Person)
+      Actor = Node.register_model(Actor)
+      Director = Node.register_model(Director)
       director = new Director
       expect(director.labels).to.have.length 4
       expect(director.labels[0]).to.be.equal 'Director'
@@ -217,7 +245,6 @@ describe 'Neo4jMapper', ->
       expect(_.keys(director.fields.indexes)).to.have.length 0
       expect(_.keys(director.fields.unique)).to.have.length 0
       expect(_.keys(director.fields.defaults)).to.have.length 0
-      #[ 'Director', 'Actor', 'Extra', 'Person' ] 'Director'
       done()
 
     it 'inheritance on models', (done) ->
