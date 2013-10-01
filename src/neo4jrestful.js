@@ -13,9 +13,9 @@ var initNeo4jRestful = function() {
     , helpers             = null
     , _                   = null
     , jQuery              = null
-    , httpRequest         = null
     , Sequence            = null
-    , JSONStream          = null;
+    , JSONStream          = null
+    , request             = null;
 
   if (typeof window === 'object') {
     // browser
@@ -36,7 +36,7 @@ var initNeo4jRestful = function() {
     relationship = require('./relationship').init;
     path         = require('./path').init;
     Sequence     = require('./lib/sequence');
-    httpRequest  = require('superagent');
+    request      = require('request');
     JSONStream   = require('JSONStream');
   }
 
@@ -84,6 +84,63 @@ var initNeo4jRestful = function() {
   var CypherQueryError = function(message, options) {
     var error = QueryError(message, options, 'CypherQueryError');
     return _.extend(this, error);
+  }
+
+  // ### Wrapper for superagent and request
+  // Private method, can be indirectly 'accessed' via neo4jrestful.get|post|delete|put or neo4jrestfule.request
+  var _sendHttpRequest = function(options, cb) {
+    _.defaults(options, {
+      header: {},
+      data: null,
+      method: 'GET',
+      timeout: null,
+      stream: false
+    });
+    var isBrowser = Boolean(typeof window === 'object');
+    if (typeof cb !== 'function')
+      throw Error('Callback as 2nd argument is mandatory');
+    if ((typeof options !== 'object')||(!options.url))
+      cb(Error("Set { url: '…' } as argument"));
+    if (isBrowser) {
+      // ### superagent for browserside usage
+      var req = window.superagent(options.method, options.url).set(options.header);
+      if (options.data)
+        req.send(options.data);
+      if (options.stream) {
+        return req.pipe(options.stream);
+      } else {
+        return req.end(function(err, res) {
+          // compatibility of superagent to response api
+          if (typeof res === 'object') {
+            res.statusCode = res.status;
+          }
+          return cb(err, res);
+        });
+      }
+
+    } else {
+      // ### request module for nodejs
+      var req = request;
+      options.json = true;
+      if (options.data) {
+        if (typeof options.data === 'string')
+          options.body = options.data;
+        else
+          options.json = options.data;
+      }
+      if (options.stream) {
+        return req(options).pipe(options.stream);
+      } else {
+        return req(options, function(err, res) {
+          // compatibility of response to superagent api
+          if (typeof res === 'object') {
+            res.status = res.statusCode;
+          }
+          return cb(err, res);
+        });
+      }
+    }
+    
   }
 
   /*
@@ -200,9 +257,11 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {
     var self = this;
-    httpRequest.get(self.absoluteUrl('/'))
-      .timeout(this.timeout)
-      .end(function(err, res) {
+    _sendHttpRequest({
+      method: 'GET',
+      url: self.absoluteUrl('/'),
+      timeout: self.timeout
+    }, function(err, res) {
         var body = (res) ? res.body : null;
         if ((typeof res !== 'undefined') && (res.status === 200)&&(body)&&(body.neo4j_version)) {
           self.exact_version = body.neo4j_version;
@@ -210,9 +269,11 @@ var initNeo4jRestful = function() {
           var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
           cb(error, body.neo4j_version);
         } else {
-          throw Error("Can't detect neo4j… Sure your using correct url / neo4j service is available? ("+self.absoluteUrl('/')+")");
+          throw Error("Can't detect neo4j… Sure neo4j service is available on "+self.absoluteUrl('/')+"?"+((err) ? '('+err.message+')' : ''));
         }
-      });
+      }
+    );
+    return this;
   }
 
   Neo4jRestful.prototype.absoluteUrl = function(url) {
@@ -416,17 +477,20 @@ var initNeo4jRestful = function() {
     options.method = _options.type;
     options._debug = _options.debug;
 
-    var req = httpRequest(options.method, options.absolute_url).set(this.header);
-
-    if (data) {
-      req.send(data)
-    }
-
     this.log('**debug**', 'URI:', options.method+":"+options.url+" ("+options.absolute_url+")");
     this.log('**debug**', 'sendedData:', data);
     this.log('**debug**', 'sendedHeader:', this.header);
 
     this._request_on_ = new Date().getTime();
+
+    var requestOptions = {
+      method: options.method,
+      url: options.absolute_url,
+      header: self.header
+    };
+
+    if (data)
+      requestOptions.data = data;
     
     // stream
     if (this.header['X-Stream'] === 'true') {
@@ -448,26 +512,29 @@ var initNeo4jRestful = function() {
         }
       });
 
-      req.pipe(stream);
+      requestOptions.stream = stream;
+
     }
-    // or send response
-    else {
-      req.end(function(err, res) {
-        self._response_on_ = new Date().getTime();
-        if (options._debug)
-          options._debug.responseTime = self.responseTime();
-        if (err) {
-          self.onError(cb, err, 'error', options);
+    
+    // now finally send the request
+
+    _sendHttpRequest(requestOptions, function(err, res) {
+    // req.end(function(err, res) {
+      self._response_on_ = new Date().getTime();
+      if (options._debug)
+        options._debug.responseTime = self.responseTime();
+      if (err) {
+        self.onError(cb, err, 'error', options);
+      } else {
+        // we might have a reponse with a failure status code
+        if (res.status >= 400) {
+          self.onError(cb, res.body, 'error', options);
         } else {
-          if (res.statusType !== 2) {
-            // err
-            self.onError(cb, res.body, 'error', options);
-          } else {
-            self.onSuccess(cb, res.body, 'success', options);
-          }
+          self.onSuccess(cb, res.body, 'success', options);
         }
-      });
-    }
+      }
+    });
+
   }
 
   Neo4jRestful.prototype.get = function(url, options, cb) {

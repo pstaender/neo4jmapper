@@ -782,6 +782,7 @@ describe 'Neo4jMapper', ->
         expect(node.isPersisted()).to.be false
         node.save (err, node) ->
           expect(err).to.be null
+          # -->
           expect(node.isPersisted()).to.be true
           Node.findById node.id, (err, node) ->
             expect(err).to.be null

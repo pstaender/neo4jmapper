@@ -12,9 +12,10 @@ window.Neo4jMapper.init = function(urlOrOptions) {
   self.Graph         = window.Neo4jMapper.initGraph(self.neo4jrestful);
   self.Path          = window.Neo4jMapper.initPath(self.neo4jrestful);
   self.helpers       = window.Neo4jMapper.helpers;
-  // to make it more convinient to use Neo4jMapper
+
+  // to make it more convenient to use Neo4jMapper
   // we move Node, Relationship and Path to global scope if they are not used, yet
-  return this;
+  return self;
 }
 
 return window.Neo4jMapper;

@@ -530,7 +530,7 @@ Node.prototype.onSave = function(cb) {
   this.applyDefaultValues();
   var method = null;
 
-  function _prepareData(err, data, debug) {
+  function __prepareData(err, data, debug, cb) {
     // copy persisted data on initially instanced node
     data.copyTo(self);
     data = self;
@@ -545,18 +545,21 @@ Node.prototype.onSave = function(cb) {
 
   if (this.id > 0) {
     method = 'update';
-    this.neo4jrestful.put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, node, debug) {
-      if ((err) || (!node))
+    this.neo4jrestful.put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
+      if (err) {
         return cb(err, node);
-      self.populateWithDataFromResponse(node._response_);
-      cb(err, node, debug);
+      } else {
+        self.isPersisted(true);
+        cb(err, self, debug);
+      }
     });
   } else {
-    method = 'create';   
+    method = 'create';
     this.neo4jrestful.post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
       if ((err) || (!node))
         return cb(err, node);
-      _prepareData(err, node, debug);
+      else
+        return __prepareData(err, node, debug, cb);
     });
   }
 }
@@ -568,7 +571,7 @@ Node.prototype.onAfterSave = function(err, node, next, debug) {
   if (err)
     return next(err, node, debug);
   if (labels.length > 0) {
-    // we need to post the label in an extra reqiuest
+    // we need to post the label in an extra request
     // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
     node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
       // add label err if we have one

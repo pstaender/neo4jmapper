@@ -347,5 +347,6 @@ if (typeof window !== 'object') {
     }
   };
 } else {
+  Node = window.Neo4jMapper.Node;
   window.Neo4jMapper.initRelationship = initRelationship;
 }

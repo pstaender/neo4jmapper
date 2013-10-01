@@ -49,8 +49,8 @@
   },
   "dependencies": {
     "underscore": "~1.4",
-    "superagent": "~0.15.1",
-    "JSONStream": "~0.6.4"
+    "JSONStream": "~0.6.4",
+    "request": "~2.27.0"
   },
   "licenses": {
     "type": "GPL"
