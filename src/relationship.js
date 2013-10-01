@@ -329,10 +329,12 @@ var initRelationship = function(neo4jrestful) {
   Relationship.prototype._hashData_             = Node.prototype._hashData_;
   Relationship.prototype._load_hook_reference_  = null;
 
+  /*
   Relationship.disable_loading                  = Node.disable_loading;
   Relationship.enable_loading                   = Node.enable_loading;
   Relationship.prototype.disableLoading         = Node.prototype.disableLoading;
   Relationship.prototype.enable                 = Node.prototype.enableLoading;
+  */
 
   return Relationship;
 }

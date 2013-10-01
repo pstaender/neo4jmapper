@@ -70,11 +70,20 @@ Node.prototype.init = function(data, id) {
 // ### Instantiate a node from a specific model
 // Model can be a constructor() or a String
 // and must be registered in Node.registered_models()
-Node.prototype.convert_node_to_model = function(node, model, fallbackModel) {
-  if (node.hasId()) {
+Node.prototype.convertNodeToModel = function(node, model, fallbackModel) {
+  if (typeof node !== 'object') {
+    // we assume that we have ”model, fallbackmodel” as arguments
+    fallbackmodel = model;
+    model = node;
+    node = this;
+  }
+  if ((typeof node === 'object') && (node !== null)) {
     if (typeof fallbackModel !== 'function')
       fallbackModel = this.constructor;
-    if (typeof model === 'function') {
+    if (typeof model === 'string') {
+      // do nothing
+      model = model;
+    } else if (typeof model === 'function') {
       model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
     } else if (node.label) {
       model = node.label;
@@ -84,8 +93,7 @@ Node.prototype.convert_node_to_model = function(node, model, fallbackModel) {
       throw Error('No model or label found')
     }
     var Class = Node.registered_model(model) || fallbackModel;
-    var singleton = new Class()
-    // node.constructor_name = singleton.constructor_name;
+    var singleton = new Class();
     return node.copyTo(singleton);
   }
   return null;
@@ -618,7 +626,7 @@ Node.prototype.onBeforeLoad = function(node, next) {
         node.label = labels[0]
       // convert node to it's model if it has a distinct label and differs from static method
       if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
-        node = Node.prototype.convert_node_to_model(node, node.label, DefaultConstructor);
+        node = Node.convert_node_to_model(node, node.label, DefaultConstructor);
       next(null, node, debug);
     });
   } else {
@@ -1758,12 +1766,7 @@ Node.prototype.find = function(where, cb) {
   self._modified_query_ = true;
   if (self.label) self.withLabel(self.label);
   if ((typeof where === 'string')||(typeof where === 'object')) {
-    self.where(where);
-    if (!self.cypher.start) {
-      self.cypher.start = self.__type_identifier__+' = '+self.__type__+'('+self._start_node_id('*')+')';
-    }
-    self.exec(cb);
-    return self;
+    return self.where(where,cb);
   } else {
     return self.findAll(cb);
   }
@@ -2040,7 +2043,7 @@ Node.registered_model = function(model) {
 }
 
 Node.convert_node_to_model = function(node, model, fallbackModel) {
-  return this.prototype.convert_node_to_model(node, model, fallbackModel);
+  return this.prototype.convertNodeToModel(node, model, fallbackModel);
 }
 
 Node.ensureIndex = function(cb) {
