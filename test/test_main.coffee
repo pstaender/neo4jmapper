@@ -311,7 +311,7 @@ describe 'Neo4jMapper', ->
     it 'expect to find one specific node by key/value', (done) ->
       node = new Node title: new Date().toString()
       node.save ->
-        Node.findByUniqueKeyValue 'title', node.data.title, (err, found) ->
+        Node.findOneByKeyValue 'title', node.data.title, (err, found) ->
           expect(err).to.be null
           expect(found.data.title).to.be.equal node.data.title
           expect(found.id).to.be.equal node.id
@@ -345,14 +345,14 @@ describe 'Neo4jMapper', ->
               fields:
                 indexes:
                   email: true
-            Developer.dropEntireIndex (err) ->
+            Developer.drop_entire_index (err) ->
               expect(err).to.be null
               Node.register_model Developer, ->
                 Developer.find { group_id: groupid }, (err, nodes) ->
                   expect(err).to.be null
                   expect(nodes).to.have.length 1
                   expect(nodes[0].data.name).to.be.equal 'Bob'
-                  Developer.getIndex (err, found) ->
+                  Developer.get_index (err, found) ->
                     expect(found).to.have.length 1
                     expect(found[0]).to.be.equal 'email'
                     done()
@@ -553,17 +553,17 @@ describe 'Neo4jMapper', ->
       labelName = "Person#{new Date().getTime()}"
       Node.register_model labelName, { fields: { indexes: { name: true } } }, (err, Person) ->
         expect(err).to.be null
-        Person.getIndex (err, res) ->
+        Person.get_index (err, res) ->
           expect(err).to.be null
           expect(res).to.have.length 1
-          Person.dropEntireIndex (err) ->
+          Person.drop_entire_index (err) ->
             expect(err).to.be null
-            Person.getIndex (err, res) ->
+            Person.get_index (err, res) ->
               expect(err).to.be null
               expect(res).to.have.length 0
-              Person.ensureIndex (err, res) ->
+              Person.ensure_index (err, res) ->
                 expect(err).to.be null
-                Person.getIndex (err, res) ->
+                Person.get_index (err, res) ->
                   expect(err).to.be null
                   expect(res).to.have.length 1
                   done()
@@ -754,7 +754,7 @@ describe 'Neo4jMapper', ->
             uid: true
             name: true
       # we have to ensureIndex 
-      User.ensureIndex (err) ->
+      User.ensure_index (err) ->
         User.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
           expect(err).to.be null
           expect(found.data.uid).to.be.equal uid

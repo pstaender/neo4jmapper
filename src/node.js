@@ -1804,16 +1804,18 @@ Node.prototype.findById = function(id, cb) {
     });
   } else {
     self.cypher.by_id = Number(id);
-    return self.findByUniqueKeyValue('id', id, cb);
+    return self.findByKeyValue({ id: id }, cb);
   } 
 }
 
-Node.prototype.findByUniqueKeyValue = function(key, value, cb) {
+Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
   var self = this;
+  if (typeof _limit_ === 'undefined')
+    _limit_ = null;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
   // we have s.th. like
-  // { key: value }
+  // { key: value }
   if (typeof key === 'object') {
     cb = value;
     var _key = Object.keys(key)[0];
@@ -1840,7 +1842,13 @@ Node.prototype.findByUniqueKeyValue = function(key, value, cb) {
           return cb(err, found);
         else {
           // try to return the first
-          found = (found.length === 0) ? null : ((found)&&(found[0])) ? found[0] : found;
+          if (found.length === 0)
+            found = null;
+          else if ((found.length === 1) && ( 1 === _limit_))
+            found = found[0];
+          else if ((_limit_ > 1) && (found.length > _limit_))
+            // TODO: use a cypher limit instead
+            found = found.splice(0, _limit_);
           return cb(null, found);
         }
        });
@@ -1850,8 +1858,9 @@ Node.prototype.findByUniqueKeyValue = function(key, value, cb) {
   return self;
 }
 
-// Node.prototype.findUnique = function(key, value, cb) { }
-// Node.prototype.findUniqueWithLabel = function(label, key, value) {}
+Node.prototype.findOneByKeyValue = function(key, value, cb) {
+  return this.findByKeyValue(key, value, cb, 1);
+}
 
 Node.prototype.findAll = function(cb) {
   var self = this;
@@ -1907,13 +1916,6 @@ Node.find = function(where, cb) {
 Node.findAll = function(cb) {
   return this.prototype.findAll(cb);
 }
-Node.findByIndex = function(namespace, key, value, cb) {
-  return this.prototype.findByIndex(namespace, key, value, cb);
-}
-
-Node.findByUniqueKeyValue = function(key, value, cb) {
-  return this.prototype.findByUniqueKeyValue(key, value, cb);
-}
 
 Node.findById = function(id, cb) {
   return this.prototype.findById(id, cb);
@@ -1930,6 +1932,23 @@ Node.find = function(where, cb) {
 Node.findOrCreate = function(where, cb) {
   return this.prototype.findOrCreate(where, cb);
 }
+
+Node.findByKeyValue = function(key, value, cb) {
+  return this.prototype.findByKeyValue(key, value, cb);
+}
+
+Node.findOneByKeyValue = function(key, value, cb) {
+  return this.prototype.findOneByKeyValue(key, value, cb);
+}
+
+// Exception rule for all find… methods
+// to keep analogy to mongodb api 
+Node.find_all              = Node.findAll;
+Node.find_by_id            = Node.findById;
+Node.find_one              = Node.findOne;
+Node.find_or_create        = Node.findOrCreate;
+Node.find_by_key_value     = Node.findByKeyValue;
+Node.find_one_by_key_value = Node.findByOneKeyValue;
 
 Node.query = function(cypherQuery, options, cb) {
   return this.prototype.singleton().query(cypherQuery, options, cb);
@@ -2049,19 +2068,19 @@ Node.convert_node_to_model = function(node, model, fallbackModel) {
   return this.prototype.convertNodeToModel(node, model, fallbackModel);
 }
 
-Node.ensureIndex = function(cb) {
+Node.ensure_index = function(cb) {
   return this.singleton().ensureIndex(cb);
 }
 
-Node.dropIndex = function(fields, cb) {
+Node.drop_index = function(fields, cb) {
   return this.singleton().dropIndex(fields, cb);
 }
 
-Node.dropEntireIndex = function(cb) {
+Node.drop_entire_index = function(cb) {
   return this.singleton().dropEntireIndex(cb);
 }
 
-Node.getIndex = function(cb) {
+Node.get_index = function(cb) {
   return this.singleton().getIndex(cb);
 }
 
@@ -2072,6 +2091,27 @@ Node.disable_loading = function() {
 Node.enable_loading = function() {
   this.prototype.enableLoading();
 }
+
+/*
+ * Deprecated Methods
+ * methods will be removed in next larger release
+ */
+
+// To keep consistent naming conventions
+// the following CamelCase method names
+// will be removed in the next bigger release
+// and are deprecated from now on
+Node.ensureIndex            = Node.ensure_index;
+Node.dropIndex              = Node.drop_index;
+Node.dropEntireIndex        = Node.drop_entire_index;
+Node.getIndex               = Node.get_index;
+// it's not needed if there is no check for uniqueness
+// use Node.findByKeyValue instead
+Node.findByUniqueKeyValue   = Node.findByKeyValue;
+
+/*
+ * eof Deprecated Methods
+ */
 
 var initNode = function(neo4jrestful) {
 
