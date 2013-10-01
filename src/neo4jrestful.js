@@ -13,7 +13,7 @@ var initNeo4jRestful = function() {
     , helpers             = null
     , _                   = null
     , jQuery              = null
-    , request             = null
+    , httpRequest         = null
     , Sequence            = null
     , JSONStream          = null;
 
@@ -31,12 +31,12 @@ var initNeo4jRestful = function() {
     // nodejs
     helpers      = require('./helpers');
     _            = require('underscore');
-    jQuery       = null;//require('jquery');
+    jQuery       = null;
     node         = require('./node').init;
     relationship = require('./relationship').init;
     path         = require('./path').init;
     Sequence     = require('./lib/sequence');
-    request      = require('superagent');
+    httpRequest  = require('superagent');
     JSONStream   = require('JSONStream');
   }
 
@@ -200,7 +200,7 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {
     var self = this;
-    request.get(self.absoluteUrl('/'))
+    httpRequest.get(self.absoluteUrl('/'))
       .timeout(this.timeout)
       .end(function(err, res) {
         var body = (res) ? res.body : null;
@@ -416,7 +416,7 @@ var initNeo4jRestful = function() {
     options.method = _options.type;
     options._debug = _options.debug;
 
-    var req = request(options.method, options.absolute_url).set(this.header);
+    var req = httpRequest(options.method, options.absolute_url).set(this.header);
 
     if (data) {
       req.send(data)
