@@ -2,8 +2,6 @@
 //
 // The Node object is to create, connect and query all kind of Node(s).
 // You can register your own model
-// TODO: better error message on createRelationship…
-// TODO: using index on queries: `match p:Person using index p:Person(first_name) where …` (http://www.terminalstate.net/2013/05/labels-and-schema-indexes-in-neo4j.html)
 
 // Requirements (for browser and nodejs):
 // * neo4jmapper helpers
@@ -1941,14 +1939,14 @@ Node.findOneByKeyValue = function(key, value, cb) {
   return this.prototype.findOneByKeyValue(key, value, cb);
 }
 
-// Exception rule for all find… methods
-// to keep analogy to mongodb api 
-Node.find_all              = Node.findAll;
-Node.find_by_id            = Node.findById;
-Node.find_one              = Node.findOne;
-Node.find_or_create        = Node.findOrCreate;
-Node.find_by_key_value     = Node.findByKeyValue;
-Node.find_one_by_key_value = Node.findByOneKeyValue;
+// Exception rule on underscore and CamelCase naming convention
+// on all find… methods to keep analogy to mongodb api 
+Node.find_all               = function(cb) { return this.findAll(cb); }
+Node.find_by_id             = function(id, cb) { return this.findById(id, cb); }
+Node.find_one               = function(where, cb) { return this.findOne(where, cb); }
+Node.find_or_create         = function(where, cb) { return this.findOrCreate(where, cb); }
+Node.find_by_key_value      = function(key, value, cb) { return this.findByKeyValue(key, value, cb); }
+Node.find_one_by_key_value  = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
 
 Node.query = function(cypherQuery, options, cb) {
   return this.prototype.singleton().query(cypherQuery, options, cb);
@@ -2101,13 +2099,13 @@ Node.enable_loading = function() {
 // the following CamelCase method names
 // will be removed in the next bigger release
 // and are deprecated from now on
-Node.ensureIndex            = Node.ensure_index;
-Node.dropIndex              = Node.drop_index;
-Node.dropEntireIndex        = Node.drop_entire_index;
-Node.getIndex               = Node.get_index;
+Node.ensureIndex            = function(cb) { return this.ensure_index(cb); }
+Node.dropIndex              = function(fields, cb) { return this.drop_index(fields, cb); }
+Node.dropEntireIndex        = function(cb) { return this.drop_entire_index(cb); }
+Node.getIndex               = function(cb) { return this.get_index(cb); }
 // it's not needed if there is no check for uniqueness
 // use Node.findByKeyValue instead
-Node.findByUniqueKeyValue   = Node.findByKeyValue;
+Node.findByUniqueKeyValue   = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
 
 /*
  * eof Deprecated Methods
