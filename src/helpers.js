@@ -189,19 +189,6 @@ var global = (typeof window === 'object') ? window : root;
    */
   var ConditionalParameters = function ConditionalParameters(conditions, options) {
 
-    ConditionalParameters.prototype.operator               = 'AND';
-    ConditionalParameters.prototype.identifier             = 'n';
-    ConditionalParameters.prototype.conditions             = null;
-
-    // options are used to prevent overriding object attributes on recursive calls
-    ConditionalParameters.prototype.options                = null;
-    ConditionalParameters.prototype.defaultOptions         = { firstLevel: true, identifier: null };
-
-    ConditionalParameters.prototype.parameters             = null;
-    ConditionalParameters.prototype.valuesToParameters     = true;
-    ConditionalParameters.prototype._s                     = '';
-    ConditionalParameters.prototype.parametersStartCountAt = 0;
-
     ConditionalParameters.prototype.addValue = function(value) {
       if (!this.parameters)
         this.parameters = [];
@@ -292,6 +279,19 @@ var global = (typeof window === 'object') ? window : root;
         this.operator = this.options.operator;
     }
   }
+
+  ConditionalParameters.prototype.operator               = 'AND';
+  ConditionalParameters.prototype.identifier             = 'n';
+  ConditionalParameters.prototype.conditions             = null;
+
+  // options are used to prevent overriding object attributes on recursive calls
+  ConditionalParameters.prototype.options                = null;
+  ConditionalParameters.prototype.defaultOptions         = { firstLevel: true, identifier: null };
+
+  ConditionalParameters.prototype.parameters             = null;
+  ConditionalParameters.prototype.valuesToParameters     = true;
+  ConditionalParameters.prototype._s                     = '';
+  ConditionalParameters.prototype.parametersStartCountAt = 0;
 
   var constructorNameOfFunction = function(func) {
     var name = func.constructor.toString().match(/^function\s(.+?)\(/)[1];

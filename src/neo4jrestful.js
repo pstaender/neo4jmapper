@@ -42,36 +42,37 @@ var initNeo4jRestful = function() {
 
   // Base for QueryError and CypherQueryError
   var CustomError = function CustomError(message) {
-    CustomError.prototype.message = '';
-    CustomError.prototype.name = '';
-    CustomError.prototype.exception = null;
-    CustomError.prototype.cypher = null;
-    CustomError.prototype.stacktrace = null;
-    CustomError.prototype.statusCode = null;
-    CustomError.prototype.method = null;
-    CustomError.prototype.url = null;
-    CustomError.prototype.data = null;
     if (typeof message === 'string')
       this.message = message;
   }
 
+  CustomError.prototype.message = '';
+  CustomError.prototype.name = '';
+  CustomError.prototype.exception = null;
+  CustomError.prototype.cypher = null;
+  CustomError.prototype.stacktrace = null;
+  CustomError.prototype.statusCode = null;
+  CustomError.prototype.method = null;
+  CustomError.prototype.url = null;
+  CustomError.prototype.data = null;
+
   // will be used to debug request+response
   var RequestDebug = function RequestDebug(obj) {
-    RequestDebug.prototype.options        = null;
-    RequestDebug.prototype.requested_url  = '';
-    RequestDebug.prototype.type           = '';
-    RequestDebug.prototype.data           = null;
-    RequestDebug.prototype.header         = null;
-    RequestDebug.prototype.res            = null;
-    RequestDebug.prototype.status         = null;
-    RequestDebug.prototype.err            = null;
-    RequestDebug.prototype.responseTime   = null;
     // apply given data to current object
     if ((typeof obj === 'object') && (obj))
       for (var key in obj)
         this[key] = obj[key];
   }
 
+  RequestDebug.prototype.options        = null;
+  RequestDebug.prototype.requested_url  = '';
+  RequestDebug.prototype.type           = '';
+  RequestDebug.prototype.data           = null;
+  RequestDebug.prototype.header         = null;
+  RequestDebug.prototype.res            = null;
+  RequestDebug.prototype.status         = null;
+  RequestDebug.prototype.err            = null;
+  RequestDebug.prototype.responseTime   = null;
 
   var QueryError = function(message, options, name) {
     var error = new CustomError(message);
