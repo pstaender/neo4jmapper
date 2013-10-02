@@ -1325,6 +1325,9 @@ Node.prototype.andWhere = function(where, cb, _options) {
   // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
   if (typeof _options.valuesToParameters === 'undefined')
     _options.valuesToParameters = Boolean(this.cypher._useParameters);
+  // if already parameters are added, starting with {value#i} instead of {value0}
+  if ((this.cypher.parameters)&&(this.cypher.parameters.length > 0))
+    _options.parametersStartCountAt = this.cypher.parameters.length;
   var condition = new helpers.ConditionalParameters(_.extend(where),_options);
   this.cypher.where.push(condition.toString());
   if (_options.valuesToParameters)

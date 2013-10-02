@@ -126,6 +126,14 @@ var global = (typeof window === 'object') ? window : root;
     return s.replace(/([^\\]){1}(['"])/g,'$1\\$2');
   }
 
+  var valueToStringForCypherQuery = function(value) {
+    if ((value) && (value.constructor === RegExp))
+      value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');
+    else
+      value = String(value);
+    return value;
+  }
+
   var cypherKeyValueToString = function(key, originalValue, identifier, conditionalParametersObject) {
     var value = originalValue;
     var s = ''; // string that will be returned
@@ -143,14 +151,14 @@ var global = (typeof window === 'object') ? window : root;
     }
     // this.valuesToParameters
     if (_.isRegExp(value)) {
-      value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
+      value = valueToStringForCypherQuery(value);
       value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+value+"'";
       s = key + " =~ " + value;
     }
     else {
       // convert to string
       if ((_.isNumber(value)) || (_.isBoolean(value)))
-        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : String(value);
+        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : valueToStringForCypherQuery(value);
       // else escape
       else
         value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+escapeString(value)+"'";
@@ -181,19 +189,24 @@ var global = (typeof window === 'object') ? window : root;
    */
   var ConditionalParameters = function ConditionalParameters(conditions, options) {
 
-    ConditionalParameters.prototype.operator            = 'AND';
-    ConditionalParameters.prototype.identifier          = 'n';
-    ConditionalParameters.prototype.conditions          = null;
-    ConditionalParameters.prototype.options             = null;
-    ConditionalParameters.prototype.parameters          = null;
-    ConditionalParameters.prototype.valuesToParameters  = true;
-    ConditionalParameters.prototype._s                  = '';
+    ConditionalParameters.prototype.operator               = 'AND';
+    ConditionalParameters.prototype.identifier             = 'n';
+    ConditionalParameters.prototype.conditions             = null;
+
+    // options are used to prevent overriding object attributes on recursive calls
+    ConditionalParameters.prototype.options                = null;
+    ConditionalParameters.prototype.defaultOptions         = { firstLevel: true, identifier: null };
+
+    ConditionalParameters.prototype.parameters             = null;
+    ConditionalParameters.prototype.valuesToParameters     = true;
+    ConditionalParameters.prototype._s                     = '';
+    ConditionalParameters.prototype.parametersStartCountAt = 0;
 
     ConditionalParameters.prototype.addValue = function(value) {
       if (!this.parameters)
         this.parameters = [];
       this.parameters.push(value);
-      return '{value'+(this.parameters.length-1)+'}';
+      return '{value'+(this.parametersStartCountAt + this.parameters.length - 1)+'}';
     }
 
     ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {
@@ -204,13 +217,11 @@ var global = (typeof window === 'object') ? window : root;
     ConditionalParameters.prototype.convert = function(condition, operator) {
       if (typeof condition === 'undefined')
         condition = this.conditions;
-      var defaultOptions = {
-        firstLevel: true,
-        identifier: null
-      };
-      var options = _.extend({}, defaultOptions, this.options);
+      var options = _.extend({}, this.defaultOptions, this.options);
       if (options.firstLevel)
         options.firstLevel = false;
+      if (options.parametersStartCountAt)
+        this.parametersStartCountAt = options.parametersStartCountAt;
       // TODO: if $not : [ {name: 'a'}] ~> NOT (name = a)
       if (typeof condition === 'string')
         condition = [ condition ];
@@ -643,6 +654,7 @@ var global = (typeof window === 'object') ? window : root;
     sprintf: sprintf,
     constructorNameOfFunction: constructorNameOfFunction,
     cypherKeyValueToString: cypherKeyValueToString,
+    valueToStringForCypherQuery: valueToStringForCypherQuery,
     isValidData: isValidData,
     md5: md5
   };

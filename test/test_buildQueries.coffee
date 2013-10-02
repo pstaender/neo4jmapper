@@ -55,13 +55,13 @@ describe 'Neo4jMapper (cypher queries)', ->
       # we will deactivate temporarily parameter seperating for testing the query building
       # http://docs.neo4j.org/chunked/stable/rest-api-cypher.html#rest-api-send-queries-with-parameters
       expect(Node::cypher._useParameters).to.be true
-      Node::cypher._useParameters = false
+      
 
       class Actor extends Node
       Node.register_model(Actor)
       node = new Node()
       results = []
-      map =
+      testQueries = ->
         
         "Node::findAll()":
           [
@@ -157,14 +157,18 @@ describe 'Neo4jMapper (cypher queries)', ->
 
         "Node::findOne().where({ 'name?': 'Alice'})":
           [
-             Node::findOne().where({ 'name?': 'Alice' }),
+             Node::findOne().where({ 'name?': 'Alice' })
             "START n = node(*) WHERE ( n.`name`? = 'Alice' ) RETURN n LIMIT 1;"
+            "START n = node(*) WHERE ( n.`name`? = {value0} ) RETURN n LIMIT 1;"
+            { value0: 'Alice'}
           ]
 
         "Node::findOne().where({name: 'Alice'}).outgoingRelationships()":
           [
              Node::findOne().where({name: 'Alice'}).outgoingRelationships(),
             "START n = node(*) MATCH (n)-[r]->()  WHERE HAS (n.`name`) AND ( n.`name` = 'Alice' ) RETURN r LIMIT 1;" 
+            "START n = node(*) MATCH (n)-[r]->()  WHERE HAS (n.`name`) AND ( n.`name` = {value0} ) RETURN r LIMIT 1;" 
+            { value0: 'Alice'}
           ]
         
         "Node::findAll().outgoingRelationships('know').distinct().count()":
@@ -175,20 +179,34 @@ describe 'Neo4jMapper (cypher queries)', ->
         
         "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })":
           [
-             Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' }),
+             Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })
             "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (n.`since`) AND ( n.`since` = 'years' ) RETURN r;"
+            "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (n.`since`) AND ( n.`since` = {value0} ) RETURN r;"
+            { value0: 'years' }
           ]
 
         "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
           [
              Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
             "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (r.`since`) AND ( r.`since` = 'years' ) RETURN r;"
+            "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (r.`since`) AND ( r.`since` = {value0} ) RETURN r;"
+            { value0: 'years'}
           ]
 
         "Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
           [
              Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ }),
             "START n = node(*) WHERE HAS (n.`boolean_a`) AND HAS (n.`boolean_b`) AND HAS (n.`string_a`) AND HAS (n.`number_a`) AND HAS (n.`number_b`) AND HAS (n.`string_b`) AND HAS (n.`regex`) AND ( n.`boolean_a` = true AND n.`boolean_b` = false AND n.`string_a` = 'true' AND n.`number_a` = 123.2 AND n.`number_b` = 123 AND n.`string_b` = '123' AND n.`regex` =~ '[a-z]' ) RETURN n;"
+            "START n = node(*) WHERE HAS (n.`boolean_a`) AND HAS (n.`boolean_b`) AND HAS (n.`string_a`) AND HAS (n.`number_a`) AND HAS (n.`number_b`) AND HAS (n.`string_b`) AND HAS (n.`regex`) AND ( n.`boolean_a` = {value0} AND n.`boolean_b` = {value1} AND n.`string_a` = {value2} AND n.`number_a` = {value3} AND n.`number_b` = {value4} AND n.`string_b` = {value5} AND n.`regex` =~ {value6} ) RETURN n;"
+            { value0: true, value1: false, value2: 'true', value3: 123.2, value4: 123, value5: '123', value6: '[a-z]' }
+          ]
+
+        "Node::find({ a: 1 }).andWhere({ b: 2})":
+          [
+             Node::find({ a: 1 }).andWhere({ b: 2})
+            "START n = node(*) WHERE HAS (n.`a`) AND HAS (n.`b`) AND ( n.`a` = 1 ) AND ( n.`b` = 2 ) RETURN n;"
+            "START n = node(*) WHERE HAS (n.`a`) AND HAS (n.`b`) AND ( n.`a` = {value0} ) AND ( n.`b` = {value1} ) RETURN n;"
+            { value0: 1, value1: 2 }
           ]
         
         "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
@@ -263,6 +281,10 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) WHERE ( r.`length` = 20 ) RETURN n LIMIT 1;"
           ]
 
+      # Build queries without parameters
+      Node::cypher._useParameters = false
+      map = testQueries()
+
       # check all other queries
       for functionCall of map
         todo = map[functionCall]
@@ -271,8 +293,31 @@ describe 'Neo4jMapper (cypher queries)', ->
         else if _.isArray(todo)
           query = todo[0].toCypherQuery()
           query = _trim(query);
-          throw Error("Error by building query #{functionCall} -> #{query}") if query isnt _trim(todo[1])
-          #expect(query).to.be.equal _trim(todo[1])
+          throw Error("Error by building query #{functionCall}\nExpected: #{_trim(todo[1])}\nGot:      #{query}") if query isnt _trim(todo[1])
+        else
+          console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())
+
+      # Build queries with parameters
+      Node::cypher._useParameters = true
+      map = testQueries()
+      for functionCall of map
+        todo = map[functionCall]
+        if todo?[2] is null
+          console.log 'pending '+functionCall+' ~> '+_trim(todo[0].toCypherQuery())
+        else if _.isArray(todo)
+          if todo[2] #and todo[3]
+            query = todo[0]
+            # check paramers macthing
+            # do we have same parameters count?
+            expect(query.cypher.parameters.length).to.be.equal Object.keys(todo[3]).length
+            i = 0
+            for key, value of todo[3]
+              # check that value of parameter in query is same as expected (sequence of parameters has relevance)
+              expect(query.cypher.parameters[i]).to.be.equal value
+              i++
+            query = query.toCypherQuery()
+            query = _trim(query);
+            throw Error("Error building query with parameters #{functionCall}\nExpected: #{_trim(todo[2])}\nGot:      #{query}") if query isnt _trim(todo[2])
         else
           console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())
 
