@@ -217,6 +217,7 @@ var global = (typeof window === 'object') ? window : root;
       if (typeof condition === 'object')
         for (var key in condition) {
           var value = condition[key];
+          var property = null;
           if ( (_is_operator.test(key)) && (_.isArray(condition[key])) ) {
             condition[key] = this.convert(condition[key], key.replace(/\$/g,' ').trim().toUpperCase(), options);
           } else {
@@ -227,13 +228,18 @@ var global = (typeof window === 'object') ? window : root;
                 properties.push(this.convert(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
               } else {
                 for (var k in condition[key]) {
-                  var value = condition[key][k]; 
+                  // k = key/property, remove identifier e.g. n.name
+                  var property = k.replace(/^[nmrp]\./,'');
+                  value = condition[key][k];
+                  // only check for attributes if not s.th. like `n.name? = …`
+                  var identifierWithproperty = (/\?$/.test(property)) ? '' : property;
+                  if ((options.identifier)&&(identifierWithproperty))
+                    identifierWithproperty = options.identifier + '.`' + identifierWithproperty + '`';
+                  var hasAttribute = (identifierWithproperty) ? ' HAS ('+identifierWithproperty+') AND ' : '';
                   if (value === k) {
-                    properties.push(value);
+                    properties.push(hasAttribute+value);
                   } else {
-                    properties.push(this.cypherKeyValueToString(
-                      k,
-                      value, 
+                    properties.push(hasAttribute+this.cypherKeyValueToString(k, value, 
                       // only add an identifier if we have NOT s.th. like
                       // n.name = ''  or r.since …
                       (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
@@ -241,6 +247,7 @@ var global = (typeof window === 'object') ? window : root;
                   }
                 }
               }
+              // merge sub conditions
               condition[key] = properties.join(' '+operator+' ');
             }
           }

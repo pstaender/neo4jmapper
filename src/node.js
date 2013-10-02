@@ -1317,9 +1317,9 @@ Node.prototype.andWhere = function(where, cb, _options) {
     // good or bad idea that we use by default n as identifier?
     _options.identifier = 'n';
 
-  for (var i = 0; i < attributes.length; i++) {
-    this.whereHasProperty(attributes[i], _options.identifier);
-  }
+  // add identifier to return properties if not exists already
+  if (_.indexOf(this.cypher.return_properties, _options.identifier) === -1) 
+    this.cypher.return_properties.push(_options.identifier);
 
   // use parameters for query or send an ordinary string?
   // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
