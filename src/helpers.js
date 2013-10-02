@@ -126,7 +126,11 @@ var global = (typeof window === 'object') ? window : root;
     return s.replace(/([^\\]){1}(['"])/g,'$1\\$2');
   }
 
-  var cypherKeyValueToString = function(key, value, identifier) {
+  var cypherKeyValueToString = function(key, originalValue, identifier, conditionalParametersObject) {
+    var value = originalValue;
+    var s = ''; // string that will be returned
+    if (typeof conditionalParametersObject !== 'object')
+      conditionalParametersObject = null;
     if (typeof identifier === 'string') {
       if (/^[nmr]\./.test(key))
         // we have already an identifier
@@ -137,16 +141,23 @@ var global = (typeof window === 'object') ? window : root;
       else
         key = identifier+'.`'+key+'`';
     }
+    // this.valuesToParameters
     if (_.isRegExp(value)) {
-      var s = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
-      return key+" =~ '"+s+"'";
+      value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
+      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+value+"'";
+      s = key + " =~ " + value;
     }
-    else if (_.isNumber(value))
-      return key+" = "+value;
-    else if (_.isBoolean(value))
-      return key+" = "+String(value);
-    else
-      return key+" = '"+escapeString(value)+"'";
+    else {
+      // convert to string
+      if ((_.isNumber(value)) || (_.isBoolean(value)))
+        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : String(value);
+      // else escape
+      else
+        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+escapeString(value)+"'";
+      s = key + " = " + value;
+    }
+    
+    return s;
   }
 
   var extractAttributesFromCondition = function(condition, attributes) {
@@ -186,36 +197,8 @@ var global = (typeof window === 'object') ? window : root;
     }
 
     ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {
-      var value = originalValue;
-      var s = ''; // string that will be returned
-      var valuesToParameters = this.valuesToParameters;
-      if (typeof identifier === 'string') {
-        if (/^[nmr]\./.test(key))
-          // we have already an identifier
-          key = key;
-        else if (/[\?\!]$/.test(key))
-          // we have a default statement, escape without ! or ?
-          key = identifier+'.`'+key.replace(/[\?\!]$/,'')+'`'+key.substring(key.length-1)
-        else
-          key = identifier+'.`'+key+'`';
-      }
-      // this.valuesToParameters
-      if (_.isRegExp(value)) {
-        value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');//(?i)
-        value = (valuesToParameters) ? this.addValue(value) : "'"+value+"'";
-        s = key + " =~ " + value;
-      }
-      else {
-        // convert to string
-        if ((_.isNumber(value)) || (_.isBoolean(value)))
-          value = (valuesToParameters) ? this.addValue(value) : String(value);
-        // else escape
-        else
-          value = (valuesToParameters) ? this.addValue(value) : "'"+escapeString(value)+"'";
-        s = key + " = " + value;
-      }
-      
-      return s;
+      // call cypherKeyValueToString with this object context
+      return cypherKeyValueToString(key, originalValue, identifier, this);
     }
 
     ConditionalParameters.prototype.convert = function(condition, operator) {
