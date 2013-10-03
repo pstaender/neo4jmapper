@@ -2013,20 +2013,20 @@ Node.register_model = function(Class, label, prototype, cb) {
 
     _.extend(Class, ParentModel); // 'static' methods
 
-    if ((prototype) && (prototype.fields)) {
-      // extend each field defintion on prototype
-      // e.g. indexes, defaults…
-      var fieldDefinitions = prototype.fields;
-      _.extend(Class.prototype, prototype, ParentModel.prototype);
-      // fields will be extended seperately
-      Class.prototype.fields = {};
-      // iterate and extend through defaults, indexes, unique …
-      for (var attribute in { indexes: {}, defaults: {},  unique: {} }) {
-        if ((ParentModel.prototype.fields)&&(ParentModel.prototype.fields[attribute]))
-          Class.prototype.fields[attribute] = _.extend({}, ParentModel.prototype.fields[attribute], fieldDefinitions[attribute] || {});
+    if (prototype) {
+      _.extend(Class.prototype, ParentModel.prototype, prototype);
+      if (prototype.fields) {
+        // extend each field defintion on prototype
+        // e.g. indexes, defaults…
+        var fieldDefinitions = prototype.fields;
+        // fields will be extended seperately
+        Class.prototype.fields = {};
+        // iterate and extend through defaults, indexes, unique …
+        for (var attribute in { indexes: {}, defaults: {},  unique: {} }) {
+          if ((ParentModel.prototype.fields)&&(ParentModel.prototype.fields[attribute]))
+            Class.prototype.fields[attribute] = _.extend({}, ParentModel.prototype.fields[attribute], fieldDefinitions[attribute] || {});
+        }
       }
-    } else {
-      _.extend(Class.prototype, prototype, ParentModel.prototype);
     }
 
     if (!Class.prototype.labels)
