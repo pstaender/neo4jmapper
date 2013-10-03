@@ -996,7 +996,7 @@ describe 'Neo4jMapper', ->
             Model.find where, (err, found) ->
               expect(err).to.be null
               expect(found).to.have.length 2
-              # test also with parametsr
+              # test also with parameters
               Node::cypher._useParameters = true
               Model.find where, (err, found) ->
                 expect(err).to.be null

@@ -1331,7 +1331,6 @@ Node.prototype.andWhere = function(where, cb, _options) {
     if (!_.isArray(where))
       where = [ where ];
   }
-  var attributes = helpers.extractAttributesFromCondition(_.extend(where));
 
   if (typeof _options === 'undefined')
     _options = {};
@@ -1491,10 +1490,7 @@ Node.prototype.removeWithRelationships = function(cb) {
   });
 }
 
-// Node.prototype.removeRelationshipsFrom = function() { }
-// Node.prototype.removeRelationshipsTo = function() { }
-// Node.prototype.removeRelationshipsBetween = function() {}
-Node.prototype.removeOutgoinRelationships = function(type, cb) {
+Node.prototype.removeOutgoingRelationships = function(type, cb) {
   return this.removeRelationships(type, cb, { direction: '->' });
 }
 Node.prototype.removeIncomingRelationships = function(type, cb) {
