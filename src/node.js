@@ -2114,11 +2114,15 @@ Node.get_index = function(cb) {
 }
 
 Node.disable_loading = function() {
-  this.prototype.disableLoading();
+  return this.prototype.disableLoading();
 }
 
 Node.enable_loading = function() {
-  this.prototype.enableLoading();
+  return this.prototype.enableLoading();
+}
+
+Node.delete_all_including_relationships = function(cb) {
+  return this.find().deleteIncludingRelationships(cb);
 }
 
 var initNode = function(neo4jrestful) {

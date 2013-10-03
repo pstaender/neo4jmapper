@@ -241,7 +241,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) WHERE ( HAS (n.`city`) AND n.city = 'berlin' AND ( HAS (n.`name`) AND n.name = 'peter' AND NOT ( HAS (n.`name`) AND n.name = 'pedro' ) ) ) RETURN n LIMIT 1;"
           ]
         
-        "Node::findById(123).incomingRelationships().delete().toCypherQuery()":
+        "Node::findById(123).incomingRelationships().delete()":
           [
              Node::findById(123).incomingRelationships().delete(),
             "START n = node(123) MATCH (n)<-[r]-() DELETE r;"
@@ -251,6 +251,12 @@ describe 'Neo4jMapper (cypher queries)', ->
           [
              Node::findById(123).allRelationships().delete()
             "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"
+          ]
+
+        "Actor.delete_all_including_relationships()":
+          [
+             Actor.delete_all_including_relationships()
+            "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
           ]
 
         "Node.find().deleteIncludingRelationships()":

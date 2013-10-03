@@ -642,10 +642,10 @@ Some basic benchmark tests are written. To get reasonable benchmark results we c
 
 ### v1.0beta to v1.0
 
-Regulary no API changes in a beta; but neo4jmapper is still in an early development stage, so some cleanup is needed before the final v1.0 will be releases:
+Regulary no API changes in a beta; but neo4jmapper is still in an early development stage, so some cleanup is needed before the final v1.0 will be released:
 
-  * `node.removeWithRelationships` renamed to `node.removeIncludingRelationships`
-  * **Renamed**: *all* static methods have now underscore namings
+  * **Renamed**: `node.removeWithRelationships` is now correctly called `node.removeIncludingRelationships`
+  * **Renamed**: *all* static methods have now underscore names (only Node.find… have both)
     * Node.ensureIndex -> Node.ensure_index
     * Node.dropIndex  -> Node.drop_index
     * Node.dropEntireIndex -> Node.drop_entire_index
