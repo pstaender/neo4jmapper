@@ -124,7 +124,7 @@ Node.prototype.cypher = {
   limit: '',              // Number
   skip: '',               // Number
   filter: '',             // `FILTER`   statement
-  match: '',              // `MATCH`    statement
+  match: null,            // `MATCH`    statement
   start: null,            // `START`    statement
   set: '',                // `SET`      statement
   With: null,             // `WITH`     statement
@@ -799,9 +799,9 @@ Node.prototype._prepareQuery = function() {
   var query = _.extend(this.cypher);
   var label = (query.label) ? ':'+query.label : '';
 
-  if (Object.keys(this.cypher.start).length < 1) {
+  if ((this.cypher.start) && (Object.keys(this.cypher.start).length < 1)) {
     if (query.from > 0) {
-      qeury.start = {};
+      query.start = {};
       query.start.n = 'node('+query.from+')';
       query.return_properties.push('n');
     }
@@ -852,7 +852,7 @@ Node.prototype._prepareQuery = function() {
   }
   // guess return objects from start string if it's not set
   // e.g. START n = node(*), a = node(2) WHERE … RETURN (~>) n, a;
-  if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(Object.keys(this.cypher.start).length > 0))) {
+  if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(this.cypher.start)&&(Object.keys(this.cypher.start).length > 0))) {
     query.start_as_string = ' '+__startObjectToString(query.start)
     if (/ [a-zA-Z]+ \= /.test(query.start_as_string)) {
       var matches = query.start_as_string;
@@ -869,8 +869,8 @@ Node.prototype._prepareQuery = function() {
     }
   }
 
-  // Set a fallback to START n = node(*) 
-  if ((Object.keys(this.cypher.start).length < 1)&&(!(query.match.length > 0))) {
+  // Set a fallback to START n = node(*) if it's not null
+  if ((this.cypher.start) && (Object.keys(this.cypher.start).length < 1)&&(!(query.match.length > 0))) {
     // query.start = 'n = node(*)';
     query.start[this.__type_identifier__] = this.__type__+'(*)';
   }
@@ -1335,6 +1335,22 @@ Node.prototype.returnOnly = function(returnStatement, cb) {
   return this.return(returnStatement, cb);
 }
 
+// ### Sets or resets the START statement
+Node.prototype.start = function(start, cb) {
+  var self = this;
+  if (!self.is_singleton)
+    self = this.singleton(undefined, this);
+  self._modified_query_ = true;
+  if (self.label) self.withLabel(self.label);
+  //self.resetQuery();
+  if (typeof start !== 'string')
+    self.cypher.start = null;
+  else
+    self.cypher.start = start;
+  self.exec(cb);
+  return self; // return self for chaining
+}
+
 Node.prototype.where = function(where, cb) {
   this._modified_query_ = true;
   this.cypher.where = [];
@@ -1363,12 +1379,15 @@ Node.prototype.andWhere = function(where, cb, _options) {
   if (_.indexOf(this.cypher.return_properties, _options.identifier) === -1) 
     this.cypher.return_properties.push(_options.identifier);
 
-  if (!this.cypher.start.n)
-    this.cypher.start.n = 'node(*)';
-  if (this.cypher.start.m)
-    this.cypher.start.m = 'node(*)';
-  if (_options.identifier === 'r')
-    this.cypher.start.r = 'relationship(*)';
+
+  if (this.cypher.start) {
+    if (!this.cypher.start.n)
+      this.cypher.start.n = 'node(*)';
+    if (this.cypher.start.m)
+      this.cypher.start.m = 'node(*)';
+    if (_options.identifier === 'r')
+      this.cypher.start.r = 'relationship(*)';
+  }
 
   // use parameters for query or send an ordinary string?
   // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
@@ -1989,6 +2008,10 @@ Node.findByKeyValue = function(key, value, cb) {
 
 Node.findOneByKeyValue = function(key, value, cb) {
   return this.prototype.findOneByKeyValue(key, value, cb);
+}
+
+Node.start = function(start, cb) {
+  return this.prototype.start(start, cb);
 }
 
 // Exception rule on underscore and CamelCase naming convention

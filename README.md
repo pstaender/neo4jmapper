@@ -208,17 +208,46 @@ To get relationships for instance:
 
 ### Advanced queries
 
-You can query nodes (relationships may follow) easily like as usual in other Object Mappers
+You can attach the callback as argument on your last chain method
+
+```js
+  Node.findOne({ name: 'Alice' }, cb);
+```
+
+or execute it in the next chain method
+
+```js
+  Node.findOne({ name: 'Alice' }).exec(cb);
+```
+
+or get the result as stream (interesting on large results)
+
+```js
+  Node.findOne({ name: 'Alice' }).stream(cb);
+```
+
+You can query easily like you may know from other database mappers. Most examples should explain themselves.
 
 ```js
   alice.incomingRelationshipsFrom(bob)
-    .whereRelaotionship({'since': 'years'})
+    .whereRelationship({'since': 'years'})
     .limit(1, function(err, relationships) {
       /* … */
     });
 ```
 
-Also with customized queries in mongodb query style
+Like in mongodb you can use **AND** + **OR** operators for your where queries, also java-syntax compatible regex are supported:
+
+```js
+  Node
+    .find()
+    .whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]});
+  ~> will execute 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
+  Node
+    .findOne()
+    .where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ]);
+  ~> will execute 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
+```
 
 ```js
   Node
@@ -242,6 +271,21 @@ Also with customized queries in mongodb query style
     .whereNodeHasProperty('name')
     .andWhereNode({ 'city': 'berlin' }, function(err, result) {
       /* … */
+    });
+```
+
+```js
+  Node
+    .start()
+    .match('league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]->award')
+    .where({ 'league.name': 'September Volleyball League' })
+    .returnOnly( 'award.name AS Award, TYPE(r) AS AwardType' )
+    .stream(function(game) {
+      // query: MATCH league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]->award  WHERE ( HAS (n.`league.name`) AND league.name = 'September Volleyball League' ) RETURN award.name AS Award, TYPE(r) AS AwardType;
+      if (game)
+        console.log(game);
+      else
+        console.log('done');
     });
 ```
 
@@ -338,21 +382,6 @@ Here are the most needed methods that can be invoked by an instanced node:
   * update
   * createRelationship, createRelationshipTo, createRelationshipFrom, createRelationshipBetween
   * index
-
-## Advanced Queries
-
-Like in mongodb you can use **AND** + **OR** operators for your where queries, also java-syntax compatible regex are supported:
-
-```js
-  Node
-    .find()
-    .whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]});
-  ~> will execute 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
-  Node
-    .findOne()
-    .where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ]);
-  ~> will execute 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
-```
 
 ## Debugging
 

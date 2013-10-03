@@ -63,193 +63,199 @@ describe 'Neo4jMapper (cypher queries)', ->
       results = []
       testQueries = ->
         
-        "Node::findAll()":
+        "Node.findAll()":
           [
-             Node::findAll()
+             Node.findAll()
             'START n = node(*) RETURN n;'
           ]
         
-        "Node::findById(123)":
+        "Node.findById(123)":
           [
-            Node::findById(123)
+            Node.findById(123)
             "START n = node(*) WHERE id(n) = 123 RETURN n;"
           ]
 
-        'Node::findOne()':
+        'Node.findOne()':
           [
-             Node::findOne()
+             Node.findOne()
             'START n = node(*) RETURN n LIMIT 1;'
           ]
         
-        "Node::findAll().limit(10)":
+        "Node.findAll().limit(10)":
           [
-             Node::findAll().limit(10)
+             Node.findAll().limit(10)
             'START n = node(*) RETURN n LIMIT 10;'
           ]
 
-        "Node::findAll().match('n:Person')":
+        "Node.findAll().match('n:Person')":
           [
-             Node::findAll().match('n:Person')
+             Node.findAll().match('n:Person')
             "MATCH n:Person RETURN n;"
           ]
 
-        "Actor::findAll()":
+        "Actor.findAll()":
           [
-             Actor::findAll()
+             Actor.findAll()
             "START n = node(*) MATCH n:Actor RETURN n;"
           ]
         
-        "Node::findAll().skip(5)":
+        "Node.findAll().skip(5)":
           [
-             Node::findAll().skip(5)
+             Node.findAll().skip(5)
             'START n = node(*) RETURN n SKIP 5;'
+          ]
+
+        "Node.start().match('p:PERSON-[:KNOWS]->a:Actor-[:ACTS]->m:Movie').return('p AS Person')":
+          [
+             Node.start().match('p:PERSON-[:KNOWS]->a:Actor-[:ACTS]->m:Movie').return('p AS Person')
+            'MATCH p:PERSON-[:KNOWS]->a:Actor-[:ACTS]->m:Movie RETURN p AS Person;'
           ]
         
 
-        "Node::findAll().orderBy( { 'name': 'DESC' } )":
+        "Node.findAll().orderBy( { 'name': 'DESC' } )":
           [
-             Node::findAll().orderBy( { 'name': 'DESC' })
+             Node.findAll().orderBy( { 'name': 'DESC' })
             'START n = node(*) WHERE HAS (n.`name`) RETURN n ORDER BY n.`name` DESC;'
           ]
 
-        "Node::findAll().orderNodeBy({'name': 'ASC'})":
+        "Node.findAll().orderNodeBy({'name': 'ASC'})":
           [
-             Node::findAll().orderNodeBy({'name': 'ASC'})
+             Node.findAll().orderNodeBy({'name': 'ASC'})
             'START n = node(*) WHERE HAS (n.`name`) RETURN n ORDER BY n.`name` ASC;'
           ]
         
-        'Node::findAll().incomingRelationships()':
+        'Node.findAll().incomingRelationships()':
           [
-             Node::findAll().incomingRelationships()
+             Node.findAll().incomingRelationships()
             'START n = node(*) MATCH (n)<-[r]-() RETURN r;'
           ]
 
-        'Actor::findAll().incomingRelationships()':
+        'Actor.findAll().incomingRelationships()':
           [
-             Actor::findAll().incomingRelationships()
+             Actor.findAll().incomingRelationships()
             'START n = node(*) MATCH (n:Actor)<-[r]-() RETURN r;'
           ]
         
-        'Node::findAll().outgoingRelationships()':
+        'Node.findAll().outgoingRelationships()':
           [
-             Node::findAll().outgoingRelationships()
+             Node.findAll().outgoingRelationships()
             'START n = node(*) MATCH (n)-[r]->() RETURN r;'
           ]
 
-        "Node::findAll().incomingRelationships()":
+        "Node.findAll().incomingRelationships()":
           [
-             Node::findAll().incomingRelationships()
+             Node.findAll().incomingRelationships()
             'START n = node(*) MATCH (n)<-[r]-() RETURN r;'
           ]
         
-        "Node::findOne().outgoingRelationships(['know','like'])":
+        "Node.findOne().outgoingRelationships(['know','like'])":
           [
-             Node::findOne().outgoingRelationships(['know','like'])
+             Node.findOne().outgoingRelationships(['know','like'])
             'START n = node(*) MATCH (n)-[r:know|like]->() RETURN r LIMIT 1;'
           ]
 
-        "Node::findOne().outgoingRelationshipsTo(2, ['know','like'])":
+        "Node.findOne().outgoingRelationshipsTo(2, ['know','like'])":
           [
-             Node::findOne().outgoingRelationshipsTo(2, ['know','like'])
+             Node.findOne().outgoingRelationshipsTo(2, ['know','like'])
             'START n = node(*), m = node(2) MATCH (n)-[r:know|like]->(m) RETURN r LIMIT 1;'
           ]
 
-        "Node::findOne().outgoingRelationshipsTo(2, 'know|like*')":
+        "Node.findOne().outgoingRelationshipsTo(2, 'know|like*')":
           [
-             Node::findOne().outgoingRelationshipsTo(2, 'know|like*')
+             Node.findOne().outgoingRelationshipsTo(2, 'know|like*')
             'START n = node(*), m = node(2) MATCH (n)-[r:know|like*]->(m) RETURN r LIMIT 1;'
           ]
 
 
-        "Node::findOne().where({ 'name?': 'Alice'})":
+        "Node.findOne().where({ 'name?': 'Alice'})":
           [
-             Node::findOne().where({ 'name?': 'Alice' })
+             Node.findOne().where({ 'name?': 'Alice' })
             "START n = node(*) WHERE ( n.`name`? = 'Alice' ) RETURN n LIMIT 1;"
             "START n = node(*) WHERE ( n.`name`? = {value0} ) RETURN n LIMIT 1;"
             { value0: 'Alice'}
           ]
 
-        "Node::findOne().where({name: 'Alice'}).outgoingRelationships()":
+        "Node.findOne().where({name: 'Alice'}).outgoingRelationships()":
           [
-             Node::findOne().where({name: 'Alice'}).outgoingRelationships()
+             Node.findOne().where({name: 'Alice'}).outgoingRelationships()
             "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = 'Alice' ) RETURN r LIMIT 1;"
             "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = {value0} ) RETURN r LIMIT 1;"
             { value0: 'Alice'}
           ]
         
-        "Node::findAll().outgoingRelationships('know').distinct().count()":
+        "Node.findAll().outgoingRelationships('know').distinct().count()":
           [
-             Node::findAll().outgoingRelationships('know').distinct().count()
+             Node.findAll().outgoingRelationships('know').distinct().count()
             'START n = node(*) MATCH (n)-[r:know]->() RETURN COUNT(DISTINCT *);'
           ]
         
-        "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })":
+        "Node.singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })":
           [
-             Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })
+             Node.singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })
             "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = 'years' ) RETURN r, n;"
             "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = {value0} ) RETURN r, n;"
             { value0: 'years' }
           ]
 
-        "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
+        "Node.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
           [
-             Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
+             Node.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
             "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = 'years' ) RETURN r;"
             "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = {value0} ) RETURN r;"
             { value0: 'years'}
           ]
 
-        "Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
+        "Node.find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
           [
-             Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })
+             Node.find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })
             "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = true AND HAS (n.`boolean_b`) AND n.`boolean_b` = false AND HAS (n.`string_a`) AND n.`string_a` = 'true' AND HAS (n.`number_a`) AND n.`number_a` = 123.2 AND HAS (n.`number_b`) AND n.`number_b` = 123 AND HAS (n.`string_b`) AND n.`string_b` = '123' AND HAS (n.`regex`) AND n.`regex` =~ '[a-z]' ) RETURN n;"
             "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = {value0} AND HAS (n.`boolean_b`) AND n.`boolean_b` = {value1} AND HAS (n.`string_a`) AND n.`string_a` = {value2} AND HAS (n.`number_a`) AND n.`number_a` = {value3} AND HAS (n.`number_b`) AND n.`number_b` = {value4} AND HAS (n.`string_b`) AND n.`string_b` = {value5} AND HAS (n.`regex`) AND n.`regex` =~ {value6} ) RETURN n;"
             { value0: true, value1: false, value2: 'true', value3: 123.2, value4: 123, value5: '123', value6: '[a-z]' }
           ]
 
-        "Node::find({ a: 1 }).andWhere({ b: 2})":
+        "Node.find({ a: 1 }).andWhere({ b: 2})":
           [
-             Node::find({ a: 1 }).andWhere({ b: 2})
+             Node.find({ a: 1 }).andWhere({ b: 2})
             "START n = node(*) WHERE ( HAS (n.`a`) AND n.`a` = 1 ) AND ( HAS (n.`b`) AND n.`b` = 2 ) RETURN n;"
             "START n = node(*) WHERE ( HAS (n.`a`) AND n.`a` = {value0} ) AND ( HAS (n.`b`) AND n.`b` = {value1} ) RETURN n;"
             { value0: 1, value1: 2 }
           ]
         
-        "Node::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
+        "Node.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
-             Node::find().where( { $or : [ { 'n.firstname': /alice/i } , { 'n.surname': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
+             Node.find().where( { $or : [ { 'n.firstname': /alice/i } , { 'n.surname': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
             "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ '(?i)alice' OR HAS (n.`surname`) AND n.surname =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
             "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ {value0} OR HAS (n.`surname`) AND n.surname =~ {value1} ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
             { value0: '(?i)alice', value1: '(?i)bob' }
           ]
 
-        "Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
+        "Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
-             Actor::find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
+             Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
             "START n = node(*) MATCH n:Actor WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
         
-        "Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')":
+        "Node.findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')":
           [
-            Node::findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')
+            Node.findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')
             "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.city = 'berlin' ) RETURN n, n AS Person LIMIT 1;"
           ]
 
-        "Node::findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).returnOnly('n.name AS Name')":
+        "Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).returnOnly('n.name AS Name')":
           [
-             Node::findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).returnOnly('n.name AS Name')
+             Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).returnOnly('n.name AS Name')
             "START n = node(*) WHERE ( HAS (n.`city`) AND n.city = 'berlin' AND ( HAS (n.`name`) AND n.name = 'peter' AND NOT ( HAS (n.`name`) AND n.name = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
           ]
         
-        "Node::findById(123).incomingRelationships().delete()":
+        "Node.findById(123).incomingRelationships().delete()":
           [
-             Node::findById(123).incomingRelationships().delete()
+             Node.findById(123).incomingRelationships().delete()
             "START n = node(123) MATCH (n)<-[r]-() DELETE r;"
           ]
         
-        "Node::findById(123).allRelationships().delete()":
+        "Node.findById(123).allRelationships().delete()":
           [
-             Node::findById(123).allRelationships().delete()
+             Node.findById(123).allRelationships().delete()
             "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"
           ]
 
