@@ -224,6 +224,8 @@ or get the result as stream (interesting on large results)
 
 ```js
   Node.findOne({ name: 'Alice' }).stream(cb);
+  // each is a synonym for stream
+  Node.findOne({ name: 'Alice' }).each(cb);
 ```
 
 You can query easily like you may know from other database mappers. Most examples should explain themselves.
@@ -236,7 +238,7 @@ You can query easily like you may know from other database mappers. Most example
     });
 ```
 
-Like in mongodb you can use **AND** + **OR** operators for your where queries, also java-syntax compatible regex are supported:
+Like in mongodb you can use **AND**, **OR**, **XOR** + **NOT** operators for your where queries, also regex are supported so far:
 
 ```js
   Node
@@ -287,6 +289,16 @@ Like in mongodb you can use **AND** + **OR** operators for your where queries, a
       else
         console.log('done');
     });
+```
+
+If you don't need any query building / want to send a raw query:
+
+```js
+  var cypherQuery = 'MATCH l:League-[:PLAYED_AT]->v:Venue-[:COURT]->c:Court RETURN l.name AS League, v.name AS Venue, collect(c.name) AS Courts';
+  // get result at once
+  Graph.query(cypherQuery, cb);
+  // or as stream
+  Graph.stream(cypherQuery, cb);
 ```
 
 ### Iterate on large results (streaming)
