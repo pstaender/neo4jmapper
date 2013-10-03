@@ -1308,10 +1308,31 @@ Node.prototype.orderRelationshipBy = function(property, direction, cb) {
   return this.orderBy(property, direction, cb, 'r');
 }
 
+// ### Adds a string to the MATCH statement
+// e.g.: 'p:PERSON-[:KNOWS|:FOLLOWS]->a:Actor-[:ACTS]->m'
 Node.prototype.match = function(string, cb) {
   this.cypher.match.push(string);
   this.exec(cb);
   return this; // return self for chaining
+}
+
+// ### Adds s.th. to the RETURN statement
+// Can be a string or an array
+// e.g. as string:  'award.name AS Award, awardee.name AS WonBy'
+// e.g. as array: [ 'award.name AS Award', 'awardee.name AS WonBy' ]
+Node.prototype.return = function(returnStatement, cb) {
+  if (returnStatement)
+    this.cypher.return_properties = this.cypher.return_properties.concat(
+      (returnStatement.constructor === Array) ? returnStatement : returnStatement.split(', ')
+    );
+  this.exec(cb);
+  return this; // return self for chaining
+}
+
+// ### Sets the RETURN statement explicit to that value(s)
+Node.prototype.returnOnly = function(returnStatement, cb) {
+  this.cypher.return_properties = [];
+  return this.return(returnStatement, cb);
 }
 
 Node.prototype.where = function(where, cb) {
