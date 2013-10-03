@@ -154,6 +154,12 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*), m = node(2) MATCH (n)-[r:know|like]->(m) RETURN r LIMIT 1;'
           ]
 
+        "Node::findOne().outgoingRelationshipsTo(2, 'know|like*')":
+          [
+             Node::findOne().outgoingRelationshipsTo(2, 'know|like*'),
+            'START n = node(*), m = node(2) MATCH (n)-[r:know|like*]->(m) RETURN r LIMIT 1;'
+          ]
+
 
         "Node::findOne().where({ 'name?': 'Alice'})":
           [

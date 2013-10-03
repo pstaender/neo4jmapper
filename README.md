@@ -477,11 +477,8 @@ In v8-harmony you can use generators in your js to avoid callbacks, for instance
 There are some steps to take, especially some methods for daily use are missing, yet. But the basic set of operations are already implemented and tested.
 
   * implement: relationship (index)
-  * fix Relationship::update()
-  * stream: browser compatible, debug options
-  * nice(r) Documentation
-  * fix test for first testrun
-  * make endpoint url flexible
+  * implement: stream feature for browser-side-usage
+  * documentation
   * traversals
 
 ## Tests
