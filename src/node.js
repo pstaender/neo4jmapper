@@ -1480,7 +1480,8 @@ Node.prototype.remove = function(cb) {
 
 Node.prototype.onBeforeRemove = function(next) { next(null,null); }
 
-Node.prototype.removeWithRelationships = function(cb) {
+// was mistakenly called `removeWithRelationships`, so it is renamed 
+Node.prototype.removeIncludingRelationships = function(cb) {
   var self = this;
   return this.removeAllRelationships(function(err) {
     if (err)
@@ -2119,27 +2120,6 @@ Node.disable_loading = function() {
 Node.enable_loading = function() {
   this.prototype.enableLoading();
 }
-
-/*
- * Deprecated Methods
- * methods will be removed in next larger release
- */
-
-// To keep consistent naming conventions
-// the following CamelCase method names
-// will be removed in the next bigger release
-// and are deprecated from now on
-Node.ensureIndex            = function(cb) { return this.ensure_index(cb); }
-Node.dropIndex              = function(fields, cb) { return this.drop_index(fields, cb); }
-Node.dropEntireIndex        = function(cb) { return this.drop_entire_index(cb); }
-Node.getIndex               = function(cb) { return this.get_index(cb); }
-// it's not needed if there is no check for uniqueness
-// use Node.findByKeyValue instead
-Node.findByUniqueKeyValue   = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
-
-/*
- * eof Deprecated Methods
- */
 
 var initNode = function(neo4jrestful) {
 

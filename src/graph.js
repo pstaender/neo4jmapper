@@ -110,6 +110,42 @@ var initGraph = function(neo4jrestful) {
 
   Graph.prototype.log = function(){ /* > /dev/null */ };
 
+  /*
+   * Static methods
+   * (are shortcuts to methods on new instanced Graph())
+   */
+  Graph.query = function(cypher, options, cb) {
+    return new Graph().query(cypher, options, cb);
+  }
+
+  Graph.stream = function(cypher, options, cb) {
+    return new Graph().stream(cypher, options, cb);
+  }
+
+  Graph.wipe_database = function(cb) {
+    return new Graph().wipeDatabase(cb);
+  }
+
+  Graph.count_all_of_type = function(type, cb) {
+    return new Graph().countAllOfType(type, cb);
+  }
+
+  Graph.count_relationships = function(cb) {
+    return new Graph().countRelationships(cb);
+  }
+  
+  Graph.count_nodes = function(cb) {
+    return new Graph().countNodes(cb);
+  }
+  
+  Graph.count_all = function(cb) {
+    return new Graph().countAll(cb);
+  }
+
+  Graph.about = function(cb) {
+    return new Graph().about(cb);
+  }
+
   return Graph;
 }
 

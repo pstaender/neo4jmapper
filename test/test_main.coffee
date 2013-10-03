@@ -414,7 +414,7 @@ describe 'Neo4jMapper', ->
       Node.findById Number('9'+Math.floor(Math.random()*1000000000)), (err, found) ->
         expect(err).to.be null
         expect(found).to.be null
-        Node.findByUniqueKeyValue { key: new Date().getTime() }, (err, found) ->
+        Node.findOneByKeyValue { key: new Date().getTime() }, (err, found) ->
           expect(err).to.be null
           expect(found).to.be null
           done()
@@ -450,7 +450,7 @@ describe 'Neo4jMapper', ->
             expect(err).to.be null
             Node.findById id, (err, foundAgain) ->
               expect(foundAgain.data.title).to.be found.data.title
-              foundAgain.removeWithRelationships (err) ->
+              foundAgain.removeIncludingRelationships (err) ->
                 expect(err).to.be null
                 node.remove ->
                   done()
@@ -861,7 +861,7 @@ describe 'Neo4jMapper', ->
                                   expect(count).to.be 3
                                   graphdb.countRelationships (err, count) ->
                                     expect(count).to.be.equal countedRelationshipsFinally + 1
-                                    alice.removeWithRelationships -> bob.removeWithRelationships -> charles.removeWithRelationships ->
+                                    alice.removeIncludingRelationships -> bob.removeIncludingRelationships -> charles.removeIncludingRelationships ->
                                       done()
 
     it 'expect to create and get incoming, outgoing and bidirectional relationships between two nodes', (done) ->
@@ -1033,9 +1033,9 @@ describe 'Neo4jMapper', ->
                   expect(path.start).to.be.a 'string'
                   expect(path.end).to.be.a 'string'
                   expect(path.toObject()).to.be.an 'object'
-                  a.removeWithRelationships (err) ->
+                  a.removeIncludingRelationships (err) ->
                     expect(err).to.be null
-                    b.removeWithRelationships (err) ->
+                    b.removeIncludingRelationships (err) ->
                       expect(err).to.be null
                       done()
 

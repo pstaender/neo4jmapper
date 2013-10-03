@@ -638,6 +638,21 @@ To reduce database requests you can switch load hooks on and off
 
 Some basic benchmark tests are written. To get reasonable benchmark results we compare neo4jmapper with the node-neo4j library (a robust basic neo4j driver). You can execute them with `coffee benchmark/benchmark.coffee` (beware that a lot of nodes will be written and kept in your database).
 
+## API Changes
+
+### v1.0beta to v1.0
+
+Regulary no API changes in a beta; but neo4jmapper is still in an early development stage, so some cleanup is needed before the final v1.0 will be releases:
+
+  * `node.removeWithRelationships` renamed to `node.removeIncludingRelationships`
+  * **Renamed**: *all* static methods have now underscore namings
+    * Node.ensureIndex -> Node.ensure_index
+    * Node.dropIndex  -> Node.drop_index
+    * Node.dropEntireIndex -> Node.drop_entire_index
+    * Node.getIndex -> Node.get_index
+  * **Removed**: `Node.findByUniqueKeyValue`, use `Node.findByKeyValue` or `Node.findOneByKeyValue` instead
+
+
 ## LICENSE
 
 © 2013 by Philipp Staender under the GNU General Public License
