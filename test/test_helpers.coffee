@@ -133,12 +133,12 @@ describe 'Neo4jMapper (helpers)', ->
         { "n.name": "Alice's" },
         "HAS(n.email))"
       ]
-      resultShouldBe = "( n.name = 'Alice\\'s' AND HAS(n.email)) )"
-      expect(new helpers.ConditionalParameters(condition, { valuesToParameters: false }).toString()).to.be.equal resultShouldBe
+      resultShouldBe = "( HAS (n.`name`) AND n.name = 'Alice\\'s' AND HAS(n.email)) )"
+      expect(new helpers.ConditionalParameters(condition, { valuesToParameters: false, identifier: 'n' }).toString()).to.be.equal resultShouldBe
     
     it 'expect to transform an key-value-object to with $OR and $AND operators', ->
       resultShouldBe = """
-        ( ( n.name =~ '(?i)Alice' AND ( n.email = 'alice@home.com' OR ( n.email = 'alice@home.de' AND n.country = 'de_DE' ) ) ) )
+        ( ( HAS (n.name) AND n.name =~ '(?i)Alice' AND ( HAS (n.email) AND n.email = 'alice@home.com' OR ( HAS (n.email) AND n.email = 'alice@home.de' AND HAS (n.country) AND n.country = 'de_DE' ) ) ) )
         """
       condition = [
         { $and: [
@@ -156,7 +156,7 @@ describe 'Neo4jMapper (helpers)', ->
 
     it 'expect to transform an key-value-object with identifier', ->
       resultShouldBe = """
-      ( ( n.name =~ '(?i)Alice' AND r.since = 'years' AND ( n.email = 'alice@home.com' OR ( n.`email` = 'alice@home.de' AND n.`country` = 'de_DE' ) ) ) )
+      ( ( HAS (n.`name`) AND n.name =~ \'(?i)Alice\' AND HAS (n.`since`) AND r.since = \'years\' AND ( HAS (n.`email`) AND n.email = \'alice@home.com\' OR ( HAS (n.`email`) AND n.`email` = \'alice@home.de\' AND HAS (n.`country`) AND n.`country` = \'de_DE\' ) ) ) )
       """;
       condition = [
         { $and: [
@@ -189,7 +189,7 @@ describe 'Neo4jMapper (helpers)', ->
       ]
       con = new helpers.ConditionalParameters(condition, { identifier: 'n' })
       expect(con.toString()).to.be.equal """
-        ( ( n.name =~ {value0} AND r.since = {value1} AND ( n.email = {value2} OR ( n.`email` = {value3} AND n.`country` = {value4} ) ) ) )
+        ( ( HAS (n.`name`) AND n.name =~ {value0} AND HAS (n.`since`) AND r.since = {value1} AND ( HAS (n.`email`) AND n.email = {value2} OR ( HAS (n.`email`) AND n.`email` = {value3} AND HAS (n.`country`) AND n.`country` = {value4} ) ) ) )
       """
       expect(con.parameters).to.have.length 5
       expect(con.parameters[0]).to.be.equal '(?i)Alice'
@@ -197,3 +197,5 @@ describe 'Neo4jMapper (helpers)', ->
       expect(con.parameters[2]).to.be.equal 'alice@home.com'
       expect(con.parameters[3]).to.be.equal 'alice@home.de'
       expect(con.parameters[4]).to.be.equal 'de_DE'
+
+    # Implement feature + test for mathematical operators: =, <>, <, >, <=, >=

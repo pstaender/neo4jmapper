@@ -125,7 +125,7 @@ Node.prototype.cypher = {
   skip: '',               // Number
   filter: '',             // `FILTER`   statement
   match: '',              // `MATCH`    statement
-  start: '',              // `START`    statement
+  start: null,            // `START`    statement
   set: '',                // `SET`      statement
   With: null,             // `WITH`     statement
   distinct: null,         // `DISTINCT` option
@@ -262,6 +262,7 @@ Node.prototype.resetQuery = function() {
   this.cypher.hasProperty = [];
   this.cypher.match = [];
   this.cypher.return_properties = [];
+  this.cypher.start = {};
   this._modified_query_ = false;
   if (this.id)
     this.cypher.from = this.id;
@@ -745,7 +746,9 @@ Node.prototype.pathBetween = function(start, end, options, cb) {
     // MATCH p = allShortestPaths(martin-[*]-michael)
     // RETURN p
     var type = (options.relationships.type) ? ':'+options.relationships.type : options.relationships.type;
-    this.cypher.start = 'a = node('+start+'), b = node('+end+')';
+    // this.cypher.start = {};
+    this.cypher.start.a = 'node('+start+')';
+    this.cypher.start.b = 'node('+end+')';
     
     var matchString = 'p = '+options.algorithm+'(a-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-b)';
     
@@ -769,8 +772,9 @@ Node.prototype.count = function(identifier, cb) {
   else if (typeof identifier !== 'string')
     identifier = '*';
 
-  if (!this.cypher.start) {
-    this.cypher.start = this.__type_identifier__+' = '+this.__type__+'(*)'; // all nodes by default
+  if (Object.keys(this.cypher.start).length < 1) {
+    // this.cypher.start = {};
+    this.cypher.start[this.__type_identifier__] = this.__type__+'(*)'; // all nodes by default
   }
   this.cypher.return_properties = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
   if (this.cypher._distinct)
@@ -795,13 +799,14 @@ Node.prototype._prepareQuery = function() {
   var query = _.extend(this.cypher);
   var label = (query.label) ? ':'+query.label : '';
 
-  if (!query.start) {
+  if (Object.keys(this.cypher.start).length < 1) {
     if (query.from > 0) {
-      query.start = 'n = node('+query.from+')';
+      qeury.start = {};
+      query.start.n = 'node('+query.from+')';
       query.return_properties.push('n');
     }
     if (query.to > 0) {
-      query.start += ', m = node('+query.to+')';
+      query.start.m = 'node('+query.to+')';
       query.return_properties.push('m');
     }
   }
@@ -837,12 +842,20 @@ Node.prototype._prepareQuery = function() {
     }
     query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'm' : '' )+')');
   }
+
+  var __startObjectToString = function(start) {
+    var s = [];
+    for (var attribute in start) {
+      s.push(attribute+' = '+start[attribute]);
+    }
+    return s.join(', ').trim();
+  }
   // guess return objects from start string if it's not set
   // e.g. START n = node(*), a = node(2) WHERE … RETURN (~>) n, a;
-  if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(query.start))) {
-    var _start = ' '+query.start
-    if (/ [a-zA-Z]+ \= /.test(_start)) {
-      var matches = _start;
+  if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(Object.keys(this.cypher.start).length > 0))) {
+    query.start_as_string = ' '+__startObjectToString(query.start)
+    if (/ [a-zA-Z]+ \= /.test(query.start_as_string)) {
+      var matches = query.start_as_string;
       query.return_properties = [];
       matches = matches.match(/[\s\,]([a-z]+) \= /g);
       for (var i = 0; i < matches.length; i++) {
@@ -857,9 +870,9 @@ Node.prototype._prepareQuery = function() {
   }
 
   // Set a fallback to START n = node(*) 
-  if ((!query.start)&&(!(query.match.length > 0))) {
+  if ((Object.keys(this.cypher.start).length < 1)&&(!(query.match.length > 0))) {
     // query.start = 'n = node(*)';
-    query.start = this.__type_identifier__+' = '+this.__type__+'(*)';
+    query.start[this.__type_identifier__] = this.__type__+'(*)';
   }
   if ((!(query.match.length>0))&&(this.label)) {
     // e.g. ~> MATCH n:Person
@@ -870,7 +883,7 @@ Node.prototype._prepareQuery = function() {
   if (query.by_id > 0) {
     var identifier = query.node_identifier || this.__type_identifier__;
     // put in where clause if `START n = node(*)` or no START statement exists
-    if ( (!query.start) || (/^\s*n\s*\=\s*node\(\*\)\s*$/.test(query.start)) ) {
+    if ( (Object.keys(this.cypher.start).length < 1) || (this.cypher.start.n === 'node(*)') ) {
       // we have to use the id method for the special key `id`
       query.where.push("id("+identifier+") = "+query.by_id);
     }
@@ -883,13 +896,16 @@ Node.prototype._prepareQuery = function() {
       query.where.unshift('HAS ('+whereHasProperties[i]+')');
     }
   }
+
+  query.start_as_string = __startObjectToString(query.start);
+
   return query;
 }
 
 Node.prototype.toCypherQuery = function() {
   var query = this._prepareQuery();
   var template = "";
-  if (query.start)
+  if (query.start_as_string)
     template += "START %(start)s ";
   if (query.match.length > 0)
     template += "MATCH %(match)s ";
@@ -907,7 +923,7 @@ Node.prototype.toCypherQuery = function() {
     template += ";";
 
   var cypher = helpers.sprintf(template, {
-    start:              query.start,
+    start:              query.start_as_string,
     from:               '',
     match:              (query.match.length > 0) ? query.match.join(' AND ') : '',
     With:               (query.With) ? query.With : '',
@@ -1117,8 +1133,10 @@ Node.prototype.incomingRelationships = function(relation, cb) {
     cb = relation;
   }
   self.cypher.node_identifier = 'n';
-  self.cypher.start = 'n = node('+self._start_node_id('*')+')';
-  self.cypher.start += (self.cypher.to > 0) ? ', m = node('+self._end_node_id('*')+')' : ''
+  // self.cypher.start = {};
+  self.cypher.start.n = 'node('+self._start_node_id('*')+')';
+  if (self.cypher.to > 0)
+    self.cypher.start.m = 'node('+self._end_node_id('*')+')';
   self.cypher.incoming = true;
   self.cypher.outgoing = false;
   self.cypher.return_properties = ['r'];
@@ -1135,8 +1153,10 @@ Node.prototype.outgoingRelationships = function(relation, cb) {
     cb = relation;
   }
   self.cypher.node_identifier = 'n';
-  self.cypher.start = 'n = node('+self._start_node_id('*')+')';
-  self.cypher.start += (self.cypher.to > 0) ? ', m = node('+self._end_node_id('*')+')' : ''
+  // self.cypher.start = {};
+  self.cypher.start.n = 'node('+self._start_node_id('*')+')';
+  if (self.cypher.to > 0)
+    self.cypher.start.m = 'node('+self._end_node_id('*')+')';
   self.cypher.incoming = false;
   self.cypher.outgoing = true;
   self.cypher.return_properties = ['r'];
@@ -1171,7 +1191,9 @@ Node.prototype.allDirections = function(relation, cb) {
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
   self.cypher.node_identifier = 'n';
-  self.cypher.start = 'n = node('+self._start_node_id('*')+'), m = node('+self._end_node_id('*')+')';
+  // self.cypher.start = {};
+  self.cypher.start.n = 'node('+self._start_node_id('*')+')';
+  self.cypher.start.m = 'node('+self._end_node_id('*')+')';
   self.cypher.incoming = true;
   self.cypher.outgoing = true;
   self.cypher.return_properties = ['n', 'm', 'r'];
@@ -1321,6 +1343,13 @@ Node.prototype.andWhere = function(where, cb, _options) {
   if (_.indexOf(this.cypher.return_properties, _options.identifier) === -1) 
     this.cypher.return_properties.push(_options.identifier);
 
+  if (!this.cypher.start.n)
+    this.cypher.start.n = 'node(*)';
+  if (this.cypher.start.m)
+    this.cypher.start.m = 'node(*)';
+  if (_options.identifier === 'r')
+    this.cypher.start.r = 'relationship(*)';
+
   // use parameters for query or send an ordinary string?
   // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
   if (typeof _options.valuesToParameters === 'undefined')
@@ -1429,8 +1458,10 @@ Node.prototype.delete = function(cb) {
 
 Node.prototype.deleteIncludingRelationships = function(cb) {
   var label = (this.label) ? ":"+this.label : "";
-  if (!this.cypher.start)
-    this.cypher.start = this.__type_identifier__ + " = " + this.__type__+"(*)";
+  if (Object.keys(this.cypher.start).length < 1) {
+    // this.cypher.start = {};
+    this.cypher.start[this.__type_identifier__] = this.__type__+"(*)";
+  }
   this.cypher.match.push([ this.__type_identifier__+label+"-[r?]-()" ]);
   this.cypher.return_properties = [ "n", "r" ];
   return this.delete(cb);

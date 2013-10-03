@@ -50,7 +50,7 @@ describe 'Neo4jMapper (cypher queries)', ->
       # expect(Node.findOne().deleteIncludingRelationships).withArgs(->).to.throwError()
       # expect(Node.find().deleteIncludingRelationships().limit).withArgs(1, ->).to.throwError()
 
-    it.only 'expect to build various kind of queries', ->
+    it 'expect to build various kind of queries', ->
 
       # we will deactivate temporarily parameter seperating for testing the query building
       # http://docs.neo4j.org/chunked/stable/rest-api-cypher.html#rest-api-send-queries-with-parameters
@@ -171,35 +171,35 @@ describe 'Neo4jMapper (cypher queries)', ->
             { value0: 'Alice'}
           ]
         
-        # "Node::findAll().outgoingRelationships('know').distinct().count()":
-        #   [
-        #      Node::findAll().outgoingRelationships('know').distinct().count(),
-        #     'START n = node(*) MATCH (n)-[r:know]->() RETURN COUNT(DISTINCT *);'
-        #   ]
+        "Node::findAll().outgoingRelationships('know').distinct().count()":
+          [
+             Node::findAll().outgoingRelationships('know').distinct().count(),
+            'START n = node(*) MATCH (n)-[r:know]->() RETURN COUNT(DISTINCT *);'
+          ]
         
-        # "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })":
-        #   [
-        #      Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })
-        #     "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (n.`since`) AND ( n.`since` = 'years' ) RETURN r;"
-        #     "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (n.`since`) AND ( n.`since` = {value0} ) RETURN r;"
-        #     { value0: 'years' }
-        #   ]
+        "Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })":
+          [
+             Node::singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })
+            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = 'years' ) RETURN r, n;"
+            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = {value0} ) RETURN r, n;"
+            { value0: 'years' }
+          ]
 
-        # "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
-        #   [
-        #      Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
-        #     "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (r.`since`) AND ( r.`since` = 'years' ) RETURN r;"
-        #     "START n = node(1), m = node(2) MATCH (n)<-[r:like]-(m) WHERE HAS (r.`since`) AND ( r.`since` = {value0} ) RETURN r;"
-        #     { value0: 'years'}
-        #   ]
+        "Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
+          [
+             Node::singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
+            "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = 'years' ) RETURN r;"
+            "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = {value0} ) RETURN r;"
+            { value0: 'years'}
+          ]
 
-        # "Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
-        #   [
-        #      Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ }),
-        #     "START n = node(*) WHERE HAS (n.`boolean_a`) AND HAS (n.`boolean_b`) AND HAS (n.`string_a`) AND HAS (n.`number_a`) AND HAS (n.`number_b`) AND HAS (n.`string_b`) AND HAS (n.`regex`) AND ( n.`boolean_a` = true AND n.`boolean_b` = false AND n.`string_a` = 'true' AND n.`number_a` = 123.2 AND n.`number_b` = 123 AND n.`string_b` = '123' AND n.`regex` =~ '[a-z]' ) RETURN n;"
-        #     "START n = node(*) WHERE HAS (n.`boolean_a`) AND HAS (n.`boolean_b`) AND HAS (n.`string_a`) AND HAS (n.`number_a`) AND HAS (n.`number_b`) AND HAS (n.`string_b`) AND HAS (n.`regex`) AND ( n.`boolean_a` = {value0} AND n.`boolean_b` = {value1} AND n.`string_a` = {value2} AND n.`number_a` = {value3} AND n.`number_b` = {value4} AND n.`string_b` = {value5} AND n.`regex` =~ {value6} ) RETURN n;"
-        #     { value0: true, value1: false, value2: 'true', value3: 123.2, value4: 123, value5: '123', value6: '[a-z]' }
-        #   ]
+        "Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
+          [
+             Node::find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ }),
+            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = true AND HAS (n.`boolean_b`) AND n.`boolean_b` = false AND HAS (n.`string_a`) AND n.`string_a` = 'true' AND HAS (n.`number_a`) AND n.`number_a` = 123.2 AND HAS (n.`number_b`) AND n.`number_b` = 123 AND HAS (n.`string_b`) AND n.`string_b` = '123' AND HAS (n.`regex`) AND n.`regex` =~ '[a-z]' ) RETURN n;"
+            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = {value0} AND HAS (n.`boolean_b`) AND n.`boolean_b` = {value1} AND HAS (n.`string_a`) AND n.`string_a` = {value2} AND HAS (n.`number_a`) AND n.`number_a` = {value3} AND HAS (n.`number_b`) AND n.`number_b` = {value4} AND HAS (n.`string_b`) AND n.`string_b` = {value5} AND HAS (n.`regex`) AND n.`regex` =~ {value6} ) RETURN n;"
+            { value0: true, value1: false, value2: 'true', value3: 123.2, value4: 123, value5: '123', value6: '[a-z]' }
+          ]
 
         "Node::find({ a: 1 }).andWhere({ b: 2})":
           [
@@ -243,29 +243,29 @@ describe 'Neo4jMapper (cypher queries)', ->
         
         "Node::findById(123).allRelationships().delete()":
           [
-             Node::findById(123).allRelationships().delete(),
+             Node::findById(123).allRelationships().delete()
             "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"
           ]
 
         "Node.find().deleteIncludingRelationships()":
           [
-             Node.find().deleteIncludingRelationships(),
+             Node.find().deleteIncludingRelationships()
             "START n = node(*) MATCH n-[r?]-() DELETE n, r;"
           ]
 
-        "Actor.findById(123).deleteIncludingRelationships()":
+        "Actor.find().deleteIncludingRelationships()":
           [
-             Actor.find().deleteIncludingRelationships(),
+             Actor.find().deleteIncludingRelationships()
             "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
           ]
 
-        "Node.findById(123).update({ name: 'Alice' })":
-          [
-             Node.findById(123).update({ 'name': 'Alice' }),
-            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;"
-            "START n = node(*) WHERE id(n) = 123 SET n.`name` = {value0} RETURN n;"
-            { value0: 'Alice' }
-          ]
+        # "Node.findById(123).update({ name: 'Alice' })":
+        #   [
+        #      Node.findById(123).update({ 'name': 'Alice' })
+        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;"
+        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = {value0} RETURN n;"
+        #     { value0: 'Alice' }
+        #   ]
 
         "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":
           [
@@ -275,8 +275,8 @@ describe 'Neo4jMapper (cypher queries)', ->
 
         "Node.findOne().whereRelationship({ length: 20 })":
           [
-             Node.findOne().whereRelationship({ length: 20 }),
-            "START n = node(*) WHERE ( r.`length` = 20 ) RETURN n LIMIT 1;"
+             Node.findOne().whereRelationship({ length: 20 })
+            "START n = node(*), r = relationship(*) WHERE ( HAS (r.`length`) AND r.`length` = 20 ) RETURN n, r LIMIT 1;"
           ]
 
       # Build queries without parameters

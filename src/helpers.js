@@ -12,7 +12,7 @@ var global = (typeof window === 'object') ? window : root;
     _ = require('underscore');
   }
 
-  var _is_operator = /^\$(AND|OR|NOT|AND\$NOT|OR\$NOT)$/i;
+  var _is_operator = /^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i;
 
   var sortStringAndOptionsArguments = function(string, options) {
     if (typeof string === 'object') {
@@ -233,9 +233,15 @@ var global = (typeof window === 'object') ? window : root;
                   value = condition[key][k];
                   // only check for attributes if not s.th. like `n.name? = …`
                   var identifierWithproperty = (/\?$/.test(property)) ? '' : property;
-                  if ((options.identifier)&&(identifierWithproperty))
-                    identifierWithproperty = options.identifier + '.`' + identifierWithproperty + '`';
-                  var hasAttribute = (identifierWithproperty) ? ' HAS ('+identifierWithproperty+') AND ' : '';
+                  if (identifierWithproperty) {
+                    if (options.identifier)
+                      // we have s.th. like options.identifier = n; property = '`'+identifierWithproperty+'`'
+                      identifierWithproperty = options.identifier + '.`' + identifierWithproperty + '`';
+                    else
+                      // we have no explicit identifier, so we use the complete key/property and expecting it contains identifier
+                      identifierWithproperty = k;
+                  }
+                  var hasAttribute = (identifierWithproperty) ? 'HAS ('+identifierWithproperty+') AND ' : '';
                   if (value === k) {
                     properties.push(hasAttribute+value);
                   } else {
