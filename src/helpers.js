@@ -127,9 +127,11 @@ var global = (typeof window === 'object') ? window : root;
   }
 
   var valueToStringForCypherQuery = function(value) {
-    if ((value) && (value.constructor === RegExp))
+    if ((value) && (value.constructor === RegExp)) {
       value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');
-    else
+      // replace `\` with `\\` to keep compatibility with Java regex
+      value = value.replace(/([^\\]{1})\\([^\\]{1})/g, '$1\\\\$2');
+    } else
       value = String(value);
     return value;
   }

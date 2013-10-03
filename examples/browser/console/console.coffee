@@ -82,6 +82,7 @@ $(document).ready ->
     # … you can nearly do anything you can do with CoffeeScript/JS …
     
     {Node,Graph,client,graph} = Neo4jMapper.init('http://localhost:7474')
+    Node::cypher._useParameters = false # better to inspect queries
 
     aboutGraph = new Graph().about(_)
 

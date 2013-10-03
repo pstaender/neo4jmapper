@@ -138,13 +138,13 @@ describe 'Neo4jMapper (helpers)', ->
     
     it 'expect to transform an key-value-object to with $OR and $AND operators', ->
       resultShouldBe = """
-        ( ( HAS (n.name) AND n.name =~ '(?i)Alice' AND ( HAS (n.email) AND n.email = 'alice@home.com' OR ( HAS (n.email) AND n.email = 'alice@home.de' AND HAS (n.country) AND n.country = 'de_DE' ) ) ) )
+        ( ( HAS (n.name) AND n.name =~ '(?i)Alice' AND ( HAS (n.email) AND n.email =~ '^alice@home\\\\.com$' OR ( HAS (n.email) AND n.email = 'alice@home.de' AND HAS (n.country) AND n.country = 'de_DE' ) ) ) )
         """
       condition = [
         { $and: [
           { 'n.name': /Alice/i, },
           $or: [
-            { 'n.email': "alice@home.com" },
+            { 'n.email': /^alice@home\.com$/ },
             $and: [
               { 'n.email': "alice@home.de" },
               { 'n.country': "de_DE" }
@@ -155,6 +155,25 @@ describe 'Neo4jMapper (helpers)', ->
       expect(new helpers.ConditionalParameters(condition, { valuesToParameters: false }).toString()).to.be.equal resultShouldBe
 
     it 'expect to transform an key-value-object with identifier', ->
+      resultShouldBe = """
+      ( ( HAS (n.`name`) AND n.name =~ \'(?i)Alice\' AND HAS (n.`since`) AND r.since = \'years\' AND ( HAS (n.`email`) AND n.email = \'alice@home.com\' OR ( HAS (n.`email`) AND n.`email` = \'alice@home.de\' AND HAS (n.`country`) AND n.`country` = \'de_DE\' ) ) ) )
+      """;
+      condition = [
+        { $and: [
+          { 'n.name': /Alice/i, },
+          { 'r.since' : 'years' },
+          $or: [
+            { 'n.email': "alice@home.com" },
+            $and: [
+              { 'email': "alice@home.de" },
+              { 'country': "de_DE" }
+            ],
+          ]
+        ]}
+      ]
+      expect(new helpers.ConditionalParameters(condition, { identifier: 'n', valuesToParameters: false }).toString()).to.be.equal resultShouldBe
+
+    it 'expect to use mathematical operators', ->
       resultShouldBe = """
       ( ( HAS (n.`name`) AND n.name =~ \'(?i)Alice\' AND HAS (n.`since`) AND r.since = \'years\' AND ( HAS (n.`email`) AND n.email = \'alice@home.com\' OR ( HAS (n.`email`) AND n.`email` = \'alice@home.de\' AND HAS (n.`country`) AND n.`country` = \'de_DE\' ) ) ) )
       """;

@@ -804,19 +804,6 @@ describe 'Neo4jMapper', ->
         expect(node.data.nested.hasValue).to.be true
         done()
 
-    it 'expect to query nodes with more complex queries (regex for instance)', (done) ->
-      uid = new Date().getTime()
-      Person = Node.register_model('Person')
-      new Person( { uid: uid, name: 'Alice' } ).save (err, alice) ->
-        expect(err).to.be null
-        Person.find { uid: uid, name: /^alice$/i }, (err, found, debug) ->
-          expect(err).to.be null
-          expect(found).to.have.length 1
-          p = found[0]
-          expect(p.data.uid).to.be.equal uid
-          expect(p.data.name).to.be.equal alice.data.name
-          done()
-
   describe 'relationships (incoming, outgoing and between nodes)', ->
 
     it 'expect to create a relationship between nodes in any direction', (done) ->
@@ -956,6 +943,66 @@ describe 'Neo4jMapper', ->
               expect(result[0].to.id).to.be.above 0
               expect(result[1].to.id).to.be.above 0
               done()
+
+  describe 'queries acceptance', ->
+
+    it 'expect to query nodes with regex', (done) ->
+      uid = new Date().getTime()
+      Person = Node.register_model('Person')
+      new Person( { uid: uid, name: 'Alice' } ).save (err, alice) ->
+        expect(err).to.be null
+        Person.find { uid: uid, name: /^alice$/i }, (err, found, debug) ->
+          expect(err).to.be null
+          expect(found).to.have.length 1
+          p = found[0]
+          expect(p.data.uid).to.be.equal uid
+          expect(p.data.name).to.be.equal alice.data.name
+          done()
+
+    it 'expect to query correctly with $and|$or|$not and HAS() with and without paramaters', (done) ->
+      # In this test case we test all query building features at once
+      # so it's kind of an acceptance test
+      # and this tast maybe the one who brakes the most on changes ;)
+      uid = -> new Date().getTime()
+      # we label to speed query up and to define testspecific graph
+      labelName = "Label#{uid()}"
+      Node.register_model labelName, { fields: { indexes: { email: true } } }, (err, Model) ->
+        new Model( email: 'jackblack@tenacio.us', job: 'Actor' ).save (err, jb) ->
+          expect(err).to.be null
+          new Model( name: 'Jack Black', job: 'Actor' ).save (err, jb) ->
+            expect(err).to.be null
+            where = {
+              $and: [
+                {
+                  job: 'Actor'
+                }
+                {
+                  $or: [
+                    {
+                      email: /^jackblack@tenacio\.us$/
+                    }
+                    {
+                      name: 'Jack Black'
+                    }
+                  ]
+                }
+              ]
+            }
+            Node::cypher._useParameters = false
+            # excpetion here, check query string
+            expect(Model.find(where).toCypherQuery()).to.be.equal """
+              START n = node(*) MATCH n:#{labelName}  WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n;
+            """
+            Model.find where, (err, found) ->
+              expect(err).to.be null
+              expect(found).to.have.length 2
+              # test also with parametsr
+              Node::cypher._useParameters = true
+              Model.find where, (err, found) ->
+                expect(err).to.be null
+                expect(found).to.have.length 2
+                done()
+
 
   describe 'path algorithms', ->
 
