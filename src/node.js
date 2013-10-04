@@ -1327,8 +1327,11 @@ Node.prototype.match = function(string, cb) {
 // Can be a string or an array
 // e.g. as string:  'award.name AS Award, awardee.name AS WonBy'
 // e.g. as array: [ 'award.name AS Award', 'awardee.name AS WonBy' ]
-Node.prototype.return = function(returnStatement, cb) {
-  this.cypher.return_properties = [];
+Node.prototype.return = function(returnStatement, cb, options) {
+  if (typeof options === 'undefined')
+    options = { add: false };
+  if (!options.add)
+    this.cypher.return_properties = [];
   if (returnStatement) {
     this.cypher.return_properties = this.cypher.return_properties.concat(
       (returnStatement.constructor === Array) ? returnStatement : returnStatement.split(', ')

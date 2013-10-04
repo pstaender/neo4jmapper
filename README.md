@@ -281,7 +281,7 @@ Like in mongodb you can use **AND**, **OR**, **XOR** + **NOT** operators for you
     .start()
     .match('league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]->award')
     .where({ 'league.name': 'September Volleyball League' })
-    .returnOnly( 'award.name AS Award, TYPE(r) AS AwardType' )
+    .return( 'award.name AS Award, TYPE(r) AS AwardType' )
     .stream(function(game) {
       // query: MATCH league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]->award  WHERE ( HAS (n.`league.name`) AND league.name = 'September Volleyball League' ) RETURN award.name AS Award, TYPE(r) AS AwardType;
       if (game)
