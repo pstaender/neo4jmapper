@@ -346,8 +346,8 @@ Keep in mind that there is **no extra loading executed on stream results** to ke
 The query method names are heavily inspired by mongodb and mongoose - so most of them should sound familiar in case you have worked with them:
 
   * find, findOne, findById, findByUniqueKeyValue
-  * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhere, andWhereNode, …
-  * whereHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …
+  * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhereNode, …
+  * andHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …
   * match
   * limit
   * skip
@@ -692,6 +692,7 @@ Regulary no API changes in a beta; but neo4jmapper is still in an early developm
     * Node.dropEntireIndex -> Node.drop_entire_index
     * Node.getIndex -> Node.get_index
   * **Removed**: `Node.findByUniqueKeyValue`, use `Node.findByKeyValue` or `Node.findOneByKeyValue` instead
+  * **Removed**: `Node.find().andWhere()`, use `Node.find().where()` instead and combine your conditions with an `$and` operator if needed
 
 
 ## LICENSE

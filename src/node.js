@@ -1355,13 +1355,8 @@ Node.prototype.start = function(start, cb) {
   return self; // return self for chaining
 }
 
-Node.prototype.where = function(where, cb) {
+Node.prototype.where = function(where, cb, options) {
   this.cypher.where = [];
-  this._query_history_.push({ resetWhere: true });
-  return this.andWhere(where, cb);
-}
-
-Node.prototype.andWhere = function(where, cb, _options) {
   if (_.isObject(where)) {
     if (Object.keys(where).length === 0) {
       // return here
@@ -1372,15 +1367,15 @@ Node.prototype.andWhere = function(where, cb, _options) {
       where = [ where ];
   }
 
-  if (typeof _options === 'undefined')
-    _options = {};
-  if (typeof _options.identifier !== 'string')
+  if (typeof options === 'undefined')
+    options = {};
+  if (typeof options.identifier !== 'string')
     // good or bad idea that we use by default n as identifier?
-    _options.identifier = 'n';
+    options.identifier = 'n';
 
   // add identifier to return properties if not exists already
-  if (_.indexOf(this.cypher.return_properties, _options.identifier) === -1) 
-    this.cypher.return_properties.push(_options.identifier);
+  if (_.indexOf(this.cypher.return_properties, options.identifier) === -1) 
+    this.cypher.return_properties.push(options.identifier);
 
 
   if (this.cypher.start) {
@@ -1388,21 +1383,21 @@ Node.prototype.andWhere = function(where, cb, _options) {
       this.cypher.start.n = 'node(*)';
     if (this.cypher.start.m)
       this.cypher.start.m = 'node(*)';
-    if (_options.identifier === 'r')
+    if (options.identifier === 'r')
       this.cypher.start.r = 'relationship(*)';
   }
 
   // use parameters for query or send an ordinary string?
   // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
-  if (typeof _options.valuesToParameters === 'undefined')
-    _options.valuesToParameters = Boolean(this.cypher._useParameters);
+  if (typeof options.valuesToParameters === 'undefined')
+    options.valuesToParameters = Boolean(this.cypher._useParameters);
   // if already parameters are added, starting with {value#i} instead of {value0}
   if ((this.cypher.parameters)&&(this.cypher.parameters.length > 0))
-    _options.parametersStartCountAt = this.cypher.parameters.length;
-  var condition = new helpers.ConditionalParameters(_.extend(where),_options)
+    options.parametersStartCountAt = this.cypher.parameters.length;
+  var condition = new helpers.ConditionalParameters(_.extend(where), options)
     , whereCondition = condition.toString();
   this.cypher.where.push(whereCondition);
-  if (_options.valuesToParameters)
+  if (options.valuesToParameters)
     this._addParametersToCypher(condition.parameters);
 
   this._query_history_.push({ WHERE: whereCondition });
@@ -1412,42 +1407,26 @@ Node.prototype.andWhere = function(where, cb, _options) {
 }
 
 Node.prototype.whereStartNode = function(where, cb) {
-  this.cypher.where = [];
-  return this.andWhere(where, cb, { identifier: 'n' });
+  return this.where(where, cb, { identifier: 'n' });
 }
 
 Node.prototype.whereEndNode = function(where, cb) {
-  this.cypher.where = [];
-  return this.andWhere(where, cb, { identifier: 'm' });
+  return this.where(where, cb, { identifier: 'm' });
 }
 
 Node.prototype.whereNode = function(where, cb) {
-  this.cypher.where = [];
-  return this.andWhere(where, cb, { identifier: 'n' });
+  return this.where(where, cb, { identifier: 'n' });
 }
 
 Node.prototype.whereRelationship = function(where, cb) {
-  this.cypher.where = [];
-  return this.andWhere(where, cb, { identifier: 'r' });
-}
-
-Node.prototype.andWhereStartNode = function(where, cb) {
-  return this.andWhere(where, cb, {identifier: 'n' });
-}
-
-Node.prototype.andWhereEndNode = function(where, cb) {
-  return this.andWhere(where, cb, { identifier: 'm' });
-}
-
-Node.prototype.andWhereNode = function(where, cb) {
-  return this.andWhere(where, cb, { identifier: 'n' });
-}
-
-Node.prototype.andWhereRelationship = function(where, cb) {
-  return this.andWhere(where, cb, { identifier: 'r' });
+  return this.where(where, cb, { identifier: 'r' });
 }
 
 Node.prototype.whereHasProperty = function(property, identifier, cb) {
+  return this.andHasProperty(property, identifier, cb);
+}
+
+Node.prototype.andHasProperty = function(property, identifier, cb) {
   if (_.isFunction(identifier)) {
     cb = identifier;
     identifier = null;
@@ -1475,19 +1454,19 @@ Node.prototype.whereHasProperty = function(property, identifier, cb) {
 }
 
 Node.prototype.whereNodeHasProperty = function(property, cb) {
-  return this.whereHasProperty(property, 'n', cb);
+  return this.andHasProperty(property, 'n', cb);
 }
 
 Node.prototype.whereStartNodeHasProperty = function(property, cb) {
-  return this.whereHasProperty(property, 'n', cb);
+  return this.andHasProperty(property, 'n', cb);
 }
 
 Node.prototype.whereEndNodeHasProperty = function(property, cb) {
-  return this.whereHasProperty(property, 'm', cb);
+  return this.andHasProperty(property, 'm', cb);
 }
 
 Node.prototype.whereRelationshipHasProperty = function(property, cb) {
-  return this.whereHasProperty(property, 'r', cb);
+  return this.andHasProperty(property, 'r', cb);
 }
 
 Node.prototype.delete = function(cb) {

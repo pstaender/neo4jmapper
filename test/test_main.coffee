@@ -404,7 +404,7 @@ describe 'Neo4jMapper', ->
       n = n.findAll().limit(100).where("HAS (n.collection) AND n.collection = 'users'")
       n.exec (err,data) ->
         n = new Node()
-        n = n.findAll().limit(10).whereHasProperty('collection').andWhere("n.collection = 'users'")
+        n = n.findAll().limit(10).where("n.collection = 'users'")
         n.exec (err,found) ->
           n = n.findAll().limit(10).where [ $and: [ { 'HAS (n.collection)' }, { 'n.collection': /^users$/i } ] ]
           n.exec ->

@@ -213,11 +213,11 @@ describe 'Neo4jMapper (cypher queries)', ->
             { value0: true, value1: false, value2: 'true', value3: 123.2, value4: 123, value5: '123', value6: '[a-z]' }
           ]
 
-        "Node.find({ a: 1 }).andWhere({ b: 2})":
+        "Node.find({ $and : [ { a: 1 }, { b: 2} ] })":
           [
-             Node.find({ a: 1 }).andWhere({ b: 2})
-            "START n = node(*) WHERE ( HAS (n.`a`) AND n.`a` = 1 ) AND ( HAS (n.`b`) AND n.`b` = 2 ) RETURN n;"
-            "START n = node(*) WHERE ( HAS (n.`a`) AND n.`a` = {value0} ) AND ( HAS (n.`b`) AND n.`b` = {value1} ) RETURN n;"
+             Node.find({ $and : [ { a: 1 }, { b: 2} ] })
+            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = 1 AND HAS (n.`b`) AND n.`b` = 2 ) ) RETURN n;"
+            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = {value0} AND HAS (n.`b`) AND n.`b` = {value1} ) ) RETURN n;"
             { value0: 1, value1: 2 }
           ]
         
@@ -235,9 +235,9 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) MATCH n:Actor WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
         
-        "Node.findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')":
+        "Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')":
           [
-            Node.findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')
+            Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')
             "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.city = 'berlin' ) RETURN n AS Person LIMIT 1;"
           ]
 
