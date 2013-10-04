@@ -297,8 +297,33 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*), r = relationship(*) WHERE ( HAS (r.`length`) AND r.`length` = 20 ) RETURN n, r LIMIT 1;"
           ]
 
+        #
+        # Custom Graph Queries
+        #
+
+        # http://gist.neo4j.org/?6506717
+        "Graph.start().match(…":
+          [
+            Graph
+            .start()
+            .match(  '(game:Game)-[c:contains]->(position:Position)')
+            .where({ 'game.title': "Wes vs Alvin" })
+            .with(   'game, collect(position) AS positions')
+            .match(  'game-[c:contains]->(position:Position)')
+            .with(   'positions, c, position')
+            .orderBy({ 'c.move': 'ASC' })
+            .match(   'position-[m:move]->next')
+            .where(   'next IN (positions)')
+            .return(  '(c.move+1)/2 as move, position.to_move as player, m.move, next.score as score')
+            .limit(20),
+          "MATCH (game:Game)-[c:contains]->(position:Position) WHERE HAS (game.title) AND game.title = 'Wes vs Alvin' WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position) WITH positions, c, position ORDER BY c.move ASC MATCH position-[m:move]->next WHERE next IN (positions) RETURN (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score LIMIT 20;",
+          "MATCH (game:Game)-[c:contains]->(position:Position) WHERE HAS (game.title) AND game.title = {value0} WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position) WITH positions, c, position ORDER BY c.move ASC MATCH position-[m:move]->next WHERE next IN (positions) RETURN (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score LIMIT 20;",
+          { value0: 'Wes vs Alvin'}
+          ]
+
       # Build queries without parameters
       Node::cypher._useParameters = false
+      Graph::cypher._useParameters = false
       map = testQueries()
 
       # check all other queries
@@ -315,6 +340,7 @@ describe 'Neo4jMapper (cypher queries)', ->
 
       # Build queries with parameters
       Node::cypher._useParameters = true
+      Graph::cypher._useParameters = true
       map = testQueries()
       for functionCall of map
         todo = map[functionCall]

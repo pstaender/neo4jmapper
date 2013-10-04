@@ -32,30 +32,58 @@ var initGraph = function(neo4jrestful) {
     if (url) {
       this.neo4jrestful = new this.neo4jrestful.constructor(url);
     }
+    this.resetQuery();
   }
 
-  Graph.prototype.neo4jrestful = neo4jrestful;
+  Graph.prototype.neo4jrestful                  = neo4jrestful;
+  Graph.prototype._query_history_               = null;
+  // see graph.resetQuery for initialization
+  Graph.prototype.cypher = {
+    query: null,           // the cypher query string
+    parameters: null,      // array with paremeters
+    _useParameters: false  // better performance + rollback possible (upcoming feature)
+  };
+  Graph.prototype._addParametersToCypher        = Node.prototype._addParametersToCypher;
 
-  // Will contain the info response of the neo4j database
+  // ### Will contain the info response of the neo4j database
   Graph.prototype.info = null;
 
-  // Shortcut for neo4jrestul.query
+  Graph.prototype.exec = function(cypherQuery, cb) {
+    if (typeof cypherQuery !== 'string') {
+      cb = cypherQuery;
+      cypherQuery = this.cypherQuery;
+    }
+    if (typeof cb === 'function') {
+      this.query(cypherQuery, cb);
+    }
+    return this;
+  }
+
+  // ### Shortcut for neo4jrestul.query
   Graph.prototype.query = function(cypher, options, cb) {
-    return this.neo4jrestful.query(cypher,options,cb);
+    this.cypherQuery = cypher;
+    return this.neo4jrestful.query(cypher, options, cb);
   }
 
-  // Shortcut for neo4jrestul.stream
-  Graph.prototype.stream = function(cypher, options, cb) {
-    return this.neo4jrestful.stream(cypher,options,cb);
+  // ### Shortcut for neo4jrestul.stream
+  Graph.prototype.stream = function(cypherQuery, options, cb) {
+    if (typeof cypherQuery === 'string') {
+      this.cypherQuery = cypherQuery;
+    } else {
+      cb = options;
+      options = cypherQuery;
+      cypherQuery = this.cypherQuery;
+    }
+    return this.neo4jrestful.stream(cypherQuery, options, cb);
   }
 
-  // Deletes *all* nodes and *all* relationships
+  // ### Deletes *all* nodes and *all* relationships
   Graph.prototype.wipeDatabase = function(cb) {
     var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";
     return this.query(query,cb);
   }
 
-  // Counts all objects of a specific type: (all|node|relationship|[nr]:Movie)
+  // ### Counts all objects of a specific type: (all|node|relationship|[nr]:Movie)
   Graph.prototype.countAllOfType = function(type, cb) {
     var query = '';
     if      (/^n(ode)*$/i.test(type))
@@ -78,22 +106,22 @@ var initGraph = function(neo4jrestful) {
     });
   }
 
-  // Counts all relationships
+  // ### Counts all relationships
   Graph.prototype.countRelationships = function(cb) {
     return this.countAllOfType('relationship', cb);
   }
 
-  // Counts all nodes
+  // ### Counts all nodes
   Graph.prototype.countNodes = function(cb) {
     return this.countAllOfType('node', cb);
   }
 
-  // Counts all relationships and nodes
+  // ### Counts all relationships and nodes
   Graph.prototype.countAll = function(cb) {
     return this.countAllOfType('all', cb);
   }
 
-  // Queries information of the database and stores it on `this.info` 
+  // ### Queries information of the database and stores it on `this.info` 
   Graph.prototype.about = function(cb) {
     var self = this;
     if (this.info)
@@ -106,6 +134,105 @@ var initGraph = function(neo4jrestful) {
         if (typeof cb === 'function')
           cb(err,info);
       });
+  }
+
+  // ### Reset the query history
+  Graph.prototype.resetQuery = function() {
+    this._query_history_ = [];
+    _.extend(this.cypher, Graph.prototype.cypher);
+    this.cypher.parameters = [];
+    return this;
+  }
+
+  // ### Startpoint to begin query chaining
+  // e.g. Graph.start().where( …
+  Graph.prototype.start = function(start, cb) {
+    this.resetQuery();
+    if (typeof start !== 'string') {
+      cb = start;
+      start = null;
+    }
+    this._query_history_.push({ START: start });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.match = function(match, cb) {
+    this._query_history_.push({ MATCH: match });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.with = function(withStatement, cb) {
+    this._query_history_.push({ WITH: withStatement });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.limit = function(limit, cb) {
+    if (!parseInt(limit))
+      throw Error('limit must be an integer number');
+    this._query_history_.push({ LIMIT: parseInt(limit) });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.orderBy = function(property, cb) {
+    var direction = '';
+    if (typeof property === 'object') {
+      var key = Object.keys(property)[0];
+      cb = direction;
+      direction = property[key];
+      property = key;
+      direction = ( (typeof direction === 'string') && ((/^(ASC|DESC)$/).test(direction)) ) ? direction : 'ASC';
+    } else if (typeof property === 'string') {
+      direction = property;
+    }
+    this._query_history_.push({ ORDER_BY: property+' '+direction });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.where = function(where, cb) {
+    if (!_.isArray(where))
+      where = [ where ];
+    var options = { valuesToParameters: this.cypher._useParameters };
+    var condition = new helpers.ConditionalParameters(where, options)
+    , whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
+    this._query_history_.push({ WHERE: whereCondition });
+    if (this.cypher._useParameters)
+      this._addParametersToCypher(condition.parameters);
+    return this.exec(cb);
+  }
+
+  Graph.prototype.return = function(returnStatement, cb) {
+    this._query_history_.push({ RETURN: returnStatement });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.delete = function(deleteStatement, cb) {
+    this._query_history_.push({ DELETE: deleteStatement });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.toCypherQuery = function(options) {
+    var s = ''
+      , defaultOptions = {
+        niceFormat: true
+      };
+    if (typeof options !== 'object')
+      options = defaultOptions;
+    else
+      _.defaults(options, defaultOptions);
+    for (var i=0; i < this._query_history_.length; i++) {
+      var queryFragment = this._query_history_[i]
+        , attribute = Object.keys(this._query_history_[i])[0]
+        , forQuery = this._query_history_[i][attribute];
+      // remove underscore from attribute, e.g. ORDER_BY -> ORDER BY
+      attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');
+      if (options.niceFormat) {
+        // extend attribute-string with whitespace
+        attribute = attribute + Array(10 - attribute.length).join(' ');
+      }
+      if (forQuery !== null)
+        s += '\n'+attribute+' '+String(forQuery);
+    }
+    return s+';';
   }
 
   Graph.prototype.log = function(){ /* > /dev/null */ };
@@ -144,6 +271,10 @@ var initGraph = function(neo4jrestful) {
 
   Graph.about = function(cb) {
     return new Graph().about(cb);
+  }
+
+  Graph.start = function(start, cb) {
+    return new Graph().start(start, cb);
   }
 
   return Graph;

@@ -953,24 +953,24 @@ Node.prototype._start_node_id = function(fallback) {
     return this.cypher.by_id;
   else
     return (this.hasId()) ? this.id : fallback; 
-};
+}
 
 Node.prototype._end_node_id = function(fallback) {
   if (typeof fallback === 'undefined')
     fallback = '*'
   return (this.cypher.to > 0) ? this.cypher.to : fallback; 
-};
+}
 
 Node.prototype._addParametersToCypher = function(parameters) {
-    if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
-      if (!this.cypher.parameters)
-        this.cypher.parameters = [];
-      for (var i=0; i < parameters.length; i++) {
-        this.cypher.parameters.push(parameters[i]);
-      }
+  if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
+    if (!this.cypher.parameters)
+      this.cypher.parameters = [];
+    for (var i=0; i < parameters.length; i++) {
+      this.cypher.parameters.push(parameters[i]);
     }
-    return this.cypher.parameters;
-  },
+  }
+  return this.cypher.parameters;
+}
 
 Node.prototype.singletonForQuery = function(cypher) {
   var singleton = this.singleton()
@@ -1234,7 +1234,9 @@ Node.prototype.allRelationships = function(relation, cb) {
 
 Node.prototype.limit = function(limit, cb) {
   this._query_history_.push({ LIMIT: limit });
-  this.cypher.limit = Number(limit);
+  if (!parseInt(limit))
+    throw Error('limit must be an integer number');
+  this.cypher.limit = parseInt(limit);
   if (this.cypher.action === 'DELETE')
     throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
   this.exec(cb);
@@ -1264,7 +1266,7 @@ Node.prototype.orderBy = function(property, cb, identifier) {
     cb = direction;
     direction = property[key];
     property = key;
-    if ( (typeof direction === 'string') && ((/^(ASC|DESC)$/i).test(direction)) ) {
+    if ( (typeof direction === 'string') && ((/^(ASC|DESC)$/).test(direction)) ) {
       this.cypher.order_direction = direction;
     }
   } else if (typeof property === 'string') {
