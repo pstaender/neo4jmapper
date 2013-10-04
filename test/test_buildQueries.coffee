@@ -238,12 +238,12 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')":
           [
             Node.findOne().whereHasProperty('name').andWhere({ 'n.city': 'berlin' }).return('n AS Person')
-            "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.city = 'berlin' ) RETURN n, n AS Person LIMIT 1;"
+            "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.city = 'berlin' ) RETURN n AS Person LIMIT 1;"
           ]
 
         "Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).returnOnly('n.name AS Name')":
           [
-             Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).returnOnly('n.name AS Name')
+             Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).return('n.name AS Name')
             "START n = node(*) WHERE ( HAS (n.`city`) AND n.city = 'berlin' AND ( HAS (n.`name`) AND n.name = 'peter' AND NOT ( HAS (n.`name`) AND n.name = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
           ]
         

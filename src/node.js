@@ -113,8 +113,9 @@ Node.prototype.fields = {
 };
 
 Node.prototype.uri = null;                        // uri of the node
-Node.prototype._response_ = null;                  // original response object
-Node.prototype._modified_query_ = false;          // flag to remember that a query chaining method was invoked 
+Node.prototype._response_ = null;                 // original response object
+// Node.prototype._modified_query_ = false;       // flag to remember that a query chaining method was invoked
+Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query 
 Node.prototype._stream_ = null;                   // flag for processing result data
 Node.prototype.is_singleton = false;              // flag that this object is a singleton
 Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
@@ -263,7 +264,7 @@ Node.prototype.resetQuery = function() {
   this.cypher.match = [];
   this.cypher.return_properties = [];
   this.cypher.start = {};
-  this._modified_query_ = false;
+  this._query_history_ = [];
   if (this.id)
     this.cypher.from = this.id;
   return this; // return self for chaining
@@ -282,7 +283,6 @@ Node.prototype.flattenData = function(useReference) {
   // strongly recommend not to mutate attached node's data
   if (typeof useReference !== 'boolean')
     useReference = false;
-  this._modified_query_ = false;
   if ((typeof this.data === 'object') && (this.data !== null)) {
     var data = (useReference) ? this.data : _.extend(this.data);
     data = helpers.flattenObject(data);
@@ -300,7 +300,6 @@ Node.prototype.unflattenData = function(useReference) {
   // strongly recommend not to mutate attached node's data
   if (typeof useReference !== 'boolean')
     useReference = false;
-  this._modified_query_ = false;
   var data = (useReference) ? this.data : _.extend(this.data);
   return helpers.unflattenObject(data);
 }
@@ -486,7 +485,11 @@ Node.prototype._hashData_ = function() {
     return helpers.md5(JSON.stringify(this.data));
   else
     return null;
-} 
+}
+
+// Node.prototype.queryIsModified = function() {
+//   return Boolean(this._query_history_.length > 0);
+// }
 
 Node.prototype.isPersisted = function(setToTrueOrFalse) {
   if (typeof setToTrueOrFalse !== 'undefined') {
@@ -525,7 +528,7 @@ Node.prototype.onSave = function(cb) {
     return cb(Error('Singleton instances can not be persisted'), null);
   if (!this.hasValidData())
     return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
-  this._modified_query_ = false;
+  this.resetQuery();
   this.applyDefaultValues();
   var method = null;
 
@@ -664,7 +667,7 @@ Node.prototype.populateWithDataFromResponse = function(data) {
     node = new Node();
   else
     node = this;
-  node._modified_query_ = false;
+  node.resetQuery();
   if (data) {
     if (_.isObject(data) && (!_.isArray(data)))
       node._response_ = data;
@@ -697,7 +700,7 @@ Node.prototype.withLabel = function(label, cb) {
   // return here if we have an instances node
   if ( (self.hasId()) || (typeof label !== 'string') )
     return self; // return self for chaining
-  self._modified_query_ = true;
+  self._query_history_.push({ withLabel: label });
   self.cypher.label = label;
   self.exec(cb);
   return self; // return self for chaining
@@ -763,7 +766,6 @@ Node.prototype.pathBetween = function(start, end, options, cb) {
 // Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) { }
 
 Node.prototype.count = function(identifier, cb) {
-  this._modified_query_ = true;
   this.cypher._count = true;
   if (typeof identifier === 'function') {
     cb = identifier;
@@ -778,7 +780,8 @@ Node.prototype.count = function(identifier, cb) {
   }
   this.cypher.return_properties = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
   if (this.cypher._distinct)
-    this.cypher._distinct = false;
+    // set `this.cypher._distinct` to false
+    this.distinct(undefined, false);
   // we only need the count column to return in this case
   if (typeof cb === 'function')
     this.exec(function(err, result, debug){
@@ -788,6 +791,7 @@ Node.prototype.count = function(identifier, cb) {
       }
       cb(err, result, debug);
     });
+  this._query_history_.push({ count: { distinct: this.cypher._distinct, identifier: identifier } });
   return this; // return self for chaining
 }
 
@@ -1126,7 +1130,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
 
 Node.prototype.incomingRelationships = function(relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query_ = true;
+  self._query_history_.push({ incomingRelationships: true }); // only as a ”flag”
   if (typeof relation !== 'function') {
     self.cypher.relationship = relation;
   } else {
@@ -1146,7 +1150,7 @@ Node.prototype.incomingRelationships = function(relation, cb) {
 
 Node.prototype.outgoingRelationships = function(relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query_ = true;
+  self._query_history_.push({ outgoingRelationships: true }); // only as a ”flag”
   if (typeof relation !== 'function') {
     self.cypher.relationship = relation;
   } else {
@@ -1166,7 +1170,7 @@ Node.prototype.outgoingRelationships = function(relation, cb) {
 
 Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query_ = true;
+  self._query_history_.push({ incomingRelationshipsFrom: true }); // only as a ”flag”
   self.cypher.from = self.id || null;
   self.cypher.to = helpers.getIdFromObject(node);
   if (typeof relation !== 'function')
@@ -1177,7 +1181,7 @@ Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
 
 Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query_ = true;
+  self._query_history_.push({ outgoingRelationshipsTo: true }); // only as a ”flag”
   self.cypher.to = helpers.getIdFromObject(node);
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
@@ -1187,7 +1191,7 @@ Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
 
 Node.prototype.allDirections = function(relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query_ = true;
+  self._query_history_.push({ allDirections: true });
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
   self.cypher.node_identifier = 'n';
@@ -1203,7 +1207,7 @@ Node.prototype.allDirections = function(relation, cb) {
 
 Node.prototype.relationshipsBetween = function(node, relation, cb) {
   var self = this.singletonForQuery();
-  self._modified_query_ = true;
+  self._query_history_.push({ relationshipsBetween: true });
   self.cypher.to = helpers.getIdFromObject(node);
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
@@ -1221,7 +1225,7 @@ Node.prototype.allRelationships = function(relation, cb) {
     cb = relation;
     relation = '';
   }
-  self._modified_query_ = true;
+  self._query_history_.push({ allRelationships: true });
   self.cypher.match.push('n'+label+'-[r'+relation+']-()');
   self.cypher.return_properties = ['r'];
   self.exec(cb);
@@ -1229,7 +1233,7 @@ Node.prototype.allRelationships = function(relation, cb) {
 }
 
 Node.prototype.limit = function(limit, cb) {
-  this._modified_query_ = true;
+  this._query_history_.push({ LIMIT: limit });
   this.cypher.limit = Number(limit);
   if (this.cypher.action === 'DELETE')
     throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
@@ -1238,21 +1242,22 @@ Node.prototype.limit = function(limit, cb) {
 }
 
 Node.prototype.skip = function(skip, cb) {
-  this._modified_query_ = true;
   this.cypher.skip = Number(skip);
+  this._query_history_.push({ SKIP: this.cypher.skip });
   this.exec(cb);
   return this; // return self for chaining
 }
 
-Node.prototype.distinct = function(cb) {
-  this._modified_query_ = true;
-  this.cypher._distinct = true;
+Node.prototype.distinct = function(cb, value) {
+  if (typeof value !== 'boolean')
+    value = true;
+  this.cypher._distinct = value;
+  this._query_history_.push({ dictinct: value });
   this.exec(cb);
   return this; // return self for chaining
 }
 
 Node.prototype.orderBy = function(property, cb, identifier) {
-  this._modified_query_ = true;
   var direction = '';
   if (typeof property === 'object') {
     var key = Object.keys(property)[0];
@@ -1288,6 +1293,7 @@ Node.prototype.orderBy = function(property, cb, identifier) {
     // s.th. like ORDER BY n.name ASC
     this.cypher.order_by = property;
   }
+  this._query_history_.push({ ORDER_BY: this.cypher.order_by });
   this.exec(cb);
   return this; // return self for chaining
 }
@@ -1311,6 +1317,7 @@ Node.prototype.orderRelationshipBy = function(property, direction, cb) {
 // ### Adds a string to the MATCH statement
 // e.g.: 'p:PERSON-[:KNOWS|:FOLLOWS]->a:Actor-[:ACTS]->m'
 Node.prototype.match = function(string, cb) {
+  this._query_history_.push({ MATCH: string });
   this.cypher.match.push(string);
   this.exec(cb);
   return this; // return self for chaining
@@ -1321,18 +1328,15 @@ Node.prototype.match = function(string, cb) {
 // e.g. as string:  'award.name AS Award, awardee.name AS WonBy'
 // e.g. as array: [ 'award.name AS Award', 'awardee.name AS WonBy' ]
 Node.prototype.return = function(returnStatement, cb) {
-  if (returnStatement)
+  this.cypher.return_properties = [];
+  if (returnStatement) {
     this.cypher.return_properties = this.cypher.return_properties.concat(
       (returnStatement.constructor === Array) ? returnStatement : returnStatement.split(', ')
     );
+    this._query_history_.push({ RETURN: this.cypher.return_properties });
+  }
   this.exec(cb);
   return this; // return self for chaining
-}
-
-// ### Sets the RETURN statement explicit to that value(s)
-Node.prototype.returnOnly = function(returnStatement, cb) {
-  this.cypher.return_properties = [];
-  return this.return(returnStatement, cb);
 }
 
 // ### Sets or resets the START statement
@@ -1340,25 +1344,24 @@ Node.prototype.start = function(start, cb) {
   var self = this;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
-  self._modified_query_ = true;
   if (self.label) self.withLabel(self.label);
   //self.resetQuery();
   if (typeof start !== 'string')
     self.cypher.start = null;
   else
     self.cypher.start = start;
+  self._query_history_.push({ START: self.cypher.start });
   self.exec(cb);
   return self; // return self for chaining
 }
 
 Node.prototype.where = function(where, cb) {
-  this._modified_query_ = true;
   this.cypher.where = [];
+  this._query_history_.push({ resetWhere: true });
   return this.andWhere(where, cb);
 }
 
 Node.prototype.andWhere = function(where, cb, _options) {
-  this._modified_query_ = true;
   if (_.isObject(where)) {
     if (Object.keys(where).length === 0) {
       // return here
@@ -1396,10 +1399,13 @@ Node.prototype.andWhere = function(where, cb, _options) {
   // if already parameters are added, starting with {value#i} instead of {value0}
   if ((this.cypher.parameters)&&(this.cypher.parameters.length > 0))
     _options.parametersStartCountAt = this.cypher.parameters.length;
-  var condition = new helpers.ConditionalParameters(_.extend(where),_options);
-  this.cypher.where.push(condition.toString());
+  var condition = new helpers.ConditionalParameters(_.extend(where),_options)
+    , whereCondition = condition.toString();
+  this.cypher.where.push(whereCondition);
   if (_options.valuesToParameters)
     this._addParametersToCypher(condition.parameters);
+
+  this._query_history_.push({ WHERE: whereCondition });
 
   this.exec(cb);
   return this; // return self for chaining
@@ -1446,7 +1452,6 @@ Node.prototype.whereHasProperty = function(property, identifier, cb) {
     cb = identifier;
     identifier = null;
   }
-  this._modified_query_ = true;
   if (typeof property !== 'string') {
     // we need a property to proceed
     return cb(Error('Property name is mandatory.'),null);
@@ -1463,6 +1468,7 @@ Node.prototype.whereHasProperty = function(property, identifier, cb) {
     if (typeof identifier !== 'string')
       identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
     this.cypher.hasProperty.push(identifier+'.`'+property+'`');
+    this._query_history_.push({ HAS: { identifier: identifier, property: property }});
   }
   this.exec(cb);
   return this; // return self for chaining
@@ -1487,7 +1493,7 @@ Node.prototype.whereRelationshipHasProperty = function(property, cb) {
 Node.prototype.delete = function(cb) {
   if (this.hasId())
     return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
-  this._modified_query_ = true;
+  this._query_history_.push({ DELETE: true });
   this.cypher.action = 'DELETE';
   if (this.cypher.limit)
     throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
@@ -1835,7 +1841,7 @@ Node.prototype.find = function(where, cb) {
   var self = this;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
-  self._modified_query_ = true;
+  self._query_history_.push({ find: true });
   if (self.label) self.withLabel(self.label);
   if ((typeof where === 'string')||(typeof where === 'object')) {
     return self.where(where,cb);
@@ -1850,7 +1856,6 @@ Node.prototype.findOne = function(where, cb) {
     cb = where;
     where = undefined;
   }
-
   self = this.find(where);
   self.cypher.limit = 1;
   self.exec(cb);
@@ -1861,6 +1866,7 @@ Node.prototype.findById = function(id, cb) {
   var self = this;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
+  self._query_history_.push({ findById: id });
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
     return self.neo4jrestful.get(this.__type__+'/'+id, function(err, object) {
@@ -1895,6 +1901,7 @@ Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
   if (typeof key !== 'string')
     key = 'id';
   if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
+    self._query_history_.push({ findByKeyValue: true });
     var identifier = self.cypher.node_identifier || self.__type_identifier__;
     if (self.cypher.return_properties.length === 0)
       self.cypher.return_properties = [ identifier ];
@@ -1935,7 +1942,7 @@ Node.prototype.findAll = function(cb) {
   var self = this;
   if (!self.is_singleton)
     self = this.singleton(undefined, this);
-  self._modified_query_ = true;
+  self._query_history_.push({ findAll: true });
   self.cypher.limit = null;
   self.cypher.return_properties = ['n'];
   if (self.label) self.withLabel(self.label);

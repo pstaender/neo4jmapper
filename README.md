@@ -520,7 +520,7 @@ There are some steps to take, especially some methods for daily use are missing,
   * implement: relationship (index)
   * implement: stream feature for browser-side-usage
   * documentation
-  * traversals
+  * contionous changing with more than one of each statement
 
 ## Tests
 

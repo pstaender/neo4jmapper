@@ -129,6 +129,8 @@ Path.prototype.toObject = function() {
   };
 }
 
+Path.prototype.resetQuery = function() { return this; }
+
 var initPath = function(neo4jrestful) {
 
   // Ensure that we have a Neo4jRestful client we can work with

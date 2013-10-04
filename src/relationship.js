@@ -286,6 +286,8 @@ Relationship.prototype.onAfterSave = function(node, next, debug) {
   return next(null, node, debug);
 }
 
+Relationship.prototype.resetQuery = function() { return this; }
+
 /*
  * Static singleton methods
  */
