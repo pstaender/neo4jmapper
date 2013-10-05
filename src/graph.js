@@ -135,7 +135,20 @@ var initGraph = function(neo4jrestful) {
     return this.neo4jrestful.stream(cypherQuery, options, cb);
   }
 
-  Graph.prototype.addValue = function(key, value, cb) {
+  Graph.prototype.addValue = function() {
+    throw Error('Use parameters() or addParameter() instead');
+  }
+
+  Graph.prototype.parameters = function(parameters) {
+    if (typeof parameters !== 'object')
+      throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
+    this.cypher._useParameters = true;
+    this.cypher.parameters = parameters;
+    return this;
+  }
+
+  Graph.prototype.addParameter = function(key, value, cb) {
+    throw Error('Use addParameters or addParameter instead');
     if (typeof key === 'object') {
       cb = value;
       value = key[Object.keys(key)[0]];

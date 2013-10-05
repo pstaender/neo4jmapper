@@ -308,7 +308,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               .match('match')
               .onMatch('on match')
               .where('n.name = {value1}')
-              .addValue({value1: 'Bob'})
+              .parameters({value1: 'Bob'})
               .with('with')
               .orderBy('order by')
               .skip(0)

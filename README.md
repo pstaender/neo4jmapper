@@ -770,6 +770,7 @@ Regulary no API changes in a beta; but neo4jmapper is still in an early developm
     * Node.getIndex -> Node.get_index
   * **Removed**: `Node.findByUniqueKeyValue`, use `Node.findByKeyValue` or `Node.findOneByKeyValue` instead
   * **Removed**: `Node.find().andWhere()`, use `Node.find().where()` instead and combine your conditions with an `$and` operator if needed
+  * **Removed**: `Graph.start().addValue` removed, use `Graph.start().addParameters()` or `Graph.start().addParameter()` instead
 
 
 ## LICENSE
