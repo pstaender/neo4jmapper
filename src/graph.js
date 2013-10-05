@@ -144,6 +144,14 @@ var initGraph = function(neo4jrestful) {
     return this;
   }
 
+  /*
+    [START]
+    [MATCH]
+    [WHERE]
+    [WITH [ORDER BY] [SKIP] [LIMIT]]
+    RETURN [ORDER BY] [SKIP] [LIMIT]
+  */
+
   // ### Startpoint to begin query chaining
   // e.g. Graph.start().where( …
   Graph.prototype.start = function(start, cb) {
@@ -166,10 +174,19 @@ var initGraph = function(neo4jrestful) {
     return this.exec(cb);
   }
 
+  Graph.prototype.skip = function(skip, cb) {
+    skip = parseInt(skip);
+    if (!skip)
+      throw Error('SKIP must be an integer');
+    this._query_history_.push({ SKIP: skip });
+    return this.exec(cb);
+  }
+
   Graph.prototype.limit = function(limit, cb) {
-    if (!parseInt(limit))
-      throw Error('limit must be an integer number');
-    this._query_history_.push({ LIMIT: parseInt(limit) });
+    limit = parseInt(limit);
+    if (!limit)
+      throw Error('LIMIT must be an integer');
+    this._query_history_.push({ LIMIT: limit });
     return this.exec(cb);
   }
 

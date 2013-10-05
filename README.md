@@ -45,6 +45,36 @@ Use the full power of the cypher query language:
   });
 ```
 
+You can chain your query elements as much as your want and use conditional parameters in WHERE statements with `Graph`:
+
+```js
+  Graph
+    .start() // initialize the query building; without argument if you want to leave out the START statement
+    .match('(game:Game)-[c:contains]->(position:Position)')
+    .where({ 'game.title': 'Wes vs Alvin' }) // let neo4jmapper escape values for you
+    .with('game, collect(position) AS positions')
+    .match('game-[c:contains]->(position:Position)')
+    .with('positions, c, position')
+    .orderBy('c.move ASC')
+    .match('position-[m:move]->next')
+    .where('next IN (positions)')
+    .return('(c.move+1)/2 as move, position.to_move as player, m.move, next.score as score')
+    .limit(20, cb);
+  /*
+    ~>
+      MATCH     (game:Game)-[c:contains]->(position:Position)
+      WHERE     HAS (game.title) AND game.title = 'Wes vs Alvin'
+      WITH      game, collect(position) AS positions
+      MATCH     game-[c:contains]->(position:Position)
+      WITH      positions, c, position
+      ORDER BY  c.move ASC
+      MATCH     position-[m:move]->next
+      WHERE     next IN (positions)
+      RETURN    (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score
+      LIMIT     20;
+  /*
+```
+
 ### Create and save nodes
 
 ```js
