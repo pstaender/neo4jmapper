@@ -120,7 +120,7 @@ Here is an example containing most of all available methods to build custom quer
     .statement(…)
     .comment(…)
     .exec(cb) // or .stream(cb)
-``
+```
 
 ### Create and save nodes
 

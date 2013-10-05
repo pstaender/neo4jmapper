@@ -60,6 +60,8 @@ Node.prototype.init = function(data, id) {
   if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
     this.label = this.cypher.label = this.constructor_name;
   }
+  if (!this.label)
+    this.label = null;
   // each node gets it's own client
   this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
   this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);

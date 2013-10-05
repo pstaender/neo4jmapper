@@ -125,6 +125,49 @@ describe 'Neo4jMapper', ->
         expect(graph.neo4jrestful.responseTimeAsString()).to.match /^\d+(\.\d+)*\[s\]$/
         done()
 
+    it 'expect to query via Graph, with and without loading', (done) ->
+      Person = Node.register_model 'Person'
+      name = String(Date())
+      new Person(name: name).save (err, alice) ->
+        expect(err).to.be null
+        expect(alice.label).to.be.equal 'Person'
+        new Person(name: 'otherPerson').save (err, bob) ->
+          alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
+            expect(err).to.be null
+            Graph
+              .start('n = node(*)')
+              .match('n:Person-[r?]-()')
+              .where({'n.name': name})
+              .return('n AS Node, r AS Relationship')
+              .limit(1)
+              .enableLoading('node|relationship')
+              .exec (err, result) ->
+                expect(err).to.be null
+                expect(result.data).to.have.length 1
+                expect(result.data[0]).to.have.length 2
+                person = result.data[0][0]
+                relationship = result.data[0][1]
+                expect(person.label).to.be.equal 'Person'
+                expect(relationship.from.label).to.be.equal 'Person'
+                Graph
+                  .start('n = node(*)')
+                  .match('n:Person-[r?]-()')
+                  .where({'n.name': name})
+                  .return('n AS Node, r AS Relationship')
+                  .limit(1)
+                  .disableLoading()
+                  .exec (err, result) ->
+                    expect(err).to.be null
+                    expect(result.data).to.have.length 1
+                    expect(result.data[0]).to.have.length 2
+                    person = result.data[0][0]
+                    relationship = result.data[0][1]
+                    expect(person.label).to.be null
+                    expect(relationship.from.label).to.be undefined
+                    done()
+
+    it 'expect to query via Graph with parameters'
+
 
   describe 'stream', ->
 
