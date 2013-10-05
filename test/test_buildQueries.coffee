@@ -279,10 +279,11 @@ describe 'Neo4jMapper (cypher queries)', ->
 
         # "Node.findById(123).update({ name: 'Alice' })":
         #   [
-        #      Node.findById(123).update({ 'name': 'Alice' })
-        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;"
-        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = {value0} RETURN n;"
+        #      Node.findById(123).update({ 'name': 'Alice' }),
+        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;",
+        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = {value0} RETURN n;",
         #     { value0: 'Alice' }
+        #     # { value0: 'Alice' }
         #   ]
 
         "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":
@@ -307,6 +308,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             Graph
             .start()
             .match(  '(game:Game)-[c:contains]->(position:Position)')
+            .comment('Select games with title "Wes vs Alvin"')
             .where({ 'game.title': "Wes vs Alvin" })
             .with(   'game, collect(position) AS positions')
             .match(  'game-[c:contains]->(position:Position)')
@@ -316,8 +318,30 @@ describe 'Neo4jMapper (cypher queries)', ->
             .where(   'next IN (positions)')
             .return(  '(c.move+1)/2 as move, position.to_move as player, m.move, next.score as score')
             .limit(20),
-          "MATCH (game:Game)-[c:contains]->(position:Position) WHERE HAS (game.title) AND game.title = 'Wes vs Alvin' WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position) WITH positions, c, position ORDER BY c.move ASC MATCH position-[m:move]->next WHERE next IN (positions) RETURN (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score LIMIT 20;",
-          "MATCH (game:Game)-[c:contains]->(position:Position) WHERE HAS (game.title) AND game.title = {value0} WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position) WITH positions, c, position ORDER BY c.move ASC MATCH position-[m:move]->next WHERE next IN (positions) RETURN (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score LIMIT 20;",
+          """
+            MATCH (game:Game)-[c:contains]->(position:Position) 
+            /* Select games with title "Wes vs Alvin" */ 
+            WHERE HAS (game.title) AND game.title = 'Wes vs Alvin'
+            WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position)
+            WITH positions, c, position
+            ORDER BY c.move ASC
+            MATCH position-[m:move]->next
+            WHERE next IN (positions)
+            RETURN (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score
+            LIMIT 20;
+          """,
+          """
+            MATCH (game:Game)-[c:contains]->(position:Position) 
+            /* Select games with title "Wes vs Alvin" */ 
+            WHERE HAS (game.title) AND game.title = {value0}
+            WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position)
+            WITH positions, c, position
+            ORDER BY c.move ASC
+            MATCH position-[m:move]->next
+            WHERE next IN (positions)
+            RETURN (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score
+            LIMIT 20;
+          """,
           { value0: 'Wes vs Alvin'}
           ]
 

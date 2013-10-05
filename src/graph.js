@@ -190,6 +190,17 @@ var initGraph = function(neo4jrestful) {
     return this.exec(cb);
   }
 
+  Graph.prototype.merge = function(merge, cb) {
+    // TODO: values to parameter
+    this._query_history_.push({ MERGE: merge });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.statement = function(statement, cb) {
+    this._query_history_.push(statement);
+    return this.exec(cb);
+  }
+
   Graph.prototype.orderBy = function(property, cb) {
     var direction = '';
     if (typeof property === 'object') {
@@ -222,9 +233,18 @@ var initGraph = function(neo4jrestful) {
     return this.exec(cb);
   }
 
+  Graph.prototype.returnDistinct = function(returnStatement, cb) {
+    this._query_history_.push({ RETURN_DISTINCT: returnStatement });
+    return this.exec(cb);
+  }
+
   Graph.prototype.delete = function(deleteStatement, cb) {
     this._query_history_.push({ DELETE: deleteStatement });
     return this.exec(cb);
+  }
+
+  Graph.prototype.comment = function(comment, cb) {
+    return this.statement(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
   }
 
   Graph.prototype.toCypherQuery = function(options) {
@@ -237,8 +257,13 @@ var initGraph = function(neo4jrestful) {
     else
       _.defaults(options, defaultOptions);
     for (var i=0; i < this._query_history_.length; i++) {
-      var queryFragment = this._query_history_[i]
-        , attribute = Object.keys(this._query_history_[i])[0]
+      var queryFragment = this._query_history_[i];
+      if (typeof queryFragment === 'string') {
+        // if we have just a string, we add the string to final query, no manipulation
+        s += queryFragment;
+        continue;
+      }
+      var attribute = Object.keys(this._query_history_[i])[0]
         , forQuery = this._query_history_[i][attribute];
       // remove underscore from attribute, e.g. ORDER_BY -> ORDER BY
       attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');

@@ -72,7 +72,7 @@ You can chain your query elements as much as your want and use conditional param
       WHERE     next IN (positions)
       RETURN    (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score
       LIMIT     20;
-  /*
+  */
 ```
 
 ### Create and save nodes
