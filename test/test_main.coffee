@@ -413,8 +413,7 @@ describe 'Neo4jMapper', ->
               done()
 
     it 'expect to query customized via cypher', (done) ->
-      graph = new Graph()
-      graph.query """
+      Graph.query """
       START nodes=node(*)
       RETURN nodes LIMIT 10;
       """, (err, results) ->
@@ -424,8 +423,7 @@ describe 'Neo4jMapper', ->
         done()
 
     it 'expect to get suitable errors on wrong customized cypher queries', (done) ->
-      graph = new Graph()
-      graph.query """
+      Graph.query """
       START nodes=node(*)
       RETURN nodes LIMITS 10;
       """, (err, results) ->

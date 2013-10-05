@@ -52,15 +52,30 @@ var initGraph = function(neo4jrestful) {
   Graph.prototype.info = null;
 
   Graph.prototype.exec = function(query, cb) {
-    var self = this;
+    
     if (typeof query !== 'string') {
       cb = query;
       query = this.toCypherQuery();
     }
     if (typeof cb === 'function') { 
-      this.query(query, function(err, result, debug) {
+      this.query(query, {}, cb);
+    } else {
+      return this;
+    }
+  }
+
+  Graph.prototype.query = function(cypherQuery, options, cb) {
+    var self = this;
+    if (typeof cypherQuery !== 'string') {
+      throw Error('First argument must be a query string');
+    }
+    if (typeof options === 'function') {
+      cb = options;
+      options = {};
+    }
+    return this.neo4jrestful.query(cypherQuery, options, function(err, result, debug) {
         if (err)
-          return cb(err, cb, debug);
+          return cb(err, result, debug);
         var loadNode = /node/i.test(self._loadOnResult_)
           , loadRelationship = /relation/i.test(self._loadOnResult_)
           , loadPath = /path/i.test(self._loadOnResult_)
@@ -68,10 +83,12 @@ var initGraph = function(neo4jrestful) {
           , done = 0;
 
         var __increaseDone = function() {
-          done++;
-          if (done >= todo)
+          if (done+1 >= todo) {
             // done
-            return cb(err, result, debug);
+            cb(err, result, debug);
+          } else {
+            done++;
+          }
         }
 
         for (var row=0; row < result.data.length; row++) {
@@ -99,27 +116,13 @@ var initGraph = function(neo4jrestful) {
               }
               
               // if no loading is activated and at the last row+column, execute cb
-              if ((isLastObject) && ((!loadNode)&&(!loadRelationship)&&(!loadPath)))
-                return cb(err, result, debug);
+              if ((isLastObject) && (todo === 0))
+                __increaseDone();
 
             })(object, (row === result.data.length-1) && (column === result.data[row].length-1));
           }
         }
       });
-    } else {
-      return this;
-    }
-  }
-
-  Graph.prototype.query = function(cypherQuery, options, cb) {
-    if (typeof cypherQuery !== 'string') {
-      throw Error('First argument must be a query string');
-    }
-    if (typeof options === 'function') {
-      cb = options;
-      options = {};
-    }
-    return this.neo4jrestful.query(cypherQuery, options, cb);
   }
 
   // ### Shortcut for neo4jrestul.stream
