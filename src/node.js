@@ -143,7 +143,7 @@ Node.prototype.cypher = {
   incoming: null,         // Boolean
   label: null,            // String
   node_identifier: null,  // [a|b|n]
-  parameters: null,       // will contain parameters for query
+  parameters: null,       // object that contains all parameters for query
   // Boolean flags
   _useParameters: true,
   _count: null,
@@ -964,10 +964,23 @@ Node.prototype._end_node_id = function(fallback) {
 Node.prototype._addParametersToCypher = function(parameters) {
   if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
     if (!this.cypher.parameters)
-      this.cypher.parameters = [];
+      this.cypher.parameters = {};
     for (var i=0; i < parameters.length; i++) {
-      this.cypher.parameters.push(parameters[i]);
+      this._addParameterToCypher(parameters[i]);
     }
+  }
+  return this.cypher.parameters;
+}
+
+Node.prototype._addParameterToCypher = function(parameter) {
+  if (typeof parameter === 'object') {
+    if (!this.cypher.parameters)
+      this.cypher.parameters = {};
+    _.extend(this.cypher.parameters, parameter);
+  } else {
+    // we name the parameter with `_value#_`
+    var count = Object.keys(this.cypher.parameters).length;
+    this.cypher.parameters['_value'+count+'_'] = parameter;
   }
   return this.cypher.parameters;
 }
@@ -1077,13 +1090,10 @@ Node.prototype.query = function(cypherQuery, options, cb) {
   if (this.label)
     options.label = this.label;
 
-  if ((this.cypher._useParameters) && (this.cypher.parameters) && (this.cypher.parameters.length > 0)) {
+  if ((this.cypher._useParameters) && (this.cypher.parameters) && (Object.keys(this.cypher.parameters).length > 0)) {
     options.params = {};
-    // we have to rebuild the array as a json map
-    // instead of [ 'a', 'b', 'c' ] => { value0: 'a', value1: 'b', value2: 'c' }
-    for (var i=0; i < this.cypher.parameters.length; i++) {
-      options.params['value'+i] = this.cypher.parameters[i];
-    }
+    // copy parameters
+    _.extend(options.params, this.cypher.parameters);
   }
 
   if (typeof cypherQuery === 'string') {
@@ -1398,7 +1408,7 @@ Node.prototype.where = function(where, cb, options) {
   // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
   if (typeof options.valuesToParameters === 'undefined')
     options.valuesToParameters = Boolean(this.cypher._useParameters);
-  // if already parameters are added, starting with {value#i} instead of {value0}
+  // if already parameters are added, starting with {_value#i_} instead of {_value0_}
   if ((this.cypher.parameters)&&(this.cypher.parameters.length > 0))
     options.parametersStartCountAt = this.cypher.parameters.length;
   var condition = new helpers.ConditionalParameters(_.extend(where), options)

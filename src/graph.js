@@ -40,10 +40,12 @@ var initGraph = function(neo4jrestful) {
   // see graph.resetQuery for initialization
   Graph.prototype.cypher = {
     query: null,           // the cypher query string
-    parameters: null,      // array with paremeters
+    parameters: null,      // object with paremeters
     _useParameters: false  // better performance + rollback possible (upcoming feature)
   };
+  
   Graph.prototype._addParametersToCypher        = Node.prototype._addParametersToCypher;
+  Graph.prototype._addParameterToCypher         = Node.prototype._addParameterToCypher;
 
   // ### Will contain the info response of the neo4j database
   Graph.prototype.info = null;
@@ -140,7 +142,7 @@ var initGraph = function(neo4jrestful) {
   Graph.prototype.resetQuery = function() {
     this._query_history_ = [];
     _.extend(this.cypher, Graph.prototype.cypher);
-    this.cypher.parameters = [];
+    // this.cypher.parameters = {};
     return this;
   }
 

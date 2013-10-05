@@ -208,7 +208,7 @@ describe 'Neo4jMapper (helpers)', ->
       ]
       con = new helpers.ConditionalParameters(condition, { identifier: 'n' })
       expect(con.toString()).to.be.equal """
-        ( ( HAS (n.`name`) AND n.name =~ {value0} AND HAS (n.`since`) AND r.since = {value1} AND ( HAS (n.`email`) AND n.email = {value2} OR ( HAS (n.`email`) AND n.`email` = {value3} AND HAS (n.`country`) AND n.`country` = {value4} ) ) ) )
+        ( ( HAS (n.`name`) AND n.name =~ {_value0_} AND HAS (n.`since`) AND r.since = {_value1_} AND ( HAS (n.`email`) AND n.email = {_value2_} OR ( HAS (n.`email`) AND n.`email` = {_value3_} AND HAS (n.`country`) AND n.`country` = {_value4_} ) ) ) )
       """
       expect(con.parameters).to.have.length 5
       expect(con.parameters[0]).to.be.equal '(?i)Alice'

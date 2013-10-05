@@ -195,7 +195,7 @@ var global = (typeof window === 'object') ? window : root;
       if (!this.parameters)
         this.parameters = [];
       this.parameters.push(value);
-      return '{value'+(this.parametersStartCountAt + this.parameters.length - 1)+'}';
+      return '{_value'+(this.parametersStartCountAt + this.parameters.length - 1)+'_}';
     }
 
     ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {

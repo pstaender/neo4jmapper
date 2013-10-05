@@ -171,16 +171,16 @@ describe 'Neo4jMapper (cypher queries)', ->
           [
              Node.findOne().where({ 'name?': 'Alice' })
             "START n = node(*) WHERE ( n.`name`? = 'Alice' ) RETURN n LIMIT 1;"
-            "START n = node(*) WHERE ( n.`name`? = {value0} ) RETURN n LIMIT 1;"
-            { value0: 'Alice'}
+            "START n = node(*) WHERE ( n.`name`? = {_value0_} ) RETURN n LIMIT 1;"
+            { _value0_: 'Alice'}
           ]
 
         "Node.findOne().where({name: 'Alice'}).outgoingRelationships()":
           [
              Node.findOne().where({name: 'Alice'}).outgoingRelationships()
             "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = 'Alice' ) RETURN r LIMIT 1;"
-            "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = {value0} ) RETURN r LIMIT 1;"
-            { value0: 'Alice'}
+            "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = {_value0_} ) RETURN r LIMIT 1;"
+            { _value0_: 'Alice'}
           ]
         
         "Node.findAll().outgoingRelationships('know').distinct().count()":
@@ -193,40 +193,40 @@ describe 'Neo4jMapper (cypher queries)', ->
           [
              Node.singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })
             "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = 'years' ) RETURN r, n;"
-            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = {value0} ) RETURN r, n;"
-            { value0: 'years' }
+            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = {_value0_} ) RETURN r, n;"
+            { _value0_: 'years' }
           ]
 
         "Node.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
           [
              Node.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
             "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = 'years' ) RETURN r;"
-            "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = {value0} ) RETURN r;"
-            { value0: 'years'}
+            "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = {_value0_} ) RETURN r;"
+            { _value0_: 'years'}
           ]
 
         "Node.find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
           [
              Node.find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })
             "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = true AND HAS (n.`boolean_b`) AND n.`boolean_b` = false AND HAS (n.`string_a`) AND n.`string_a` = 'true' AND HAS (n.`number_a`) AND n.`number_a` = 123.2 AND HAS (n.`number_b`) AND n.`number_b` = 123 AND HAS (n.`string_b`) AND n.`string_b` = '123' AND HAS (n.`regex`) AND n.`regex` =~ '[a-z]' ) RETURN n;"
-            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = {value0} AND HAS (n.`boolean_b`) AND n.`boolean_b` = {value1} AND HAS (n.`string_a`) AND n.`string_a` = {value2} AND HAS (n.`number_a`) AND n.`number_a` = {value3} AND HAS (n.`number_b`) AND n.`number_b` = {value4} AND HAS (n.`string_b`) AND n.`string_b` = {value5} AND HAS (n.`regex`) AND n.`regex` =~ {value6} ) RETURN n;"
-            { value0: true, value1: false, value2: 'true', value3: 123.2, value4: 123, value5: '123', value6: '[a-z]' }
+            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = {_value0_} AND HAS (n.`boolean_b`) AND n.`boolean_b` = {_value1_} AND HAS (n.`string_a`) AND n.`string_a` = {_value2_} AND HAS (n.`number_a`) AND n.`number_a` = {_value3_} AND HAS (n.`number_b`) AND n.`number_b` = {_value4_} AND HAS (n.`string_b`) AND n.`string_b` = {_value5_} AND HAS (n.`regex`) AND n.`regex` =~ {_value6_} ) RETURN n;"
+            { _value0_: true, _value1_: false, _value2_: 'true', _value3_: 123.2, _value4_: 123, _value5_: '123', _value6_: '[a-z]' }
           ]
 
         "Node.find({ $and : [ { a: 1 }, { b: 2} ] })":
           [
              Node.find({ $and : [ { a: 1 }, { b: 2} ] })
             "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = 1 AND HAS (n.`b`) AND n.`b` = 2 ) ) RETURN n;"
-            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = {value0} AND HAS (n.`b`) AND n.`b` = {value1} ) ) RETURN n;"
-            { value0: 1, value1: 2 }
+            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = {_value0_} AND HAS (n.`b`) AND n.`b` = {_value1_} ) ) RETURN n;"
+            { _value0_: 1, _value1_: 2 }
           ]
         
         "Node.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
              Node.find().where( { $or : [ { 'n.firstname': /alice/i } , { 'n.surname': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
             "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ '(?i)alice' OR HAS (n.`surname`) AND n.surname =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
-            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ {value0} OR HAS (n.`surname`) AND n.surname =~ {value1} ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
-            { value0: '(?i)alice', value1: '(?i)bob' }
+            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ {_value0_} OR HAS (n.`surname`) AND n.surname =~ {_value1_} ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            { _value0_: '(?i)alice', _value1_: '(?i)bob' }
           ]
 
         "Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
@@ -379,7 +379,7 @@ describe 'Neo4jMapper (cypher queries)', ->
           """
             MATCH (game:Game)-[c:contains]->(position:Position) 
             /* Select games with title "Wes vs Alvin" */ 
-            WHERE HAS (game.title) AND game.title = {value0}
+            WHERE HAS (game.title) AND game.title = {_value0_}
             WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position)
             WITH positions, c, position
             ORDER BY c.move ASC
@@ -388,7 +388,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             RETURN (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score
             LIMIT 20;
           """,
-          { value0: 'Wes vs Alvin'}
+          { _value0_: 'Wes vs Alvin'}
           ]
 
       # Build queries without parameters
@@ -421,11 +421,14 @@ describe 'Neo4jMapper (cypher queries)', ->
             query = todo[0]
             # check paramers macthing
             # do we have same parameters count?
-            expect(query.cypher.parameters.length).to.be.equal Object.keys(todo[3]).length
+            if Object.keys(query.cypher.parameters).length isnt Object.keys(todo[3]).length
+              throw Error("Expected #{Object.keys(todo[3]).length} parameter(s) on '#{functionCall}': "+JSON.stringify(todo[3])+"\nGot "+JSON.stringify(query.cypher.parameters))
+            # expect(query.cypher.parameters.length).to.be.equal Object.keys(todo[3]).length
             i = 0
             for key, value of todo[3]
               # check that value of parameter in query is same as expected (sequence of parameters has relevance)
-              expect(query.cypher.parameters[i]).to.be.equal value
+              if query.cypher.parameters[Object.keys(query.cypher.parameters)[i]] isnt value
+                throw Error("Expected #{query.cypher.parameters[Object.keys(query.cypher.parameters)[i]]} to be equal #{functionCall} on ")
               i++
             query = query.toCypherQuery()
             query = _trim(query);
