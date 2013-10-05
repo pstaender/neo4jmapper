@@ -75,6 +75,53 @@ You can chain your query elements as much as your want and use conditional param
   */
 ```
 
+You can combine methods the way you want:
+
+```js
+  Graph.start().case("n.eyes WHEN 'blue' THEN 1 WHEN 'brown' THEN 2 ELSE 3").return('n AS Person').toCypherQuery();
+  /* ~>
+    CASE           n.eyes WHEN \'blue\' THEN 1 WHEN \'brown\' THEN 2 ELSE 3 END
+    RETURN         n AS Person;
+  */
+```
+
+And easily use parameters to enjoy rollbacks (needs to be implemented) and speeding up repeating queries:
+
+```js
+  Graph.start().case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3").addValue({ color1: 'blue', color2: 'brown' }).return('n AS Person').toCypherQuery();
+  /* ~>
+    CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
+    RETURN         n AS Person;
+  */
+```
+Here is an example containing most of all available methods to build custom queries.
+`…` represents a string containing the custom statement segment, see the example below:
+
+```js
+  Graph.start(…)
+    .match(…)
+    .onMatch(…)
+    .where('n.name = {value1}')
+    .addValue({value1: 'Bob'})
+    .with(…)
+    .orderBy(…)
+    .skip(10)
+    .limit(20)
+    .delete(…)
+    .return(…)
+    .create(…)
+    .onCreate(…)
+    .createUnique(…)
+    .merge(…)
+    .remove(…)
+    .set(…)
+    .foreach(…)
+    .case(…)
+    .statement(…)
+    .comment(…)
+    .exec(cb) // or .stream(cb)
+``
+
 ### Create and save nodes
 
 ```js

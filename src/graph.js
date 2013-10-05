@@ -79,6 +79,17 @@ var initGraph = function(neo4jrestful) {
     return this.neo4jrestful.stream(cypherQuery, options, cb);
   }
 
+  Graph.prototype.addValue = function(key, value, cb) {
+    if (typeof key === 'object') {
+      cb = value;
+      value = key[Object.keys(key)[0]];
+      key = Object.keys(key)[0];
+    }
+    this.cypher._useParameters = true;
+    this._addParameterToCypher({ key: value });
+    return this.exec(cb);
+  }
+
   // ### Deletes *all* nodes and *all* relationships
   Graph.prototype.wipeDatabase = function(cb) {
     var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";
@@ -141,18 +152,11 @@ var initGraph = function(neo4jrestful) {
   // ### Reset the query history
   Graph.prototype.resetQuery = function() {
     this._query_history_ = [];
+    this.cypher = {};
     _.extend(this.cypher, Graph.prototype.cypher);
-    // this.cypher.parameters = {};
+    this.cypher.parameters = {};
     return this;
   }
-
-  /*
-    [START]
-    [MATCH]
-    [WHERE]
-    [WITH [ORDER BY] [SKIP] [LIMIT]]
-    RETURN [ORDER BY] [SKIP] [LIMIT]
-  */
 
   // ### Startpoint to begin query chaining
   // e.g. Graph.start().where( …

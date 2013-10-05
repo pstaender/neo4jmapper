@@ -258,7 +258,8 @@ Node.prototype.copyTo = function(n) {
 // n.resetQuery().findOne(otherCb)
 Node.prototype.resetQuery = function() {
   // we have to copy the cypher values on each object
-  this.cypher = _.extend({}, this.cypher);
+  this.cypher = {};
+  _.extend(this.cypher, this.constructor.prototype.cypher);
   this.cypher.where = [];
   this.cypher.hasProperty = [];
   this.cypher.match = [];
