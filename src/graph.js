@@ -169,6 +169,11 @@ var initGraph = function(neo4jrestful) {
     return this.exec(cb);
   }
 
+  Graph.prototype.onMatch = function(onMatch, cb) {
+    this._query_history_.push({ ON_MATCH: onMatch });
+    return this.exec(cb);
+  }
+
   Graph.prototype.with = function(withStatement, cb) {
     this._query_history_.push({ WITH: withStatement });
     return this.exec(cb);
@@ -176,7 +181,7 @@ var initGraph = function(neo4jrestful) {
 
   Graph.prototype.skip = function(skip, cb) {
     skip = parseInt(skip);
-    if (!skip)
+    if (skip === NaN)
       throw Error('SKIP must be an integer');
     this._query_history_.push({ SKIP: skip });
     return this.exec(cb);
@@ -184,7 +189,7 @@ var initGraph = function(neo4jrestful) {
 
   Graph.prototype.limit = function(limit, cb) {
     limit = parseInt(limit);
-    if (!limit)
+    if (limit === NaN)
       throw Error('LIMIT must be an integer');
     this._query_history_.push({ LIMIT: limit });
     return this.exec(cb);
@@ -201,18 +206,55 @@ var initGraph = function(neo4jrestful) {
     return this.exec(cb);
   }
 
+  Graph.prototype.set = function(set, cb) {
+    this._query_history_.push({ SET: set });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.create = function(create, cb) {
+    this._query_history_.push({ CREATE: create });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.onCreate = function(onCreate, cb) {
+    this._query_history_.push({ ON_CREATE: onCreate });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.createUnique = function(create, cb) {
+    this._query_history_.push({ CREATE_UNIQUE: create });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.createIndexOn = function(createIndexOn, cb) {
+    this._query_history_.push({ CREATE_INDEX_ON: createIndexOn });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.case = function(caseStatement, cb) {
+    this._query_history_.push({ CASE: caseStatement.replace(/END\s*$/i,'') + ' END ' });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.dropIndexOn = function(dropIndexOn, cb) {
+    this._query_history_.push({ DROP_INDEX_ON: dropIndexOn });
+    return this.exec(cb);
+  }
+
   Graph.prototype.orderBy = function(property, cb) {
-    var direction = '';
+    var direction = ''
+      , s = '';
     if (typeof property === 'object') {
       var key = Object.keys(property)[0];
       cb = direction;
       direction = property[key];
       property = key;
       direction = ( (typeof direction === 'string') && ((/^(ASC|DESC)$/).test(direction)) ) ? direction : 'ASC';
+      s = property+' '+direction;
     } else if (typeof property === 'string') {
-      direction = property;
+      s = property;
     }
-    this._query_history_.push({ ORDER_BY: property+' '+direction });
+    this._query_history_.push({ ORDER_BY: s });
     return this.exec(cb);
   }
 
@@ -243,12 +285,23 @@ var initGraph = function(neo4jrestful) {
     return this.exec(cb);
   }
 
+  Graph.prototype.remove = function(remove, cb) {
+    this._query_history_.push({ REMOVE: remove });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.foreach = function(foreach, cb) {
+    this._query_history_.push({ FOREACH: foreach });
+    return this.exec(cb);
+  }
+
   Graph.prototype.comment = function(comment, cb) {
     return this.statement(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
   }
 
   Graph.prototype.toCypherQuery = function(options) {
     var s = ''
+      , chopLength = 15
       , defaultOptions = {
         niceFormat: true
       };
@@ -269,7 +322,7 @@ var initGraph = function(neo4jrestful) {
       attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');
       if (options.niceFormat) {
         // extend attribute-string with whitespace
-        attribute = attribute + Array(10 - attribute.length).join(' ');
+        attribute = attribute + Array(chopLength - attribute.length).join(' ');
       }
       if (forQuery !== null)
         s += '\n'+attribute+' '+String(forQuery);

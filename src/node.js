@@ -1234,9 +1234,9 @@ Node.prototype.allRelationships = function(relation, cb) {
 
 Node.prototype.limit = function(limit, cb) {
   this._query_history_.push({ LIMIT: limit });
-  if (!parseInt(limit))
-    throw Error('limit must be an integer number');
   this.cypher.limit = parseInt(limit);
+  if (limit === NaN)
+    throw Error('LIMIT must be an integer number');
   if (this.cypher.action === 'DELETE')
     throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
   this.exec(cb);
@@ -1244,7 +1244,9 @@ Node.prototype.limit = function(limit, cb) {
 }
 
 Node.prototype.skip = function(skip, cb) {
-  this.cypher.skip = Number(skip);
+  this.cypher.skip = parseInt(skip);
+  if (skip === NaN)
+    throw Error('SKIP must be an integer number');
   this._query_history_.push({ SKIP: this.cypher.skip });
   this.exec(cb);
   return this; // return self for chaining

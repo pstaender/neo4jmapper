@@ -302,6 +302,52 @@ describe 'Neo4jMapper (cypher queries)', ->
         # Custom Graph Queries
         #
 
+        "Graph.start()…":
+          [
+            Graph.start('start')
+              .match('match')
+              .onMatch('on match')
+              .where('where')
+              .with('with')
+              .orderBy('order by')
+              .skip(0)
+              .limit(0)
+              .delete('delete')
+              .return('return')
+              .create('create')
+              .onCreate('on create')
+              .createUnique('create unique')
+              .merge('merge')
+              .remove('remove')
+              .set('set')
+              .foreach('foreach')
+              .case('case')
+              .statement('custom statement')
+              .comment('comment'),
+            """
+              START start
+              MATCH match
+              ON MATCH on match
+              WHERE where
+              WITH with
+              ORDER BY order by
+              SKIP 0
+              LIMIT 0
+              DELETE delete
+              RETURN return
+              CREATE create
+              ON CREATE on create
+              CREATE UNIQUE create unique
+              MERGE merge
+              REMOVE remove
+              SET set
+              FOREACH foreach
+              CASE case END
+              custom statement
+              /* comment */ ;
+            """
+          ]
+
         # http://gist.neo4j.org/?6506717
         "Graph.start().match(…":
           [
@@ -371,7 +417,7 @@ describe 'Neo4jMapper (cypher queries)', ->
         if todo?[2] is null
           console.log 'pending '+functionCall+' ~> '+_trim(todo[0].toCypherQuery())
         else if _.isArray(todo)
-          if todo[2] #and todo[3]
+          if todo[2] and todo[3]
             query = todo[0]
             # check paramers macthing
             # do we have same parameters count?
