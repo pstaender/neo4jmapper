@@ -261,22 +261,23 @@ var initNeo4jRestful = function() {
 
   // http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
   Neo4jRestful.prototype.statement = function(cypher, parameters, options, cb) {
-    var args;
-    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
-    if (typeof cypher === 'string') {
-      this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
-      this.post('/'+this.urlOptions.endpoint+'transaction/commit',{
-        data: {
-          statements: [ {
-            statement: cypher,
-            params: options.params || {}
-          } ],
+    throw Error('Not implemented, yet');
+    // var args;
+    // ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
+    // if (typeof cypher === 'string') {
+    //   this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
+    //   this.post('/'+this.urlOptions.endpoint+'transaction/commit',{
+    //     data: {
+    //       statements: [ {
+    //         statement: cypher,
+    //         params: options.params || {}
+    //       } ],
           
-        }
-      }, function(err, result, debug){
-        return cb(err, result, debug);
-      });
-    }
+    //     }
+    //   }, function(err, result, debug){
+    //     return cb(err, result, debug);
+    //   });
+    // }
   }
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {

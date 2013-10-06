@@ -513,7 +513,7 @@ In case you want to inspect sended + received data and/or the process of mapping
   // for all instanced node(s) via prototype
   Node.prototype.neo4jrestful.debug = true;
   // or better for specific objects
-  node = new Node();
+  var node = new Node();
   node.neo4jrestful.debug = true;
   node.save(function(err, result, debug) {
     debug ~>
@@ -543,6 +543,15 @@ In case you want to inspect sended + received data and/or the process of mapping
         err: null,
         responseTime: 150
       }
+  });
+```
+
+or simply inspect the `_reponse_` attribute:
+
+```js
+  var node = new Node();
+  node.save(function(err, result) {
+    console.log(node.neo4jrestful);
   });
 ```
 
