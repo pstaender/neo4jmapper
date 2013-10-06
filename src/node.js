@@ -1426,6 +1426,16 @@ Node.prototype.where = function(where, cb, options) {
   return this; // return self for chaining
 }
 
+// Node.prototype.useParameters = function(trueOrFalse) {
+//   if (typeof trueOrFalse !== 'undefined')
+//     this.cypher._useParameters = trueOrFalse;
+//   return this;
+// }
+
+// Node.prototype.isUsingParameters = function() {
+//   return this.cypher._useParameters;
+// }
+
 Node.prototype.whereStartNode = function(where, cb) {
   return this.where(where, cb, { identifier: 'n' });
 }

@@ -41,27 +41,30 @@ var initGraph = function(neo4jrestful) {
   Graph.prototype.cypher = {
     query: null,           // the cypher query string
     parameters: null,      // object with paremeters
-    _useParameters: false  // better performance + rollback possible (upcoming feature)
+    _useParameters: true   // better performance + rollback possible (upcoming feature)
   };
-  Graph.prototype._loadOnResult_                          = 'node|relationship|path';
+  Graph.prototype._loadOnResult_                = 'node|relationship|path';
+  Graph.prototype._smartResultSort_             = true; // see in graph.query() -> _increaseDone()
   
   Graph.prototype._addParametersToCypher        = Node.prototype._addParametersToCypher;
   Graph.prototype._addParameterToCypher         = Node.prototype._addParameterToCypher;
+  // Graph.prototype.useParameters                 = Node.prototype.useParameters;
+  // Graph.prototype.isUsingParameters             = Node.prototype.isUsingParameters; 
 
   // ### Will contain the info response of the neo4j database
-  Graph.prototype.info = null;
+  Graph.prototype.info        = null;
+  Graph.prototype._response_  = null; // contains the last response object
+  Graph.prototype._columns_   = null;
 
-  Graph.prototype.exec = function(query, cb) {
-    
+  Graph.prototype.exec = function(query, cb) {    
     if (typeof query !== 'string') {
       cb = query;
       query = this.toCypherQuery();
     }
     if (typeof cb === 'function') { 
       this.query(query, {}, cb);
-    } else {
-      return this;
     }
+    return this;
   }
 
   Graph.prototype.query = function(cypherQuery, options, cb) {
@@ -73,66 +76,92 @@ var initGraph = function(neo4jrestful) {
       cb = options;
       options = {};
     }
-    return this.neo4jrestful.query(cypherQuery, options, function(err, result, debug) {
-        if (err)
-          return cb(err, result, debug);
-        var loadNode = /node/i.test(self._loadOnResult_)
-          , loadRelationship = /relation/i.test(self._loadOnResult_)
-          , loadPath = /path/i.test(self._loadOnResult_)
-          , todo = 0
-          , done = 0;
+    options.params = (typeof this.cypher._useParameters === 'boolean') ? this.cypher.parameters : {};
+    this.neo4jrestful.query(cypherQuery, options, function(err, result, debug) {
+      self._response_ = self.neo4jrestful._response_;
+      self._columns_ = self.neo4jrestful._columns_;
+      if (err)
+        return cb(err, result, debug);
+      var loadNode = /node/i.test(self._loadOnResult_)
+        , loadRelationship = /relation/i.test(self._loadOnResult_)
+        , loadPath = /path/i.test(self._loadOnResult_)
+        , todo = 0
+        , done = 0;
 
-        var __increaseDone = function() {
-          if (done+1 >= todo) {
-            // done
-            cb(err, result, debug);
-          } else {
-            done++;
-          }
-        }
-
-        for (var row=0; row < result.data.length; row++) {
-          
-          for (var column=0; column < result.data[row].length; column++) {
-            var data = result.data[row][column];
-            var object = (data) ? self.neo4jrestful.createObjectFromResponseData(data) : null;          
-            result.data[row][column] = object;
-
-            (function(object, isLastObject) {
-              
-              if (object) {
-                if ((object.classification === 'Node') && (loadNode)) {
-                  todo++;
-                  object.load(__increaseDone);
-                }
-                else if ((object.classification === 'Relationship') && (loadRelationship)) {
-                  todo++;
-                  object.load(__increaseDone);
-                }
-                else if ((object.classification === 'Path') && (loadPath)) {
-                  todo++;
-                  object.load(__increaseDone);
-                }
+      var __increaseDone = function() {
+        if (done+1 >= todo) {
+          // done
+          if (self._smartResultSort_) {
+            var cleanResult = result.data;
+            // remove array, if we have only one column
+            if (result.columns.length === 1) {
+              for (var row=0; row < cleanResult.length; row++) {
+                cleanResult[row] = cleanResult[row][0];
               }
-              
-              // if no loading is activated and at the last row+column, execute cb
-              if ((isLastObject) && (todo === 0))
-                __increaseDone();
-
-            })(object, (row === result.data.length-1) && (column === result.data[row].length-1));
+            }
+            cb(err, cleanResult, debug);
+          } else {
+            cb(err, result, debug);
           }
+        } else {
+          done++;
         }
-      });
+      }
+
+      for (var row=0; row < result.data.length; row++) {
+        
+        for (var column=0; column < result.data[row].length; column++) {
+          var data = result.data[row][column];
+          var object = (data) ? self.neo4jrestful.createObjectFromResponseData(data) : null;          
+          result.data[row][column] = object;
+
+          (function(object, isLastObject) {
+            
+            if (object) {
+              if ((object.classification === 'Node') && (loadNode)) {
+                todo++;
+                object.load(__increaseDone);
+              }
+              else if ((object.classification === 'Relationship') && (loadRelationship)) {
+                todo++;
+                object.load(__increaseDone);
+              }
+              else if ((object.classification === 'Path') && (loadPath)) {
+                todo++;
+                object.load(__increaseDone);
+              }
+            }
+            
+            // if no loading is activated and at the last row+column, execute cb
+            if ((isLastObject) && (todo === 0))
+              __increaseDone();
+
+          })(object, (row === result.data.length-1) && (column === result.data[row].length-1));
+        }
+      }
+    });
+    return this;
+  }
+
+  Graph.prototype.sortResult = function(trueOrFalse) {
+    if (typeof trueOrFalse === 'undefined')
+      trueOrFalse = true;
+    this._smartResultSort_ = trueOrFalse;
+    return this;
   }
 
   // ### Shortcut for neo4jrestul.stream
   Graph.prototype.stream = function(cypherQuery, options, cb) {
     if (typeof cypherQuery !== 'string') {
-      cypherQuery = this.toCypherQuery({ niceFormat: false });
-      cb = options;
-      options = cypherQuery;
+      cb = cypherQuery;
+      cypherQuery = this.toCypherQuery();
     }
-    return this.neo4jrestful.stream(cypherQuery, options, cb);
+    else if (typeof options === 'function') {
+      cb = options;
+      options = undefined;
+    }
+    this.neo4jrestful.stream(cypherQuery, options, cb);
+    return this;
   }
 
   Graph.prototype.addValue = function() {
@@ -142,7 +171,8 @@ var initGraph = function(neo4jrestful) {
   Graph.prototype.parameters = function(parameters) {
     if (typeof parameters !== 'object')
       throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
-    this.cypher._useParameters = true;
+    if (this.cypher._useParameters === null)
+      this.cypher._useParameters = true;
     this.cypher.parameters = parameters;
     return this;
   }
@@ -154,7 +184,8 @@ var initGraph = function(neo4jrestful) {
       value = key[Object.keys(key)[0]];
       key = Object.keys(key)[0];
     }
-    this.cypher._useParameters = true;
+    if (this.cypher._useParameters === null)
+      this.cypher._useParameters = true;
     this._addParameterToCypher({ key: value });
     return this.exec(cb);
   }
@@ -177,7 +208,7 @@ var initGraph = function(neo4jrestful) {
       query = "MATCH "+type+" RETURN "+type[0]+";";
     else
       query = "START n=node(*) MATCH n-[r?]-() RETURN count(n), count(r);";
-    return this.query(query,function(err,data){
+    return this.start().sortResult(false).query(query,function(err,data){
       if ((data)&&(data.data)) {
         var count = data.data[0][0];
         if (typeof data.data[0][1] !== 'undefined')
@@ -276,10 +307,13 @@ var initGraph = function(neo4jrestful) {
     return this.exec(cb);
   }
 
-  Graph.prototype.statement = function(statement, cb) {
+  Graph.prototype.custom = function(statement, cb) {
     this._query_history_.push(statement);
     return this.exec(cb);
   }
+
+  // will be used to send statements
+  Graph.prototype.statement = null;
 
   Graph.prototype.set = function(set, cb) {
     this._query_history_.push({ SET: set });
@@ -334,6 +368,12 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.prototype.where = function(where, cb) {
+    if (typeof where === 'string') {
+      this._query_history_.push({ WHERE: where });
+      return this.exec(cb);
+    }
+    if (this.cypher._useParameters === null)
+      this.cypher._useParameters = true;
     if (!_.isArray(where))
       where = [ where ];
     var options = { valuesToParameters: this.cypher._useParameters };
@@ -371,7 +411,7 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.prototype.comment = function(comment, cb) {
-    return this.statement(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
+    return this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
   }
 
   Graph.prototype.toCypherQuery = function(options) {

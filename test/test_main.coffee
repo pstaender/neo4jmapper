@@ -129,17 +129,15 @@ describe 'Neo4jMapper', ->
       Person = Node.register_model 'Person'
       name = String(Date())
       new Person(name: name).save (err, alice) ->
-        expect(err).to.be null
-        expect(alice.label).to.be.equal 'Person'
         new Person(name: 'otherPerson').save (err, bob) ->
           alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
-            expect(err).to.be null
             Graph
               .start('n = node(*)')
               .match('n:Person-[r?]-()')
               .where({'n.name': name})
               .return('n AS Node, r AS Relationship')
               .limit(1)
+              .sortResult(false)
               .enableLoading('node|relationship')
               .exec (err, result) ->
                 expect(err).to.be null
@@ -155,6 +153,7 @@ describe 'Neo4jMapper', ->
                   .where({'n.name': name})
                   .return('n AS Node, r AS Relationship')
                   .limit(1)
+                  .sortResult(false)
                   .disableLoading()
                   .exec (err, result) ->
                     expect(err).to.be null
@@ -166,7 +165,26 @@ describe 'Neo4jMapper', ->
                     expect(relationship.from.label).to.be undefined
                     done()
 
-    it 'expect to query via Graph with parameters'
+    it 'expect to query via Graph with parameters', (done) ->
+      Person = Node.register_model 'Person'
+      name = String(Date())
+      new Person(name: name).save (err, alice) ->
+        new Person(name: 'otherPerson').save (err, bob) ->
+          alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
+            graph = Graph.start('n = node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, found) ->
+              expect(err).to.be null
+              expect(found).to.have.length 1
+              expect(found[0].data.name).to.be.equal name
+              done()
+
+    it 'expect to stream graph query results', (done) ->
+      i = 0
+      Graph.start('n=node(*)').return('n').limit(1).stream (node) ->
+        if node
+          i++
+        else
+          expect(i).to.be 1
+          done()
 
 
   describe 'stream', ->
@@ -413,14 +431,14 @@ describe 'Neo4jMapper', ->
               done()
 
     it 'expect to query customized via cypher', (done) ->
-      Graph.query """
-      START nodes=node(*)
-      RETURN nodes LIMIT 10;
-      """, (err, results) ->
-        expect(err).to.be null
-        expect(results.columns.length).to.be.a 'number'
-        expect(results.data.length).to.be.a 'number'
-        done()
+      graph = Graph.query """
+        START nodes=node(*)
+        RETURN nodes LIMIT 10;
+        """, (err, results) ->
+          expect(err).to.be null
+          expect(graph._columns_.length).to.be.a 'number'
+          expect(results.length).to.be.a 'number'
+          done()
 
     it 'expect to get suitable errors on wrong customized cypher queries', (done) ->
       Graph.query """

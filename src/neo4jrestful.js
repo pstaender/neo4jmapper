@@ -225,6 +225,9 @@ var initNeo4jRestful = function() {
   // is used for measurement of request-to-respond
   Neo4jRestful.prototype._request_on_               = null;
   Neo4jRestful.prototype._response_on_              = null;
+  // contains data of the response
+  Neo4jRestful.prototype._response_                 = null;
+  Neo4jRestful.prototype._columns_                  = null;
 
   Neo4jRestful.prototype.connection_established     = false;
 
@@ -249,6 +252,26 @@ var initNeo4jRestful = function() {
         data: {
           query: cypher,
           params: options.params || {}
+        }
+      }, function(err, result, debug){
+        return cb(err, result, debug);
+      });
+    }
+  }
+
+  // http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
+  Neo4jRestful.prototype.statement = function(cypher, parameters, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
+    if (typeof cypher === 'string') {
+      this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
+      this.post('/'+this.urlOptions.endpoint+'transaction/commit',{
+        data: {
+          statements: [ {
+            statement: cypher,
+            params: options.params || {}
+          } ],
+          
         }
       }, function(err, result, debug){
         return cb(err, result, debug);
@@ -521,6 +544,7 @@ var initNeo4jRestful = function() {
 
     _sendHttpRequest(requestOptions, function(err, res) {
     // req.end(function(err, res) {
+      self._response_ = res;
       self._response_on_ = new Date().getTime();
       if (options._debug)
         options._debug.responseTime = self.responseTime();
@@ -531,6 +555,8 @@ var initNeo4jRestful = function() {
         if (res.status >= 400) {
           self.onError(cb, res.body, 'error', options);
         } else {
+          if (res.body)
+            self._columns_ = res.body.columns || null;
           self.onSuccess(cb, res.body, 'success', options);
         }
       }

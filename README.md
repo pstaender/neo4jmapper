@@ -49,7 +49,7 @@ You can chain your query elements as much as your want and use conditional param
 
 ```js
   Graph
-    .start() // initialize the query building; without argument if you want to leave out the START statement
+    .start() // initialize the query building; without argument if you want to leave out the START
     .match('(game:Game)-[c:contains]->(position:Position)')
     .where({ 'game.title': 'Wes vs Alvin' }) // let neo4jmapper escape values for you
     .with('game, collect(position) AS positions')
@@ -117,7 +117,7 @@ Here is an example containing most of all available methods to build custom quer
     .set(…)
     .foreach(…)
     .case(…)
-    .statement(…)
+    .custom(…)
     .comment(…)
     .exec(cb) // or .stream(cb)
 ```

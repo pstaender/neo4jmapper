@@ -323,7 +323,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               .set('set')
               .foreach('foreach')
               .case('case')
-              .statement('custom statement')
+              .custom('custom statement')
               .comment('comment'),
             """
               START start
@@ -426,7 +426,8 @@ describe 'Neo4jMapper (cypher queries)', ->
         if todo?[2] is null
           console.log 'pending '+functionCall+' ~> '+_trim(todo[0].toCypherQuery())
         else if _.isArray(todo)
-          query = todo[0].toCypherQuery()
+          query = todo[0]
+          query = query.toCypherQuery()
           query = _trim(query);
           throw Error("Error by building query #{functionCall}\nExpected: #{_trim(todo[1])}\nGot:      #{query}") if query isnt _trim(todo[1])
         else
