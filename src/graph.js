@@ -33,6 +33,7 @@ var initGraph = function(neo4jrestful) {
       this.neo4jrestful = new this.neo4jrestful.constructor(url);
     }
     this.resetQuery();
+    return this;
   }
 
   Graph.prototype.neo4jrestful                  = neo4jrestful;
@@ -236,7 +237,9 @@ var initGraph = function(neo4jrestful) {
   Graph.prototype.resetQuery = function() {
     this._query_history_ = [];
     this.cypher = {};
-    _.extend(this.cypher, Graph.prototype.cypher);
+    for (var attr in Graph.prototype.cypher) {
+      this.cypher[attr] = Graph.prototype.cypher[attr];
+    }
     this.cypher.parameters = {};
     return this;
   }

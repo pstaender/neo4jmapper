@@ -177,7 +177,7 @@ describe 'Neo4jMapper', ->
               expect(found[0].data.name).to.be.equal name
               done()
 
-    it 'expect to stream graph query results', (done) ->
+    it 'expect to stream graph query results', (SkipInBrowser) (done) ->
       i = 0
       Graph.start('n=node(*)').return('n').limit(1).stream (node) ->
         if node

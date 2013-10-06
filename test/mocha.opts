@@ -3,4 +3,3 @@
 --ui bdd
 --timeout 30000
 --check-leaks
---bail
