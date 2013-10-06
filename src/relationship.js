@@ -70,7 +70,6 @@ Relationship.prototype._id_ = null;
 Relationship.prototype._hashedData_ = null;
 Relationship.prototype.uri = null;
 Relationship.prototype._response_ = null;
-// Relationship.prototype._modified_query = false;
 Relationship.prototype.is_singleton = false;
 Relationship.prototype.is_persisted = false;
 Relationship.prototype.cypher = {};
@@ -143,7 +142,6 @@ Relationship.prototype.update = function(data, cb) {
   }
   if (!this.hasId())
     return cb(Error('Singleton instances can not be persisted'), null);
-  this._modified_query = false;
   if (this.hasId()) {
     // copy 'private' _id_ to public
     this.id = this._id_;
@@ -178,7 +176,6 @@ Relationship.prototype.populateWithDataFromResponse = function(data, create) {
   var relationship = (this.is_instanced !== null) ? this : new Relationship();
   if (create)
     relationship = new Relationship();
-  relationship._modified_query = false;
   if (data) {
     if (_.isObject(data) && (!_.isArray(data)))
       relationship._response_ = data;

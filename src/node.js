@@ -274,7 +274,7 @@ Node.prototype.resetQuery = function() {
 }
 
 Node.prototype.hasId = function() {
-  return ((this.is_instanced) && (this.id > 0)) ? true : false;
+  return ((this.is_instanced) && (_.isNumber(this._id_))) ? true : false;
 }
 
 Node.prototype.setUriById = function(id) {

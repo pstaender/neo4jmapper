@@ -126,44 +126,44 @@ describe 'Neo4jMapper', ->
         done()
 
     it 'expect to query via Graph, with and without loading', (done) ->
-      Person = Node.register_model 'Person'
-      name = String(Date())
-      new Person(name: name).save (err, alice) ->
-        new Person(name: 'otherPerson').save (err, bob) ->
-          alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
-            Graph
-              .start('n = node(*)')
-              .match('n:Person-[r?]-()')
-              .where({'n.name': name})
-              .return('n AS Node, r AS Relationship')
-              .limit(1)
-              .sortResult(false)
-              .enableLoading('node|relationship')
-              .exec (err, result) ->
-                expect(err).to.be null
-                expect(result.data).to.have.length 1
-                expect(result.data[0]).to.have.length 2
-                person = result.data[0][0]
-                relationship = result.data[0][1]
-                expect(person.label).to.be.equal 'Person'
-                expect(relationship.from.label).to.be.equal 'Person'
-                Graph
-                  .start('n = node(*)')
-                  .match('n:Person-[r?]-()')
-                  .where({'n.name': name})
-                  .return('n AS Node, r AS Relationship')
-                  .limit(1)
-                  .sortResult(false)
-                  .disableLoading()
-                  .exec (err, result) ->
-                    expect(err).to.be null
-                    expect(result.data).to.have.length 1
-                    expect(result.data[0]).to.have.length 2
-                    person = result.data[0][0]
-                    relationship = result.data[0][1]
-                    expect(person.label).to.be null
-                    expect(relationship.from.label).to.be undefined
-                    done()
+      Node.register_model 'Person', (err, Person) ->
+        name = String(Date())
+        new Person(name: name).save (err, alice) ->
+          new Person(name: 'otherPerson').save (err, bob) ->
+            alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
+              Graph
+                .start('n = node(*)')
+                .match('n:Person-[r?]-()')
+                .where({'n.name': name})
+                .return('n AS Node, r AS Relationship')
+                .enableLoading('node|relationship')
+                .limit(1)
+                .exec (err, result) ->
+                  expect(err).to.be null
+                  expect(result).to.have.length 1
+                  expect(result[0]).to.have.length 2
+                  person = result[0][0]
+                  relationship = result[0][1]
+                  expect(person.label).to.be.equal 'Person'
+                  # TODO: try native (no sorting of the result, no loading)
+                  expect(relationship.from.label).to.be.equal 'Person'
+                  Graph
+                    .start('n = node(*)')
+                    .match('n:Person-[r?]-()')
+                    .where({'n.name': name})
+                    .return('n AS Node, r AS Relationship')
+                    .limit(1)
+                    .sortResult(false)
+                    .disableLoading()
+                    .exec (err, result) ->
+                      expect(err).to.be null
+                      expect(result.data).to.have.length 1
+                      expect(result.data[0]).to.have.length 2
+                      person = result.data[0][0]
+                      relationship = result.data[0][1]
+                      expect(person.label).to.be null
+                      expect(relationship.from.label).to.be undefined
+                      done()
 
     it 'expect to query via Graph with parameters', (done) ->
       Person = Node.register_model 'Person'

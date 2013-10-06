@@ -89,9 +89,21 @@ var initGraph = function(neo4jrestful) {
         , todo = 0
         , done = 0;
 
+      // if ((!loadNode)&&(!loadRelationship)&&(!loadPath)&&(!self._smartResultSort_))
+      //   // we turned off all loading hooks and no sorting -> so lets return the native result
+      //   return cb(err, result, debug);
+
+      // increase the number of done jobs
+      // resort the results if options is activated
+      // and finally invoke the cb if we are done
       var __increaseDone = function() {
         if (done+1 >= todo) {
-          // done
+          // all jobs are done
+
+          // if is set to true, sort result:
+          // * return only the data (columns are attached to graph._columns_)
+          // * remove array if we only have one column
+          // e.g. { columns: [ 'count' ], data: [ { 1 } ] } -> 1
           if (self._smartResultSort_) {
             var cleanResult = result.data;
             // remove array, if we have only one column
@@ -113,7 +125,8 @@ var initGraph = function(neo4jrestful) {
         
         for (var column=0; column < result.data[row].length; column++) {
           var data = result.data[row][column];
-          var object = (data) ? self.neo4jrestful.createObjectFromResponseData(data) : null;          
+          // try to create an instance if we have an object here
+          var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data) : data;          
           result.data[row][column] = object;
 
           (function(object, isLastObject) {
