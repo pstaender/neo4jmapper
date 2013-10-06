@@ -88,7 +88,7 @@ You can combine methods the way you want:
 And easily use parameters to enjoy rollbacks (needs to be implemented) and speeding up repeating queries:
 
 ```js
-  Graph.start().case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3").addValue({ color1: 'blue', color2: 'brown' }).return('n AS Person').toCypherQuery();
+  Graph.start().case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3").parameters({ color1: 'blue', color2: 'brown' }).return('n AS Person').toCypherQuery();
   /* ~>
     CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
     RETURN         n AS Person;
@@ -102,7 +102,7 @@ Here is an example containing most of all available methods to build custom quer
     .match(…)
     .onMatch(…)
     .where('n.name = {value1}')
-    .addValue({value1: 'Bob'})
+    .parameters({value1: 'Bob'})
     .with(…)
     .orderBy(…)
     .skip(10)

@@ -164,10 +164,6 @@ var initGraph = function(neo4jrestful) {
     return this;
   }
 
-  Graph.prototype.addValue = function() {
-    throw Error('Use parameters() or addParameter() instead');
-  }
-
   Graph.prototype.parameters = function(parameters) {
     if (typeof parameters !== 'object')
       throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
@@ -175,19 +171,6 @@ var initGraph = function(neo4jrestful) {
       this.cypher._useParameters = true;
     this.cypher.parameters = parameters;
     return this;
-  }
-
-  Graph.prototype.addParameter = function(key, value, cb) {
-    throw Error('Use addParameters or addParameter instead');
-    if (typeof key === 'object') {
-      cb = value;
-      value = key[Object.keys(key)[0]];
-      key = Object.keys(key)[0];
-    }
-    if (this.cypher._useParameters === null)
-      this.cypher._useParameters = true;
-    this._addParameterToCypher({ key: value });
-    return this.exec(cb);
   }
 
   // ### Deletes *all* nodes and *all* relationships
@@ -411,7 +394,8 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.prototype.comment = function(comment, cb) {
-    return this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
+    this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
+    return this.exec(cb);
   }
 
   Graph.prototype.toCypherQuery = function(options) {
