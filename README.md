@@ -45,7 +45,7 @@ Use the full power of the cypher query language:
   });
 ```
 
-You can chain your query elements as much as your want and use conditional parameters in WHERE statements with `Graph`:
+You can chain your query elements as much as your want and use conditional parameters in WHERE clause with `Graph`:
 
 ```js
   Graph
@@ -85,7 +85,7 @@ You can combine methods the way you want:
   */
 ```
 
-And easily use parameters to enjoy rollbacks (needs to be implemented) and speeding up repeating queries:
+And easily use parameters speed up queries (statement handling with rollback support maybe follow on later releases):
 
 ```js
   Graph.start().case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3").parameters({ color1: 'blue', color2: 'brown' }).return('n AS Person').toCypherQuery();
@@ -605,8 +605,8 @@ There are some steps to take, especially some methods for daily use are missing,
 
   * implement: relationship (index)
   * implement: stream feature for browser-side-usage
+  * statement handling, with rollback support
   * documentation
-  * contionous changing with more than one of each statement
 
 ## Tests
 
