@@ -119,7 +119,6 @@ Node.prototype.fields = {
 
 Node.prototype.uri = null;                        // uri of the node
 Node.prototype._response_ = null;                 // original response object
-// Node.prototype._modified_query_ = false;       // flag to remember that a query chaining method was invoked
 Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query 
 Node.prototype._stream_ = null;                   // flag for processing result data
 Node.prototype.is_singleton = false;              // flag that this object is a singleton
@@ -1020,6 +1019,8 @@ Node.prototype.query = function(cypherQuery, options, cb) {
   if (this.label)
     options.label = this.label;
 
+  options.recommendConstructor = this.recommendConstructor();
+
   if ((this.cypher._useParameters) && (this.cypher.parameters) && (Object.keys(this.cypher.parameters).length > 0)) {
     graph.parameters(this.cypher.parameters);
   }
@@ -1056,7 +1057,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
  * Relationship methods
  */
 
-Node.prototype.withRelationships = function(relation, cb) {
+Node.prototype.withRelations = function(relation, cb) {
   var self = this.singletonForQuery();
   self._query_history_.push({ withRelation: true });
   // we expect a string or an array
@@ -1067,7 +1068,7 @@ Node.prototype.withRelationships = function(relation, cb) {
   return self;
 }
 
-Node.prototype.incomingRelationships = function(relation, cb) {
+Node.prototype.incomingRelations = function(relation, cb) {
   var self = this.singletonForQuery();
   self._query_history_.push({ incomingRelationships: true }); // only as a ”flag”
   if (typeof relation !== 'function') {
@@ -1087,7 +1088,7 @@ Node.prototype.incomingRelationships = function(relation, cb) {
   return self; // return self for chaining
 }
 
-Node.prototype.outgoingRelationships = function(relation, cb) {
+Node.prototype.outgoingRelations = function(relation, cb) {
   var self = this.singletonForQuery();
   self._query_history_.push({ outgoingRelationships: true }); // only as a ”flag”
   if (typeof relation !== 'function') {
@@ -1107,7 +1108,7 @@ Node.prototype.outgoingRelationships = function(relation, cb) {
   return self; // return self for chaining
 }
 
-Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
+Node.prototype.incomingRelationsFrom = function(node, relation, cb) {
   var self = this.singletonForQuery();
   self._query_history_.push({ incomingRelationshipsFrom: true }); // only as a ”flag”
   self.cypher.from = self.id || null;
@@ -1118,7 +1119,7 @@ Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
   return self.incomingRelationships(relation, cb);
 }
 
-Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
+Node.prototype.outgoingRelationsTo = function(node, relation, cb) {
   var self = this.singletonForQuery();
   self._query_history_.push({ outgoingRelationshipsTo: true }); // only as a ”flag”
   self.cypher.to = helpers.getIdFromObject(node);
@@ -1144,7 +1145,7 @@ Node.prototype.allDirections = function(relation, cb) {
   return self; // return self for chaining
 }
 
-Node.prototype.relationshipsBetween = function(node, relation, cb) {
+Node.prototype.relationsBetween = function(node, relation, cb) {
   var self = this.singletonForQuery();
   self._query_history_.push({ relationshipsBetween: true });
   self.cypher.to = helpers.getIdFromObject(node);
@@ -1155,7 +1156,7 @@ Node.prototype.relationshipsBetween = function(node, relation, cb) {
   return self.allDirections(relation, cb);
 }
 
-Node.prototype.allRelationships = function(relation, cb) {
+Node.prototype.allRelations = function(relation, cb) {
   var self = this.singletonForQuery();
   var label = (this.cypher.label) ? ':'+this.cypher.label : '';
   if (typeof relation === 'string') {
@@ -1169,6 +1170,34 @@ Node.prototype.allRelationships = function(relation, cb) {
   self.cypher.return_properties = ['r'];
   self.exec(cb);
   return self; // return self for chaining
+}
+
+Node.prototype.withRelationships = function(relation, cb) {
+  return this.withRelations(relation, cb);
+}
+
+Node.prototype.incomingRelationships = function(relation, cb) {
+  return this.incomingRelations(relation, cb);
+}
+
+Node.prototype.outgoingRelationships = function(relation, cb) {
+  return this.outgoingRelations(relation, cb);
+}
+
+Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
+  return this.incomingRelationsFrom(node, relation, cb);
+}
+
+Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
+  return this.outgoingRelationsTo(node, relation, cb);
+}
+
+Node.prototype.allRelationships = function(relation, cb) {
+  return this.allRelations(relation, cb);
+}
+
+Node.prototype.relationshipsBetween = function(node, relation, cb) {
+  return this.relationsBetweenfunction(node, relation, cb);
 }
 
 Node.prototype.limit = function(limit, cb) {

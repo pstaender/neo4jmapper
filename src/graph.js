@@ -73,10 +73,12 @@ var initGraph = function(neo4jrestful) {
       cb = options;
       options = {};
     }
+
     options.params = (typeof this.cypher._useParameters === 'boolean') ? this.cypher.parameters : {};
+    options.context = self;
 
     this.neo4jrestful.query(cypherQuery, options, function(err, res, debug) {
-      self._processResult(err, res, debug, self, function(err, res, debug) {
+      self._processResult(err, res, debug, options, function(err, res, debug) {
         // Is used by Node on performing an "update" via a cypher query
         // The result length is 1, so we remove the array
         if ((res)&&(res.length===1)&&(options.cypher)) {
@@ -90,7 +92,8 @@ var initGraph = function(neo4jrestful) {
     return this;
   }
 
-  Graph.prototype._processResult = function(err, result, debug, self, cb) {
+  Graph.prototype._processResult = function(err, result, debug, options, cb) {
+    var self = options.context;
     self._response_ = self.neo4jrestful._response_;
     self._columns_ = self.neo4jrestful._columns_;
     if (err)
@@ -135,7 +138,6 @@ var initGraph = function(neo4jrestful) {
       }
     }
 
-    // console.log(!!!, result);
     if ((!result.data)&&(result.length === 1)) {
       return cb(err, result[0], debug);
     }
@@ -144,7 +146,7 @@ var initGraph = function(neo4jrestful) {
       for (var column=0; column < result.data[row].length; column++) {
         var data = result.data[row][column];
         // try to create an instance if we have an object here
-        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data) : data;          
+        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, options.recommendConstructor) : data;          
         result.data[row][column] = object;
 
         (function(object, isLastObject) {
@@ -179,6 +181,8 @@ var initGraph = function(neo4jrestful) {
 
   // ### Shortcut for neo4jrestul.stream
   Graph.prototype.stream = function(cypherQuery, options, cb) {
+    var self = this
+      , recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
     if (typeof cypherQuery !== 'string') {
       cb = cypherQuery;
       cypherQuery = this.toCypherQuery();
@@ -187,7 +191,14 @@ var initGraph = function(neo4jrestful) {
       cb = options;
       options = undefined;
     }
-    this.neo4jrestful.stream(cypherQuery, options, cb);
+    this.neo4jrestful.stream(cypherQuery, options, function(data) {
+      // neo4jrestful alerady created an object, but not with a recommend constructtr
+      if ((data) && (typeof data === 'object') && (data._response_)) {
+        data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+      }
+
+      cb(data);
+    });
     return this;
   }
 

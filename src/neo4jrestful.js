@@ -461,9 +461,10 @@ var initNeo4jRestful = function() {
     var args;
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
     this.header['X-Stream'] = 'true';
-    var self = this;
-    var todo = 0;
-    var done = 0;
+    var self = this
+      , todo = 0
+      , done = 0;
+
     return this.query(cypher, options, function(data) {
       if (data) {
         if (typeof self.onProcess === 'function') {
@@ -597,6 +598,7 @@ var initNeo4jRestful = function() {
     if (uri) {
       if (/\/db\/data\/node\/[0-9]+\/*$/.test(uri)) {
         // we have a node or an inheriated class
+
         var n = new Class();
         n = n.populateWithDataFromResponse(responseData);
         return n;
