@@ -38,15 +38,29 @@ Neo4jMapper offers query building and object mapping for the daily neo4j usage i
 
 #### Processed results and generated Queries (recommend)
 
-Get sorted and loaded results instantly by using `Graph.start()…`, here some possible ways to go:
+Get sorted and loaded results by using `Graph.start()…`.
+
+Here are some possible ways to go (from convenient to heavy-handed):
 
 ```js
-  Graph.start().query( … , cb);
-  Graph.start().query( … ).exec(cb);     // same as above
-  Graph.start().query( … ).stream(cb);   // process stream (there will be no loading on streamed results)
-  Graph.start().disableLoading().disableSorting().query( … , cb)
-  // explicitly disbale sort + loading feature (are activated by default)
-  Graph.start().enableNative().query( … , cb) // same as above
+  Graph.start()       // recommend way to query graph
+    .query( … , cb);
+  
+  Graph.start()       // same as above
+    .query( … )
+    .exec(cb);
+
+  Graph.start()       // same as above, but process stream (there will be no loading on streamed results)
+    .stream( … , cb);
+  
+  Graph.start()       // explicitly disbale sort + loading feature (are activated by default)
+    .disableLoading()
+    .disableSorting()
+    .query( … , cb)
+  
+  Graph.start()       // same as above
+    .enableNative()
+    .query( … , cb)
 ```
 
 You can chain your query elements as much as your want and use conditional parameters in WHERE clause with `Graph`:
@@ -140,9 +154,7 @@ Here is an example containing most of all available methods to build custom quer
 
 #### Native Queries
 
-If you want to enjoy the maximum of performance, you cann pass-through your cypher query 1:1 and get the native results from neo4j.
-
-For native queries, just start with `Graph.query(…)`:
+If you want to enjoy the maximum of performance, you can pass-through cypher queries 1:1 and get the native results from neo4j, just start with `Graph.query(…)`:
 
 ```js
   Graph.query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
