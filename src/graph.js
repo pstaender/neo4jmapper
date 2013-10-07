@@ -46,6 +46,7 @@ var initGraph = function(neo4jrestful) {
   };
   Graph.prototype._loadOnResult_                = 'node|relationship|path';
   Graph.prototype._smartResultSort_             = true; // see in graph.query() -> _increaseDone()
+  Graph.prototype._nativeResults_               = false; // it's not implemented, all results are processed so far
   
   Graph.prototype._addParametersToCypher        = Node.prototype._addParametersToCypher;
   Graph.prototype._addParameterToCypher         = Node.prototype._addParameterToCypher;
@@ -89,9 +90,11 @@ var initGraph = function(neo4jrestful) {
         , todo = 0
         , done = 0;
 
-      // if ((!loadNode)&&(!loadRelationship)&&(!loadPath)&&(!self._smartResultSort_))
-      //   // we turned off all loading hooks and no sorting -> so lets return the native result
-      //   return cb(err, result, debug);
+      // if we have the native mode, return results instantly at this point
+      // TODO: to be implemented
+      if (self._nativeResults_)
+        // we turned off all loading hooks and no sorting -> so lets return the native result
+        return cb(err, result, debug);
 
       // increase the number of done jobs
       // resort the results if options is activated

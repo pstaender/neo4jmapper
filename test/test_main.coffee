@@ -12,7 +12,7 @@ if root?
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
   # patter matching for objects we will need for the tests
-  {Graph,Node,Relationship,helpers,client}  = new Neo4j(configForTest.neo4jURL)
+  {Graph,Node,Relationship,helpers,client,Neo4jRestful}  = new Neo4j(configForTest.neo4jURL)
 
 else if window?
   # tests in browser
@@ -24,7 +24,7 @@ else if window?
   }, configForTest or {})
   Join = window.Join
   neo4jmapper = Neo4jMapper.init(configForTest.neo4jURL)
-  {Graph,Node,Relationship,helpers,client} = neo4jmapper
+  {Graph,Node,Relationship,helpers,client,Neo4jRestful} = neo4jmapper
   Neo4j = Neo4jMapper.init
 
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
@@ -49,6 +49,19 @@ describe 'Neo4jMapper', ->
       expect(exact_version).to.be.a 'string'
       expect(client.version >= 2).to.be true
       done()
+
+  describe 'client', ->
+
+    it 'expect to query directly via Neo4jRestful', (done) ->
+      new Neo4jRestful(configForTest.neo4jURL).query 'START n=node(*) RETURN n AS Node LIMIT 1;', (err, res) ->
+        expect(err).to.be null
+        expect(res.columns).to.have.length 1
+        expect(res.data).to.have.length 1
+        client.query 'START n=node(*) RETURN n AS Node LIMIT 1;', (err, res) ->
+          expect(err).to.be null
+          expect(res.columns).to.have.length 1
+          expect(res.data).to.have.length 1
+          done()
 
   describe 'graph', ->
 
@@ -153,8 +166,7 @@ describe 'Neo4jMapper', ->
                     .where({'n.name': name})
                     .return('n AS Node, r AS Relationship')
                     .limit(1)
-                    .sortResult(false)
-                    .disableLoading()
+                    .enableNative()
                     .exec (err, result) ->
                       expect(err).to.be null
                       expect(result.data).to.have.length 1

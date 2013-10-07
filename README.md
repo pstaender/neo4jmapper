@@ -152,9 +152,11 @@ Here is an example containing most of all available methods to build custom quer
     .exec(cb) // or .stream(cb)
 ```
 
-#### Native Queries
+#### Raw Queries
 
-If you want to enjoy the maximum of performance, you can pass-through cypher queries 1:1 and get the native results from neo4j, just start with `Graph.query(…)`:
+If you want to enjoy the best performance, you can pass-through cypher queries 1:1 and get the almost native results from neo4j - almost because every result part will be parsed + transformed to a Node / Relationship / Path object.
+
+Just start with `Graph.query(…)`:
 
 ```js
   Graph.query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
@@ -162,7 +164,7 @@ If you want to enjoy the maximum of performance, you can pass-through cypher que
   });
 ```
 
-or for native queries as stream:
+or for raw queries as stream:
 
 ```js
   Graph.stream("START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
@@ -171,6 +173,18 @@ or for native queries as stream:
     else
       console.log('done');
   });
+```
+
+#### Native Queries
+
+Use the neo4jrestful client to query 100% natively:
+
+```js
+  var client = Neo4jMapper.client;
+  client.query|post|get|delete|put(…, cb);
+  // or
+  var Neo4jRestful = Neo4jMapper.Neo4jRestful;
+  new Neo4jRestful('http://localhost:7474').query|post|get|delete|put(…, cb)
 ```
 
 ### Create and save nodes

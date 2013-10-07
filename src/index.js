@@ -17,6 +17,7 @@ module.exports = exports = function(urlOrOptions) {
   
   // Provide all necessary interfaces to use Noe4jMapper
   var Neo4jRestful = require('./neo4jrestful');
+
   // Create a client from given URL
   var neo4jrestful  = new Neo4jRestful(urlOrOptions);
 
