@@ -224,49 +224,49 @@ describe 'Neo4jMapper', ->
             expect(result.data[0][0].id).to.be.equal id
             done()
 
-  describe 'stream', ->
+  # describe 'stream', ->
 
-    it 'expect to make a stream request on nodes and models', (SkipInBrowser) (done) ->
-      class Person extends Node
-      Node.register_model(Person)
-      new Person({name: 'A'}).save ->
-        new Person({name: 'B'}).save ->
-          Person.findAll().count (err, count) ->
-            expect(err).to.be null
-            expect(count).to.be.above 0
-            iterationsCount = 0;
-            count = 10 if count > 10
-            Person.findAll().limit(count-1).each (data) ->
-              if data
-                expect(data._response_.self).to.be.a 'string'
-                expect(data.labels.constructor).to.be.equal Array
-                expect(data.label).to.be.equal 'Person'
-                iterationsCount++
-              else
-                expect(iterationsCount).to.be.equal count-1
-                iteration = 0
-                # testing finding unspecific node(s)
-                Node.findOne().each (node) ->
-                  iteration++
-                  if node
-                    expect(node.label).to.be null
-                  else
-                    expect(iteration).to.be.equal 2
-                    done()
+  #   it 'expect to make a stream request on nodes and models', (SkipInBrowser) (done) ->
+  #     class Person extends Node
+  #     Node.register_model(Person)
+  #     new Person({name: 'A'}).save ->
+  #       new Person({name: 'B'}).save ->
+  #         Person.findAll().count (err, count) ->
+  #           expect(err).to.be null
+  #           expect(count).to.be.above 0
+  #           iterationsCount = 0;
+  #           count = 10 if count > 10
+  #           Person.findAll().limit(count-1).each (data) ->
+  #             if data
+  #               expect(data._response_.self).to.be.a 'string'
+  #               expect(data.labels.constructor).to.be.equal Array
+  #               expect(data.label).to.be.equal 'Person'
+  #               iterationsCount++
+  #             else
+  #               expect(iterationsCount).to.be.equal count-1
+  #               iteration = 0
+  #               # testing finding unspecific node(s)
+  #               Node.findOne().each (node) ->
+  #                 iteration++
+  #                 if node
+  #                   expect(node.label).to.be null
+  #                 else
+  #                   expect(iteration).to.be.equal 2
+  #                   done()
 
-    it 'expect to make a stream request on the graph', (SkipInBrowser) (done) ->
-      Node.findAll().count (err, count) ->
-        expect(count).to.be.above 1
-        iterationsCount = 0;
-        count = 10 if count > 10
-        graph = new Graph() # alternate: client.stream
-        graph.stream "START n=node(*) RETURN n LIMIT #{count};", (node) ->
-          unless node
-            expect(count).to.be.equal count
-            done()
-          else
-            expect(node.id).to.be.a 'number'
-            count++
+  #   it 'expect to make a stream request on the graph', (SkipInBrowser) (done) ->
+  #     Node.findAll().count (err, count) ->
+  #       expect(count).to.be.above 1
+  #       iterationsCount = 0;
+  #       count = 10 if count > 10
+  #       graph = new Graph() # alternate: client.stream
+  #       graph.stream "START n=node(*) RETURN n LIMIT #{count};", (node) ->
+  #         unless node
+  #           expect(count).to.be.equal count
+  #           done()
+  #         else
+  #           expect(node.id).to.be.a 'number'
+  #           count++
 
   describe 'node', ->
 

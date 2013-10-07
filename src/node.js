@@ -13,7 +13,8 @@ var global = (typeof window === 'object') ? window : root;
 var helpers = null
   , _ = null
   , Sequence = null
-  , Relationship = null;
+  , Relationship = null
+  , Graph = null;
 
 if (typeof window === 'object') {
   // browser
@@ -21,11 +22,13 @@ if (typeof window === 'object') {
   helpers      = window.Neo4jMapper.helpers;
   _            = window._;
   Sequence     = window.Sequence;
+  Graph        = window.Neo4jMapper.Graph;
 
 } else {
   helpers      = require('./helpers');
   _            = require('underscore');
   Sequence     = require('./lib/sequence');
+  Graph        = require('./graph');
 }
 
 // ### Constructor
@@ -150,6 +153,7 @@ Node.prototype.cypher = {
   _useParameters: true,
   _count: null,
   _distinct: null,
+  _update: null,          // flag when an update is performed
   by_id: null
 };
 
@@ -607,6 +611,7 @@ Node.prototype.update = function(data, cb) {
       this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
     }
   }
+  this.cypher._update = true;
   this.exec(cb);
   return this;
 }
@@ -964,30 +969,6 @@ Node.prototype._end_node_id = function(fallback) {
   return (this.cypher.to > 0) ? this.cypher.to : fallback; 
 }
 
-Node.prototype._addParametersToCypher = function(parameters) {
-  if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
-    if (!this.cypher.parameters)
-      this.cypher.parameters = {};
-    for (var i=0; i < parameters.length; i++) {
-      this._addParameterToCypher(parameters[i]);
-    }
-  }
-  return this.cypher.parameters;
-}
-
-Node.prototype._addParameterToCypher = function(parameter) {
-  if (typeof parameter === 'object') {
-    if (!this.cypher.parameters)
-      this.cypher.parameters = {};
-    _.extend(this.cypher.parameters, parameter);
-  } else {
-    // we name the parameter with `_value#_`
-    var count = Object.keys(this.cypher.parameters).length;
-    this.cypher.parameters['_value'+count+'_'] = parameter;
-  }
-  return this.cypher.parameters;
-}
-
 Node.prototype.singletonForQuery = function(cypher) {
   var singleton = this.singleton()
   singleton.cypher = _.extend(singleton.cypher, cypher);
@@ -995,8 +976,8 @@ Node.prototype.singletonForQuery = function(cypher) {
 }
 
 Node.prototype.exec = function(cb, cypher_or_request) {
-  var request = null;
-  var cypherQuery = null;
+  var request = null
+    , cypherQuery = null;
   // you can alternatively use an url 
   if (typeof cypher_or_request === 'string')
     cypherQuery = cypher_or_request;
@@ -1025,97 +1006,31 @@ Node.prototype.exec = function(cb, cypher_or_request) {
 Node.prototype.query = function(cypherQuery, options, cb) {
   var self = this;
   
-  var DefaultConstructor = this.recommendConstructor();
-
-  var _deliverResultset = function(self, cb, err, sortedData, debug) {
-    if ( (self.cypher.by_id) && (self.cypher.return_properties.length === 1) && (self.cypher.return_properties[0] === 'n') && (sortedData[0]) )
-      sortedData = sortedData[0];
-    else if ( (self.cypher.limit === 1) && (sortedData.length === 1) )
-      sortedData = sortedData[0];
-    else if ( (self.cypher.limit === 1) && (sortedData.length === 0) )
-      sortedData = null;
-    // s.th. like [ 3 ] as result for instance
-    if ( (_.isArray(sortedData)) && (sortedData.length === 1) && (typeof sortedData[0] !== 'object') )
-      sortedData = sortedData[0];
-    return cb(err, sortedData, debug);
-  } 
-
-  var _processData = function(err, result, debug, cb) {
-    if ((err)||(!result)) {
-      return cb(err, result, debug);
-    } else {
-      var sortedData = [];
-      var errors = [];
-      // we are using the 
-      var sequence = Sequence.create();
-      // we iterate through the results
-      var data = (result.data) ? result.data : [ result ];
-      // because we are making a seperate request we instanciate another client
-      // var neo4jrestful = new Node.prototype.neo4jrestful.constructor(self.neo4jrestful.baseUrl);
-      for (var x=0; x < data.length; x++) {
-        if (typeof data[x][0] === 'undefined') {
-          break;
-        }
-        var basicNode = self.neo4jrestful.createObjectFromResponseData(data[x][0], DefaultConstructor);
-        (function(x,basicNode){
-          sequence.then(function(next) {
-            // TODO: reduce load / calls, currently it's way too slow…
-            if (typeof basicNode.load === 'function') {
-              basicNode.load(function(err, node) {
-                if ((err) || (!node))
-                  errors.push(err);
-                sortedData[x] = node;
-                next();
-              });
-            } else {
-              // no load() function found
-              sortedData[x] = basicNode;
-              next();
-            }
-          });
-        })(x, basicNode);
-      }
-      sequence.then(function() {
-        //finally
-        if ( (data.data) && (data.data[0]) && (typeof data.data[0][0] !== 'object') )
-          sortedData = data.data[0][0];
-        return _deliverResultset(self, cb, (errors.length === 0) ? null : errors, sortedData, debug);
-      });
-    }
-  }
-
   // sort arguments
   if (typeof options !== 'object') {
     cb = options;
     options = {};
   }
+
+  options.cypher = this.cypher;
+
+  var graph = Graph.start();
+
   // apply option values from Node to request
   if (this.label)
     options.label = this.label;
 
   if ((this.cypher._useParameters) && (this.cypher.parameters) && (Object.keys(this.cypher.parameters).length > 0)) {
-    options.params = {};
-    // copy parameters
-    _.extend(options.params, this.cypher.parameters);
+    graph.parameters(this.cypher.parameters);
   }
 
   if (typeof cypherQuery === 'string') {
     // check for stream flag
     // in stream case we use stream() instead of query()
     if (this._stream_) {
-      return this.neo4jrestful.stream(cypherQuery, options, function(data, debug) {
-        if ( (data) && (data.__type__) ) {
-          cb(
-            Node.singleton().neo4jrestful.createObjectFromResponseData(data._response_, DefaultConstructor), debug
-          );
-        } else {
-          return cb(data, debug);
-        }
-      });
+      return graph.stream(cypherQuery, options, cb);
     } else {
-      return this.neo4jrestful.query(cypherQuery, options, function(err, data, debug) {
-        _processData(err, data, debug, cb);
-      });
+      return graph.query(cypherQuery, options, cb);
     }
   } else if (typeof cypherQuery === 'object') {
     // we expect a raw request object here
@@ -1130,7 +1045,7 @@ Node.prototype.query = function(cypherQuery, options, cb) {
       data = {
         data: [ [ data ] ]
       };
-      _processData(err, data, debug, cb);
+      graph._processResult(err, data, debug, self, cb);
     });
   } else {
     return cb(Error("First argument must be a string with the cypher query"), null);
@@ -1148,7 +1063,6 @@ Node.prototype.withRelationships = function(relation, cb) {
   self.cypher.relationship = (typeof relation === 'string') ? relation : relation.join('|');
   self.cypher.incoming = true;
   self.cypher.outgoing = true;
-  self.cypher.return_properties = ['n'];
   self.exec(cb);
   return self;
 }
@@ -1632,7 +1546,7 @@ Node.prototype.createRelationship = function(options, cb) {
       Node.findById(options.from_id).outgoingRelationshipsTo(options.to_id, options.type, function(err, result) {
         if (err)
           return cb(err, result);
-        if (result.length === 1) {
+        if ((result) && (result.length === 1)) {
           // if we have only one relationship, we update this one
           Relationship.findById(result[0].id, function(err, relationship){
             if (relationship) {
@@ -1938,12 +1852,14 @@ Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
       // if we have an id: value, we will build the query in prepareQuery
     }
     if (typeof cb === 'function') {
-       self.exec(function(err,found){
+      self.exec(function(err,found){
         if (err)
           return cb(err, found);
         else {
-          // try to return the first
-          if (found.length === 0)
+          // try to return the first (if exists)
+          if (found === null)
+            return cb(null, found);
+          else if (found.length === 0)
             found = null;
           else if ((found.length === 1) && ( 1 === _limit_))
             found = found[0];
@@ -1952,7 +1868,7 @@ Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
             found = found.splice(0, _limit_);
           return cb(null, found);
         }
-       });
+      });
     }
    
   }
@@ -2207,9 +2123,16 @@ var initNode = function(neo4jrestful) {
   if (helpers.constructorNameOfFunction(global.Neo4jMapper.Neo4jRestful) === 'Neo4jRestful') {
     global.Neo4jMapper.Node.prototype.neo4jrestful = neo4jrestful;
     Relationship = global.Neo4jMapper.Relationship;
+    if (typeof window === 'object')
+      Graph = window.Neo4jMapper.initGraph(neo4jrestful);
+    else
+      Graph = require('./graph').init(neo4jrestful);
   } else {
     throw Error('You have to use an Neo4jRestful object as argument');
   }
+
+  Node.prototype._addParametersToCypher = Graph.prototype._addParametersToCypher;
+  Node.prototype._addParameterToCypher  = Graph.prototype._addParameterToCypher;
 
   return Node;
 }

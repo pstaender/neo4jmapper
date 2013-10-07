@@ -117,6 +117,10 @@ Path.prototype.populateWithDataFromResponse = function(data) {
   return path;
 }
 
+Path.prototype.load = function(cb) {
+  cb(null, this);
+}
+
 Path.prototype.toObject = function() {
   return {
     classification: this.classification,
