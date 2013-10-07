@@ -148,6 +148,12 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*) MATCH (n)<-[r]-() RETURN r;'
           ]
         
+        "Node.findOne().withRelationship('know')":
+          [
+             Node.findOne().withRelationships('know')
+            "MATCH (n)-[r:know]-() RETURN n LIMIT 1;"
+          ]
+
         "Node.findOne().outgoingRelationships(['know','like'])":
           [
              Node.findOne().outgoingRelationships(['know','like'])

@@ -1141,6 +1141,18 @@ Node.prototype.query = function(cypherQuery, options, cb) {
  * Relationship methods
  */
 
+Node.prototype.withRelationships = function(relation, cb) {
+  var self = this.singletonForQuery();
+  self._query_history_.push({ withRelation: true });
+  // we expect a string or an array
+  self.cypher.relationship = (typeof relation === 'string') ? relation : relation.join('|');
+  self.cypher.incoming = true;
+  self.cypher.outgoing = true;
+  self.cypher.return_properties = ['n'];
+  self.exec(cb);
+  return self;
+}
+
 Node.prototype.incomingRelationships = function(relation, cb) {
   var self = this.singletonForQuery();
   self._query_history_.push({ incomingRelationships: true }); // only as a ”flag”

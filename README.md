@@ -28,10 +28,20 @@ Neo4jMapper offers query building and object mapping for the daily neo4j usage i
   var Neo4j = require('neo4jmapper');
   var neo4j = new Neo4j('http://localhost:7474');
 
-  var Graph        = neo4j.Graph
-    , Node         = neo4j.Node
-    , Relationship = neo4j.Relationship
-    , client       = neo4j.client;
+  var Graph        = neo4j.Graph         // to query the graph directly
+    , Node         = neo4j.Node          // to query and CRUD all kind of nodes
+    , Relationship = neo4j.Relationship  // to CRUD relationships
+    // in most cases optional:
+    , client       = neo4j.client        // to request natively on neo4j
+    , Neo4jRestful = neo4j.Neo4jRestful; // constructor of client
+```
+
+You can also work with more than one database:
+
+```js
+  var Neo4j = require('neo4jmapper');
+  var db1 = new Neo4j('http://localhost:7420')
+    , db2 = new Neo4j('http://localhost:7421');
 ```
 
 ### Cypher queries
@@ -490,6 +500,7 @@ The query method names are heavily inspired by mongodb and mongoose - so most of
   * find, findOne, findById, findByUniqueKeyValue
   * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhereNode, …
   * andHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …
+  * withRelatioships, incomingRelationships, outgoingRelationships, relationshipsBetween, incomingRelationshipsFrom(), outgoingRelationshipsTo() …
   * match
   * limit
   * skip
