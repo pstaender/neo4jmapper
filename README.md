@@ -36,13 +36,17 @@ Neo4jMapper offers query building and object mapping for the daily neo4j usage i
 
 ### Cypher queries
 
-Use the full power of the cypher query language:
+#### Processed results and generated Queries (recommend)
+
+Get sorted and loaded results instantly by using `Graph.start()…`, here some possible ways to go:
 
 ```js
-  var graph = new Graph();
-  graph.query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
-    console.log(err, result);
-  });
+  Graph.start().query( … , cb);
+  Graph.start().query( … ).exec(cb);     // same as above
+  Graph.start().query( … ).stream(cb);   // process stream (there will be no loading on streamed results)
+  Graph.start().disableLoading().disableSorting().query( … , cb)
+  // explicitly disbale sort + loading feature (are activated by default)
+  Graph.start().enableNative().query( … , cb) // same as above
 ```
 
 You can chain your query elements as much as your want and use conditional parameters in WHERE clause with `Graph`:
@@ -78,7 +82,11 @@ You can chain your query elements as much as your want and use conditional param
 You can combine methods the way you want:
 
 ```js
-  Graph.start().case("n.eyes WHEN 'blue' THEN 1 WHEN 'brown' THEN 2 ELSE 3").return('n AS Person').toCypherQuery();
+  Graph
+    .start()
+    .case("n.eyes WHEN 'blue' THEN 1 WHEN 'brown' THEN 2 ELSE 3")
+    .return('n AS Person')
+    .toCypherQuery();
   /* ~>
     CASE           n.eyes WHEN \'blue\' THEN 1 WHEN \'brown\' THEN 2 ELSE 3 END
     RETURN         n AS Person;
@@ -88,7 +96,12 @@ You can combine methods the way you want:
 And easily use parameters speed up queries (statement handling with rollback support maybe follow on later releases):
 
 ```js
-  Graph.start().case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3").parameters({ color1: 'blue', color2: 'brown' }).return('n AS Person').toCypherQuery();
+  Graph
+    .start()
+    .case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3")
+    .parameters({ color1: 'blue', color2: 'brown' })
+    .return('n AS Person')
+    .toCypherQuery();
   /* ~>
     CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
     RETURN         n AS Person;
@@ -103,6 +116,7 @@ Here is an example containing most of all available methods to build custom quer
     .onMatch(…)
     .where('n.name = {value1}')
     .parameters({value1: 'Bob'})
+    .where({ 'n.name': 'Bob' }) // saves the `where(…)` & `parameters(…)` operations above
     .with(…)
     .orderBy(…)
     .skip(10)
@@ -111,7 +125,9 @@ Here is an example containing most of all available methods to build custom quer
     .return(…)
     .create(…)
     .onCreate(…)
+    .createIndexOn(…)
     .createUnique(…)
+    .dropIndexOn
     .merge(…)
     .remove(…)
     .set(…)
@@ -120,6 +136,29 @@ Here is an example containing most of all available methods to build custom quer
     .custom(…)
     .comment(…)
     .exec(cb) // or .stream(cb)
+```
+
+#### Native Queries
+
+If you want to enjoy the maximum of performance, you cann pass-through your cypher query 1:1 and get the native results from neo4j.
+
+For native queries, just start with `Graph.query(…)`:
+
+```js
+  Graph.query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
+    console.log(err, result);
+  });
+```
+
+or for native queries as stream:
+
+```js
+  Graph.stream("START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
+    if (result)
+      console.log(err, result);
+    else
+      console.log('done');
+  });
 ```
 
 ### Create and save nodes
@@ -606,7 +645,9 @@ There are some steps to take, especially some methods for daily use are missing,
   * implement: relationship (index)
   * implement: stream feature for browser-side-usage
   * statement handling, with rollback support
-  * documentation
+  * documentation (description for methods)
+  * cleanup tests (remove "duplicates")
+  * Node. methods should use Graph. methods inside (currently there are implemented native calls mostly in Node)
 
 ## Tests
 

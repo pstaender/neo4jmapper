@@ -1742,6 +1742,10 @@ Node.prototype.requestLabels = function(cb) {
   return this;
 }
 
+Node.prototype.setLabel = function(label) {
+  return this.setLabels([ label ]);
+}
+
 Node.prototype.setLabels = function(labels) {
   if (_.isArray(labels)) {
     this.labels = labels;
@@ -1750,7 +1754,7 @@ Node.prototype.setLabels = function(labels) {
   if ((_.isArray(this.labels))&&(this.labels.length === 1)) {
     this.label = this.labels[0];
   }
-  return this.labels;
+  return this;
 }
 
 Node.prototype.labelsAsArray = function() {

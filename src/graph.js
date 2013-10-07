@@ -157,13 +157,6 @@ var initGraph = function(neo4jrestful) {
     return this;
   }
 
-  Graph.prototype.sortResult = function(trueOrFalse) {
-    if (typeof trueOrFalse === 'undefined')
-      trueOrFalse = true;
-    this._smartResultSort_ = trueOrFalse;
-    return this;
-  }
-
   // ### Shortcut for neo4jrestul.stream
   Graph.prototype.stream = function(cypherQuery, options, cb) {
     if (typeof cypherQuery !== 'string') {
@@ -190,7 +183,7 @@ var initGraph = function(neo4jrestful) {
   // ### Deletes *all* nodes and *all* relationships
   Graph.prototype.wipeDatabase = function(cb) {
     var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";
-    return this.query(query,cb);
+    return this.query(query, cb);
   }
 
   // ### Counts all objects of a specific type: (all|node|relationship|[nr]:Movie)
@@ -205,7 +198,7 @@ var initGraph = function(neo4jrestful) {
       query = "MATCH "+type+" RETURN "+type[0]+";";
     else
       query = "START n=node(*) MATCH n-[r?]-() RETURN count(n), count(r);";
-    return this.start().sortResult(false).query(query,function(err,data){
+    return Graph.query(query, function(err,data){
       if ((data)&&(data.data)) {
         var count = data.data[0][0];
         if (typeof data.data[0][1] !== 'undefined')
@@ -445,13 +438,55 @@ var initGraph = function(neo4jrestful) {
     return s+';';
   }
 
+  // # Enables loading for specific types
+  // Define type(s) simply in a string
+  // e.g.:
+  // 'node|relationship|path' or '*' to enable load for all types
+  // 'node|relationship' to enable for node + relationships
+  // '' to disable for all (you can also use `disableLoading()` instead)
   Graph.prototype.enableLoading = function(classifications) {
+    if (classifications === '*')
+      classifications = 'node|relationship|path';
     this._loadOnResult_ = classifications;
     return this;
   }
 
+  // # Disables loading on results (speeds up queries but less convenient)
   Graph.prototype.disableLoading = function() {
     this._loadOnResult_ = '';
+    return this;
+  }
+
+  // # Sort Results
+  // By default we get results like:
+  // { columns: [ 'node' ], data: [ [ { nodeObject#1 } ], … [ { nodeObject#n} ]] }
+  // To keep it more handy, we return just the data
+  // and (if we have only 1 column) instead of [ {node} ] -> {node}
+  // If you want to have access to the columns anyway, you can get them on `graph._columns_`
+  Graph.prototype.sortResult = function(trueOrFalse) {
+    if (typeof trueOrFalse === 'undefined')
+      trueOrFalse = true;
+    this._smartResultSort_ = trueOrFalse;
+    return this;
+  }
+
+  Graph.prototype.enableSorting = function() {
+    return this.sortResult(true);
+  }
+
+  Graph.prototype.disableSorting = function() {
+    return this.sortResult(false);
+  }
+
+  Graph.prototype.disableNative = function() {
+    this.sortResult(true);
+    this.enableLoading('*');
+    return this;
+  }
+
+  Graph.prototype.enableNative = function() {
+    this.sortResult(false);
+    this.disableLoading();
     return this;
   }
 
@@ -462,11 +497,11 @@ var initGraph = function(neo4jrestful) {
    * (are shortcuts to methods on new instanced Graph())
    */
   Graph.query = function(cypher, options, cb) {
-    return new Graph().query(cypher, options, cb);
+    return Graph.enable_native().query(cypher, options, cb);
   }
 
   Graph.stream = function(cypher, options, cb) {
-    return new Graph().stream(cypher, options, cb);
+    return new Graph.enable_native().stream(cypher, options, cb);
   }
 
   Graph.wipe_database = function(cb) {
@@ -494,15 +529,37 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.start = function(start, cb) {
-    return new Graph().start(start, cb);
+    return Graph.disable_native().start(start, cb);
   }
 
   Graph.enable_loading = function(classifications) {
-    return Graph.prototype._loadOnResult_ = classifications;
+    Graph.prototype.enableLoading();
+    return new Graph();
   }
 
   Graph.disable_loading = function() {
-    return Graph.prototype._loadOnResult_ = '';
+    Graph.prototype.disableLoading();
+    return new Graph();
+  }
+
+  Graph.enable_native = function() {
+    Graph.prototype.enableNative();
+    return new Graph();
+  }
+
+  Graph.disable_native = function() {
+    Graph.prototype.disableNative();
+    return new Graph();
+  }
+
+  Graph.enable_sorting = function() {
+    Graph.prototype.enableSorting();
+    return new Graph();
+  }
+
+  Graph.disable_sorting = function() {
+    Graph.prototype.disableSorting(false);
+    return new Graph();
   }
 
   return Graph;

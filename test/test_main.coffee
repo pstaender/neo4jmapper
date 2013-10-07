@@ -186,6 +186,31 @@ describe 'Neo4jMapper', ->
           expect(i).to.be 1
           done()
 
+    it 'expect to stream native graph query results', (SkipInBrowser) (done) ->
+      i = 0
+      Graph.stream 'START n=node(*) RETURN n LIMIT 1;', (node) ->
+        if node
+          i++
+        else
+          expect(i).to.be 1
+          done()
+
+    it 'expect to query graph native and not native (not native by default)', (done) ->
+      name = String(Date())
+      new Node({ name: name }).setLabel('Person').save (err, person) ->
+        Graph.start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, found) ->
+          expect(err).to.be null
+          expect(found).to.have.length 1
+          expect(found[0].label).to.be.equal 'Person'
+          id = found[0].id
+          expect(id).to.be.a 'number'
+          Graph.enable_native().start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, result, debug) ->
+            expect(err).to.be null
+            expect(result.columns).to.have.length 1
+            expect(result.data).to.have.length 1
+            expect(result.data[0]).to.have.length 1
+            expect(result.data[0][0].id).to.be.equal id
+            done()
 
   describe 'stream', ->
 
@@ -431,13 +456,31 @@ describe 'Neo4jMapper', ->
               done()
 
     it 'expect to query customized via cypher', (done) ->
-      graph = Graph.query """
+      query = """
         START nodes=node(*)
         RETURN nodes LIMIT 10;
-        """, (err, results) ->
+      """
+      graph = Graph.start().query query, (err, results) ->
+        expect(err).to.be null
+        expect(graph._columns_.length).to.be.a 'number'
+        expect(results.length).to.be.a 'number'
+        done()
+
+    it 'expect to query customized via cypher natively', (done) ->
+      query = """
+        START nodes=node(*)
+        RETURN nodes LIMIT 10;
+      """
+      graph = Graph.query query, (err, results) ->
+        expect(err).to.be null
+        expect(graph._columns_.length).to.be.a 'number'
+        expect(results.columns.length).to.be.equal graph._columns_.length
+        expect(results.data.length).to.be.a 'number'
+        # expect to get same result this way
+        Graph.start().disableLoading().disableSorting().query query, ->
           expect(err).to.be null
-          expect(graph._columns_.length).to.be.a 'number'
-          expect(results.length).to.be.a 'number'
+          expect(results.columns.length).to.be.equal graph._columns_.length
+          expect(results.data.length).to.be.a 'number'
           done()
 
     it 'expect to get suitable errors on wrong customized cypher queries', (done) ->
