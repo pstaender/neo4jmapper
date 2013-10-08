@@ -12,7 +12,11 @@ if root?
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
   # patter matching for objects we will need for the tests
-  {Graph,Node,Relationship,helpers,client,Neo4jRestful}  = new Neo4j(configForTest.neo4jURL)
+  {Graph,Node,Relationship,helpers,client,Neo4jRestful}  = new Neo4j {
+    url: configForTest.neo4jURL
+    onConnectionError: (err) ->
+      throw err
+  }
 
 else if window?
   # tests in browser
@@ -30,7 +34,6 @@ else if window?
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
 
 version = client.version
-graphdb = null # will be initialized in before()
 
 SkipInNode = (a) -> unless window? then null else a 
 SkipInBrowser = (a) -> if window? then null else a
@@ -43,7 +46,6 @@ SkipInBrowser = (a) -> if window? then null else a
 describe 'Neo4jMapper', ->
 
   before (done) ->
-    graphdb = new Graph(configForTest.neo4jURL)
     client.checkAvailability (err, exact_version) ->
       expect(err).to.be null
       expect(exact_version).to.be.a 'string'
@@ -471,9 +473,9 @@ describe 'Neo4jMapper', ->
     it 'expect to remove a node', (done) ->
       node = new Node title: 'test'
       node.save -> 
-        graphdb.countNodes (err, countNodesBefore) ->
+        new Graph().countNodes (err, countNodesBefore) ->
           node.remove (err) ->
-            graphdb.countNodes (err, countNodesAfter) ->
+            new Graph().countNodes (err, countNodesAfter) ->
               id = node.id
               expect(err).to.be null
               expect(countNodesBefore-1).to.be countNodesAfter
@@ -937,7 +939,7 @@ describe 'Neo4jMapper', ->
       bob = new Node name: 'Bob'
       charles = new Node name: 'Charles'
       alice.save -> bob.save -> charles.save ->
-        graphdb.countRelationships (err, countedRelationshipsBefore) ->
+        new Graph().countRelationships (err, countedRelationshipsBefore) ->
           try
             alice.createRelationshipBetween(bob, ->)
           catch e
@@ -949,19 +951,19 @@ describe 'Neo4jMapper', ->
           alice.createRelationshipBetween bob, 'knows', { since: 'years' }, (err, result) ->
             expect(err).to.be null
             expect(result).to.have.length 2
-            graphdb.countRelationships (err, countedRelationshipsIntermediate) ->
+            new Graph().countRelationships (err, countedRelationshipsIntermediate) ->
               expect(countedRelationshipsBefore+2).to.be.equal countedRelationshipsIntermediate
               bob.createRelationshipTo alice, 'liked', (err, relationship) ->
                 expect(err).to.be null
                 expect(relationship).to.be.an 'object'
                 expect(relationship.type).to.be.equal 'liked'
                 expect(relationship).to.be.an 'object'
-                graphdb.countRelationships (err, countedRelationshipsFinally) ->
+                new Graph().countRelationships (err, countedRelationshipsFinally) ->
                   expect(countedRelationshipsBefore+3).to.be.equal countedRelationshipsFinally
                   bob.createRelationshipFrom alice, 'follows', (err, relationship) ->
                     expect(err).to.be null
                     expect(relationship).to.be.an 'object'
-                    graphdb.countRelationships (err, countedRelationshipsFinally) ->
+                    new Graph().countRelationships (err, countedRelationshipsFinally) ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
                       # console.log bob.neo4jrestful.header
                       bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
@@ -971,7 +973,7 @@ describe 'Neo4jMapper', ->
                         expect(relationship.data.since).to.be.equal 'years'
                         expect(relationship.id).to.be.a 'number'
                         id = relationship.id
-                        graphdb.countRelationships (err, count) ->
+                        new Graph().countRelationships (err, count) ->
                           expect(count).to.be.equal countedRelationshipsFinally
                           bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'months' }, (err, relationship) ->
                             expect(err).to.be null
@@ -979,13 +981,13 @@ describe 'Neo4jMapper', ->
                             expect(relationship.type).to.be.a 'string'
                             expect(relationship.data.since).to.be.equal 'months'
                             expect(relationship.id).to.be.equal id
-                            graphdb.countRelationships (err, count) ->
+                            new Graph().countRelationships (err, count) ->
                               expect(count).to.be.equal countedRelationshipsFinally
                               charles.createOrUpdateRelationshipTo bob, 'follows', { since: 'days' }, (err, relationship) ->
                                 expect(err).to.be null
                                 bob.incomingRelationships().count (err, count) ->
                                   expect(count).to.be 3
-                                  graphdb.countRelationships (err, count) ->
+                                  new Graph().countRelationships (err, count) ->
                                     expect(count).to.be.equal countedRelationshipsFinally + 1
                                     alice.removeIncludingRelationships -> bob.removeIncludingRelationships -> charles.removeIncludingRelationships ->
                                       done()

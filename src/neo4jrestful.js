@@ -3,19 +3,20 @@ var initNeo4jRestful = function() {
   "use strict";
 
   // will be set with environment depending values below
-  var Node                = null
-    , Relationship        = null
-    , Path                = null
-    , node                = null
-    , relationship        = null
-    , path                = null
-    , _singleton_instance = null
-    , helpers             = null
-    , _                   = null
-    , jQuery              = null
-    , Sequence            = null
-    , JSONStream          = null
-    , request             = null;
+  var Node                       = null;
+  var Relationship               = null;
+  var Path                       = null;
+  var node                       = null;
+  var relationship               = null;
+  var path                       = null;
+  var _singleton_instance        = null;
+  var helpers                    = null;
+  var _                          = null;
+  var jQuery                     = null;
+  var Sequence                   = null;
+  var JSONStream                 = null;
+  var request                    = null;
+  var __established_connection__ = {};    // a flag of all different db connections (differs by url)
 
   if (typeof window === 'object') {
     // browser
@@ -141,16 +142,15 @@ var initNeo4jRestful = function() {
         });
       }
     }
-    
   }
 
   /*
    * Constructor
    */
   var Neo4jRestful = function Neo4jRestful(url, options) {
-    var self = this
-      , urlPattern = /^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i
-      , urlMatches = null;
+    var self = this;
+    var urlPattern = /^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i;
+    var urlMatches = null;
     if (typeof options !== 'object') {
       options = (typeof url === 'object') ? url : {};
     }
@@ -185,6 +185,11 @@ var initNeo4jRestful = function() {
       throw Error('No url found. Argument must be either an URL as string or an option object including an `.url` property.');
     }
 
+    // we may have an error handler in options, if so, assign it to this object
+    if (typeof options.onConnectionError === 'function') {
+      this.onConnectionError = options.onConnectionError;
+    }
+
     if (Node === null)
       Node = node(self);
     if (Relationship === null)
@@ -197,9 +202,10 @@ var initNeo4jRestful = function() {
     }
     // copy header
     self.header = _.extend({}, Neo4jRestful.prototype.header);
-    self.checkAvailability(function(err, isAvailable) {
-      self.connection_established = isAvailable;
-    });
+
+
+    if (!__established_connection__[this.absoluteUrl('/')])
+      self.checkAvailability();
   }
 
   Neo4jRestful.prototype.options                    = null;
@@ -228,8 +234,6 @@ var initNeo4jRestful = function() {
   // contains data of the response
   Neo4jRestful.prototype._response_                 = null;
   Neo4jRestful.prototype._columns_                  = null;
-
-  Neo4jRestful.prototype.connection_established     = false;
 
   Neo4jRestful.prototype.singleton = function() {
     if (_singleton_instance)
@@ -276,9 +280,12 @@ var initNeo4jRestful = function() {
           self.exact_version = body.neo4j_version;
           self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
           var error = (self.version < 2) ? Error('Neo4jMapper is not build+tested for neo4j version below v2') : null;
-          cb(error, body.neo4j_version);
+          __established_connection__[self.absoluteUrl('/')] = true;
+          if (typeof cb === 'function')
+            cb(error, body.neo4j_version);
         } else {
-          throw Error("Can't detect neo4j… Sure neo4j service is available on "+self.absoluteUrl('/')+"?"+((err) ? '('+err.message+')' : ''));
+          __established_connection__[self.absoluteUrl('/')] = false;
+          self.onConnectionError(Error("Can't detect neo4j… Sure neo4j service is available on "+self.absoluteUrl('/')+"? "+((err) ? '('+err.message+')' : '')), self);
         }
       }
     );
@@ -618,6 +625,11 @@ var initNeo4jRestful = function() {
     } else {
       return '';
     }
+  }
+
+  Neo4jRestful.prototype.onConnectionError = function(err, self) {
+    // throw err;
+    /* /dev/null */
   }
 
   global.Neo4jMapper.Neo4jRestful = Neo4jRestful;
