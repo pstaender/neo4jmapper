@@ -148,6 +148,7 @@ Node.prototype.cypher = {
   label: null,            // String
   node_identifier: null,  // [a|b|n]
   parameters: null,       // object that contains all parameters for query
+  count: '',              // count(n) (DISTINCT)
   // Boolean flags
   _useParameters: true,
   _count: null,
@@ -785,7 +786,7 @@ Node.prototype.count = function(identifier, cb) {
     // this.cypher.start = {};
     this.cypher.start[this.__type_identifier__] = this.__type__+'(*)'; // all nodes by default
   }
-  this.cypher.return_properties = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
+  this.cypher.count = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
   if (this.cypher._distinct)
     // set `this.cypher._distinct` to false
     this.distinct(undefined, false);
@@ -834,6 +835,10 @@ Node.prototype._prepareQuery = function() {
       relationships = ':'+helpers.escapeString(query.relationship);
     }
   }
+
+  // if COUNT(*) is set, no return properties are set
+  // to avoid s.th. like `RETURN COUNT(*), n, r`
+  query.actionWith = (query.count) ? query.count : query.return_properties;
 
   // build in/outgoing directions
   if ((query.incoming)||(query.outgoing)) {
@@ -923,13 +928,13 @@ Node.prototype.toCypherQuery = function() {
     graph.where(query.where.join(' AND '));
   if (query.set)
     graph.set(query.set);
-
+  
   if (query.action)
-    graph.custom(query.action+' '+query.return_properties);
+    graph.custom(query.action+' '+query.actionWith);
   else if (query._distinct)
-    graph.returnDistinct(query.return_properties);
+    graph.returnDistinct(query.actionWith);
   else
-    graph.return(query.return_properties);
+    graph.return(query.actionWith);
   if (query.order_by)
     graph.orderBy(query.order_by+' '+query.order_direction);
   if (query.skip)
