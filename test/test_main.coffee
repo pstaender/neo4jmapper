@@ -166,7 +166,7 @@ describe 'Neo4jMapper', ->
                     .where({'n.name': name})
                     .return('n AS Node, r AS Relationship')
                     .limit(1)
-                    .enableNative()
+                    .disableProcessing()
                     .exec (err, result) ->
                       expect(err).to.be null
                       expect(result.data).to.have.length 1
@@ -228,7 +228,7 @@ describe 'Neo4jMapper', ->
           expect(found[0].label).to.be.equal 'Person'
           id = found[0].id
           expect(id).to.be.a 'number'
-          Graph.enable_native().start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, result, debug) ->
+          Graph.disable_processing().start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, result, debug) ->
             expect(err).to.be null
             expect(result.columns).to.have.length 1
             expect(result.data).to.have.length 1

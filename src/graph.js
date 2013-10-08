@@ -509,13 +509,13 @@ var initGraph = function(neo4jrestful) {
     return this.sortResult(false);
   }
 
-  Graph.prototype.disableNative = function() {
+  Graph.prototype.enableProcessing = function() {
     this.sortResult(true);
     this.enableLoading('*');
     return this;
   }
 
-  Graph.prototype.enableNative = function() {
+  Graph.prototype.disableProcessing = function() {
     this.sortResult(false);
     this.disableLoading();
     return this;
@@ -552,11 +552,11 @@ var initGraph = function(neo4jrestful) {
    * (are shortcuts to methods on new instanced Graph())
    */
   Graph.query = function(cypher, options, cb) {
-    return Graph.enable_native().query(cypher, options, cb);
+    return Graph.disable_processing().query(cypher, options, cb);
   }
 
   Graph.stream = function(cypher, options, cb) {
-    return new Graph.enable_native().stream(cypher, options, cb);
+    return new Graph.disable_processing().stream(cypher, options, cb);
   }
 
   Graph.wipe_database = function(cb) {
@@ -584,7 +584,7 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.start = function(start, cb) {
-    return Graph.disable_native().start(start, cb);
+    return Graph.enable_processing().start(start, cb);
   }
 
   Graph.enable_loading = function(classifications) {
@@ -597,13 +597,13 @@ var initGraph = function(neo4jrestful) {
     return new Graph();
   }
 
-  Graph.enable_native = function() {
-    Graph.prototype.enableNative();
+  Graph.disable_processing = function() {
+    Graph.prototype.disableProcessing();
     return new Graph();
   }
 
-  Graph.disable_native = function() {
-    Graph.prototype.disableNative();
+  Graph.enable_processing = function() {
+    Graph.prototype.enableProcessing();
     return new Graph();
   }
 

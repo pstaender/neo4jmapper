@@ -1172,6 +1172,8 @@ Node.prototype.allRelations = function(relation, cb) {
   return self; // return self for chaining
 }
 
+// TODO: replace all wordings `withRelationships` with `withRelations`
+
 Node.prototype.withRelationships = function(relation, cb) {
   return this.withRelations(relation, cb);
 }
