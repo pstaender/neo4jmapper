@@ -351,7 +351,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               FOREACH foreach
               CASE case END
               custom statement
-              /* comment */ ;
+              /* comment */;
             """,
             """
               START start
@@ -373,7 +373,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               FOREACH foreach
               CASE case END
               custom statement
-              /* comment */ ;
+              /* comment */;
             """,
             { value1: 'Bob' }
           ]

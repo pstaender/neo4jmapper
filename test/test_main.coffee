@@ -1116,8 +1116,8 @@ describe 'Neo4jMapper', ->
             }
             Node::cypher._useParameters = false
             # excpetion here, check query string
-            expect(Model.find(where).toCypherQuery()).to.be.equal """
-              START n = node(*) MATCH n:#{labelName}  WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n;
+            expect(Model.find(where).toCypherQuery().replace(/\n+/g, ' ').replace(/\s+/g, ' ')).to.be.equal """
+              START n = node(*) MATCH n:#{labelName} WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n;
             """
             Model.find where, (err, found) ->
               expect(err).to.be null

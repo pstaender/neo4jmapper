@@ -289,7 +289,8 @@ var initGraph = function(neo4jrestful) {
       cb = start;
       start = null;
     }
-    this._query_history_.push({ START: start });
+    if (start)
+      this._query_history_.push({ START: start });
     return this.exec(cb);
   }
 
@@ -336,9 +337,12 @@ var initGraph = function(neo4jrestful) {
   }
 
   // will be used to send statements
-  Graph.prototype.statement = null;
+  // Graph.prototype.statement = null;
 
   Graph.prototype.set = function(set, cb) {
+    if ((typeof set === 'object')&&(set.constructor === Array)) {
+      set = set.join(', ');
+    }
     this._query_history_.push({ SET: set });
     return this.exec(cb);
   }
@@ -464,9 +468,9 @@ var initGraph = function(neo4jrestful) {
         attribute = attribute + Array(chopLength - attribute.length).join(' ');
       }
       if (forQuery !== null)
-        s += '\n'+attribute+' '+String(forQuery);
+        s += '\n'+attribute+' '+String(forQuery)+' ';
     }
-    return s+';';
+    return s.trim()+';';
   }
 
   // # Enables loading for specific types

@@ -914,41 +914,30 @@ Node.prototype._prepareQuery = function() {
 }
 
 Node.prototype.toCypherQuery = function() {
-  var query = this._prepareQuery();
-  var template = "";
-  if (query.start_as_string)
-    template += "START %(start)s ";
-  if (query.match.length > 0)
-    template += "MATCH %(match)s ";
-    template += "%(With)s ";
-    template += "%(where)s ";
-  if (query.set)
-    template += "SET %(set)s ";
-    template += "%(action)s %(return_properties)s ";
-  if (query.order_by)
-    template += "ORDER BY %(order_by)s ";
-  if (query.skip)
-    template += "SKIP %(skip)s ";
-  if (query.limit)
-    template += "LIMIT %(limit)s";
-    template += ";";
+  var query = this._prepareQuery()
+    , graph = Graph.start(query.start_as_string);
 
-  var cypher = helpers.sprintf(template, {
-    start:              query.start_as_string,
-    from:               '',
-    match:              (query.match.length > 0) ? query.match.join(' AND ') : '',
-    With:               (query.With) ? query.With : '',
-    action:             (query.action) ? query.action : 'RETURN'+((query._distinct) ? ' DISTINCT ' : ''),
-    return_properties:  query.return_properties,
-    where:              ((query.where)&&(query.where.length > 0)) ? 'WHERE '+query.where.join(' AND ') : '',
-    set:                (query.set) ? query.set.join(', ') : '', 
-    to:                 '',
-    order_by:           (query.order_by) ? query.order_by+' '+query.order_direction : '',
-    limit:              query.limit,
-    skip:               query.skip  
-  })
-  cypher = cypher.trim().replace(/\s+;$/,';');
-  return cypher;
+  if (query.match.length > 0)
+    graph.match(query.match.join(' AND '));
+  if ((query.where)&&(query.where.length > 0))
+    graph.where(query.where.join(' AND '));
+  if (query.set)
+    graph.set(query.set);
+
+  if (query.action)
+    graph.custom(query.action+' '+query.return_properties);
+  else if (query._distinct)
+    graph.returnDistinct(query.return_properties);
+  else
+    graph.return(query.return_properties);
+  if (query.order_by)
+    graph.orderBy(query.order_by+' '+query.order_direction);
+  if (query.skip)
+    graph.skip(Number(query.skip));
+  if (query.limit)
+    graph.limit(Number(query.limit));
+
+  return graph.toCypherQuery();
 }
 
 Node.prototype._start_node_id = function(fallback) {
