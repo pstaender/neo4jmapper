@@ -592,7 +592,7 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.enable_loading = function(classifications) {
-    Graph.prototype.enableLoading();
+    Graph.prototype.enableLoading(classifications);
     return new Graph();
   }
 
