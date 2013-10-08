@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>Neo4jMapper</title>
+  <script src="js/jquery.min.js"></script>
+  <!-- <script src="js/markdown.min.js"></script> -->
+  <script src="js/showdown/showdown.js"></script>
+  <script src="js/showdown/extensions/github.js"></script>
+  <script src="js/readme.js"></script>
+  <link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet" type="text/css" />
+  <link href="css/layout.css" media="all" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<a href="https://github.com/pstaender/neo4jmapper"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
+<div id="main">
+# Neo4jMapper
+## Object modeler for neo4j graphdatabases
+### Written in JavaScript and ready for browser- and serverside usage
+
+[![Build Status](https://api.travis-ci.org/pstaender/neo4jmapper.png)](https://travis-ci.org/pstaender/neo4jmapper)
+[![NPM version](https://badge.fury.io/js/neo4jmapper.png)](https://npmjs.org/package/neo4jmapper)
+[![Dependency Status](https://gemnasium.com/pstaender/neo4jmapper.png)](https://gemnasium.com/pstaener/neo4jmapper)
+
+### Links
+  * [Sourcecode @ GitHub repository](https://github.com/pstaender/neo4jmapper)
+  * [Documentation and Examples](http://pstaender.github.io/neo4jmapper)
+
+### Why another neo4j client?
+
+Neo4jMapper helps to get trivial neo4j-database-tasks quickly done.
+
+Features:
+
+  * **Querying graph, nodes and relationships** via object-chaining
+  * **Object Modeling** for labeling, indexing and other schema-like behaviour 
+  * **processes and transforms data** (flatten/unflatten, escaping, loading/populating …)
+
+### Warning
+
+**Neo4jMapper is not ready for productive environments until Neo4j v2 isn't finally released**. Neo4j v2 or above is mandatory. Currently it's tested against Neo4j Milestone 2.0.0-M05.
+
+## How to use
+
+### Installation
+
+#### NodeJS
+
+```sh
+  $ npm install neo4jmapper
+```
+#### Browser
+
+Include `examples/browser/neo4jmapper_complete.js` in your html-file and ensure that you have included [underscorejs](https://github.com/jashkenas/underscore/blob/master/underscore.js) and [superagent](https://github.com/visionmedia/superagent/blob/master/superagent.js) as well.
+
+### Open Connections
+
+```js
+  var Neo4j = require('neo4jmapper');
+  var neo4j = new Neo4j('http://localhost:7474');
+```
+
+or in the browser:
+
+```js
+  var neo4j = window.Neo4jMapper.init('http://localhost:7474');
+```
+
+## CRUD
+
+### Create a node
+
+```js
+  var Node = neo4j.Node;
+  new Node( { name: 'Dave Grohl', year: 1969 } ).save(function(err, dave) {
+    if (err)
+      console.error(err.message);
+    else
+      console.log('Node is persisted:', dave.toObject()); 
+  });
+```
+
+### Update 
+
+```js
+  console.log(dave.data.name);
+  // ~> 'Dave Grohl'
+  dave.data.firstName = 'Dave';
+  dave.data.surname = 'Grohl';
+  dave.save(cb);
+```
+
+or
+
+```
+  Node.findById(dave.id).update( { firstName: 'Dave', surname: 'Grohl' }, cb );
+```
+
+### Find or Create
+
+```js
+  Node.findOrCreate( { name: 'Dave Grohl' }, cb );
+```
+
+### Remove
+
+```js
+  dave.remove(cb);
+```
+
+
+### Cypher queries
+
+#### Processed results and generated Queries (recommend)
+
+Get sorted and loaded results by using `Graph.start()…`.
+
+Here are some possible ways to go (from convenient to heavy-handed):
+
+```js
+  Graph.start()       // recommend way to query graph
+    .query( … , cb);
+  
+  Graph.start()       // same as above
+    .query( … )
+    .exec(cb);
+
+  Graph.start()       // same as above, but process stream (there will be no loading on streamed results)
+    .stream( … , cb);
+  
+  Graph.start()       // explicitly disbale sort + loading feature (are activated by default)
+    .disableLoading()
+    .disableSorting()
+    .query( … , cb)
+  
+  Graph.start()       // same as above
+    .enableNative()
+    .query( … , cb)
+```
+
+You can chain your query elements as much as your want and use conditional parameters in WHERE clause with `Graph`:
+
+```js
+  Graph
+    .start() // initialize the query building; without argument if you want to leave out the START
+    .match('(game:Game)-[c:contains]-(position:Position)')
+    .where({ 'game.title': 'Wes vs Alvin' }) // let neo4jmapper escape values for you
+    .with('game, collect(position) AS positions')
+    .match('game-[c:contains]-(position:Position)')
+    .with('positions, c, position')
+    .orderBy('c.move ASC')
+    .match('position-[m:move]-next')
+    .where('next IN (positions)')
+    .return('(c.move+1)/2 as move, position.to_move as player, m.move, next.score as score')
+    .limit(20, cb);
+  /*
+    ~
+      MATCH     (game:Game)-[c:contains]-(position:Position)
+      WHERE     HAS (game.title) AND game.title = 'Wes vs Alvin'
+      WITH      game, collect(position) AS positions
+      MATCH     game-[c:contains]-(position:Position)
+      WITH      positions, c, position
+      ORDER BY  c.move ASC
+      MATCH     position-[m:move]-next
+      WHERE     next IN (positions)
+      RETURN    (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score
+      LIMIT     20;
+  */
+```
+
+You can combine methods the way you want:
+
+```js
+  Graph
+    .start()
+    .case("n.eyes WHEN 'blue' THEN 1 WHEN 'brown' THEN 2 ELSE 3")
+    .return('n AS Person')
+    .toCypherQuery();
+  /* ~
+    CASE           n.eyes WHEN \'blue\' THEN 1 WHEN \'brown\' THEN 2 ELSE 3 END
+    RETURN         n AS Person;
+  */
+```
+
+And easily use parameters speed up queries (statement handling with rollback support maybe follow on later releases):
+
+```js
+  Graph
+    .start()
+    .case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3")
+    .parameters({ color1: 'blue', color2: 'brown' })
+    .return('n AS Person')
+    .toCypherQuery();
+  /* ~
+    CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
+    RETURN         n AS Person;
+  */
+```
+Here is an example containing most of all available methods to build custom queries.
+`…` represents a string containing the custom statement segment, see the example below:
+
+```js
+  Graph.start(…)
+    .match(…)
+    .onMatch(…)
+    .where('n.name = {value1}')
+    .parameters({value1: 'Bob'})
+    .where({ 'n.name': 'Bob' }) // saves the `where(…)` &amp; `parameters(…)` operations above
+    .with(…)
+    .orderBy(…)
+    .skip(10)
+    .limit(20)
+    .delete(…)
+    .return(…)
+    .create(…)
+    .onCreate(…)
+    .createIndexOn(…)
+    .createUnique(…)
+    .dropIndexOn
+    .merge(…)
+    .remove(…)
+    .set(…)
+    .foreach(…)
+    .case(…)
+    .custom(…)
+    .comment(…)
+    .exec(cb) // or .stream(cb)
+```
+
+#### Raw Queries
+
+If you want to enjoy the best performance, you can pass-through cypher queries 1:1 and get the almost native results from neo4j - almost because every result part will be parsed + transformed to a Node / Relationship / Path object.
+
+Just start with `Graph.query(…)`:
+
+```js
+  Graph.query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
+    console.log(err, result);
+  });
+```
+
+or for raw queries as stream:
+
+```js
+  Graph.stream("START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
+    if (result)
+      console.log(err, result);
+    else
+      console.log('done');
+  });
+```
+
+#### Native Queries
+
+Use the neo4jrestful client to query 100% natively:
+
+```js
+  var client = Neo4jMapper.client;
+  client.query|post|get|delete|put(…, cb);
+  // or
+  var Neo4jRestful = Neo4jMapper.Neo4jRestful;
+  new Neo4jRestful('http://localhost:7474').query|post|get|delete|put(…, cb)
+```
+
+### Create and save nodes
+
+```js
+  var alice = new Node();
+  alice.data = {
+    name: 'Alice',
+    nested: {
+      values: 'are possible but not real key-value'
+    }
+    arrays: [ 'are possible but', 'also not recommend']
+  };
+  alice.save(function(err, alice) {
+    alice.toObject();
+  });
+```
+
+or shorter in one line with
+
+```js
+  new Node({ name: 'Alice' … }).save(function(err, alice) {
+    alice.toObject();
+  });
+```
+
+### Classes and Models
+
+Since JavaScript has no classes, we have to define models and extend it on the `Node` object - like you may know from backbonejs for instance. 
+
+Every model extended from `Node` enjoys label support.
+
+```js
+  Node.register_model('Person', {
+    fields: {
+      indexes: {
+        email: true
+      },
+      defaults: {
+        created_on: function() {
+          return new Date().getTime();
+        }
+      }
+    },
+    fullname: function() {
+      var s = this.data.firstName + " " + this.data.surname;
+      return s.trim();
+    }
+  }, function(err, Person) {
+
+    var alice = new Person({firstName: 'Alice', surname: 'Springs'});
+
+    alice.fullname();
+    ~ Alice Springs
+
+    alice.save(function(err, alice) {
+      alice.toObject();
+      ~ { id: 81238,
+      classification: 'Node',
+      data:
+       { created_on: 1374758483622,
+         surname: 'Springs',
+         firstName: 'Alice' },
+      uri: 'http://localhost:7420/db/data/node/81238',
+      label: 'Person',
+      labels: [ 'Person' ] }
+    });
+
+    // You can also use multiple inheritance
+    // here: Director extends Person
+    // Director will have the labels [ 'Director', 'Person' ]
+
+    // You can skip the cb and work instantly with the registered model
+    // if you don't use index/uid fields on your schema
+    var Director = Person.register_model('Director', {
+      fields: {
+        defaults: {
+          job: 'Director'
+        }
+      }
+    });
+
+    new Director({
+      name: 'Roman Polanski'
+    }).save(function(err, polanski) {
+      polanski.toObject();
+      ~ { id: 81239,
+      classification: 'Node',
+      data:
+       { created_on: 1374758483625,
+         name: 'Roman Polanski',
+         job: 'Director' },
+      uri: 'http://localhost:7420/db/data/node/81239',
+      label: 'Director',
+      labels: [ 'Director', 'Person' ] }
+    });
+  });
+
+```
+
+Coffeescript and it's class pattern is maybe the most convenient way to define models:
+
+```coffeescript
+  class Person extends Node
+    fields:
+      indexes:
+        email: true
+      defaults:
+        created_on: - new Date().getTime()
+    fullname: -
+      s = @data.firstName + " " + @data.surname
+      s.trim()
+
+  Node.register_model Person, (err) -
+
+    alice = new Person firstName: 'Alice', surname: 'Springs'
+    alice.fullname()
+    ~ 'Alice Springs'
+    alice.save -
+      alice.label
+      ~ 'Person'
+
+    class Director extends Person
+    Node.register_model(Director)
+```
+
+### Connect Nodes / Create Relationships
+
+```js
+  /* alice - knows - bob */
+  alice.createRelationshipTo(bob, 'knows', { since: 'years' }, function(err) {
+    /* bob - likes - alice */
+    bob.createRelationshipTo(alice, 'likes', { since: 'week' }, function(err) {
+      alice.incomingRelationships('knows').count(function(err, count) {
+        count;
+        ~ 1
+        alice.createOrUpdateRelationshipTo(bob, 'knows', { since: 'a while' }, function(err, relationship) {
+          alice.incomingRelationships('knows').count(function(err, count) {
+            count;
+            ~ 1
+          });
+        });
+      });
+    });
+  });
+```
+
+### Query Relationship in various kinds
+
+To get relationships for instance:
+
+```js
+  alice.incomingRelationships('like|follow', function(err, r) {
+    /* all incoming relationships with 'like' or 'follow' */
+  });
+  alice.allRelationships(function(err, r){
+    /* all relationships of node alice */
+  });
+  alice.relationshipsBetween(bob, function(err, r){
+    /* all relationships between node alice and node bob */
+  });
+```
+
+### Advanced queries
+
+You can attach the callback as argument on your last chain method
+
+```js
+  Node.findOne({ name: 'Alice' }, cb);
+```
+
+or execute it in the next chain method
+
+```js
+  Node.findOne({ name: 'Alice' }).exec(cb);
+```
+
+or get the result as stream (interesting on large results)
+
+```js
+  Node.findOne({ name: 'Alice' }).stream(cb);
+  // each is a synonym for stream
+  Node.findOne({ name: 'Alice' }).each(cb);
+```
+
+You can query easily like you may know from other database mappers. Most examples should explain themselves.
+
+```js
+  alice.incomingRelationshipsFrom(bob)
+    .whereRelationship({'since': 'years'})
+    .limit(1, function(err, relationships) {
+      /* … */
+    });
+```
+
+Like in mongodb you can use **AND**, **OR**, **XOR** + **NOT** operators for your where queries, also regex are supported so far:
+
+```js
+  Node
+    .find()
+    .whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]});
+  ~ will execute 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
+  Node
+    .findOne()
+    .where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ]);
+  ~ will execute 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
+```
+
+```js
+  Node
+    .find()
+    .where(
+      { $or : [
+        { 'name': /alice/i },
+        { 'name': /bob/i }
+      ] }
+    )
+    .skip(2)
+    .limit(10)
+    .orderBy({ 'name': 'DESC' }, function(err, result) {
+      /* … */
+    });
+```
+
+```js
+  Node
+    .findOne()
+    .whereNodeHasProperty('name')
+    .andWhereNode({ 'city': 'berlin' }, function(err, result) {
+      /* … */
+    });
+```
+
+```js
+  Node
+    .start()
+    .match('league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]-award')
+    .where({ 'league.name': 'September Volleyball League' })
+    .return( 'award.name AS Award, TYPE(r) AS AwardType' )
+    .stream(function(game) {
+      // query: MATCH league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]-award  WHERE ( HAS (n.`league.name`) AND league.name = 'September Volleyball League' ) RETURN award.name AS Award, TYPE(r) AS AwardType;
+      if (game)
+        console.log(game);
+      else
+        console.log('done');
+    });
+```
+
+If you don't need any query building / want to send a raw query:
+
+```js
+  var cypherQuery = 'MATCH l:League-[:PLAYED_AT]-v:Venue-[:COURT]-c:Court RETURN l.name AS League, v.name AS Venue, collect(c.name) AS Courts';
+  // get result at once
+  Graph.query(cypherQuery, cb);
+  // or as stream
+  Graph.stream(cypherQuery, cb);
+```
+
+### Iterate on large results (streaming)
+
+You can iterate instantly on results asynchronously with the `each` method, it processes the stream of the response:
+
+```js
+  Node.findAll().each(function(node) {
+    if (node)
+      console.log(node.toObject());
+    else
+      console.log("Done");
+  });
+```
+
+You can also process ”raw” queries with streaming (`each` is here a synonym for `stream`):
+
+```js
+  client.stream("START n=node(*) RETURN n;", function(node) {
+    // process each node async
+    if (node)
+      console.log(node.toObject());
+    else
+      console.log('Done');
+  });
+```
+
+Keep in mind that there is **no extra loading executed on stream results** to keep the performance and response time as good as possible. If you want to load a object from a streaming result (if you need labels for instance), you have to trigger it explicitly:
+
+```js
+  Person.findAll().each(function(person) {
+    if (person) {
+      person.load(function(err, load){
+        // person is now fully loaded
+        console.log(person.toObject());
+      });
+    }
+  });
+```
+
+**Currently the streaming feature is only available in nodejs** because there are several dependencies on other modules which aren't available for the browser, yet.
+
+## Naming conventions
+
+The query method names are heavily inspired by mongodb and mongoose - so most of them should sound familiar in case you have worked with them:
+
+  * find, findOne, findById, findByUniqueKeyValue
+  * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhereNode, …
+  * andHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …
+  * withRelatioships, incomingRelationships, outgoingRelationships, relationshipsBetween, incomingRelationshipsFrom(), outgoingRelationshipsTo() …
+  * match
+  * limit
+  * skip
+  * delete
+  * allLabels, createLabel, createLabels, replaceLabels, removeLabels
+  …
+
+Neo4jMapper is using the following identifiers in cypher queries:
+
+  * `n` for a single [n]ode or a start node
+  * `m` for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~ `START n = node(32), m = node(12) MATCH (n)
+
+### So far tested against:
+
+* Neo4j v2 Milestone 5
+* Node 0.8 - 0.11
+* Chrome (v22+)
+* Safari (?)
+* Firefox (?)
+</div>
+</body>
+</html>

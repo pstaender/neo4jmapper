@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "readme.js",
+  "sourceRoot": "..",
+  "sources": [
+    "js/readme.coffee"
+  ],
+  "names": [],
+  "mappings": ";AAAA,CAAA,EAAkB,EAAlB,GAAA,CAAkB;CAEhB,KAAA,mBAAA;CAAA,CAAA,CAAQ,EAAR,EAAQ;CAAR,CACA,CAAU,CAAA,GAAV;CADA,CAGA,CAAgB,CAAA,IAAQ,CAAxB;CACM,GAAN,CAAK,EAAM,CAAA,CAAX;CANgB"
+}
