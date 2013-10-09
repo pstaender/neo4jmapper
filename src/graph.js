@@ -631,9 +631,9 @@ var initGraph = function(neo4jrestful) {
     return new Graph();
   }
 
-  Graph.request = function() {
+  Graph.request = function(options) {
     // creates a new neo4jrestful client
-    return new Graph.prototype.neo4jrestful.constructor(Graph.prototype.neo4jrestful.absoluteUrl('/'));
+    return new Graph.prototype.neo4jrestful.constructor(Graph.prototype.neo4jrestful.absoluteUrl('/'), options);
   }
 
   return Graph;
