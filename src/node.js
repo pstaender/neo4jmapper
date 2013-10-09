@@ -65,9 +65,6 @@ Node.prototype.init = function(data, id) {
   }
   if (!this.label)
     this.label = null;
-  // each node gets it's own client
-  this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
-  this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);
 }
 
 // ### Instantiate a node from a specific model
@@ -105,7 +102,7 @@ Node.prototype.convertNodeToModel = function(node, model, fallbackModel) {
 Node.__models__ = {};                             // contains all globally registered models
 
 Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of the object for the user
-Node.prototype.neo4jrestful = null;               // will be initialized
+Node.prototype.Graph = null;                      // will be set in initNode()
 Node.prototype.data = {};                         // will contain all data for the node
 Node.prototype.id = null;                         // ”public“ id attribute
 Node.prototype._id_ = null;                       // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
@@ -283,7 +280,7 @@ Node.prototype.hasId = function() {
 
 Node.prototype.setUriById = function(id) {
   if (_.isNumber(id))
-    return this.uri = this.neo4jrestful.absoluteUrl(this.__type__+'/'+id);
+    return this.uri = Graph.prototype.neo4jrestful.absoluteUrl(this.__type__+'/'+id);
 }
 
 Node.prototype.flattenData = function(useReference) {
@@ -428,7 +425,7 @@ Node.prototype.ensureIndex = function(options, cb) {
       if (isUnique)
         self.query(query, after);
       else
-        self.neo4jrestful.post(url, { data: { property_keys: [ key ] } }, after);
+        Graph.request().post(url, { data: { property_keys: [ key ] } }, after);
     });
   })
 }
@@ -450,7 +447,7 @@ Node.prototype.dropIndex = function(fields, cb) {
   if (todo===0)
     return cb(Error("No fields for indexing found", null));
   _.each(fields, function(field) {
-    self.neo4jrestful.delete(url+'/'+field, function(/* err, res */) {
+    Graph.request().delete(url+'/'+field, function(/* err, res */) {
       done++;
       if (done === todo)
         cb(null, null);
@@ -473,7 +470,7 @@ Node.prototype.getIndex = function(cb) {
   if (!label)
     return cb(Error("You need to set a label on `node.label` to work with autoindex"), null);
   var url = 'schema/index/'+this.label;
-  return this.neo4jrestful.get(url, function(err, res){
+  return Graph.request().get(url, function(err, res){
     if ((typeof res === 'object') && (res !== null)) {
       var keys = [];
       _.each(res, function(data){
@@ -554,7 +551,7 @@ Node.prototype.onSave = function(cb) {
 
   if (this.id > 0) {
     method = 'update';
-    this.neo4jrestful.put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
+    Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
       if (err) {
         return cb(err, node);
       } else {
@@ -564,7 +561,7 @@ Node.prototype.onSave = function(cb) {
     });
   } else {
     method = 'create';
-    this.neo4jrestful.post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
+    Graph.request().post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
       if ((err) || (!node))
         return cb(err, node);
       else
@@ -2127,6 +2124,7 @@ var initNode = function(neo4jrestful) {
       Graph = window.Neo4jMapper.initGraph(neo4jrestful);
     else
       Graph = require('./graph').init(neo4jrestful);
+    Node.prototype.Graph = Graph;
   } else {
     throw Error('You have to use an Neo4jRestful object as argument');
   }
