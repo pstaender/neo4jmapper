@@ -10,11 +10,11 @@
 
 var global = (typeof window === 'object') ? window : root;
 
-var helpers = null
-  , _ = null
-  , Sequence = null
-  , Relationship = null
-  , Graph = null;
+var helpers = null;
+var _ = null;
+var Sequence = null;
+var Relationship = null;
+var Graph = null;
 
 if (typeof window === 'object') {
   // browser
@@ -283,7 +283,7 @@ Node.prototype.hasId = function() {
 
 Node.prototype.setUriById = function(id) {
   if (_.isNumber(id))
-    return this.uri = this.neo4jrestful.baseUrl+'db/data/'+this.__type__+'/'+id;
+    return this.uri = this.neo4jrestful.absoluteUrl(this.__type__+'/'+id);
 }
 
 Node.prototype.flattenData = function(useReference) {

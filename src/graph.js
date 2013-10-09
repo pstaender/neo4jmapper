@@ -11,8 +11,8 @@ var initGraph = function(neo4jrestful) {
   // Requirements (for browser and nodejs):
   // * neo4jmapper helpers
   // * underscorejs
-  var _       = null
-    , helpers = null;
+  var _       = null;
+  var helpers = null;
 
   if (typeof window === 'object') {
     helpers = window.Neo4jMapper.helpers;
@@ -629,6 +629,10 @@ var initGraph = function(neo4jrestful) {
   Graph.disable_sorting = function() {
     Graph.prototype.disableSorting(false);
     return new Graph();
+  }
+
+  Graph.request = function() {
+    return new this.neo4jrestful.constructor(this.neo4jrestful.absoluteUrl('/'));
   }
 
   return Graph;
