@@ -8,13 +8,12 @@ $(document).ready ->
 
   $('code').each (i, e) -> 
     $e = $(this)
-    html = $e.html().replace(/&amp;lt;/g, '>').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
     if $e.hasClass('js') or $e.hasClass('coffeescript') or $e.hasClass('sh')
       if $e.hasClass('js')
         $e.addClass('javascript')
       if $e.hasClass('sh')
         $e.addClass('bash')
-      html = $e.html().replace(/&amp;lt;/g, '>').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
+      html = $e.html().replace(/&amp;lt;/g, '<').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
       $e.html(html)
       hljs.highlightBlock(e)
     else

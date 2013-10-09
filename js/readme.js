@@ -8,7 +8,6 @@ $(document).ready(function() {
   return $('code').each(function(i, e) {
     var $e, html;
     $e = $(this);
-    html = $e.html().replace(/&amp;lt;/g, '>').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
     if ($e.hasClass('js') || $e.hasClass('coffeescript') || $e.hasClass('sh')) {
       if ($e.hasClass('js')) {
         $e.addClass('javascript');
@@ -16,7 +15,7 @@ $(document).ready(function() {
       if ($e.hasClass('sh')) {
         $e.addClass('bash');
       }
-      html = $e.html().replace(/&amp;lt;/g, '>').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
+      html = $e.html().replace(/&amp;lt;/g, '<').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
       $e.html(html);
       return hljs.highlightBlock(e);
     } else {
