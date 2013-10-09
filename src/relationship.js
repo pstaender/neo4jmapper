@@ -11,9 +11,11 @@ var global = (typeof window === 'object') ? window : root;
 // * neo4jmapper helpres
 // * underscorejs
 
-var Node          = null // will be initialized
-  , helpers       = null
-  , _             = null;
+var Node              = null; // will be initialized
+var __neo4jrestful__  = null; // will be initialized
+var Graph             = null; // will be initialized
+var helpers           = null;
+var _                 = null;
 
 if (typeof window === 'object') {
   helpers = window.Neo4jMapper.helpers;
@@ -51,14 +53,13 @@ var Relationship = global.Neo4jMapper.Relationship = function Relationship(data,
     defaults: _.extend({}, this.fields.defaults),
     indexes: _.extend({}, this.fields.indexes) // TODO: implement
   });
-  // each relationship object has it's own restful client
-  this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
-  this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);
+  // each relationship object has it's own Graph
+  this.Graph = Graph;
   this.is_instanced = true;
 }
 
 Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
-Relationship.prototype.neo4jrestful = null; // will be initialized
+Relationship.prototype.Graph = null; // will be initialized
 Relationship.prototype.data = {};
 Relationship.prototype.start = null;
 Relationship.prototype.type = null;
@@ -95,7 +96,7 @@ Relationship.prototype.setPointUriById = function(startOrEnd, id) {
   if ((startOrEnd !== 'from')||(startOrEnd !== 'to'))
     throw Error("You have to set startOrEnd argument to 'from' or 'to'");
   if (_.isNumber(id)) {
-    this[startOrEnd].uri = this.neo4jrestful.baseUrl+'db/data/relationship/'+id;
+    this[startOrEnd].uri = __neo4jrestful__.absoluteUrl('relationship/'+id);
     this[startOrEnd].id = id;
   }
   return this;
@@ -120,7 +121,7 @@ Relationship.prototype.findById = function(id, cb) {
     self = this.singleton(undefined, this);
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
-    return self.neo4jrestful.get(this.__type__+'/'+id, function(err, object) {
+    return self.Graph.disable_processing().neo4jrestful.get(this.__type__+'/'+id, function(err, object) {
       if ((object) && (typeof self.load === 'function')) {
         //  && (typeof node.load === 'function')     
         object.load(cb);
@@ -145,7 +146,7 @@ Relationship.prototype.update = function(data, cb) {
   if (this.hasId()) {
     // copy 'private' _id_ to public
     this.id = this._id_;
-    this.neo4jrestful.put(this.__type__+'/'+this.id+'/properties', { data: data }, function(err,data){
+    this.Graph.disable_processing().neo4jrestful.put(this.__type__+'/'+this.id+'/properties', { data: data }, function(err,data){
       if (err)
         return cb(err, data);
       else
@@ -206,7 +207,7 @@ Relationship.prototype.remove = function(cb) {
   if (this.is_singleton)
     return cb(Error("To delete results of a query use delete(). remove() is for removing a relationship."),null);
   if (this.hasId()) {
-    return this.neo4jrestful.delete('relationship/'+this.id, cb);
+    return this.Graph.disable_processing().neo4jrestful.delete('relationship/'+this.id, cb);
   }
   return this;
 }
@@ -342,6 +343,11 @@ if (typeof window !== 'object') {
   module.exports = exports = {
     Relationship: null,
     init: function(neo4jrestful) {
+      __neo4jrestful__ = neo4jrestful;
+      if (typeof window === 'object')
+        Graph = window.Neo4jMapper.initGraph(neo4jrestful);
+      else
+        Graph = require('./graph').init(neo4jrestful);
       return this.Relationship = initRelationship(neo4jrestful);
     }
   };

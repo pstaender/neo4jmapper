@@ -10,15 +10,15 @@
 
 var global = (typeof window === 'object') ? window : root;
 
-var helpers = null
-  , _ = null
-  , Sequence = null
-  , Relationship = null
-  , Graph = null;
+var helpers = null;
+var _ = null;
+var Sequence = null;
+var Relationship = null;      // will be set in initNode()
+var Graph = null;             // will be set in initNode()
+var __neo4jrestful__ = null;  // will be set in initNode() 
 
 if (typeof window === 'object') {
   // browser
-  // TODO: find a solution for bson object id
   helpers      = window.Neo4jMapper.helpers;
   _            = window._;
   Sequence     = window.Sequence;
@@ -65,47 +65,19 @@ Node.prototype.init = function(data, id) {
   }
   if (!this.label)
     this.label = null;
-  // each node gets it's own client
-  this.neo4jrestful = _.extend({}, Node.prototype.neo4jrestful);
-  this.neo4jrestful.header = _.extend({}, Node.prototype.neo4jrestful.header);
-}
+  // each node gets it's own graph/client
+  this.Graph = Graph;
+  this.graph = new this.Graph();
 
-// ### Instantiate a node from a specific model
-// Model can be a constructor() or a String
-// and must be registered in Node.registered_models()
-Node.prototype.convertNodeToModel = function(node, model, fallbackModel) {
-  if (typeof node !== 'object') {
-    // we assume that we have ”model, fallbackmodel” as arguments
-    fallbackmodel = model;
-    model = node;
-    node = this;
-  }
-  if ((typeof node === 'object') && (node !== null)) {
-    if (typeof fallbackModel !== 'function')
-      fallbackModel = this.constructor;
-    if (typeof model === 'string') {
-      // do nothing
-      model = model;
-    } else if (typeof model === 'function') {
-      model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
-    } else if (node.label) {
-      model = node.label;
-    } else if (typeof fallbackModel === 'function') {
-      model = helpers.constructorNameOfFunction(fallbackModel);
-    } else {
-      throw Error('No model or label found')
-    }
-    var Class = Node.registered_model(model) || fallbackModel;
-    var singleton = new Class();
-    return node.copyTo(singleton);
-  }
-  return null;
+  this.neo4jrestful = _.extend({}, __neo4jrestful__);
+  this.neo4jrestful.header = _.extend({}, __neo4jrestful__.header);
 }
 
 Node.__models__ = {};                             // contains all globally registered models
 
 Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of the object for the user
-Node.prototype.neo4jrestful = null;               // will be initialized
+Node.prototype.graph = null;                      // will be initialized
+Node.prototype.Graph = null;                      // will be initialized
 Node.prototype.data = {};                         // will contain all data for the node
 Node.prototype.id = null;                         // ”public“ id attribute
 Node.prototype._id_ = null;                       // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
@@ -245,6 +217,38 @@ Node.prototype.onAfterInitialize = function(cb) {
   }
 }
 
+// ### Instantiate a node from a specific model
+// Model can be a constructor() or a String
+// and must be registered in Node.registered_models()
+Node.prototype.convertNodeToModel = function(node, model, fallbackModel) {
+  if (typeof node !== 'object') {
+    // we assume that we have ”model, fallbackmodel” as arguments
+    fallbackmodel = model;
+    model = node;
+    node = this;
+  }
+  if ((typeof node === 'object') && (node !== null)) {
+    if (typeof fallbackModel !== 'function')
+      fallbackModel = this.constructor;
+    if (typeof model === 'string') {
+      // do nothing
+      model = model;
+    } else if (typeof model === 'function') {
+      model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
+    } else if (node.label) {
+      model = node.label;
+    } else if (typeof fallbackModel === 'function') {
+      model = helpers.constructorNameOfFunction(fallbackModel);
+    } else {
+      throw Error('No model or label found')
+    }
+    var Class = Node.registered_model(model) || fallbackModel;
+    var singleton = new Class();
+    return node.copyTo(singleton);
+  }
+  return null;
+}
+
 // Copys only the node's relevant data(s) to another object
 Node.prototype.copyTo = function(n) {
   n.id = n._id_ = this._id_;
@@ -283,7 +287,8 @@ Node.prototype.hasId = function() {
 
 Node.prototype.setUriById = function(id) {
   if (_.isNumber(id))
-    return this.uri = this.neo4jrestful.baseUrl+'db/data/'+this.__type__+'/'+id;
+    this.uri = __neo4jrestful__.absoluteUrl(this.__type__+'/'+id);
+  return this;
 }
 
 Node.prototype.flattenData = function(useReference) {
@@ -2121,7 +2126,7 @@ var initNode = function(neo4jrestful) {
 
   // we can only check the name of the function, but should be sufficient in this case
   if (helpers.constructorNameOfFunction(global.Neo4jMapper.Neo4jRestful) === 'Neo4jRestful') {
-    global.Neo4jMapper.Node.prototype.neo4jrestful = neo4jrestful;
+    __neo4jrestful__ = neo4jrestful;
     Relationship = global.Neo4jMapper.Relationship;
     if (typeof window === 'object')
       Graph = window.Neo4jMapper.initGraph(neo4jrestful);
