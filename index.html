@@ -7,9 +7,17 @@
   <!-- <script src="js/markdown.min.js"></script> -->
   <script src="js/showdown/showdown.js"></script>
   <script src="js/showdown/extensions/github.js"></script>
+  <!-- <script src="js/rainbow/rainbow.min.js"></script>
+  <script src="js/rainbow/language/javascript.js"></script>
+  <script src="js/rainbow/language/coffeescript.js"></script> -->
   <script src="js/readme.js"></script>
+  <link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/tomorrow.min.css">
+  <script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+  
   <link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet" type="text/css" />
   <link href="css/layout.css" media="all" rel="stylesheet" type="text/css" />
+  <!--<link href="js/rainbow/themes/github.css" rel="stylesheet" type="text/css"> -->
+
 </head>
 <body>
 <a href="https://github.com/pstaender/neo4jmapper"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
@@ -66,18 +74,43 @@ or in the browser:
   var neo4j = window.Neo4jMapper.init('http://localhost:7474');
 ```
 
-## CRUD
+## CRUD Nodes
 
-### Create a node
+### Create
 
 ```js
   var Node = neo4j.Node;
+
   new Node( { name: 'Dave Grohl', year: 1969 } ).save(function(err, dave) {
     if (err)
       console.error(err.message);
     else
       console.log('Node is persisted:', dave.toObject()); 
   });
+```
+
+Create relations between nodes:
+
+```js
+  new Node( { name: 'Foo Fighters' } ).save(function(err, fooFighters) {
+    
+    dave.createRelationTo(fooFighters, 'PLAYS', function(err, relationship) {
+      console.log('Created Relationship:', relationship.toObject());
+
+      new Node( { name: 'Taylor Hawkins' } ).save(function(err, taylor) {
+        dave.createRelationBetween(taylor, 'ROCK', cb);
+      });
+    
+    });
+  
+  });
+```
+
+Create relations with attributes:
+
+```js
+  dave.createRelationTo(fooFighters, 'PLAYS', { instrument: 'guitar' }, cb);
+  taylor.createRelationTo(fooFighters, 'PLAYS', { instrument: 'drums' }, cb);
 ```
 
 ### Update 
@@ -92,59 +125,141 @@ or in the browser:
 
 or
 
-```
-  Node.findById(dave.id).update( { firstName: 'Dave', surname: 'Grohl' }, cb );
+```js
+  Node.findById(dave.id).update({
+    firstName: 'Dave',
+    surname: 'Grohl'
+  }, cb );
 ```
 
 ### Find or Create
 
+Creates a new node with this attribute if not exists, updates if one (distinct) exists:
+
 ```js
-  Node.findOrCreate( { name: 'Dave Grohl' }, cb );
+  Node.findOrCreate({
+    name: 'Dave Grohl'
+  }, cb );
 ```
 
 ### Remove
 
+We use `remove()` if we are on an instanced Node:
+
 ```js
   dave.remove(cb);
+  // if you want to remove relationships as well
+  dave.removeIncludingRelations(cb);
 ```
 
-
-### Cypher queries
-
-#### Processed results and generated Queries (recommend)
-
-Get sorted and loaded results by using `Graph.start()…`.
-
-Here are some possible ways to go (from convenient to heavy-handed):
+`delete()` if we perform a delete action on a query:
 
 ```js
-  Graph.start()       // recommend way to query graph
-    .query( … , cb);
-  
-  Graph.start()       // same as above
-    .query( … )
-    .exec(cb);
+  Node.findById(dave.id).delete(cb);
+  // if you want to delete relationships as well
+  Node.findById(dave.id).deleteIncludingRelations(cb);
+```
 
-  Graph.start()       // same as above, but process stream (there will be no loading on streamed results)
-    .stream( … , cb);
-  
-  Graph.start()       // explicitly disbale sort + loading feature (are activated by default)
+### Find Nodes
+
+Some examples:
+
+```js
+  Node.findOne({ name: 'Dave Grohl' }, function(err, dave) {
+    if (err)
+      console.error(err.message);
+    else
+      console.log('Found Node:', dave.toObject());
+  });
+```
+
+```js
+  Node.find({ year: 1969 }).limit(10, function(err, found) {
+    if (found) {
+      console.log(found.length + ' nodes found');
+    }
+  });
+```
+
+You can use `$and`, `$or`, `$not` and `$xor` operators in where conditions:
+
+```js
+  Node
+    .find() // you can put your where condition inside find() as well
+    .where( { $and: [ { year: 1969 }, { name: 'Dave Grohl'} ] } )
+    .limit(1, cb);
+```
+
+Query relationships:
+
+```js
+  Node
+    .findOne( { name: 'Dave Grohl' } )
+    .incomingRelations('ROCKS|PLAYS', function(err, foundRelations) {
+      console.log('Incoming relationships of Dave with "ROCKS" OR "PLAYS":', foundRelations);
+    });
+```
+
+or query on instanced nodes:
+
+```js
+  dave.incomingRelations(function(err, relations) {
+    console.log('All incoming relationships of Dave:', foundRelations);
+  });
+```
+
+### Query Graph
+
+Get processed and loaded results by using `Graph.start()…`
+
+Here are some possible ways to go:
+
+```js
+  Graph.start().query( "CUSTOM CYPHER QUERY" , function(err, rows) {
+    if (err) {
+      console.error(err); // includes a stack and a reasonable error message
+    } else {
+      if (rows)
+        for (var i=0; i < rows.length; i++) {
+          console.log(rows[i].toObject());
+        }
+      }
+    }
+  });
+```
+
+Streaming gets interesting on large results:
+
+```js
+  Graph.start().stream( "CUSTOM CYPHER QUERY" , function(result) {
+    if (result) {
+      console.log(result.toObject());
+    } else {
+      console.log('Done');
+    }
+  });
+```
+
+Disable explicitly sort + loading to speed up response time (both are activated by default using `start()`):
+
+```js
+  Graph.start()
+    .disableProcessing()
+    .query( … , cb)
+  // or if you want to choose what to switch on and off
+  Graph.start()
     .disableLoading()
     .disableSorting()
     .query( … , cb)
-  
-  Graph.start()       // same as above
-    .enableNative()
-    .query( … , cb)
 ```
 
-You can chain your query elements as much as your want and use conditional parameters in WHERE clause with `Graph`:
+You can chain your query elements and use conditional parameters for where clauses:
 
 ```js
   Graph
-    .start() // initialize the query building; without argument if you want to leave out the START
+    .start()
     .match('(game:Game)-[c:contains]-(position:Position)')
-    .where({ 'game.title': 'Wes vs Alvin' }) // let neo4jmapper escape values for you
+    .where({ 'game.title': 'Wes vs Alvin' }) // values will be escaped
     .with('game, collect(position) AS positions')
     .match('game-[c:contains]-(position:Position)')
     .with('positions, c, position')
@@ -154,7 +269,7 @@ You can chain your query elements as much as your want and use conditional param
     .return('(c.move+1)/2 as move, position.to_move as player, m.move, next.score as score')
     .limit(20, cb);
   /*
-    ~
+    ~>
       MATCH     (game:Game)-[c:contains]-(position:Position)
       WHERE     HAS (game.title) AND game.title = 'Wes vs Alvin'
       WITH      game, collect(position) AS positions
@@ -168,36 +283,21 @@ You can chain your query elements as much as your want and use conditional param
   */
 ```
 
-You can combine methods the way you want:
-
 ```js
   Graph
-    .start()
-    .case("n.eyes WHEN 'blue' THEN 1 WHEN 'brown' THEN 2 ELSE 3")
-    .return('n AS Person')
-    .toCypherQuery();
-  /* ~
-    CASE           n.eyes WHEN \'blue\' THEN 1 WHEN \'brown\' THEN 2 ELSE 3 END
-    RETURN         n AS Person;
-  */
-```
-
-And easily use parameters speed up queries (statement handling with rollback support maybe follow on later releases):
-
-```js
-  Graph
-    .start()
+    .start('n = node(*)')
     .case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3")
     .parameters({ color1: 'blue', color2: 'brown' })
     .return('n AS Person')
     .toCypherQuery();
-  /* ~
+  /* ~>
+    START          n = node(*)
     CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
     RETURN         n AS Person;
   */
 ```
-Here is an example containing most of all available methods to build custom queries.
-`…` represents a string containing the custom statement segment, see the example below:
+
+Here are most of all available methods to query the graph. `…` represents the strings containing the statements:
 
 ```js
   Graph.start(…)
@@ -205,7 +305,7 @@ Here is an example containing most of all available methods to build custom quer
     .onMatch(…)
     .where('n.name = {value1}')
     .parameters({value1: 'Bob'})
-    .where({ 'n.name': 'Bob' }) // saves the `where(…)` &amp; `parameters(…)` operations above
+    .where({ 'n.name': 'Bob' }) // would save the `where(…)` and `parameters(…)` operations above
     .with(…)
     .orderBy(…)
     .skip(10)
@@ -239,7 +339,7 @@ Just start with `Graph.query(…)`:
   });
 ```
 
-or for raw queries as stream:
+Same works with stream:
 
 ```js
   Graph.stream("START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
@@ -252,45 +352,18 @@ or for raw queries as stream:
 
 #### Native Queries
 
-Use the neo4jrestful client to query 100% natively:
+Use the neo4jrestful client to query natively:
 
 ```js
   var client = Neo4jMapper.client;
   client.query|post|get|delete|put(…, cb);
-  // or
-  var Neo4jRestful = Neo4jMapper.Neo4jRestful;
-  new Neo4jRestful('http://localhost:7474').query|post|get|delete|put(…, cb)
 ```
 
-### Create and save nodes
+### Modeling
 
-```js
-  var alice = new Node();
-  alice.data = {
-    name: 'Alice',
-    nested: {
-      values: 'are possible but not real key-value'
-    }
-    arrays: [ 'are possible but', 'also not recommend']
-  };
-  alice.save(function(err, alice) {
-    alice.toObject();
-  });
-```
+We can define models based on the `Node` model (similar to models you might know from backbonejs for instance). 
 
-or shorter in one line with
-
-```js
-  new Node({ name: 'Alice' … }).save(function(err, alice) {
-    alice.toObject();
-  });
-```
-
-### Classes and Models
-
-Since JavaScript has no classes, we have to define models and extend it on the `Node` object - like you may know from backbonejs for instance. 
-
-Every model extended from `Node` enjoys label support.
+Every extended model enjoys label support.
 
 ```js
   Node.register_model('Person', {
@@ -386,141 +459,11 @@ Coffeescript and it's class pattern is maybe the most convenient way to define m
     Node.register_model(Director)
 ```
 
-### Connect Nodes / Create Relationships
-
-```js
-  /* alice - knows - bob */
-  alice.createRelationshipTo(bob, 'knows', { since: 'years' }, function(err) {
-    /* bob - likes - alice */
-    bob.createRelationshipTo(alice, 'likes', { since: 'week' }, function(err) {
-      alice.incomingRelationships('knows').count(function(err, count) {
-        count;
-        ~ 1
-        alice.createOrUpdateRelationshipTo(bob, 'knows', { since: 'a while' }, function(err, relationship) {
-          alice.incomingRelationships('knows').count(function(err, count) {
-            count;
-            ~ 1
-          });
-        });
-      });
-    });
-  });
-```
-
-### Query Relationship in various kinds
-
-To get relationships for instance:
-
-```js
-  alice.incomingRelationships('like|follow', function(err, r) {
-    /* all incoming relationships with 'like' or 'follow' */
-  });
-  alice.allRelationships(function(err, r){
-    /* all relationships of node alice */
-  });
-  alice.relationshipsBetween(bob, function(err, r){
-    /* all relationships between node alice and node bob */
-  });
-```
-
-### Advanced queries
-
-You can attach the callback as argument on your last chain method
-
-```js
-  Node.findOne({ name: 'Alice' }, cb);
-```
-
-or execute it in the next chain method
-
-```js
-  Node.findOne({ name: 'Alice' }).exec(cb);
-```
-
-or get the result as stream (interesting on large results)
-
-```js
-  Node.findOne({ name: 'Alice' }).stream(cb);
-  // each is a synonym for stream
-  Node.findOne({ name: 'Alice' }).each(cb);
-```
-
-You can query easily like you may know from other database mappers. Most examples should explain themselves.
-
-```js
-  alice.incomingRelationshipsFrom(bob)
-    .whereRelationship({'since': 'years'})
-    .limit(1, function(err, relationships) {
-      /* … */
-    });
-```
-
-Like in mongodb you can use **AND**, **OR**, **XOR** + **NOT** operators for your where queries, also regex are supported so far:
-
-```js
-  Node
-    .find()
-    .whereNode({ $or: [ { name: 'Alice'}, { name: 'Bob' }]});
-  ~ will execute 'START n = node(*) WHERE ( ( n.name = \'Alice\' OR n.name = \'Bob\' ) ) RETURN n;'
-  Node
-    .findOne()
-    .where([ { 'city': 'Berlin' } , $and: [ { 'name': /^bob.+/i }, $not: [ { 'name': /^Bobby$/ } ] ] ]);
-  ~ will execute 'START n = node(*)   WHERE ( HAS (n.city) ) AND ( HAS (n.name) ) AND ( city = \'Berlin\' AND ( name =~ \'^(?i)bob.+\' AND NOT ( name =~ \'^Bobby$\' ) ) ) RETURN n   LIMIT 1;'
-```
-
-```js
-  Node
-    .find()
-    .where(
-      { $or : [
-        { 'name': /alice/i },
-        { 'name': /bob/i }
-      ] }
-    )
-    .skip(2)
-    .limit(10)
-    .orderBy({ 'name': 'DESC' }, function(err, result) {
-      /* … */
-    });
-```
-
-```js
-  Node
-    .findOne()
-    .whereNodeHasProperty('name')
-    .andWhereNode({ 'city': 'berlin' }, function(err, result) {
-      /* … */
-    });
-```
-
-```js
-  Node
-    .start()
-    .match('league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]-award')
-    .where({ 'league.name': 'September Volleyball League' })
-    .return( 'award.name AS Award, TYPE(r) AS AwardType' )
-    .stream(function(game) {
-      // query: MATCH league:League-[r:INDIVIDUAL_AWARD|TEAM_AWARD]-award  WHERE ( HAS (n.`league.name`) AND league.name = 'September Volleyball League' ) RETURN award.name AS Award, TYPE(r) AS AwardType;
-      if (game)
-        console.log(game);
-      else
-        console.log('done');
-    });
-```
-
-If you don't need any query building / want to send a raw query:
-
-```js
-  var cypherQuery = 'MATCH l:League-[:PLAYED_AT]-v:Venue-[:COURT]-c:Court RETURN l.name AS League, v.name AS Venue, collect(c.name) AS Courts';
-  // get result at once
-  Graph.query(cypherQuery, cb);
-  // or as stream
-  Graph.stream(cypherQuery, cb);
-```
-
 ### Iterate on large results (streaming)
 
-You can iterate instantly on results asynchronously with the `each` method, it processes the stream of the response:
+Note: Sreaming is only working on NodeJS for now
+
+You can iterate results asynchronously with the `each` method, it processes the stream of the response:
 
 ```js
   Node.findAll().each(function(node) {
@@ -531,19 +474,7 @@ You can iterate instantly on results asynchronously with the `each` method, it p
   });
 ```
 
-You can also process ”raw” queries with streaming (`each` is here a synonym for `stream`):
-
-```js
-  client.stream("START n=node(*) RETURN n;", function(node) {
-    // process each node async
-    if (node)
-      console.log(node.toObject());
-    else
-      console.log('Done');
-  });
-```
-
-Keep in mind that there is **no extra loading executed on stream results** to keep the performance and response time as good as possible. If you want to load a object from a streaming result (if you need labels for instance), you have to trigger it explicitly:
+Keep in mind that there is **no extra loading executed on stream results** to keep the response time as good as possible. If you want to load a object from a streaming result (if you need labels for instance), you have to trigger it explicitly:
 
 ```js
   Person.findAll().each(function(person) {
@@ -556,8 +487,6 @@ Keep in mind that there is **no extra loading executed on stream results** to ke
   });
 ```
 
-**Currently the streaming feature is only available in nodejs** because there are several dependencies on other modules which aren't available for the browser, yet.
-
 ## Naming conventions
 
 The query method names are heavily inspired by mongodb and mongoose - so most of them should sound familiar in case you have worked with them:
@@ -565,11 +494,11 @@ The query method names are heavily inspired by mongodb and mongoose - so most of
   * find, findOne, findById, findByUniqueKeyValue
   * where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhereNode, …
   * andHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …
-  * withRelatioships, incomingRelationships, outgoingRelationships, relationshipsBetween, incomingRelationshipsFrom(), outgoingRelationshipsTo() …
+  * withRelatioships, incomingRelations, outgoingRelations, relationsBetween, incomingRelationsFrom(), outgoingRelationsTo() …
   * match
   * limit
   * skip
-  * delete
+  * delete, deleteIncludingRelations
   * allLabels, createLabel, createLabels, replaceLabels, removeLabels
   …
 
@@ -582,9 +511,7 @@ Neo4jMapper is using the following identifiers in cypher queries:
 
 * Neo4j v2 Milestone 5
 * Node 0.8 - 0.11
-* Chrome (v22+)
-* Safari (?)
-* Firefox (?)
+* Chrome (v22+) ( but Safari and Firefox should work as well)
 </div>
 </body>
 </html>

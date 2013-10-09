@@ -15,28 +15,27 @@ body {
   display: none; }
 
 code {
-  white-space: pre;
   font-family: "Monaco", monospace;
   font-size: 0.8em;
-  background: #f6f6f6;
-  box-shadow: inset 0px 0px 10px #f2f2f2;
+  line-height: 1.6em;
+  border-radius: 2px;
+  box-shadow: 0px 0px 20px rgba(50, 50, 50, 0.1); }
+
+code.no-highlight {
+  white-space: pre;
   color: #444444;
   font-weight: bold;
   padding: 0.2em 0.3em; }
 
 code.coffeescript, code.js, code.sh {
-  display: block;
   padding: 1em 0.5em;
   overflow: scroll;
-  margin-top: 1em;
-  border-radius: 2px;
-  line-height: 1.5em;
-  font-weight: normal; }
+  margin-top: 1em; }
 
 strong {
   font-weight: 600; }
 
-p, li, code {
+p, li {
   line-height: 1.4em; }
 
 li {
@@ -60,10 +59,12 @@ h1, h2, h3, h4, h5, p, ul, code {
 h3 {
   display: block; }
 
+h1, h2, h3 {
+  margin-top: 0.7em;
+  margin-bottom: 0.5em; }
+
 h1 {
   color: #d44410;
-  font-size: 3em;
-  margin-top: 0.5em;
-  margin-bottom: 0.5em; }
+  font-size: 3em; }
 
 /*# sourceMappingURL=layout.css.map */

@@ -5,22 +5,19 @@ $(document).ready ->
 
   converter = new Showdown.converter()
   $main.html converter.makeHtml(content)
-  
-  # # lines = for line in content.split('\n')
-  # #   line.trim()
 
-  # md = content.replace(/```([a-z]*)/g, '\n`\n$1')#.replace(/```/g, '``')
-  # console.log md
-  # html = markdown.toHTML(md)
+  $('code').each (i, e) -> 
+    $e = $(this)
+    html = $e.html().replace(/&amp;lt;/g, '>').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
+    if $e.hasClass('js') or $e.hasClass('coffeescript') or $e.hasClass('sh')
+      if $e.hasClass('js')
+        $e.addClass('javascript')
+      if $e.hasClass('sh')
+        $e.addClass('bash')
+      html = $e.html().replace(/&amp;lt;/g, '>').replace(/&amp;gt;/g, '>').replace(/&amp;amp;/g, '&');
+      $e.html(html)
+      hljs.highlightBlock(e)
+    else
+      $e.addClass 'no-highlight'
 
-
-
-  # $main.html $(html)
-
-  # $main.find('code').each ->
-  #   firstline = $(this).html().split('\n')[1]
-  #   lang = firstline?.match(/^[a-z]+\s*$/)?[0] or null
-  #   # console.log firstline
-  #   $(this).addClass lang
-  #   $(this).html().replace(/^[a-z]+/)?[0]
 
