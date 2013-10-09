@@ -320,9 +320,9 @@ Here are most of all available methods to query the graph. `…` represents the 
     .exec(cb) // or .stream(cb)
 ```
 
-#### Raw Queries
+#### Direct Queries
 
-If you want to enjoy the best performance, you can pass-through cypher queries 1:1 and get the almost native results from neo4j - almost because every result part will be parsed + transformed to a Node / Relationship / Path object.
+If you want to have better performance, you can pass-through cypher queries 1:1 and get the almost native results from neo4j - almost because every result part will be parsed + transformed to a Node / Relationship / Path object.
 
 Just start with `Graph.query(…)`:
 
@@ -343,13 +343,17 @@ Same works with stream:
   });
 ```
 
-#### Native Queries
+#### Native Queries and native Results
 
-Use the neo4jrestful client to query natively:
+Use `Graph.request()` to query natively:
 
 ```js
-  var client = Neo4jMapper.client;
-  client.query|post|get|delete|put(…, cb);
+  Graph.request().query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
+    console.log(err, result);
+  });
+  Graph.request().get("/node/123/labels", function(err, result) {
+    console.log(err, result);
+  });
 ```
 
 ### Modeling
