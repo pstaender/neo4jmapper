@@ -191,6 +191,21 @@ var global = (typeof window === 'object') ? window : root;
    */
   var ConditionalParameters = function ConditionalParameters(conditions, options) {
 
+    ConditionalParameters.parameterRuleset = {
+      $IN: function(value) {
+        var s = '';
+        if ((typeof value === 'object') && (value.length > 0)) {
+          for (var i=0; i < value.length; i++) {
+            value[i] = (typeof value[i] === 'string') ? "'"+escapeString(value[i])+"'" : valueToStringForCypherQuery(value[i]);
+          }
+          return 'IN( '+value.join(', ')+' )';
+        }
+        return '';
+      },
+      $in: function(value) { return this.$IN(value); }
+
+    };
+
     ConditionalParameters.prototype.addValue = function(value) {
       if (!this.parameters)
         this.parameters = [];
@@ -220,44 +235,44 @@ var global = (typeof window === 'object') ? window : root;
         for (var key in condition) {
           var value = condition[key];
           var property = null;
-          if ( (_is_operator.test(key)) && (_.isArray(condition[key])) ) {
-            condition[key] = this.convert(condition[key], key.replace(/\$/g,' ').trim().toUpperCase(), options);
-          } else {
-            if (_.isObject(condition[key])) {
-              var properties = [];
-              var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
-              if ((firstKey)&&(_is_operator.test(firstKey))) {
-                properties.push(this.convert(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
-              } else {
-                for (var k in condition[key]) {
-                  // k = key/property, remove identifier e.g. n.name
-                  var property = k.replace(/^[nmrp]\./,'');
-                  value = condition[key][k];
-                  // only check for attributes if not s.th. like `n.name? = …`
-                  var identifierWithproperty = (/\?$/.test(property)) ? '' : property;
-                  if (identifierWithproperty) {
-                    if (options.identifier)
-                      // we have s.th. like options.identifier = n; property = '`'+identifierWithproperty+'`'
-                      identifierWithproperty = options.identifier + '.`' + identifierWithproperty + '`';
-                    else
-                      // we have no explicit identifier, so we use the complete key/property and expecting it contains identifier
-                      identifierWithproperty = k;
-                  }
-                  var hasAttribute = (identifierWithproperty) ? 'HAS ('+identifierWithproperty+') AND ' : '';
-                  if (value === k) {
-                    properties.push(hasAttribute+value);
-                  } else {
-                    properties.push(hasAttribute+this.cypherKeyValueToString(k, value, 
-                      // only add an identifier if we have NOT s.th. like
-                      // n.name = ''  or r.since …
-                      (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
-                    ));
-                  }
+          if (_.isObject(condition[key])) {
+            var properties = [];
+            var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
+            if ((firstKey)&&(_is_operator.test(firstKey))) {
+              properties.push(this.convert(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
+            } else {
+              for (var k in condition[key]) {
+                // k = key/property, remove identifier e.g. n.name
+                var property = k.replace(/^[nmrp]\./,'');
+                value = condition[key][k];
+                
+                // only check for attributes if not s.th. like `n.name? = …`
+                var identifierWithProperty = (/\?$/.test(property)) ? '' : property;
+                if (identifierWithProperty) {
+                  if (options.identifier)
+                    // we have s.th. like options.identifier = n; property = '`'+identifierWithProperty+'`'
+                    identifierWithProperty = options.identifier + '.`' + identifierWithProperty + '`';
+                  else
+                    // we have no explicit identifier, so we use the complete key/property and expecting it contains identifier
+                    identifierWithProperty = k;
+                }
+                var hasAttribute = (identifierWithProperty) ? 'HAS ('+identifierWithProperty+') AND ' : '';
+                if (value === k) {
+                  properties.push(hasAttribute+value);
+                // do we have s.th. like { name: { $IN: [ … ] } }
+                } else if ((typeof value === 'object')&&(value !== null)&&(Object.keys(value).length === 1)&&(typeof ConditionalParameters.parameterRuleset[Object.keys(value)[0]] === 'function')) {
+                  properties.push(hasAttribute+' '+(identifierWithProperty || k)+' '+ConditionalParameters.parameterRuleset[Object.keys(value)[0]](value[Object.keys(value)[0]]));
+                } else {
+                  properties.push(hasAttribute+this.cypherKeyValueToString(k, value, 
+                    // only add an identifier if we have NOT s.th. like
+                    // n.name = ''  or r.since …
+                    (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
+                  ));
                 }
               }
-              // merge sub conditions
-              condition[key] = properties.join(' '+operator+' ');
             }
+            // merge sub conditions
+            condition[key] = properties.join(' '+operator+' ');
           }
         }
 
