@@ -306,7 +306,7 @@ describe 'Neo4jMapper (cypher queries)', ->
 
         "Node.findAll().where( { name: { $in: [ 'a', 'b', 1, 2 ] } } )":
           [
-             Node.findAll().where( { name: { $IN: [ 'a', 'b', 1, 2 ] } } )
+             Node.findAll().where( { name: { $in: [ 'a', 'b', 1, 2 ] } } )
             "START n = node(*) WHERE ( HAS (n.`name`) AND n.`name` IN( 'a', 'b', 1, 2 ) ) RETURN n;"
           ]
 
