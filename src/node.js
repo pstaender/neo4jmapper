@@ -1110,7 +1110,7 @@ Node.prototype.incomingRelationsFrom = function(node, relation, cb) {
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
   self.cypher.return_properties = ['r'];
-  return self.incomingRelationships(relation, cb);
+  return self.incomingRelations(relation, cb);
 }
 
 Node.prototype.outgoingRelationsTo = function(node, relation, cb) {
@@ -1120,7 +1120,7 @@ Node.prototype.outgoingRelationsTo = function(node, relation, cb) {
   if (typeof relation !== 'function')
     self.cypher.relationship = relation;
   self.cypher.return_properties = ['r'];
-  return self.outgoingRelationships(relation, cb);
+  return self.outgoingRelations(relation, cb);
 }
 
 Node.prototype.allDirections = function(relation, cb) {
@@ -1164,36 +1164,6 @@ Node.prototype.allRelations = function(relation, cb) {
   self.cypher.return_properties = ['r'];
   self.exec(cb);
   return self; // return self for chaining
-}
-
-// TODO: replace all wordings `withRelationships` with `withRelations`
-
-Node.prototype.withRelationships = function(relation, cb) {
-  return this.withRelations(relation, cb);
-}
-
-Node.prototype.incomingRelationships = function(relation, cb) {
-  return this.incomingRelations(relation, cb);
-}
-
-Node.prototype.outgoingRelationships = function(relation, cb) {
-  return this.outgoingRelations(relation, cb);
-}
-
-Node.prototype.incomingRelationshipsFrom = function(node, relation, cb) {
-  return this.incomingRelationsFrom(node, relation, cb);
-}
-
-Node.prototype.outgoingRelationshipsTo = function(node, relation, cb) {
-  return this.outgoingRelationsTo(node, relation, cb);
-}
-
-Node.prototype.allRelationships = function(relation, cb) {
-  return this.allRelations(relation, cb);
-}
-
-Node.prototype.relationshipsBetween = function(node, relation, cb) {
-  return this.relationsBetweenfunction(node, relation, cb);
 }
 
 Node.prototype.limit = function(limit, cb) {
@@ -1403,6 +1373,10 @@ Node.prototype.whereRelationship = function(where, cb) {
   return this.where(where, cb, { identifier: 'r' });
 }
 
+Node.prototype.whereRelation = function(where, cb) {
+  return this.whereRelationship(where, cb);
+}
+
 Node.prototype.whereHasProperty = function(property, identifier, cb) {
   return this.andHasProperty(property, identifier, cb);
 }
@@ -1461,7 +1435,7 @@ Node.prototype.delete = function(cb) {
   return this; // return self for chaining
 }
 
-Node.prototype.deleteIncludingRelationships = function(cb) {
+Node.prototype.deleteIncludingRelations = function(cb) {
   var label = (this.label) ? ":"+this.label : "";
   if (Object.keys(this.cypher.start).length < 1) {
     // this.cypher.start = {};
@@ -1487,9 +1461,9 @@ Node.prototype.remove = function(cb) {
 Node.prototype.onBeforeRemove = function(next) { next(null,null); }
 
 // was mistakenly called `removeWithRelationships`, so it is renamed 
-Node.prototype.removeIncludingRelationships = function(cb) {
+Node.prototype.removeIncludingRelations = function(cb) {
   var self = this;
-  return this.removeAllRelationships(function(err) {
+  return this.removeAllRelations(function(err) {
     if (err)
       return cb(err, null);
     // remove now node
@@ -1497,17 +1471,18 @@ Node.prototype.removeIncludingRelationships = function(cb) {
   });
 }
 
-Node.prototype.removeOutgoingRelationships = function(type, cb) {
-  return this.removeRelationships(type, cb, { direction: '->' });
+Node.prototype.removeOutgoingRelations = function(type, cb) {
+  return this.removeRelations(type, cb, { direction: '->' });
 }
-Node.prototype.removeIncomingRelationships = function(type, cb) {
-  return this.removeRelationships(type, cb, { direction: '<-' });
+Node.prototype.removeIncomingRelations = function(type, cb) {
+  return this.removeRelations(type, cb, { direction: '<-' });
 }
 
-Node.prototype.removeAllRelationships = function(cb) {
-  return this.removeRelationships('', cb);
+Node.prototype.removeAllRelations = function(cb) {
+  return this.removeRelations('', cb);
 }
-Node.prototype.removeRelationships = function(type, cb, _options) {
+
+Node.prototype.removeRelations = function(type, cb, _options) {
   if (typeof type === 'function') {
     _options = cb;
     cb = type;
@@ -1527,13 +1502,13 @@ Node.prototype.removeRelationships = function(type, cb, _options) {
     var direction = _options.direction;
     if ( (!(direction === 'incoming')) || (!(direction === 'outgoing')) )
       direction = 'all';
-    return Node.prototype.findById(this.id)[direction+'Relationships']().delete(cb);
+    return Node.prototype.findById(this.id)[direction+'Relations']().delete(cb);
   } else {
     return cb(Error("You can remove relationships only from an instanced node /w a valid cb"), null);
   }
 }
 
-Node.prototype.createRelationship = function(options, cb) {
+Node.prototype.createRelation = function(options, cb) {
   var self = this;
   options = _.extend({
     from_id: this.id,
@@ -1568,7 +1543,7 @@ Node.prototype.createRelationship = function(options, cb) {
 
   if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
     if (options.distinct) {
-      Node.findById(options.from_id).outgoingRelationshipsTo(options.to_id, options.type, function(err, result) {
+      Node.findById(options.from_id).outgoingRelationsTo(options.to_id, options.type, function(err, result) {
         if (err)
           return cb(err, result);
         if ((result) && (result.length === 1)) {
@@ -1596,7 +1571,7 @@ Node.prototype.createRelationship = function(options, cb) {
   }
 }
 
-Node.prototype.createRelationshipBetween = function(node, type, properties, cb, options) {
+Node.prototype.createRelationBetween = function(node, type, properties, cb, options) {
   if (typeof options !== 'object') options = {};
   var self = this;
   if (typeof properties === 'function') {
@@ -1606,8 +1581,8 @@ Node.prototype.createRelationshipBetween = function(node, type, properties, cb, 
   if ((this.hasId())&&(helpers.getIdFromObject(node))) {
     // to avoid deadlocks
     // we have to create the relationships sequentially
-    self.createRelationshipTo(node, type, properties, function(err, resultFirst, debug_a){
-      self.createRelationshipFrom(node, type, properties, function(secondErr, resultSecond, debug_b) {
+    self.createRelationTo(node, type, properties, function(err, resultFirst, debug_a){
+      self.createRelationFrom(node, type, properties, function(secondErr, resultSecond, debug_b) {
         if ((err)||(secondErr)) {
           if ((err)&&(secondErr))
             cb([err, secondErr], null, [ debug_a, debug_b ]);
@@ -1624,7 +1599,7 @@ Node.prototype.createRelationshipBetween = function(node, type, properties, cb, 
   
 }
 
-Node.prototype.createRelationshipTo = function(node, type, properties, cb, options) {
+Node.prototype.createRelationTo = function(node, type, properties, cb, options) {
   if (typeof options !== 'object') options = {};
   var args;
   var id = helpers.getIdFromObject(node);
@@ -1634,10 +1609,10 @@ Node.prototype.createRelationshipTo = function(node, type, properties, cb, optio
     to_id: id,
     type: type
   }, options);
-  return this.createRelationship(options, cb);
+  return this.createRelation(options, cb);
 }
 
-Node.prototype.createRelationshipFrom = function(node, type, properties, cb, options) {
+Node.prototype.createRelationFrom = function(node, type, properties, cb, options) {
   if (typeof options !== 'object') options = {};
   var args;
   var id = helpers.getIdFromObject(node);
@@ -1648,31 +1623,31 @@ Node.prototype.createRelationshipFrom = function(node, type, properties, cb, opt
     to_id: this.id,
     type: type
   }, options);
-  return this.createRelationship(options, cb);
+  return this.createRelation(options, cb);
 }
 
-Node.prototype.createOrUpdateRelationship = function(options, cb) {
+Node.prototype.createOrUpdateRelation = function(options, cb) {
   if (typeof options !== 'object') options = {};
   options.distinct = true;
-  return this.createRelationship(options, cb);
+  return this.createRelation(options, cb);
 }
 
-Node.prototype.createOrUpdateRelationshipTo = function(node, type, properties, cb, options) {
+Node.prototype.createOrUpdateRelationTo = function(node, type, properties, cb, options) {
   if (typeof options !== 'object') options = {};
   options.distinct = true;
-  return this.createRelationshipTo(node, type, properties, cb, options);
+  return this.createRelationTo(node, type, properties, cb, options);
 }
 
-Node.prototype.createOrUpdateRelationshipFrom = function(node, type, properties, cb, options) {
+Node.prototype.createOrUpdateRelationFrom = function(node, type, properties, cb, options) {
   if (typeof options !== 'object') options = {};
   options.distinct = true;
-  return this.createRelationshipFrom(node, type, properties, cb, options);
+  return this.createRelationFrom(node, type, properties, cb, options);
 }
 
-Node.prototype.createOrUpdateRelationshipBetween = function(node, type, properties, cb, options) {
+Node.prototype.createOrUpdateRelationBetween = function(node, type, properties, cb, options) {
   if (typeof options !== 'object') options = {};
   options.distinct = true;
-  return this.createRelationshipBetween(node, type, properties, cb, options);
+  return this.createRelationBetween(node, type, properties, cb, options);
 }
 
 Node.prototype.recommendConstructor = function(Fallback) {
@@ -2138,8 +2113,8 @@ Node.enable_loading = function() {
   return this.prototype.enableLoading();
 }
 
-Node.delete_all_including_relationships = function(cb) {
-  return this.find().deleteIncludingRelationships(cb);
+Node.delete_all_including_relations = function(cb) {
+  return this.find().deleteIncludingRelations(cb);
 }
 
 var initNode = function(neo4jrestful) {

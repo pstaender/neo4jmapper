@@ -36,13 +36,13 @@ describe 'Neo4jMapper (cypher queries)', ->
     it 'expect to throw an error on some specific chaining cases', ->
       err = null
       try
-        Node.findOne().deleteIncludingRelationships ->
+        Node.findOne().deleteIncludingRelations ->
       catch e
         err = e
       expect(err).not.to.be null
       err = null
       try
-        Node.find().deleteIncludingRelationships().limit 1, ->
+        Node.find().deleteIncludingRelations().limit 1, ->
       catch e
         err = e
       expect(err).not.to.be null
@@ -124,51 +124,51 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*) WHERE HAS (n.`name`) RETURN n ORDER BY n.`name` ASC;'
           ]
         
-        'Node.findAll().incomingRelationships()':
+        'Node.findAll().incomingRelations()':
           [
-             Node.findAll().incomingRelationships()
+             Node.findAll().incomingRelations()
             'START n = node(*) MATCH (n)<-[r]-() RETURN r;'
           ]
 
-        'Actor.findAll().incomingRelationships()':
+        'Actor.findAll().incomingRelations()':
           [
-             Actor.findAll().incomingRelationships()
+             Actor.findAll().incomingRelations()
             'START n = node(*) MATCH (n:Actor)<-[r]-() RETURN r;'
           ]
         
-        'Node.findAll().outgoingRelationships()':
+        'Node.findAll().outgoingRelations()':
           [
-             Node.findAll().outgoingRelationships()
+             Node.findAll().outgoingRelations()
             'START n = node(*) MATCH (n)-[r]->() RETURN r;'
           ]
 
-        "Node.findAll().incomingRelationships()":
+        "Node.findAll().incomingRelations()":
           [
-             Node.findAll().incomingRelationships()
+             Node.findAll().incomingRelations()
             'START n = node(*) MATCH (n)<-[r]-() RETURN r;'
           ]
         
-        "Node.findOne().withRelationship('know')":
+        "Node.findOne().withRelations('know')":
           [
-             Node.findOne().withRelationships('know')
+             Node.findOne().withRelations('know')
             "MATCH (n)-[r:know]-() RETURN n LIMIT 1;"
           ]
 
-        "Node.findOne().outgoingRelationships(['know','like'])":
+        "Node.findOne().outgoingRelations(['know','like'])":
           [
-             Node.findOne().outgoingRelationships(['know','like'])
+             Node.findOne().outgoingRelations(['know','like'])
             'START n = node(*) MATCH (n)-[r:know|like]->() RETURN r LIMIT 1;'
           ]
 
-        "Node.findOne().outgoingRelationshipsTo(2, ['know','like'])":
+        "Node.findOne().outgoingRelationsTo(2, ['know','like'])":
           [
-             Node.findOne().outgoingRelationshipsTo(2, ['know','like'])
+             Node.findOne().outgoingRelationsTo(2, ['know','like'])
             'START n = node(*), m = node(2) MATCH (n)-[r:know|like]->(m) RETURN r LIMIT 1;'
           ]
 
-        "Node.findOne().outgoingRelationshipsTo(2, 'know|like*')":
+        "Node.findOne().outgoingRelationsTo(2, 'know|like*')":
           [
-             Node.findOne().outgoingRelationshipsTo(2, 'know|like*')
+             Node.findOne().outgoingRelationsTo(2, 'know|like*')
             'START n = node(*), m = node(2) MATCH (n)-[r:know|like*]->(m) RETURN r LIMIT 1;'
           ]
 
@@ -181,31 +181,31 @@ describe 'Neo4jMapper (cypher queries)', ->
             { _value0_: 'Alice'}
           ]
 
-        "Node.findOne().where({name: 'Alice'}).outgoingRelationships()":
+        "Node.findOne().where({name: 'Alice'}).outgoingRelations()":
           [
-             Node.findOne().where({name: 'Alice'}).outgoingRelationships()
+             Node.findOne().where({name: 'Alice'}).outgoingRelations()
             "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = 'Alice' ) RETURN r LIMIT 1;"
             "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = {_value0_} ) RETURN r LIMIT 1;"
             { _value0_: 'Alice'}
           ]
         
-        "Node.findAll().outgoingRelationships('know').distinct().count()":
+        "Node.findAll().outgoingRelations('know').distinct().count()":
           [
-             Node.findAll().outgoingRelationships('know').distinct().count()
+             Node.findAll().outgoingRelations('know').distinct().count()
             'START n = node(*) MATCH (n)-[r:know]->() RETURN COUNT(DISTINCT *);'
           ]
         
-        "Node.singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })":
+        "Node.singleton(1).incomingRelationsFrom(2, 'like').where({ 'since': 'years' })":
           [
-             Node.singleton(1).incomingRelationshipsFrom(2, 'like').where({ 'since': 'years' })
+             Node.singleton(1).incomingRelationsFrom(2, 'like').where({ 'since': 'years' })
             "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = 'years' ) RETURN r, n;"
             "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = {_value0_} ) RETURN r, n;"
             { _value0_: 'years' }
           ]
 
-        "Node.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
+        "Node.singleton(1).incomingRelationsFrom(2, 'like').whereRelationship({ 'since': 'years' })":
           [
-             Node.singleton(1).incomingRelationshipsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
+             Node.singleton(1).incomingRelationsFrom(2, 'like').whereRelationship({ 'since': 'years' }),
             "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = 'years' ) RETURN r;"
             "START n = node(1), m = node(*), r = relationship(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (r.`since`) AND r.`since` = {_value0_} ) RETURN r;"
             { _value0_: 'years'}
@@ -253,33 +253,33 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) WHERE ( HAS (n.`city`) AND n.city = 'berlin' AND ( HAS (n.`name`) AND n.name = 'peter' AND NOT ( HAS (n.`name`) AND n.name = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
           ]
         
-        "Node.findById(123).incomingRelationships().delete()":
+        "Node.findById(123).incomingRelations().delete()":
           [
-             Node.findById(123).incomingRelationships().delete()
+             Node.findById(123).incomingRelations().delete()
             "START n = node(123) MATCH (n)<-[r]-() DELETE r;"
           ]
         
-        "Node.findById(123).allRelationships().delete()":
+        "Node.findById(123).allRelations().delete()":
           [
-             Node.findById(123).allRelationships().delete()
+             Node.findById(123).allRelations().delete()
             "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"
           ]
 
-        "Actor.delete_all_including_relationships()":
+        "Actor.delete_all_including_relations()":
           [
-             Actor.delete_all_including_relationships()
+             Actor.delete_all_including_relations()
             "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
           ]
 
-        "Node.find().deleteIncludingRelationships()":
+        "Node.find().deleteIncludingRelations()":
           [
-             Node.find().deleteIncludingRelationships()
+             Node.find().deleteIncludingRelations()
             "START n = node(*) MATCH n-[r?]-() DELETE n, r;"
           ]
 
-        "Actor.find().deleteIncludingRelationships()":
+        "Actor.find().deleteIncludingRelations()":
           [
-             Actor.find().deleteIncludingRelationships()
+             Actor.find().deleteIncludingRelations()
             "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
           ]
 

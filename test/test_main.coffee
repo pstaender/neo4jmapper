@@ -145,7 +145,7 @@ describe 'Neo4jMapper', ->
         name = String(Date())
         new Person(name: name).save (err, alice) ->
           new Person(name: 'otherPerson').save (err, bob) ->
-            alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
+            alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
               Graph
                 .start('n = node(*)')
                 .match('n:Person-[r?]-()')
@@ -184,7 +184,7 @@ describe 'Neo4jMapper', ->
       name = String(Date())
       new Person(name: name).save (err, alice) ->
         new Person(name: 'otherPerson').save (err, bob) ->
-          alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
+          alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
             graph = Graph.start('n = node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, found) ->
               expect(err).to.be null
               expect(found).to.have.length 1
@@ -196,7 +196,7 @@ describe 'Neo4jMapper', ->
       name = String(Date())
       new Person(name: name).save (err, alice) ->
         new Person(name: name).save (err, bob) ->
-          alice.createRelationshipTo bob, 'KNOWS', (err, relationship) ->
+          alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
             Graph.start('n = node(*)').match('n:Person-[r?]-()').where({ 'n.name': name }).return('n, r').limit(2).exec (err, found) ->
               expect(err).to.be null
               expect(found).to.have.length 2
@@ -578,7 +578,7 @@ describe 'Neo4jMapper', ->
             expect(err).to.be null
             Node.findById id, (err, foundAgain) ->
               expect(foundAgain.data.title).to.be found.data.title
-              foundAgain.removeIncludingRelationships (err) ->
+              foundAgain.removeIncludingRelations (err) ->
                 expect(err).to.be null
                 node.remove ->
                   done()
@@ -941,55 +941,55 @@ describe 'Neo4jMapper', ->
       alice.save -> bob.save -> charles.save ->
         new Graph().countRelationships (err, countedRelationshipsBefore) ->
           try
-            alice.createRelationshipBetween(bob, ->)
+            alice.createRelationBetween(bob, ->)
           catch e
             expect(e).to.be.an Error
           try
-            alice.createRelationshipBetween(bob, { since: 'years' }, ->)
+            alice.createRelationBetween(bob, { since: 'years' }, ->)
           catch e
             expect(e).to.be.an Error
-          alice.createRelationshipBetween bob, 'knows', { since: 'years' }, (err, result) ->
+          alice.createRelationBetween bob, 'knows', { since: 'years' }, (err, result) ->
             expect(err).to.be null
             expect(result).to.have.length 2
             new Graph().countRelationships (err, countedRelationshipsIntermediate) ->
               expect(countedRelationshipsBefore+2).to.be.equal countedRelationshipsIntermediate
-              bob.createRelationshipTo alice, 'liked', (err, relationship) ->
+              bob.createRelationTo alice, 'liked', (err, relationship) ->
                 expect(err).to.be null
                 expect(relationship).to.be.an 'object'
                 expect(relationship.type).to.be.equal 'liked'
                 expect(relationship).to.be.an 'object'
                 new Graph().countRelationships (err, countedRelationshipsFinally) ->
                   expect(countedRelationshipsBefore+3).to.be.equal countedRelationshipsFinally
-                  bob.createRelationshipFrom alice, 'follows', (err, relationship) ->
+                  bob.createRelationFrom alice, 'follows', (err, relationship) ->
                     expect(err).to.be null
                     expect(relationship).to.be.an 'object'
-                    new Graph().countRelationships (err, countedRelationshipsFinally) ->
+                    new Graph().countRelations (err, countedRelationshipsFinally) ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
                       # console.log bob.neo4jrestful.header
-                      bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
+                      bob.createOrUpdateRelationFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
                         expect(err).to.be null
                         expect(relationship).to.be.an 'object'
                         expect(relationship.type).to.be.equal 'follows'
                         expect(relationship.data.since).to.be.equal 'years'
                         expect(relationship.id).to.be.a 'number'
                         id = relationship.id
-                        new Graph().countRelationships (err, count) ->
+                        new Graph().countRelations (err, count) ->
                           expect(count).to.be.equal countedRelationshipsFinally
-                          bob.createOrUpdateRelationshipFrom alice, 'follows', { since: 'months' }, (err, relationship) ->
+                          bob.createOrUpdateRelationFrom alice, 'follows', { since: 'months' }, (err, relationship) ->
                             expect(err).to.be null
                             expect(relationship).to.be.an 'object'
                             expect(relationship.type).to.be.a 'string'
                             expect(relationship.data.since).to.be.equal 'months'
                             expect(relationship.id).to.be.equal id
-                            new Graph().countRelationships (err, count) ->
+                            new Graph().countRelations (err, count) ->
                               expect(count).to.be.equal countedRelationshipsFinally
-                              charles.createOrUpdateRelationshipTo bob, 'follows', { since: 'days' }, (err, relationship) ->
+                              charles.createOrUpdateRelationTo bob, 'follows', { since: 'days' }, (err, relationship) ->
                                 expect(err).to.be null
-                                bob.incomingRelationships().count (err, count) ->
+                                bob.incomingRelations().count (err, count) ->
                                   expect(count).to.be 3
-                                  new Graph().countRelationships (err, count) ->
+                                  new Graph().countRelations (err, count) ->
                                     expect(count).to.be.equal countedRelationshipsFinally + 1
-                                    alice.removeIncludingRelationships -> bob.removeIncludingRelationships -> charles.removeIncludingRelationships ->
+                                    alice.removeIncludingRelations -> bob.removeIncludingRelations -> charles.removeIncludingRelations ->
                                       done()
 
     it 'expect to create and get incoming, outgoing and bidirectional relationships between two nodes', (done) ->
@@ -997,18 +997,18 @@ describe 'Neo4jMapper', ->
       node.data.name = "Alice"
       node.save (err, a) ->
         expect(a.hasId()).to.be true
-        a.outgoingRelationships().count (err, count) ->
+        a.outgoingRelations().count (err, count) ->
           expect(count).to.be 0
           node = new Node()
           node.data.name = "Bob"
           node.save (err, b) ->
             expect(b.hasId()).to.be true
-            a.createRelationshipTo b, 'KNOWS', { since: 'years' }, (err, result) ->
+            a.createRelationTo b, 'KNOWS', { since: 'years' }, (err, result) ->
               expect(err).to.be null
-              a.outgoingRelationships().count (err, countNew) ->
+              a.outgoingRelations().count (err, countNew) ->
                 expect(countNew).to.be 1
                 a.neo4jrestful.debug = true;
-                a.outgoingRelationships (err, outgoingRelationships, debug) ->
+                a.outgoingRelations (err, outgoingRelationships, debug) ->
                   expect(err).to.be null
                   expect(outgoingRelationships).to.have.length 1
                   # check all important properties of a relationship
@@ -1023,15 +1023,15 @@ describe 'Neo4jMapper', ->
                   expect(outgoingRelationships[0].to.uri).to.be.a 'string'
                   expect(outgoingRelationships[0].toObject()).to.be.an 'object'
 
-                  a.createRelationshipFrom b, 'LIKES', (err, result) ->
+                  a.createRelationFrom b, 'LIKES', (err, result) ->
                     expect(err).to.be null
-                    a.incomingRelationships 'LIKES', (err, result) ->
+                    a.incomingRelations 'LIKES', (err, result) ->
                       expect(outgoingRelationships).to.have.length 1
                       expect(err).to.be null
                       a.neo4jrestful.debug = true
-                      a.createRelationshipBetween b, 'LIKES', (err, result, debug) ->
+                      a.createRelationBetween b, 'LIKES', (err, result, debug) ->
                         expect(err).to.be null
-                        a.allRelationships 'LIKES', (err, result) ->
+                        a.allRelations 'LIKES', (err, result) ->
                           expect(err).to.be null
                           expect(result).to.have.length 3
                           done()
@@ -1043,8 +1043,8 @@ describe 'Neo4jMapper', ->
         }
       }
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) ->
-        alice.createRelationshipBetween bob, 'like', { since: 'years', nested: { values: true } }, ->
-          alice.allRelationships 'like', (err, relationships) ->
+        alice.createRelationBetween bob, 'like', { since: 'years', nested: { values: true } }, ->
+          alice.allRelations 'like', (err, relationships) ->
             expect(err).to.be null
             expect(relationships).to.have.length 2
             for relationship, i in relationships
@@ -1052,7 +1052,7 @@ describe 'Neo4jMapper', ->
               expect(relationships[i].data.since).to.be.equal 'years'
               expect(relationships[i].data.nested.values).to.be.equal true
               expect(relationships[i].data.created_on).to.be.above 0
-            alice.incomingRelationships (err, relationship) ->
+            alice.incomingRelations (err, relationship) ->
               r = new Relationship()
               expect(relationship).to.have.length 1
               Relationship::fields.defaults = {}
@@ -1062,11 +1062,11 @@ describe 'Neo4jMapper', ->
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) -> new Node({name: 'Charles'}).save (err, charles) ->
         expect(alice.data.name).to.be 'Alice'
         expect(bob.data.name).to.be 'Bob'
-        alice.createOrUpdateRelationshipBetween bob, 'know', (err) ->
+        alice.createOrUpdateRelationBetween bob, 'know', (err) ->
           expect(err).to.be null
-          charles.createRelationshipTo alice, 'know', (err) ->
+          charles.createRelationTo alice, 'know', (err) ->
             expect(err).to.be null
-            alice.incomingRelationships 'know', (err, result) ->
+            alice.incomingRelations 'know', (err, result) ->
               expect(result).to.have.length 2
               expect(result[0].to.id).to.be.above 0
               expect(result[1].to.id).to.be.above 0
@@ -1141,8 +1141,8 @@ describe 'Neo4jMapper', ->
         b.save ->
           c = new Node({name: 'Charles'})
           c.save ->
-            a.createRelationshipTo b, 'KNOWS', ->
-              b.createRelationshipTo c, 'KNOWS', ->
+            a.createRelationTo b, 'KNOWS', ->
+              b.createRelationTo c, 'KNOWS', ->
                 a.neo4jrestful.debug = true;
                 a.shortestPathTo c, 'KNOWS', (err, path, debug) ->
                   # check properties of path
@@ -1161,9 +1161,9 @@ describe 'Neo4jMapper', ->
                   expect(path.start).to.be.a 'string'
                   expect(path.end).to.be.a 'string'
                   expect(path.toObject()).to.be.an 'object'
-                  a.removeIncludingRelationships (err) ->
+                  a.removeIncludingRelations (err) ->
                     expect(err).to.be null
-                    b.removeIncludingRelationships (err) ->
+                    b.removeIncludingRelations (err) ->
                       expect(err).to.be null
                       done()
 
@@ -1172,7 +1172,7 @@ describe 'Neo4jMapper', ->
     it 'expect to get a relationship by id, update and remove it', (done) ->
       new Node().save (err, a) ->
         new Node().save (err, b) ->
-          a.createRelationshipTo b, 'related', { since: 'year' }, (err, result) ->
+          a.createRelationTo b, 'related', { since: 'year' }, (err, result) ->
             expect(result.id).to.be.above 0
             Relationship.findById result.id, (err, found) ->
               expect(err).to.be null
@@ -1195,7 +1195,7 @@ describe 'Neo4jMapper', ->
     it 'expect to trigger load hook and loading both nodes on getById', (done) ->
       new Node( name: 'Alice' ).save (err, a) ->
         new Node( name: 'Bob' ).save (err, b) ->
-          a.createRelationshipTo b, 'related', { since: 'year' }, (err, result) -> 
+          a.createRelationTo b, 'related', { since: 'year' }, (err, result) -> 
             expect(err).to.be null
             Relationship.findById result.id, (err, relationship) ->
               expect(err).to.be null
@@ -1206,7 +1206,7 @@ describe 'Neo4jMapper', ->
     it 'expect to update a relationship with preventing id accidently changing and with value extending', (done) ->
       new Node( name: 'Alice' ).save (err, a) ->
         new Node( name: 'Bob' ).save (err, b) ->
-          a.createRelationshipTo b, 'related', { since: 'years', city: 'Berlin' }, (err, relationship) ->
+          a.createRelationTo b, 'related', { since: 'years', city: 'Berlin' }, (err, relationship) ->
             expect(err).to.be null
             Relationship.findById relationship.id, (err, relationship) ->
               expect(relationship.data.since).to.be.equal 'years'
@@ -1239,7 +1239,7 @@ describe 'Neo4jMapper', ->
         checked: true
       new Node( name: 'Alice' ).save (err, a) ->
         new Node( name: 'Bob' ).save (err, b) ->
-          a.createRelationshipTo b, 'knows', (err, r) ->
+          a.createRelationTo b, 'knows', (err, r) ->
             expect(err).to.be null
             expect(r.data.created_on).to.be.a 'string'
             expect(r.data.checked).to.be.equal true

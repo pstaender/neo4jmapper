@@ -245,6 +245,11 @@ var initGraph = function(neo4jrestful) {
     return this.countAllOfType('relationship', cb);
   }
 
+  // alias for countRelationships()
+  Graph.prototype.countRelations = function(cb) {
+    return this.countRelationships(cb);
+  }
+
   // ### Counts all nodes
   Graph.prototype.countNodes = function(cb) {
     return this.countAllOfType('node', cb);
@@ -572,6 +577,11 @@ var initGraph = function(neo4jrestful) {
   }
 
   Graph.count_relationships = function(cb) {
+    return new Graph().countRelationships(cb);
+  }
+
+  // alias for count_relationships
+  Graph.count_relations = function(cb) {
     return new Graph().countRelationships(cb);
   }
   
