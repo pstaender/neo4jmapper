@@ -1,14 +1,12 @@
 # Neo4jMapper
 ## Object Modeler for Neo4j Graphdatabases
-### written in JavaScript for browser- and serverside usage
+
+Written in JavaScript for browser- and serverside usage
 
 [![Build Status](https://api.travis-ci.org/pstaender/neo4jmapper.png)](https://travis-ci.org/pstaender/neo4jmapper)
 [![NPM version](https://badge.fury.io/js/neo4jmapper.png)](https://npmjs.org/package/neo4jmapper)
-[![Dependency Status](https://gemnasium.com/pstaender/neo4jmapper.png)](https://gemnasium.com/pstaener/neo4jmapper)
 
-### Links
-  * [Sourcecode @ GitHub repository](https://github.com/pstaender/neo4jmapper)
-  * [Documentation and Examples](http://pstaender.github.io/neo4jmapper)
+## [Documentation and Examples](http://pstaender.github.io/neo4jmapper)
 
 ## Installation
 
@@ -18,13 +16,17 @@
 
 ## Tests
 
-You can run tests in nodejs:
-
 ```sh
   $ npm test
 ```
 
-or in the browser of your choice by opening the `examples/browser/tests.html` file. You have to overwrite the `configForTest` values with your own config data.
+Beware that a lot of nodes will be written and kept in your database.
+
+## Usage and Testing in Browser
+
+All features of the library are available in modern Browsers (except streaming support). To give it a try execute `npm run compress`, that will generate all needed js files. If you want to run the tests in the browser as well, use `npm run prepare` to let all test file be generated.
+
+You'll find a ready-to-use-console in `examples/browser/console/console.html`. To use it with your local database you gave to ensure that you access the page from the same domain as your database to avoid `access-control-allow-origin` situation.
 
 ## API Changes
 
