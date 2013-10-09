@@ -67,7 +67,7 @@ var initNeo4jRestful = function() {
 
   RequestDebug.prototype.options        = null;
   RequestDebug.prototype.requested_url  = '';
-  RequestDebug.prototype.type           = '';
+  RequestDebug.prototype.method         = '';
   RequestDebug.prototype.data           = null;
   RequestDebug.prototype.header         = null;
   RequestDebug.prototype.res            = null;
@@ -310,57 +310,139 @@ var initNeo4jRestful = function() {
   }
 
   Neo4jRestful.prototype.request = function(url, options, cb) {
-    var debug = null;
-    var defaultOptions = {
+    var debug = null; // debug object
+
+    if (typeof options === 'undefined')
+      options = {};
+    
+    // apply default options
+    _.defaults(options, {
       type: 'GET',
       data: null,
       debug: false,
       // use copy of header, not reference
       header: _.extend({},this.header)
-    };
-    if (typeof options === 'undefined')
-      options = _.extend({},defaultOptions);
-    else
-      options = _.extend(defaultOptions, options);  
-    this.url = url;
+    });
+
+    if (typeof url !== 'string')
+      throw Error("First argument 'url' must be string");
+
+    this.url = options.url = url;
+    this.header = options.header;
+
     var requestedUrl = this.absoluteUrl();
-    var type = options.type;
     var data = options.data;
-    this.header = _.extend({}, this.header, options.header);
 
     if ( (typeof data === 'object') && (data !== null) )
      data = JSON.stringify(options.data);
-    
-    // this.log('**debug**', 'URI:', type+":"+requestedUrl);
-    // this.log('**debug**', 'sendedData:', data);
-    // this.log('**debug**', 'sendedHeader:', this.header);
 
     if (this.debug)
       options.debug = true;
 
-    if (options.debug) {
+    // create debug object
+    if (options.debug)
       debug = new RequestDebug({
         options: options,
         requested_url: requestedUrl,
-        type: type,
+        method: options.method,
         data: data,
         header: this.header,
         res: null,
         status: null,
         err: null
       });
-    }
-
-    var _options = {
+    
+    // options for makeRequest()
+    var _options_ = {
       requestedUrl: requestedUrl,
-      type: type,
+      method: options.method,
       data: data,
       options: options,
       debug: debug,
       url: url
     };
 
-    return this.makeRequest(_options, cb);
+    return this._makeRequest(_options_, cb);
+  }
+
+  Neo4jRestful.prototype._makeRequest = function(_options_, cb) {
+    var self = this;
+    // apply default options on options
+    _.defaults(_options_, {
+      cache: false,
+      timeout: this.timeout,
+      loadNode: true // enables the load hooks
+    });
+    
+    // create final options object from _options_.options
+    var options = _options_.options;
+
+    options.absolute_url = _options_.requestedUrl;
+    options.url = _options_.url;
+    options.method = _options_.method;
+    options.data = _options_.data;
+    options._debug = _options_.debug;
+
+    this.log('**debug**', 'URI:', options.method+":"+options.url+" ("+options.absolute_url+")");
+    this.log('**debug**', 'sendedData:', options.data);
+    this.log('**debug**', 'sendedHeader:', self.header);
+
+    this._request_on_ = new Date().getTime();
+
+    var requestOptions = {
+      method: options.method,
+      url: options.absolute_url,
+      header: self.header
+    };
+
+    if (options.data)
+      requestOptions.data = options.data;
+    
+    // stream
+    if (this.header['X-Stream'] === 'true') {
+
+      var stream = JSONStream.parse(['data', true]);
+
+      stream.on('data', cb);
+      stream.on('end', function() {
+        // prevent to pass undefined, but maybe an undefined is more clear
+        cb(null, null);
+      });
+
+      stream.on('root', function(root, count) {
+        self._response_on_ = new Date().getTime();
+        // remove x-stream from header
+        delete self.header['X-Stream'];
+        if (!count) {
+          cb(null, Error('No matches in stream found ('+ root +')'));
+        }
+      });
+
+      requestOptions.stream = stream;
+
+    }
+    
+    // now finally send the request
+    _sendHttpRequest(requestOptions, function(err, res) {
+    // req.end(function(err, res) {
+      self._response_ = res;
+      self._response_on_ = new Date().getTime();
+      if (options._debug)
+        options._debug.responseTime = self.responseTime();
+      if (err) {
+        self.onError(cb, err, 'error', options);
+      } else {
+        // we might have a reponse with a failure status code
+        if (res.status >= 400) {
+          self.onError(cb, res.body, 'error', options);
+        } else {
+          if (res.body)
+            self._columns_ = res.body.columns || null;
+          self.onSuccess(cb, res.body, 'success', options);
+        }
+      }
+    });
+
   }
 
   Neo4jRestful.prototype.onProcess = function(res, next, debug) {
@@ -480,103 +562,26 @@ var initNeo4jRestful = function() {
     });
   }
 
-  Neo4jRestful.prototype.makeRequest = function(_options, cb) {
-    _options = _.extend({
-      cache: false,
-      timeout: this.timeout,
-      loadNode: true // enables the load hooks
-    }, _options);
-    var self = this;
-    var data = _options.data;
-    var options = _options.options;
-    options.absolute_url = _options.requestedUrl;
-    options.url = _options.url;
-    options.method = _options.type;
-    options._debug = _options.debug;
-
-    this.log('**debug**', 'URI:', options.method+":"+options.url+" ("+options.absolute_url+")");
-    this.log('**debug**', 'sendedData:', data);
-    this.log('**debug**', 'sendedHeader:', this.header);
-
-    this._request_on_ = new Date().getTime();
-
-    var requestOptions = {
-      method: options.method,
-      url: options.absolute_url,
-      header: self.header
-    };
-
-    if (data)
-      requestOptions.data = data;
-    
-    // stream
-    if (this.header['X-Stream'] === 'true') {
-
-      var stream = JSONStream.parse(['data', true]);
-
-      stream.on('data', cb);
-      stream.on('end', function() {
-        // prevent to pass undefined, but maybe an undefined is more clear
-        cb(null, null);
-      });
-
-      stream.on('root', function(root, count) {
-        self._response_on_ = new Date().getTime();
-        // remove x-stream from header
-        delete self.header['X-Stream'];
-        if (!count) {
-          cb(null, Error('No matches in stream found ('+ root +')'));
-        }
-      });
-
-      requestOptions.stream = stream;
-
-    }
-    
-    // now finally send the request
-
-    _sendHttpRequest(requestOptions, function(err, res) {
-    // req.end(function(err, res) {
-      self._response_ = res;
-      self._response_on_ = new Date().getTime();
-      if (options._debug)
-        options._debug.responseTime = self.responseTime();
-      if (err) {
-        self.onError(cb, err, 'error', options);
-      } else {
-        // we might have a reponse with a failure status code
-        if (res.status >= 400) {
-          self.onError(cb, res.body, 'error', options);
-        } else {
-          if (res.body)
-            self._columns_ = res.body.columns || null;
-          self.onSuccess(cb, res.body, 'success', options);
-        }
-      }
-    });
-
-  }
-
   Neo4jRestful.prototype.get = function(url, options, cb) {
     var args;
-    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.type = 'GET' ) );
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.method = 'GET' ) );
     return this.request(url, options, cb);
   }
 
   Neo4jRestful.prototype.post = function(url, options, cb) {
     var args;
-    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.type = 'POST' ) );
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.method = 'POST' ) );
     return this.request(url, options, cb);
   }
   Neo4jRestful.prototype.put = function(url, options, cb) {
     var args;
-    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.type = 'PUT' ) );
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.method = 'PUT' ) );
     return this.request(url, options, cb);
   }
 
   Neo4jRestful.prototype.delete = function(url, options, cb) {
     var args;
-    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.type = 'DELETE' ) );
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) && ( options.method = 'DELETE' ) );
     return this.request(url, options, cb);
   }
 
