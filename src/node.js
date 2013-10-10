@@ -65,6 +65,7 @@ Node.prototype.init = function(data, id) {
   }
   if (!this.label)
     this.label = null;
+  return this;
 }
 
 // ### Instantiate a node from a specific model
@@ -214,7 +215,7 @@ Node.prototype.initialize = function(cb) {
 // on prototype base during registering a model
 // HINT: call the cb() finnaly  
 Node.prototype.onBeforeInitialize = function(next) {
-  next(null,null);
+  return next(null,null);
 }
 
 // ### Internal Hook: onAfterInitialize
@@ -231,14 +232,14 @@ Node.prototype.onAfterInitialize = function(cb) {
   var label = node.label;
   if (label) {
     if (fieldsToIndex.length > 0) {
-      node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err) {
+      return node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err) {
         cb(err, self.constructor);
       });
     } else {
-      cb(null, self.constructor);
+      return cb(null, self.constructor);
     }
   } else {
-    cb(Error('No label found'), this.constructor);
+    return cb(Error('No label found'), this.constructor);
   }
 }
 
@@ -280,7 +281,8 @@ Node.prototype.hasId = function() {
 
 Node.prototype.setUriById = function(id) {
   if (_.isNumber(id))
-    return this.uri = Graph.prototype.neo4jrestful.absoluteUrl(this.__type__+'/'+id);
+    this.uri = Graph.prototype.neo4jrestful.absoluteUrl(this.__type__+'/'+id);
+  return this;
 }
 
 Node.prototype.flattenData = function(useReference) {
@@ -427,7 +429,8 @@ Node.prototype.ensureIndex = function(options, cb) {
       else
         Graph.request().post(url, { data: { property_keys: [ key ] } }, after);
     });
-  })
+  });
+  return this;
 }
 
 Node.prototype.dropIndex = function(fields, cb) {
@@ -463,6 +466,7 @@ Node.prototype.dropEntireIndex = function(cb) {
       return cb(err, fields);
     return self.dropIndex(fields, cb);
   });
+  return this;
 }
 
 Node.prototype.getIndex = function(cb) {
@@ -491,10 +495,6 @@ Node.prototype._hashData_ = function() {
     return null;
 }
 
-// Node.prototype.queryIsModified = function() {
-//   return Boolean(this._query_history_.length > 0);
-// }
-
 Node.prototype.isPersisted = function(setToTrueOrFalse) {
   if (typeof setToTrueOrFalse !== 'undefined') {
     // use as setter
@@ -510,7 +510,7 @@ Node.prototype.isPersisted = function(setToTrueOrFalse) {
 Node.prototype.save = function(cb) {
   var self = this;
   var labels = (self.labels.length > 0) ? self.labels : null;
-  self.onBeforeSave(self, function(err) {
+  return self.onBeforeSave(self, function(err) {
     // don't execute if an error is passed through
     if ((typeof err !== 'undefined')&&(err !== null))
       cb(err, null);
@@ -609,13 +609,12 @@ Node.prototype.update = function(data, cb) {
     }
   }
   this.cypher._update = true;
-  this.exec(cb);
-  return this;
+  return this.exec(cb);
 }
 
 Node.prototype.load = function(cb) {
   var self = this;
-  this.onBeforeLoad(self, function(err, node){
+  return this.onBeforeLoad(self, function(err, node){
     if (err)
       cb(err, node);
     else
@@ -707,8 +706,7 @@ Node.prototype.withLabel = function(label, cb) {
     return self; // return self for chaining
   self._query_history_.push({ withLabel: label });
   self.cypher.label = label;
-  self.exec(cb);
-  return self; // return self for chaining
+  return self.exec(cb);
 }
 
 Node.prototype.shortestPathTo = function(end, type, cb) {
@@ -764,8 +762,7 @@ Node.prototype.pathBetween = function(start, end, options, cb) {
     this.cypher.return_properties = ['p'];
   }
 
-  this.exec(cb);
-  return this; // return self for chaining
+  return this.exec(cb);
 }
 
 // Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) { }
@@ -980,17 +977,17 @@ Node.prototype.exec = function(cb, cypher_or_request) {
     // if we have only one return property, we resort this
     if ( (this.cypher.return_properties)&&(this.cypher.return_properties.length === 1) ) {
       if (cypherQuery)
-        return this.query(cypherQuery, cb);
+        this.query(cypherQuery, cb);
       else if (request)
-        return this.query(request, cb);
+        this.query(request, cb);
       else
         // default, use the build cypher query
-        return this.query(cypher, cb);
+        this.query(cypher, cb);
     } else {
-      return this.query(cypher, cb);
+      this.query(cypher, cb);
     } 
   }
-  return null;
+  return this;
 }
 
 Node.prototype.query = function(cypherQuery, options, cb) {
@@ -1428,8 +1425,7 @@ Node.prototype.delete = function(cb) {
   this.cypher.action = 'DELETE';
   if (this.cypher.limit)
     throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
-  this.exec(cb);
-  return this; // return self for chaining
+  return this.exec(cb);
 }
 
 Node.prototype.deleteIncludingRelations = function(cb) {
@@ -1463,8 +1459,8 @@ Node.prototype.removeIncludingRelations = function(cb) {
   return this.removeAllRelations(function(err) {
     if (err)
       return cb(err, null);
-    // remove now node
-    return self.remove(cb);
+    else // remove now node
+      return self.remove(cb);
   });
 }
 
@@ -1499,10 +1495,11 @@ Node.prototype.removeRelations = function(type, cb, _options) {
     var direction = _options.direction;
     if ( (!(direction === 'incoming')) || (!(direction === 'outgoing')) )
       direction = 'all';
-    return Node.prototype.findById(this.id)[direction+'Relations']().delete(cb);
+    Node.prototype.findById(this.id)[direction+'Relations']().delete(cb);
   } else {
-    return cb(Error("You can remove relationships only from an instanced node /w a valid cb"), null);
+    cb(Error("You can remove relationships only from an instanced node /w a valid cb"), null);
   }
+  return this;
 }
 
 Node.prototype.createRelation = function(options, cb) {
@@ -1521,7 +1518,7 @@ Node.prototype.createRelation = function(options, cb) {
     options.properties = helpers.flattenObject(options.properties);
 
   var _create_relationship_by_options = function(options) {
-    return self.neo4jrestful.post('node/'+options.from_id+'/relationships', {
+    self.neo4jrestful.post('node/'+options.from_id+'/relationships', {
       data: {
         to: new Node({},options.to_id).uri,
         type: options.type,
@@ -1536,6 +1533,7 @@ Node.prototype.createRelation = function(options, cb) {
         relationship.save(cb);
       }
     });
+    return self;
   }
 
   if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
@@ -1566,6 +1564,7 @@ Node.prototype.createRelation = function(options, cb) {
   } else {
     cb(Error('Missing from_id('+options.from_id+') or to_id('+options.to_id+') OR no cb attached'), null);
   }
+  return this;
 }
 
 Node.prototype.createRelationBetween = function(node, type, properties, cb, options) {
@@ -1593,7 +1592,7 @@ Node.prototype.createRelationBetween = function(node, type, properties, cb, opti
   } else {
     cb(Error("You need two instanced nodes as start and end point"), null);
   }
-  
+  return this;
 }
 
 Node.prototype.createRelationTo = function(node, type, properties, cb, options) {
@@ -1734,13 +1733,16 @@ Node.prototype.replaceLabels = function(labels, cb) {
   if ( (this.hasId()) && (_.isFunction(cb)) ) {
     if (!_.isArray(labels))
       labels = [ labels ];
-    return this.neo4jrestful.put('node/'+this.id+'/labels', { data: labels }, cb);
+    this.neo4jrestful.put('node/'+this.id+'/labels', { data: labels }, cb);
   }
+  return this;
 }
 
 Node.prototype.removeLabels = function(cb) {
   if ( (this.hasId()) && (_.isFunction(cb)) ) {
     return this.neo4jrestful.delete('node/'+this.id+'/labels', cb);
+  } else {
+    return this;
   }
 }
 
@@ -1761,8 +1763,7 @@ Node.prototype.toObject = function() {
 
 Node.prototype.stream = function(cb) {
   this._stream_ = true;
-  this.exec(cb);
-  return this;
+  return this.exec(cb);
 }
 
 Node.prototype.each = function(cb) {
@@ -1794,8 +1795,7 @@ Node.prototype.findOne = function(where, cb) {
   }
   self = this.find(where);
   self.cypher.limit = 1;
-  self.exec(cb);
-  return self;
+  return self.exec(cb);
 }
 
 Node.prototype.findById = function(id, cb) {
@@ -1805,7 +1805,7 @@ Node.prototype.findById = function(id, cb) {
   self._query_history_.push({ findById: id });
   if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
     // to reduce calls we'll make a specific restful request for one node
-    return self.neo4jrestful.get(this.__type__+'/'+id, function(err, object) {
+    self.neo4jrestful.get(this.__type__+'/'+id, function(err, object) {
       if ((object) && (typeof self.load === 'function')) {
         //  && (typeof node.load === 'function')     
         object.load(cb);
@@ -1813,6 +1813,7 @@ Node.prototype.findById = function(id, cb) {
         cb(err, object);
       }
     });
+    return this;
   } else {
     self.cypher.by_id = Number(id);
     return self.findByKeyValue({ id: id }, cb);
@@ -1849,7 +1850,7 @@ Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
       // if we have an id: value, we will build the query in prepareQuery
     }
     if (typeof cb === 'function') {
-      self.exec(function(err,found){
+      return self.exec(function(err,found){
         if (err)
           return cb(err, found);
         else {
@@ -1884,8 +1885,7 @@ Node.prototype.findAll = function(cb) {
   self.cypher.limit = null;
   self.cypher.return_properties = ['n'];
   if (self.label) self.withLabel(self.label);
-  self.exec(cb);
-  return self;
+  return self.exec(cb);
 }
 
 Node.prototype.findOrCreate = function(where, cb) {
@@ -1903,6 +1903,7 @@ Node.prototype.findOrCreate = function(where, cb) {
       node.save(cb);  
     }
   });
+  return this;
 }
 
 /*
