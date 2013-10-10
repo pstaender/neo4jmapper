@@ -294,23 +294,6 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
     return Relationship;
   }
 
-  // Ensure that we have a Neo4jRestful client we can work with
-  // if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
-  //   throw Error('You have to use an Neo4jRestful object as argument');
-
-  // if (typeof neo4jrestful === 'object') {
-  //   if (typeof window === 'object') {
-  //     window.Neo4jMapper.Relationship.prototype.neo4jrestful = neo4jrestful;
-  //     window.Neo4jMapper.Relationship.prototype.applyDefaultValues = window.Neo4jMapper.Node.prototype.applyDefaultValues;
-  //     Graph = window.Neo4jMapper.initGraph(neo4jrestful);
-  //   } else {
-  //     Node = require('./node').init(neo4jrestful);
-  //     Relationship.prototype.neo4jrestful = neo4jrestful;
-  //     Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues;
-  //     Graph = require('./graph').init(neo4jrestful);
-  //   }
-  // }
-
   /* from Node */
   Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues
   Relationship.prototype.copy_of            = Node.prototype.copy_of;
@@ -330,7 +313,5 @@ if (typeof window !== 'object') {
     init: __initRelationship__
   }
 } else {
-  window.Neo4jMapper.initNode = function(Graph, Node) {
-    return window.Neo4jMapper.Node = __initRelationship__(Node);
-  }
+  window.Neo4jMapper.initRelationship = __initRelationship__
 }

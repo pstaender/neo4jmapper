@@ -18,7 +18,7 @@ if root?
       throw err
   }
 
-else if window?
+else
   # tests in browser
   configForTest = _.extend({
     doLog: false
@@ -27,9 +27,9 @@ else if window?
     startInstantly: false
   }, configForTest or {})
   Join = window.Join
-  neo4jmapper = Neo4jMapper.init(configForTest.neo4jURL)
+  neo4jmapper = new Neo4jMapper(configForTest.neo4jURL)
   {Graph,Node,Relationship,helpers,client,Neo4jRestful} = neo4jmapper
-  Neo4j = Neo4jMapper.init
+  Neo4j = Neo4jMapper
 
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
 

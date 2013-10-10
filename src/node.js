@@ -10,8 +10,6 @@
 
 var __initNode__ = function(Graph, neo4jrestful) {
 
-  var global = (typeof window === 'object') ? window : root;
-
   var helpers = null;
   var _ = null;
   var Sequence = null;
@@ -430,7 +428,6 @@ var __initNode__ = function(Graph, neo4jrestful) {
   }
 
   Node.prototype.dropIndex = function(fields, cb) {
-    var self = this;
     if (typeof fields === 'function') {
       cb = fields;
       fields = this.fieldsForAutoindex();
@@ -2125,7 +2122,5 @@ if (typeof window !== 'object') {
     init: __initNode__
   }
 } else {
-  window.Neo4jMapper.initNode = function(Graph) {
-    return window.Neo4jMapper.Node = __initNode__(Graph);
-  }
+  window.Neo4jMapper.initNode = __initNode__;
 }

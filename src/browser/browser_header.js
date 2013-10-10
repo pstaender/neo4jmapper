@@ -15,15 +15,3 @@ if (typeof window._ === 'undefined')
   throw Error('Include of underscore.js library is needed')
 if (typeof window.superagent === 'undefined')
   throw Error('Include of superagent library is needed')
-
-window.Neo4jMapper = {
-  init: null,
-  Neo4jRestful: null,
-  neo4jrestful: null, // TODO: this is redundant /w client, check where it's needed
-  client: null,
-  Node: null,
-  Relationship: null,
-  Graph: null,
-  Path: null,
-  helpers: null
-};

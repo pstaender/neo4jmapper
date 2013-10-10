@@ -1,12 +1,8 @@
 // **The Graph** respresents the database
 // You can perform basic actions and queries directly on the entire graphdatabase
 
-var global = (typeof window === 'object') ? window : root;
-
 // Initialize the Graph object with a neo4jrestful client
 var __initGraph__ = function(neo4jrestful) {
-
-  "use strict";
 
   // Requirements (for browser and nodejs):
   // * neo4jmapper helpers
@@ -644,9 +640,7 @@ var __initGraph__ = function(neo4jrestful) {
 
 if (typeof window !== 'object') {
   module.exports = exports = {
-    init: function(neo4jrestful) {
-      return __initGraph__(neo4jrestful);
-    }
+    init: __initGraph__
   };
 } else {
   window.Neo4jMapper.initGraph = __initGraph__;

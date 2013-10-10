@@ -1,7 +1,5 @@
 var __initNeo4jRestful__ = function(urlOrOptions) {
 
-  "use strict";
-
   // will be set with environment depending values below
   var helpers                    = null;
   var _                          = null;
@@ -607,8 +605,8 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     }
   }
 
-  Neo4jRestful.prototype.onConnectionError = function(err, self) {
-    // throw err;
+  Neo4jRestful.prototype.onConnectionError = function(/* err, self */) {
+    // overwrite with your own function to decide what to do if no connection can be established
     /* /dev/null */
   }
 
@@ -627,10 +625,8 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 if (typeof window !== 'object') {
   // nodejs
   module.exports = exports = {
-    init: function(urlOrOptions) {
-      return __initNeo4jRestful__(urlOrOptions)
-    }
+    init: __initNeo4jRestful__
   };
 } else {
-  window.Neo4jMapper.Neo4jRestful = initNeo4jRestful();
+  window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;
 }

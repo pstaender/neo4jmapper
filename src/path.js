@@ -1,4 +1,4 @@
-var __initPath__ = function(Graph) {
+var __initPath__ = function() {
 
   var helpers = null
     , _       = null
@@ -141,5 +141,5 @@ if (typeof window !== 'object') {
     init: __initPath__
   };
 } else {
-  window.Neo4jMapper.initPath = initPath;
+  window.Neo4jMapper.initPath = __initPath__;
 }
