@@ -1,15 +1,8 @@
-var initNeo4jRestful = function() {
+var __initNeo4jRestful__ = function(urlOrOptions) {
 
   "use strict";
 
   // will be set with environment depending values below
-  var Node                       = null;
-  var Relationship               = null;
-  var Path                       = null;
-  var node                       = null;
-  var relationship               = null;
-  var path                       = null;
-  var _singleton_instance        = null;
   var helpers                    = null;
   var _                          = null;
   var jQuery                     = null;
@@ -21,9 +14,6 @@ var initNeo4jRestful = function() {
   if (typeof window === 'object') {
     // browser
     helpers      = window.Neo4jMapper.helpers;
-    node         = window.Neo4jMapper.initNode;
-    path         = window.Neo4jMapper.initPath;
-    relationship = window.Neo4jMapper.initRelationship;
     _            = window._;
     jQuery       = window.jQuery;
     Sequence     = window.Sequence;
@@ -33,9 +23,6 @@ var initNeo4jRestful = function() {
     helpers      = require('./helpers');
     _            = require('underscore');
     jQuery       = null;
-    node         = require('./node').init;
-    relationship = require('./relationship').init;
-    path         = require('./path').init;
     Sequence     = require('./lib/sequence');
     request      = require('request');
     JSONStream   = require('JSONStream');
@@ -88,62 +75,6 @@ var initNeo4jRestful = function() {
     return _.extend(this, error);
   }
 
-  // ### Wrapper for superagent and request
-  // Private method, can be indirectly 'accessed' via neo4jrestful.get|post|delete|put or neo4jrestfule.request
-  var _sendHttpRequest = function(options, cb) {
-    _.defaults(options, {
-      header: {},
-      data: null,
-      method: 'GET',
-      timeout: null,
-      stream: false
-    });
-    var isBrowser = Boolean(typeof window === 'object');
-    if (typeof cb !== 'function')
-      throw Error('Callback as 2nd argument is mandatory');
-    if ((typeof options !== 'object')||(!options.url))
-      cb(Error("Set { url: '…' } as argument"));
-    if (isBrowser) {
-      // ### superagent for browserside usage
-      var req = window.superagent(options.method, options.url).set(options.header);
-      if (options.data)
-        req.send(options.data);
-      if (options.stream) {
-        return req.pipe(options.stream);
-      } else {
-        return req.end(function(err, res) {
-          // compatibility of superagent to response api
-          if (typeof res === 'object') {
-            res.statusCode = res.status;
-          }
-          return cb(err, res);
-        });
-      }
-
-    } else {
-      // ### request module for nodejs
-      var req = request;
-      options.json = true;
-      if (options.data) {
-        if (typeof options.data === 'string')
-          options.body = options.data;
-        else
-          options.json = options.data;
-      }
-      if (options.stream) {
-        return req(options).pipe(options.stream);
-      } else {
-        return req(options, function(err, res) {
-          // compatibility of response to superagent api
-          if (typeof res === 'object') {
-            res.status = res.statusCode;
-          }
-          return cb(err, res);
-        });
-      }
-    }
-  }
-
   /*
    * Constructor
    */
@@ -151,6 +82,10 @@ var initNeo4jRestful = function() {
     var self = this;
     var urlPattern = /^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i;
     var urlMatches = null;
+    if (typeof url === 'undefined') {
+      // use global
+      url = urlOrOptions;
+    }
     if (typeof options !== 'object') {
       options = (typeof url === 'object') ? url : {};
     }
@@ -190,19 +125,8 @@ var initNeo4jRestful = function() {
       this.onConnectionError = options.onConnectionError;
     }
 
-    if (Node === null)
-      Node = node(self);
-    if (Relationship === null)
-      Relationship = relationship(self);
-    if (Path === null)
-      Path = path(self);
-    if (_singleton_instance === null) {
-      // initially set singleton to first constructed connection
-      _singleton_instance = this;
-    }
     // copy header
     self.header = _.extend({}, Neo4jRestful.prototype.header);
-
 
     if (!__established_connection__[this.absoluteUrl('/')])
       self.checkAvailability();
@@ -235,18 +159,6 @@ var initNeo4jRestful = function() {
   Neo4jRestful.prototype._response_                 = null;
   Neo4jRestful.prototype._columns_                  = null;
 
-  Neo4jRestful.prototype.singleton = function() {
-    if (_singleton_instance)
-      return _singleton_instance;
-    else {
-      var instance = new Neo4jRestful(null);
-      return instance;
-    }
-  }
-  Neo4jRestful.prototype.set_singleton_instance = function(instance) {
-    _singleton_instance = instance;
-  }
-
   Neo4jRestful.prototype.query = function(cypher, options, cb) {
     var args;
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
@@ -270,7 +182,7 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.checkAvailability = function(cb) {
     var self = this;
-    _sendHttpRequest({
+    this._sendHttpRequest({
       method: 'GET',
       url: self.absoluteUrl('/'),
       timeout: self.timeout
@@ -298,20 +210,22 @@ var initNeo4jRestful = function() {
     if (!url)
       url = this.url || '/';
     if (url) {
-      var baseUrl =
-        this.urlOptions.protocol + '://'
-        + String(((this.urlOptions.user)&&(this.urlOptions.password)) ? this.urlOptions.user + ':' + this.urlOptions.password+'@' : '' )
-        + this.urlOptions.domain
-        + ':' + this.urlOptions.port
-        + '/' + this.urlOptions.endpoint;
+      var baseUrl = this._connectionString();
       // strip redundant endpoints if they exists
       return baseUrl + url.replace(/^\/+/, '').replace(new RegExp('^'+this.urlOptions.endpoint.split('/').join('\\/')+'*'), '');
     }
   }
 
+  Neo4jRestful.prototype._connectionString = function() {
+    return this.urlOptions.protocol + '://'
+      + String(((this.urlOptions.user)&&(this.urlOptions.password)) ? this.urlOptions.user + ':' + this.urlOptions.password+'@' : '' )
+      + this.urlOptions.domain
+      + ':' + this.urlOptions.port
+      + '/' + this.urlOptions.endpoint;
+  }
+
   Neo4jRestful.prototype.request = function(url, options, cb) {
     var debug = null; // debug object
-
     if (typeof options === 'undefined')
       options = {};
     
@@ -324,8 +238,11 @@ var initNeo4jRestful = function() {
       header: _.extend({},this.header)
     });
 
-    if (typeof url !== 'string')
+    if (typeof url !== 'string') {
+      
       throw Error("First argument 'url' must be string");
+
+    }
 
     this.url = options.url = url;
     this.header = options.header;
@@ -423,7 +340,7 @@ var initNeo4jRestful = function() {
     }
     
     // now finally send the request
-    _sendHttpRequest(requestOptions, function(err, res) {
+    this._sendHttpRequest(requestOptions, function(err, res) {
     // req.end(function(err, res) {
       self._response_ = res;
       self._response_on_ = new Date().getTime();
@@ -443,6 +360,62 @@ var initNeo4jRestful = function() {
       }
     });
 
+  }
+
+  // ### Wrapper for superagent and request
+  // Private method, can be indirectly 'accessed' via neo4jrestful.get|post|delete|put or neo4jrestfule.request
+  Neo4jRestful.prototype._sendHttpRequest = function(options, cb) {
+    _.defaults(options, {
+      header: {},
+      data: null,
+      method: 'GET',
+      timeout: null,
+      stream: false
+    });
+    var isBrowser = Boolean(typeof window === 'object');
+    if (typeof cb !== 'function')
+      throw Error('Callback as 2nd argument is mandatory');
+    if ((typeof options !== 'object')||(!options.url))
+      cb(Error("Set { url: '…' } as argument"));
+    if (isBrowser) {
+      // ### superagent for browserside usage
+      var req = window.superagent(options.method, options.url).set(options.header);
+      if (options.data)
+        req.send(options.data);
+      if (options.stream) {
+        return req.pipe(options.stream);
+      } else {
+        return req.end(function(err, res) {
+          // compatibility of superagent to response api
+          if (typeof res === 'object') {
+            res.statusCode = res.status;
+          }
+          return cb(err, res);
+        });
+      }
+
+    } else {
+      // ### request module for nodejs
+      var req = request;
+      options.json = true;
+      if (options.data) {
+        if (typeof options.data === 'string')
+          options.body = options.data;
+        else
+          options.json = options.data;
+      }
+      if (options.stream) {
+        return req(options).pipe(options.stream);
+      } else {
+        return req(options, function(err, res) {
+          // compatibility of response to superagent api
+          if (typeof res === 'object') {
+            res.status = res.statusCode;
+          }
+          return cb(err, res);
+        });
+      }
+    }
   }
 
   Neo4jRestful.prototype.onProcess = function(res, next, debug) {
@@ -589,12 +562,14 @@ var initNeo4jRestful = function() {
 
   Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
     var uri = (responseData) ? responseData.self : null;
+    var Node = this.constructorOf('Node');
+    var Relationship = this.constructorOf('Relationship');
+    var Path = this.constructorOf('Path');
     if (typeof Class !== 'function')
       Class = Node;
     if (uri) {
       if (/\/db\/data\/node\/[0-9]+\/*$/.test(uri)) {
         // we have a node or an inheriated class
-
         var n = new Class();
         n = n.populateWithDataFromResponse(responseData);
         return n;
@@ -637,15 +612,25 @@ var initNeo4jRestful = function() {
     /* /dev/null */
   }
 
-  global.Neo4jMapper.Neo4jRestful = Neo4jRestful;
+  Neo4jRestful.prototype.singleton = function() {
+    // creates a new instanced copy of this client
+    // console.log('::', this._connectionString());
+    var client = new Neo4jRestful(this._connectionString());
+    // thats the method we need and why we're doing this singleton() function here
+    client.constructorOf = this.constructorOf;
+    return client;
+  }
 
   return Neo4jRestful;
-
 };
 
 if (typeof window !== 'object') {
   // nodejs
-  module.exports = exports = initNeo4jRestful();
+  module.exports = exports = {
+    init: function(urlOrOptions) {
+      return __initNeo4jRestful__(urlOrOptions)
+    }
+  };
 } else {
   window.Neo4jMapper.Neo4jRestful = initNeo4jRestful();
 }

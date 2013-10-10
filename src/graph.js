@@ -4,7 +4,7 @@
 var global = (typeof window === 'object') ? window : root;
 
 // Initialize the Graph object with a neo4jrestful client
-var initGraph = function(neo4jrestful) {
+var __initGraph__ = function(neo4jrestful) {
 
   "use strict";
 
@@ -28,7 +28,7 @@ var initGraph = function(neo4jrestful) {
 
   // Constructor
 
-  var Graph = global.Neo4jMapper.Graph = function Graph(url) {
+  var Graph = function Graph(url) {
     if (url) {
       this.neo4jrestful = new this.neo4jrestful.constructor(url);
     }
@@ -181,8 +181,9 @@ var initGraph = function(neo4jrestful) {
 
   // ### Shortcut for neo4jrestul.stream
   Graph.prototype.stream = function(cypherQuery, options, cb) {
-    var self = this
-      , recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
+    var self = this;
+    var Node = neo4jrestful.constructorOf('Node');
+    var recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
     if (typeof cypherQuery !== 'string') {
       cb = cypherQuery;
       cypherQuery = this.toCypherQuery();
@@ -631,21 +632,22 @@ var initGraph = function(neo4jrestful) {
     return new Graph();
   }
 
-  Graph.request = function(options) {
+  Graph.request = function() {
     // creates a new neo4jrestful client
-    return new Graph.prototype.neo4jrestful.constructor(Graph.prototype.neo4jrestful.absoluteUrl('/'), options);
+    return neo4jrestful.singleton();
   }
+
+  Graph.__top__ = true;
 
   return Graph;
 }
 
 if (typeof window !== 'object') {
   module.exports = exports = {
-    Graph: null,
     init: function(neo4jrestful) {
-      return exports.Graph = initGraph(neo4jrestful);
+      return __initGraph__(neo4jrestful);
     }
   };
 } else {
-  window.Neo4jMapper.initGraph = initGraph;
+  window.Neo4jMapper.initGraph = __initGraph__;
 }

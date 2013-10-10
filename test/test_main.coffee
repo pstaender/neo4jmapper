@@ -55,7 +55,7 @@ describe 'Neo4jMapper', ->
   describe 'client', ->
 
     it 'expect to query directly via Neo4jRestful', (done) ->
-      new Neo4jRestful(configForTest.neo4jURL).query 'START n=node(*) RETURN n AS Node LIMIT 1;', (err, res) ->
+      Graph.request().query 'START n=node(*) RETURN n AS Node LIMIT 1;', (err, res) ->
         expect(err).to.be null
         expect(res.columns).to.have.length 1
         expect(res.data).to.have.length 1
@@ -770,7 +770,6 @@ describe 'Neo4jMapper', ->
     it 'expect to save labeled node and request label(s)', (done) ->
       node = new Node({name: 'Dave'})
       node.label = 'Person'
-      # node.neo4jrestful.debug = true
       node.save (err, person, debug) ->
         expect(err).to.be null
         expect(person.label).to.be.equal 'Person'
@@ -1007,7 +1006,6 @@ describe 'Neo4jMapper', ->
               expect(err).to.be null
               a.outgoingRelations().count (err, countNew) ->
                 expect(countNew).to.be 1
-                a.neo4jrestful.debug = true;
                 a.outgoingRelations (err, outgoingRelationships, debug) ->
                   expect(err).to.be null
                   expect(outgoingRelationships).to.have.length 1
@@ -1028,7 +1026,6 @@ describe 'Neo4jMapper', ->
                     a.incomingRelations 'LIKES', (err, result) ->
                       expect(outgoingRelationships).to.have.length 1
                       expect(err).to.be null
-                      a.neo4jrestful.debug = true
                       a.createRelationBetween b, 'LIKES', (err, result, debug) ->
                         expect(err).to.be null
                         a.allRelations 'LIKES', (err, result) ->
@@ -1143,7 +1140,6 @@ describe 'Neo4jMapper', ->
           c.save ->
             a.createRelationTo b, 'KNOWS', ->
               b.createRelationTo c, 'KNOWS', ->
-                a.neo4jrestful.debug = true;
                 a.shortestPathTo c, 'KNOWS', (err, path, debug) ->
                   # check properties of path
                   # TODO: maybe seperate test?!

@@ -537,7 +537,7 @@ var global = (typeof window === 'object') ? window : root;
     return temp.toLowerCase();
   }
 
-  return global.Neo4jMapper.helpers = {
+  var helpers = {
     sortStringAndOptionsArguments: sortStringAndOptionsArguments,
     sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
     sortStringAndCallbackArguments: sortStringAndCallbackArguments,
@@ -554,8 +554,11 @@ var global = (typeof window === 'object') ? window : root;
     md5: md5
   };
 
-})();
+  if (typeof window !== 'object') {
+    module.exports = exports = helpers;
+  } else {
+    global.Neo4jMapper.helpers = helpers;
+  }
 
-if (typeof window !== 'object') {
-  module.exports = exports = global.Neo4jMapper.helpers;
-}
+
+})();
