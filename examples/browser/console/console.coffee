@@ -76,13 +76,7 @@ $(document).ready ->
 
 
   $input.val stash.get('input') or """
-    # Neo4jMapper Console for quick + easy testing
-    # • to get the result of a cb we can use the streamline syntax `_`
-    # • to display the result use `>` analogue to console.log
-    # • to execute the code hit `ctr + shift + enter`
-    # … you can nearly do anything you can do with CoffeeScript/JS …
-
-    {Node,Graph,client,graph} = Neo4jMapper.init('http://zeitpulse.com:7480/')
+    {Node,Graph,client,graph} = new Neo4jMapper('http://zeitpulse.com:7480/')
     Node::cypher._useParameters = false # better to inspect queries
 
     aboutGraph = new Graph().about(_)
