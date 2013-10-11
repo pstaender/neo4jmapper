@@ -8,7 +8,9 @@ Written in JavaScript for browser- and serverside usage
 
 ## [Documentation and Examples](http://pstaender.github.io/neo4jmapper)
 
-See [http://pstaender.github.io/neo4jmapper](http://pstaender.github.io/neo4jmapper)
+See [http://pstaender.github.io/neo4jmapper](http://pstaender.github.io/neo4jmapper) for Documentation and Examples
+
+Give Neo4jMapper a try in the [coffeesript-testing-console](http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html)
 
 ## Installation
 
