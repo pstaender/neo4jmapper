@@ -56,17 +56,17 @@ Features:
 
 Include `examples/browser/neo4jmapper_complete.js` in your html-file and ensure that you have included [underscorejs](https://github.com/jashkenas/underscore/blob/master/underscore.js) and [superagent](https://github.com/visionmedia/superagent/blob/master/superagent.js) as well.
 
-### Open Connections
+### Connect to Database
 
 ```js
-  var Neo4j = require('neo4jmapper');
-  var neo4j = new Neo4j('http://localhost:7474');
+  var Neo4jMapper = require('neo4jmapper');
+  var neo4j = new Neo4jMapper('http://localhost:7474');
 ```
 
 or in the browser:
 
 ```js
-  var neo4j = window.Neo4jMapper.init('http://localhost:7474');
+  var neo4j = new window.Neo4jMapper('http://localhost:7474');
 ```
 
 To use multiple database connections:
@@ -74,6 +74,14 @@ To use multiple database connections:
 ```js
   var neo4j1 = new Neo4j('http://somewhere:7474');
   var neo4j2 = new Neo4j('http://elsewhere:7070');
+```
+
+The most needed interfaces of Neo4jMapper:
+
+```js
+  var Node = neo4j.Node
+    , Relationship = neo4j.Relationship
+    , Graph = neo4j.Graph;
 ```
 
 ## CRUD Nodes
