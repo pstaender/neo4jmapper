@@ -97,7 +97,7 @@ Create relations between nodes:
   new Node( {
     name: 'Foo Fighters',
     // arrays + nested objects are possible (but they don't make much sense in a graphdb)
-    genres: ['Alternative Rock', 'Post-Grunge'],
+    genres: [ 'Alternative Rock', 'Post-Grunge' ],
     foundation: {
       year: 1994,
       in: 'Seattle'
@@ -115,8 +115,8 @@ Create relations between nodes:
 Create relations with attributes:
 
 ```js
-  dave.createRelationTo( fooFighters, 'PLAYS', { instrument: 'guitar' }, cb);
-  taylor.createRelationTo( fooFighters, 'PLAYS', { instrument: 'drums' }, cb);
+  dave.createRelationTo( fooFighters, 'PLAYS', { instrument: 'guitar' }, cb );
+  taylor.createRelationTo( fooFighters, 'PLAYS', { instrument: 'drums' }, cb );
 ```
 
 ### Update 
@@ -132,7 +132,7 @@ Create relations with attributes:
 or
 
 ```js
-  Node.findById(dave.id).update({
+  Node.findById(dave.id).update( {
     firstName: 'Dave',
     surname: 'Grohl'
   }, cb );
@@ -143,7 +143,7 @@ or
 Creates a new node with this attribute if not exists, updates if one (distinct) exists:
 
 ```js
-  Node.findOrCreate({
+  Node.findOrCreate( {
     name: 'Dave Grohl'
   }, cb );
 ```
@@ -171,7 +171,7 @@ We use `remove()` if we are on an instanced Node:
 Some examples:
 
 ```js
-  Node.findOne({ name: 'Dave Grohl' }, function(err, dave) {
+  Node.findOne( { name: 'Dave Grohl' }, function(err, dave) {
     if (err)
       console.error(err.message);
     else
@@ -180,7 +180,7 @@ Some examples:
 ```
 
 ```js
-  Node.find({ year: 1969 }).limit(10, function(err, found) {
+  Node.find( { year: 1969 } ).limit( 10, function(err, found) {
     if (found) {
       console.log(found.length + ' nodes found');
     }
@@ -201,7 +201,7 @@ Query relationships:
 ```js
   Node
     .findOne( { name: 'Dave Grohl' } )
-    .incomingRelations('ROCKS|PLAYS', function(err, foundRelations) {
+    .incomingRelations( 'ROCKS|PLAYS', function(err, foundRelations) {
       console.log('Incoming relationships of Dave with "ROCKS" OR "PLAYS":', foundRelations);
     });
 ```
@@ -310,8 +310,8 @@ Here are most of all available methods to query the graph. `…` represents the 
     .match(…)
     .onMatch(…)
     .where('n.name = {value1}')
-    .parameters({value1: 'Bob'})
-    .where({ 'n.name': 'Bob' }) // would save the `where(…)` and `parameters(…)` operations above
+    .parameters( { value1: 'Bob' } )
+    .where( { 'n.name': 'Bob' } ) // would save the `where(…)` and `parameters(…)` operations above
     .with(…)
     .orderBy(…)
     .skip(10)
@@ -340,7 +340,7 @@ If you want to have better performance, you can pass-through cypher queries 1:1 
 Just start with `Graph.query(…)`:
 
 ```js
-  Graph.query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
+  Graph.query( "START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
     console.log(err, result);
   });
 ```
@@ -348,7 +348,7 @@ Just start with `Graph.query(…)`:
 Same works with stream:
 
 ```js
-  Graph.stream("START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
+  Graph.stream( "START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
     if (result)
       console.log(err, result);
     else
@@ -361,10 +361,10 @@ Same works with stream:
 Use `Graph.request()` to query natively:
 
 ```js
-  Graph.request().query("START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
+  Graph.request().query( "START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
     console.log(err, result);
   });
-  Graph.request().get("/node/123/labels", function(err, result) {
+  Graph.request().get( "/node/123/labels", function(err, result) {
     console.log(err, result);
   });
 ```
@@ -376,7 +376,7 @@ We can define models based on the `Node` model (similar to models you might know
 Every extended model enjoys label support.
 
 ```js
-  Node.register_model('Person', {
+  Node.register_model( 'Person', {
     fields: {
       indexes: {
         email: true
@@ -425,16 +425,17 @@ Every extended model enjoys label support.
       }
     });
 
-    new Director({
+    new Director( {
       name: 'Roman Polanski'
-    }).save(function(err, polanski) {
+    } ).save(function(err, polanski) {
       polanski.toObject();
       ~ { id: 81239,
       classification: 'Node',
       data:
        { created_on: 1374758483625,
          name: 'Roman Polanski',
-         job: 'Director' },
+         job: 'Director'
+       },
       uri: 'http://localhost:7420/db/data/node/81239',
       label: 'Director',
       labels: [ 'Director', 'Person' ] }
@@ -653,7 +654,7 @@ Neo4jMapper is not a schema-based-mapper, but it includes some features which ar
 To let buil Neo4j the index in the background for you, you just have to define the fields in the `indexes` property as you see below. If you want to ensure that the field is unique, add the fields to the `unique` property (keep in mind that unique fields are always ”indexes“ as well). The default properties has no effect on the database, it just will populate the object with default values if they aren't set.
 
 ```js
-  Node.register_model('Person', {
+  Node.register_model( 'Person', {
     fields = {
       defaults: {
         is_new: true,
