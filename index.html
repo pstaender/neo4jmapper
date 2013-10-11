@@ -67,7 +67,7 @@ or in the browser:
   var neo4j = window.Neo4jMapper.init('http://localhost:7474');
 ```
 
-To use multiple database instances:
+To use multiple database connections:
 
 ```js
   var neo4j1 = new Neo4j('http://somewhere:7474');
@@ -203,7 +203,7 @@ Query relationships:
 or query on instanced nodes:
 
 ```js
-  dave.incomingRelations(function(err, relations) {
+  dave.incomingRelations(function(err, foundRelations) {
     console.log('All incoming relationships of Dave:', foundRelations);
   });
 ```
@@ -217,12 +217,12 @@ Here are some possible ways to go:
 ```js
   Graph.start().query( "CUSTOM CYPHER QUERY" , function(err, rows) {
     if (err) {
-      console.error(err); // includes a stack and a reasonable error message
+      console.error(err); // includes a stack + a reasonable error message
     } else {
       if (rows)
-        for (var i=0; i < rows.length; i++) {
-          console.log(rows[i].toObject());
-        }
+        rows.forEach(function(row) {
+          console.log(row.toObject());
+        });
       }
     }
   });
@@ -484,7 +484,7 @@ Keep in mind that there is **no extra loading executed on stream results** to ke
   Person.findAll().each(function(person) {
     if (person) {
       person.load(function(err, load){
-        // person is now fully loaded
+        // person is now loaded (with labels for instance…)
         console.log(person.toObject());
       });
     }
@@ -585,12 +585,12 @@ In case you want to inspect sended + received data and/or the process of mapping
   });
 ```
 
-or simply inspect the `_reponse_` attribute:
+or simply inspect `_reponse_`:
 
 ```js
   var node = new Node();
   node.save(function(err, result) {
-    console.log(node.neo4jrestful);
+    console.log(node._response_, node._columns_);
   });
 ```
 
@@ -772,6 +772,7 @@ To reduce database requests you can switch load hooks on and off
 
   * `Node.prototype.disableLoading()` / `Node.prototype.enableLoading()` 
   * `Node.disable_loading()` / `Node.enable_loading()` in global context
+  * `Graph.request()` or `Graph.disable_processing().query()` to request natively
 
 ### Benchmarks
 
