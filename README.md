@@ -30,7 +30,7 @@ Beware that a lot of nodes will be written and kept in your database.
 
 All features of the library are available in modern Browsers (except streaming support). To give it a try execute `npm run compress`, that will generate all needed js files. If you want to run the tests in the browser as well, use `npm run prepare` to let all test file be generated.
 
-You'll find a ready-to-use-console in `examples/browser/console/console.html`. To use it with your local database you gave to ensure that you access the page from the same domain as your database to avoid `access-control-allow-origin` situation.
+You'll find a ready-to-use-console in `examples/browser/console/console.html`. To use it with your local database ensure  that you access the page from the same domain as your database to avoid `access-control-allow-origin` situation.
 
 ## API Changes
 
@@ -58,13 +58,12 @@ There are some steps to take, especially some methods for daily use are missing,
   * statement handling, with rollback support
   * documentation (description for methods)
   * cleanup tests (remove "duplicates")
-  * Node. methods should use Graph. methods inside (currently there are implemented native calls mostly in Node)
 
 ### So far tested against:
 
 * Neo4j v2 Milestone 5
-* Node 0.8 - 0.11
-* Chrome (v22+) ( but Safari and Firefox should work as well)
+* Node 0.8 - 0.11 [see Travis](https://travis-ci.org/pstaender/neo4jmapper)
+* Chrome (v22+) and Safari (v7+)
 
 ## LICENSE
 
