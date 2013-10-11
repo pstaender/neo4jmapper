@@ -95,29 +95,20 @@ Create relations between nodes:
 
 ```js
   new Node( {
-  
     name: 'Foo Fighters',
     // arrays + nested objects are possible (but they don't make much sense in a graphdb)
-    genres: [ 'Alternative Rock', 'Post-Grunge' ],
+    genres: ['Alternative Rock', 'Post-Grunge'],
     foundation: {
       year: 1994,
       in: 'Seattle'
     }
-
   } ).save(function(err, fooFighters) {
-    
     dave.createRelationTo( fooFighters, 'PLAYS', function(err, relationship) {
-      
       console.log('Created Relationship:', relationship.toObject());
-
       new Node( { name: 'Taylor Hawkins' } ).save(function(err, taylor) {
-        
         dave.createRelationBetween(taylor, 'ROCK', cb);
-      
       });
-    
     });
-  
   });
 ```
 
