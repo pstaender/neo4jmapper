@@ -191,7 +191,7 @@ var ConditionalParameters = function ConditionalParameters(conditions, options) 
         for (var i=0; i < value.length; i++) {
           value[i] = (typeof value[i] === 'string') ? "'"+escapeString(value[i])+"'" : valueToStringForCypherQuery(value[i]);
         }
-        return 'IN( '+value.join(', ')+' )';
+        return 'IN [ '+value.join(', ')+' ]';
       }
       return '';
     },
