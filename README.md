@@ -1,4 +1,4 @@
-# Neo4jMapper
+# [Neo4jMapper](http://pstaender.github.io/neo4jmapper)
 ## Object Modeler for Neo4j Graphdatabases
 
 Written in JavaScript for browser- and serverside usage
@@ -7,6 +7,8 @@ Written in JavaScript for browser- and serverside usage
 [![NPM version](https://badge.fury.io/js/neo4jmapper.png)](https://npmjs.org/package/neo4jmapper)
 
 ## [Documentation and Examples](http://pstaender.github.io/neo4jmapper)
+
+See [http://pstaender.github.io/neo4jmapper](http://pstaender.github.io/neo4jmapper)
 
 ## Installation
 
