@@ -67,6 +67,13 @@ or in the browser:
   var neo4j = window.Neo4jMapper.init('http://localhost:7474');
 ```
 
+To use multiple database instances:
+
+```js
+  var neo4j1 = new Neo4j('http://somewhere:7474');
+  var neo4j2 = new Neo4j('http://elsewhere:7070');
+```
+
 ## CRUD Nodes
 
 ### Create
