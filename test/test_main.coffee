@@ -400,6 +400,55 @@ describe 'Neo4jMapper', ->
           node.remove ->
             done()
 
+    it 'expect to reference data on top of the object, to `.data` and `._data_`', (done) ->
+      # we check that we can extract all non-prototype-defined properties from Node + Relationship
+      # it's needed to detect which properties are set during instane and have to be saved
+      expect(Node::__reference_data_on_top__).to.be true
+      expect(Relationship::__reference_data_on_top__).to.be true
+      n = new Node(name: 'Alice')
+      expect(n.data.name).to.be 'Alice'
+      expect(n.name).to.be 'Alice'
+      expect(Object.keys(helpers.extractInstanceProperties(n))).to.have.length 1
+      n.city = 'San Francisco'
+      expect(Object.keys(n.dataToPersist())).to.have.length 2
+      expect(n.dataToPersist().name).to.be 'Alice'
+      expect(n.dataToPersist().city).to.be 'San Francisco'
+      r = new Relationship(name: 'Alice')
+      r.name = 'Alice'
+      expect(r.data.name).to.be 'Alice'
+      expect(r.name).to.be 'Alice'
+      expect(Object.keys(helpers.extractInstanceProperties(r))).to.have.length 1
+      r.city = 'Seattle'
+      expect(Object.keys(helpers.extractInstanceProperties(r))).to.have.length 2
+      expect(helpers.extractInstanceProperties(r).name).to.be 'Alice'
+      n.save (err, alice) ->
+        expect(alice.data.name).to.be 'Alice'
+        expect(alice._data_.name).to.be 'Alice'
+        expect(alice.data.city).to.be 'San Francisco'
+        expect(alice.name).to.be 'Alice'
+        expect(alice.city).to.be 'San Francisco'
+        expect(Object.keys(alice.data)).to.have.length 2
+        alice.city = 'Seattle'
+        alice.save (err, alice) ->
+          expect(alice.city).to.be 'Seattle'
+          new Node({ name: 'Bob'}).save (err, bob) ->
+            expect(bob.name).to.be 'Bob'
+            bob.createRelationBetween alice, 'know', { city: 'San Francisco' }, (err, relations) ->
+              expect(relations).to.have.length 2
+              r = relations[0]
+              expect(r.id).to.be.above 0
+              expect(r.city).to.be 'San Francisco'
+              expect(r.data.city).to.be 'San Francisco'
+              r.data.id = 'own ID';
+              r.city = 'Seattle'
+              r.save (err, r) ->
+                expect(err).to.be null
+                expect(r.data.id).to.be 'own ID';
+                expect(r.city).to.be 'Seattle'
+                expect(r.data.city).to.be 'Seattle'
+                expect(r._data_.city).to.be 'Seattle'
+                done()
+
     it 'expect to use parameters for queries by default and expect to add parameters to cypher query', ->
       node = new Node title: new Date().toString()
       expect(node.cypher._useParameters).to.be true # this is an option flag which is expected to be true!

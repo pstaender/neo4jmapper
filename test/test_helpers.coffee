@@ -12,7 +12,7 @@ if root?
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
   # patter matching for objects we will need for the tests
-  {Graph,Node,helpers,client}  = new Neo4j(configForTest.neo4jURL)
+  {Graph,Node,Relationship,helpers,client}  = new Neo4j(configForTest.neo4jURL)
 
 else if window?
   # tests in browser
@@ -24,7 +24,7 @@ else if window?
   }, configForTest or {})
   Join = window.Join
   neo4jmapper = Neo4jMapper.init(configForTest.neo4jURL)
-  {Graph,Node,helpers,client} = neo4jmapper
+  {Graph,Node,Relationship,helpers,client} = neo4jmapper
   Neo4j = Neo4jMapper.init
 
 describe 'Neo4jMapper (helpers)', ->
@@ -48,7 +48,17 @@ describe 'Neo4jMapper (helpers)', ->
     {string, callback} = helpers.sortStringAndCallbackArguments ->
     expect(string).to.be null
     expect(callback).to.be.a 'function'
-    
+
+  it 'extractInstanceProperties', ->
+    class Proto
+      name: ''
+    p = new Proto()
+    props = helpers.extractInstanceProperties(p)
+    expect(Object.keys(props)).to.have.length 0
+    p.city = 'Cologne'
+    props = helpers.extractInstanceProperties(p)
+    expect(Object.keys(props)).to.have.length 1
+
 
   it 'sortStringAndOptionsArguments', ->
     {string, options} = helpers.sortStringAndOptionsArguments 'string', { option: true }

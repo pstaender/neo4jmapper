@@ -25,7 +25,8 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
   // Constructor
   var Relationship = function Relationship(data, start, end, id) {
     this.id = id || null;
-    this.data = data || {};
+    this._data_ = {};
+    this.setData(data);
     this.from = {
       id: null,
       uri: null
@@ -54,7 +55,8 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
   }
 
   Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
-  Relationship.prototype.data = {};
+  Relationship.prototype.data = null;
+  Relationship.prototype._data_ = null;
   Relationship.prototype.start = null;
   Relationship.prototype.type = null;
   Relationship.prototype.end = null;
@@ -76,6 +78,8 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
 
   Relationship.prototype.__type__ = 'relationship';
   Relationship.prototype.__type_identifier__ = 'r';
+
+  Relationship.prototype.__reference_data_on_top__ = true;
 
   Relationship.prototype.singleton = function() {
     var relationship = new Relationship();
@@ -130,7 +134,7 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
   Relationship.prototype.update = function(data, cb) {
     var self = this;
     if (helpers.isValidData(data)) {
-      this.data = _.extend(this.data, data);
+      this.setData(_.extend(this.dataToPersist(), data));
       data = this.flattenData();
     } else {
       cb = data;
@@ -176,8 +180,16 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
         relationship._response_ = data;
       else
         relationship._response_ = data[0];
-      relationship.data = relationship._response_.data;
-      relationship.data = helpers.unflattenObject(this.data);
+      // set `relationship.data`
+      relationship.setData(helpers.unflattenObject(relationship._response_.data));
+      // attach data on top of object
+      // so `relationship.data.name = 'Alice'` is also avaiable on `relationship.name = 'Alice'`
+      if (this.__reference_data_on_top__) {
+        for (var attribute in relationship.data) {
+          if (typeof this[attribute] === 'undefined')
+            this[attribute] = relationship.data[attribute];
+        }
+      }
       relationship.uri  = relationship._response_.self;
       relationship.type = relationship._response_.type;
       if ((relationship._response_.self) && (relationship._response_.self.match(/[0-9]+$/))) {
@@ -252,22 +264,26 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
   }
 
   Relationship.prototype.toObject = function() {
-    var o = {
-      id: this.id,
-      classification: this.classification,
-      data: _.extend(this.data),
-      start: this.start,
-      end: this.end,
-      from: _.extend(this.from),
-      to: _.extend(this.to),
-      uri: this.uri,
-      type: this.type
-    };
-    if ( (o.from) && (typeof o.from.toObject === 'function') )
-      o.from = o.from.toObject();
-    if ( (o.to)   && (typeof o.to.toObject === 'function') )
-      o.to   = o.to.toObject();
-    return o;
+    var RelationshipObject = function RelationshipObject(relationship) {
+      if (relationship) {
+        this.id = relationship.id;
+        this.classification = relationship.classification;
+        this.start = relationship.start;
+        this.end = relationship.end;
+        this.from = relationship.from.toObject(),
+        this.to = relationship.to.toObject(),
+        this.uri = relationship.uri,
+        this.data = relationship.dataToPersist()
+      };
+      _.extend(this, this.data);
+    }
+    RelationshipObject.prototype.id = null;
+    RelationshipObject.prototype.classification = 'Relationship';
+    RelationshipObject.prototype.start = null;
+    RelationshipObject.prototype.end = null;
+    RelationshipObject.prototype.data = null;
+    RelationshipObject.prototype.uri = null;
+    return new RelationshipObject(this);
   }
 
   Relationship.prototype.onBeforeSave = function(node, next) {
@@ -304,6 +320,8 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
   Relationship.prototype.isPersisted        = Node.prototype.isPersisted;
   Relationship.prototype.hasId              = Node.prototype.hasId;
   Relationship.prototype._hashData_         = Node.prototype._hashData_;
+  Relationship.prototype.dataToPersist      = Node.prototype.dataToPersist;
+  Relationship.prototype.setData            = Node.prototype.setData;
 
   return Relationship;
 }
