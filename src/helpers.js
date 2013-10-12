@@ -180,19 +180,6 @@ var extractAttributesFromCondition = function(condition, attributes) {
   return _.uniq(attributes);
 }
 
-var extractInstanceProperties = function(object) {
-  var __proto__ = object.__proto__;
-  var properties = {};
-  Object.keys(object).forEach(function(key){
-    if ((typeof object[key] !== 'undefined') && (typeof object[key] !== 'function')) {
-      if (typeof __proto__[key] === 'undefined')
-        properties[key] = object[key];
-    }
-    
-  })
-  return properties;
-}
-
 /*
  * Builds a string from mongodb-like-query object
  */
@@ -557,7 +544,6 @@ var helpers = {
   cypherKeyValueToString: cypherKeyValueToString,
   valueToStringForCypherQuery: valueToStringForCypherQuery,
   isValidData: isValidData,
-  extractInstanceProperties: extractInstanceProperties,
   md5: md5
 };
 

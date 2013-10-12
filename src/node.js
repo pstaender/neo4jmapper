@@ -39,8 +39,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
   // ### Initialize all values on node object
   Node.prototype.init = function(data, id) {
     this.id = id || null;
-    this._data_ = {};
-    this.setData(data);
+    this.data = _.extend({}, data);
     this.resetQuery();
     if (id) {
       this.setUriById(id);
@@ -99,8 +98,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
   Node.__models__ = {};                             // contains all globally registered models
 
   Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of the object for the user
-  Node.prototype.data = null;                       // will contain all data for the node
-  Node.prototype._data_ = null;
+  Node.prototype.data = {};                         // will contain all data for the node
   Node.prototype.id = null;                         // ”public“ id attribute
   Node.prototype._id_ = null;                       // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
   // can be used to define schema-like-behavior
@@ -117,8 +115,6 @@ var __initNode__ = function(Graph, neo4jrestful) {
   Node.prototype._stream_ = null;                   // flag for processing result data
   Node.prototype.is_singleton = false;              // flag that this object is a singleton
   Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
-
-  Node.prototype.__reference_data_on_top__ = true;
 
   // cypher property will be **copied** on each new objects node.cypher in resetQuery()
   Node.prototype.cypher = {
@@ -244,7 +240,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
   // Copys only the node's relevant data(s) to another object
   Node.prototype.copyTo = function(n) {
     n.id = n._id_ = this._id_;
-    n.data   = _.extend(this.dataToPersist());
+    n.data   = _.extend(this.data);
     n.labels = _.clone(this.labels);
     if (this.label)
       n.label  = this.label;
@@ -283,54 +279,12 @@ var __initNode__ = function(Graph, neo4jrestful) {
     return this;
   }
 
-  Node.prototype.dataToPersist = function() {
-    var data = {};
-    if (this.__reference_data_on_top__) {
-      // we compare _data_ with data and properties on top
-      _.extend(data, this.data, helpers.extractInstanceProperties(this));
-      for (var attribute in this._data_) {
-        // if value is set to null or undefined, don't persist it
-        if ( (this.data[attribute] === null) || (typeof this.data[attribute] === undefined) ||
-             (data[attribute] === null) || (data[attribute] === undefined) )
-          continue;
-        // persists if value from .data differs from ._data_
-        if (this.data[attribute] !== this._data_[attribute])
-          data[attribute] = this.data[attribute];
-      }
-    } else {
-      _.extend(data, this.data);
-    }
-    
-    return data;
-  }
-
-  Node.prototype.setData = function(data) {
-    if ((typeof data === 'object') && (Object.keys(data).length > 0)) {
-      this.data = data;
-      // attach data on top of object
-      // so `node.data.name = 'Alice'` is also avaiable on `node.name = 'Alice'`
-      if (this.__reference_data_on_top__) {
-        // remove all non-prototype-defined properties to clear up object
-        // if they aren't functions, because they are ignored later anyhow
-        for (var attribute in helpers.extractInstanceProperties(this)) {
-          if (typeof this[attribute] !== 'function')
-            delete(this[attribute]);
-        }
-        for (var attribute in this.data) {
-          if (typeof this[attribute] === 'undefined')
-            this[attribute] = this.data[attribute];
-        }
-      }
-    } else {
-      this.data = {};
-    }
-    return this;
-  }
-
-  Node.prototype.flattenData = function() {
-    var data = this.dataToPersist()
-    if ((data) && (Object.keys(data).length > 0)) {
-      var data = this.dataToPersist();
+  Node.prototype.flattenData = function(useReference) {
+    // strongly recommend not to mutate attached node's data
+    if (typeof useReference !== 'boolean')
+      useReference = false;
+    if ((typeof this.data === 'object') && (this.data !== null)) {
+      var data = (useReference) ? this.data : _.extend(this.data);
       data = helpers.flattenObject(data);
       // remove null values since nodejs cant store them
       for(var key in data) {
@@ -342,9 +296,11 @@ var __initNode__ = function(Graph, neo4jrestful) {
     return this.data;
   }
 
-  Node.prototype.unflattenData = function(data) {
-    if (typeof data !== 'object')
-      data = this.dataToPersist()
+  Node.prototype.unflattenData = function(useReference) {
+    // strongly recommend not to mutate attached node's data
+    if (typeof useReference !== 'boolean')
+      useReference = false;
+    var data = (useReference) ? this.data : _.extend(this.data);
     return helpers.unflattenObject(data);
   }
 
@@ -527,7 +483,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
 
   Node.prototype._hashData_ = function() {
     if (this.hasValidData())
-      return helpers.md5(JSON.stringify(this.dataToPersist()));
+      return helpers.md5(JSON.stringify(this.data));
     else
       return null;
   }
@@ -537,8 +493,6 @@ var __initNode__ = function(Graph, neo4jrestful) {
       // use as setter
       if (setToTrueOrFalse) {
         this._hashedData_ = this._hashData_();
-        // copy this.data to this._data_
-        _.extend(this._data_, {}, this.data);
       } else {
         this._hashedData_ = null;
       }
@@ -573,6 +527,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
       return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
     this.resetQuery();
     this.applyDefaultValues();
+    var method = null;
 
     function __prepareData(err, data, debug, cb) {
       // copy persisted data on initially instanced node
@@ -587,23 +542,19 @@ var __initNode__ = function(Graph, neo4jrestful) {
     
     this.id = this._id_;
 
-    var data = this.flattenData();
-
     if (this.id > 0) {
-      // update (PUT)
-      Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: data }, function(err, res, debug) {
+      method = 'update';
+      Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
         if (err) {
           return cb(err, node);
         } else {
-          // apply data back to object
-          self.setData(data);
           self.isPersisted(true);
           cb(err, self, debug);
         }
       });
     } else {
-      // create (POST)
-      Graph.request().post(this.__type__, { data: data }, function(err, node, debug) {
+      method = 'create';
+      Graph.request().post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
         if ((err) || (!node))
           return cb(err, node);
         else
@@ -719,8 +670,8 @@ var __initNode__ = function(Graph, neo4jrestful) {
         node._response_ = data;
       else
         node._response_ = data[0];
-      // set `node.data`
-      node.setData(node.unflattenData(node._response_.data));
+      node.data = node._response_.data;
+      node.data = node.unflattenData();
       node.uri  = node._response_.self;
       //'http://localhost:7474/db/data/node/3648'
       if ((node._response_.self) && (node._response_.self.match(/[0-9]+$/))) {
@@ -1789,23 +1740,14 @@ var __initNode__ = function(Graph, neo4jrestful) {
   }
 
   Node.prototype.toObject = function() {
-    var NodeObject = function NodeObject(node) {
-      if (node) {
-        this.id = node.id;
-        this.classification = node.classification;
-        this.uri = node.uri,
-        this.data = node.dataToPersist()
-        this.labels = node.labels;
-        this.label = node.label;
-      };
-      _.extend(this, this.data);
-    }
-    NodeObject.prototype.id = null;
-    NodeObject.prototype.classification = 'Relationship';
-    NodeObject.prototype.labels = null;
-    NodeObject.prototype.label = null;
-    NodeObject.prototype.uri = null;
-    return new NodeObject(this);
+    return {
+      id: this.id,
+      classification: this.classification,
+      data: _.extend(this.data),
+      uri: this.uri,
+      label: (this.label) ? this.label : null,
+      labels: (this.labels.length > 0) ? _.clone(this.labels) : []
+    };
   }
 
   /*
