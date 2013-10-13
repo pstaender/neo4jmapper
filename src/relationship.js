@@ -4,7 +4,7 @@
  * * make relationships queryable with custom queries
  */
 
-var __initRelationship__ = function(Graph, neo4jrestful, Node) {
+var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
   // Requirements (for browser and nodejs):
   // * Node

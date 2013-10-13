@@ -15,11 +15,11 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
     
     this.client = new Neo4jRestful();
 
-    var Transaction   = this.Transaction   = window.Neo4jMapper.initTransaction(this.client);
     var Graph         = this.Graph         = window.Neo4jMapper.initGraph(this.client);
-    var Node          = this.Node          = window.Neo4jMapper.initNode(this.Graph, this.client);
-    var Relationship  = this.Relationship  = window.Neo4jMapper.initRelationship(this.Graph, this.client, Node);
-    var Path          = this.Path          = window.Neo4jMapper.initPath(this.Graph, this.client);
+    var Transaction   = this.Transaction   = window.Neo4jMapper.initTransaction(this.client, this.Graph);
+    var Node          = this.Node          = window.Neo4jMapper.initNode(this.client, this.Graph);
+    var Relationship  = this.Relationship  = window.Neo4jMapper.initRelationship(this.client, this.Graph, Node);
+    var Path          = this.Path          = window.Neo4jMapper.initPath(this.client, this.Graph);
 
     Neo4jMapper.prototype.helpers = window.Neo4jMapper.helpers;
   } else {
@@ -28,11 +28,11 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
     
     this.client = new Neo4jRestful();
     
-    var Transaction   = this.Transaction   = require('./transaction').init(this.client);
     var Graph         = this.Graph         = require('./graph').init(this.client);
-    var Node          = this.Node          = require('./node').init(this.Graph, this.client);
-    var Relationship  = this.Relationship  = require('./relationship').init(this.Graph, this.client, Node);
-    var Path          = this.Path          = require('./path').init(this.Graph, this.client);
+    var Transaction   = this.Transaction   = require('./transaction').init(this.client, this.Graph);
+    var Node          = this.Node          = require('./node').init(this.client, this.Graph);
+    var Relationship  = this.Relationship  = require('./relationship').init(this.client, this.Graph, Node);
+    var Path          = this.Path          = require('./path').init(this.client, this.Graph);
     
     Neo4jMapper.prototype.helpers = require('./helpers');
   }

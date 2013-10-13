@@ -1,6 +1,6 @@
 //http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
 
-var __initTransaction__ = function(neo4jrestful) {
+var __initTransaction__ = function(neo4jrestful, Graph) {
 
   var Statement = function Statement(transaction, cypher, parameters, cb) {
     this._transaction_  = transaction;
@@ -13,8 +13,8 @@ var __initTransaction__ = function(neo4jrestful) {
   Statement.prototype.parameters = null;
   Statement.prototype.isTransmitted = false;
   Statement.prototype.position = null;
-  Statement.prototype.result = null;
-  Statement.prototype.error = null;
+  Statement.prototype.results = null;
+  Statement.prototype.errors = null;
 
   Statement.prototype.toObject = function() {
     return {
@@ -23,8 +23,8 @@ var __initTransaction__ = function(neo4jrestful) {
       position: this.position,
       isTransmitted: this.isTransmitted,
       position: this.position,
-      hasError: Boolean(this.error),
-      hasResult: Boolean(this.result),       
+      error: this.errors,
+      result: this.results,
     };
   }
 
@@ -36,10 +36,14 @@ var __initTransaction__ = function(neo4jrestful) {
   Transaction.prototype.statements = null;
   Transaction.prototype._response_ = null;
   Transaction.prototype.neo4jrestful = null;
-  Transaction.prototype.status = 'uncommitted';
+  Transaction.prototype.status = 'offline';
   Transaction.prototype.id = null;
   Transaction.prototype.uri = null
   Transaction.prototype.expires = null;
+  Transaction.prototype._concurrentTransmission_ = 0;
+  Transaction.prototype._responseError_ = null; //will contain response Error
+  // Transaction.prototype._resortResults_ = neo4jrestful.constructor.prototype._resortResults_;
+  // Transaction.prototype._loadOnResult_ = neo4jrestful.constructor.prototype._loadOnResult_;
 
   Transaction.prototype.begin = function(cypher, parameters, cb) {
     // reset
@@ -88,48 +92,61 @@ var __initTransaction__ = function(neo4jrestful) {
       var untransmittedStatements = this.untransmittedStatements();
       if (!this.id) {
         // we have to begin a transaction
-        this.status = 'begin';
-        url = '/transaction';
-      } else {
+        if (this.status === 'committing') {
+          url = '/transaction/commit';
+        } else {
+          this.status = 'begin';
+          url = '/transaction';
+        }
+        
+        
+      } else if (this.status === 'open') {
         // add to transaction
         this.status = 'adding';
         url = '/transaction/'+this.id;
+      } else if (this.status = 'closed') {
+        cb(Error('Transaction is closed. Create a new one'), null, null);
+      } else {
+        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|open');
       }
+      var statements = [];
       untransmittedStatements.forEach(function(statement, i){
         statement.isTransmitted = true;
+        statements.push({ statement: statement.statement, parameters: statement.parameters });
       });
-      this.neo4jrestful.post(url, function(err, response, debug) {
-        // if error on request/response
+      this._concurrentTransmission_++;
+      this.neo4jrestful.post(url, { data: { statements: statements } }, function(err, response, debug) {
         self._response_ = response;
-        self.status = (err) ? err.status : 'open';
-        untransmittedStatements.forEach(function(statement, i){
-          if (response.errors[i])
-            statement.error = response.errors[i];
-          if (response.results[i])
-            statement.results = response.results[i];
-          //self.statements[statement.position]
-          // statement.isTransmitted = true;
-        });
-        if ((err)||(!response))
-          return self.onSucces(err, response, debug);
-        // if error(s) in statement(s)
-        if (response.errors.length > 0)
-          return self.onSucces(err, response.errors, debug);
-        // else
-        self.populateWithDataFromResponse(response);
-        // console.log(self.toObject(), url)
-
+        self._concurrentTransmission_--;
+        self._applyResponse(err, response, debug, untransmittedStatements);
         untransmittedStatements = self.untransmittedStatements();
         if (untransmittedStatements.length > 0) {
           // re call exec() until all statements are transmitted
           // TODO: set a limit to avoid endless loop          
           return self.exec(cb);
-        } else {
-          return self.onSucces(err, self, debug);
         }
+        // TODO: sort and populate resultset, but currently no good way to detect result objects
+        if (self._concurrentTransmission_ === 0)
+          return self.onSucces(self._responseError_, self, debug);
       });
     }
     return this;
+  }
+
+  Transaction.prototype._applyResponse = function(err, response, debug, untransmittedStatements) {
+    var self = this;
+    // if error on request/response
+    self.status = (err) ? (err.status) ? err.status : self._response_.status : 'open';
+    untransmittedStatements.forEach(function(statement, i){
+      if (response.errors[i])
+        statement.error = response.errors[i];
+      if (response.results[i])
+        statement.results = response.results[i];
+    });
+    if ((err)||(!response))
+      self._responseError_ = (self._responseError_) ? self._responseError_.push(err) : self._responseError_ = [ err ];
+    else
+      self.populateWithDataFromResponse(response);
   }
 
   Transaction.prototype.toObject = function() {
@@ -147,9 +164,14 @@ var __initTransaction__ = function(neo4jrestful) {
   }
 
   Transaction.prototype.populateWithDataFromResponse = function(data) {
-    this.expires = new Date(data.transaction.expires);
-    this.uri = data.commit;
-    this.id = this.uri.match(/\/transaction\/(\d+)\/commit$/)[1];
+    if (data) {
+      if ((data.transaction) && (data.transaction.expires))
+        this.expires = new Date(data.transaction.expires);
+      if (data.commit) {
+        this.uri = data.commit;
+        this.id = this.uri.match(/\/transaction\/(\d+)\/commit$/)[1];
+      }
+    }
   }
 
   Transaction.prototype.untransmittedStatements = function() {
@@ -161,11 +183,23 @@ var __initTransaction__ = function(neo4jrestful) {
     return statements;
   }
 
+  Transaction.prototype.commit = function(cb) {
+    var self = this;
+    if (typeof cb !== 'function')
+      cb = this.onAfterCommit;
+    this.status = 'committing';
+    this.exec(function(err, transaction, debug) {
+      this.status = 'closed';
+      cb(err, transaction, debug);
+    });
+    return this;
+  }
+
   Transaction.create = function(cypher, parameters, cb) {
     return new Transaction(cypher, parameters, cb);
   }
 
-  Transaction.prototype.onSucces = function(err, response, debug) {
+  Transaction.prototype.onSucces = function(err, transaction, debug) {
     if (typeof err === 'function') {
       // we have s.th. like Transaction.create().add('…', {}).onSucces(function(err, res){ })
       // then onCommit is used as setter
@@ -174,6 +208,19 @@ var __initTransaction__ = function(neo4jrestful) {
     }
     return this;
   }
+
+  Transaction.prototype.onAfterCommit = function(err, response, debug) {
+    if (typeof err === 'function') {
+      // we have s.th. like Transaction.create().add('…', {}).onSucces(function(err, res){ })
+      // then onCommit is used as setter
+      this.onAfterCommit = err;
+      // return this.commit();
+    }
+    return this;
+  }
+  
+  // Transaction.prototype.createObjectFromResponseData = neo4jrestful.constructor.prototype.createObjectFromResponseData;
+  // Transaction.prototype._processResult = Graph.prototype._processResult;
 
   return Transaction;
 

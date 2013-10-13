@@ -8,7 +8,7 @@
 // * underscorejs
 // * sequence (https://github.com/coolaj86/futures)
 
-var __initNode__ = function(Graph, neo4jrestful) {
+var __initNode__ = function(neo4jrestful, Graph) {
 
   var helpers = null;
   var _ = null;

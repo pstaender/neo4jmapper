@@ -41,7 +41,7 @@ var __initGraph__ = function(neo4jrestful) {
     _useParameters: true   // better performance + rollback possible (upcoming feature)
   };
   Graph.prototype._loadOnResult_                = 'node|relationship|path';
-  Graph.prototype._smartResultSort_             = true; // see in graph.query() -> _increaseDone()
+  Graph.prototype._resortResults_               = true; // see in graph.query() -> _increaseDone()
   Graph.prototype._nativeResults_               = false; // it's not implemented, all results are processed so far
   
   // ### Will contain the info response of the neo4j database
@@ -117,7 +117,7 @@ var __initGraph__ = function(neo4jrestful) {
         // * return only the data (columns are attached to graph._columns_)
         // * remove array if we only have one column
         // e.g. { columns: [ 'count' ], data: [ { 1 } ] } -> 1
-        if (self._smartResultSort_) {
+        if (self._resortResults_) {
           var cleanResult = result.data;
           // remove array, if we have only one column
           if (result.columns.length === 1) {
@@ -514,7 +514,7 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.sortResult = function(trueOrFalse) {
     if (typeof trueOrFalse === 'undefined')
       trueOrFalse = true;
-    this._smartResultSort_ = trueOrFalse;
+    this._resortResults_ = trueOrFalse;
     return this;
   }
 

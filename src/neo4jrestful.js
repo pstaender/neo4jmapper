@@ -53,7 +53,6 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   RequestDebug.prototype.options        = null;
   RequestDebug.prototype.requested_url  = '';
   RequestDebug.prototype.method         = '';
-  RequestDebug.prototype.data           = null;
   RequestDebug.prototype.header         = null;
   RequestDebug.prototype.res            = null;
   RequestDebug.prototype.status         = null;
@@ -451,7 +450,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     }
     var err = responseError;
     var self = this;
-    var statusCode = err.status;
+    var statusCode = this._response_.status;
     var error = ( err && err.responseText ) ? Error(err.responseText) : err;
     if (options.debug) {
       options._debug.res = res;
@@ -493,7 +492,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
         self.log('**debug** Could not create/parse a valuable error object', e);
       }
     }
-    if ( (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
+    if ( (err) && (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
       // we ignore by default notfound exceptions, because they are no "syntactical" errors
       return cb(null, null, options._debug);
     } else {
@@ -612,7 +611,6 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
   Neo4jRestful.prototype.singleton = function() {
     // creates a new instanced copy of this client
-    // console.log('::', this._connectionString());
     var client = new Neo4jRestful(this._connectionString());
     // thats the method we need and why we're doing this singleton() function here
     client.constructorOf = this.constructorOf;

@@ -30,7 +30,7 @@ else if window?
 describe 'Neo4jMapper (transaction)', ->
 
   it 'create new transaction', (done) ->
-    query = 'START n=node(*) RETURN n LIMIT {l}'
+    query = 'START n=node(*) MATCH (n)-[r]-() RETURN n, r LIMIT {l}'
     params = { l: 1 }
     # w/o cb and w/o args
     t = new Transaction()
@@ -39,7 +39,6 @@ describe 'Neo4jMapper (transaction)', ->
     expect(t.statements).to.have.length 1
     expect(t.statements[0].statement).to.be.equal query
     expect(t.statements[0].parameters).to.be.equal params
-    expect(t.statements[0].transmitted).to.be false
     expect(t.status).to.be 'begin'
     expect(t.neo4jrestful.absoluteUrl()).to.be.a 'string'
     # with cb
@@ -50,16 +49,19 @@ describe 'Neo4jMapper (transaction)', ->
       expect(o.uri).to.be.a 'string'
       expect(o.id).to.be.above 0
       expect(o.expires.constructor).to.be Date
-      expect(transaction.statements[0].transmitted).to.be true
+      expect(transaction.statements[0].isTransmitted).to.be true
       expect(transaction.status).to.be 'open'
       done()
 
-  it.only 'expect to handle many statements in a transaction asnyc', (done) ->
-    query = 'START n=node(*) RETURN n LIMIT {l}'
+  it 'expect to handle many statements in a transaction asnyc', (done) ->
+    query = 'START n=node(*) MATCH (n)-[r]-() RETURN n LIMIT {l}'
     t = new Transaction(query, { l: 1 }).add query, { l: 2 }, (err, transaction) ->
       expect(err).to.be null
       expect(transaction.untransmittedStatements().length).to.be 0
-      done()
+      new Transaction(query, { l: 1 }).add(query, { l: 2 }).commit (err, transaction) ->
+        expect(err).to.be null
+        result = transaction.statements[1].results
+        done()
 
 
 
