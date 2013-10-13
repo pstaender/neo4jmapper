@@ -50,7 +50,7 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
       defaults: _.extend({}, this.fields.defaults),
       indexes: _.extend({}, this.fields.indexes) // TODO: implement
     });
-    this.is_instanced = true;
+    this._is_instanced_ = true;
   }
 
   Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
@@ -65,10 +65,10 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
   Relationship.prototype._hashedData_ = null;
   Relationship.prototype.uri = null;
   Relationship.prototype._response_ = null;
-  Relationship.prototype.is_singleton = false;
-  Relationship.prototype.is_persisted = false;
+  Relationship.prototype._is_singleton_ = false;
+  Relationship.prototype._is_persisted_ = false;
   Relationship.prototype.cypher = {};
-  Relationship.prototype.is_instanced = null;
+  Relationship.prototype._is_instanced_ = null;
   Relationship.prototype.fields = {
     defaults: {},
     indexes: {}
@@ -79,7 +79,7 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
 
   Relationship.prototype.singleton = function() {
     var relationship = new Relationship();
-    relationship.is_singleton = true;
+    relationship._is_singleton_ = true;
     // relationship.resetQuery();
     return relationship;
   }
@@ -111,7 +111,7 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
 
   Relationship.prototype.findById = function(id, cb) {
     var self = this;
-    if (!self.is_singleton)
+    if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
       // to reduce calls we'll make a specific restful request for one node
@@ -168,7 +168,7 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
     create = (typeof create !== 'undefined') ? create : false;
     // if we are working on the prototype object
     // we won't mutate it and create a new relationship instance insetad
-    var relationship = (this.is_instanced !== null) ? this : new Relationship();
+    var relationship = (this._is_instanced_ !== null) ? this : new Relationship();
     if (create)
       relationship = new Relationship();
     if (data) {
@@ -192,13 +192,13 @@ var __initRelationship__ = function(Graph, neo4jrestful, Node) {
         relationship.setPointIdByUri('to', relationship._response_.end);
       }
     }
-    relationship.is_persisted = true;
+    relationship._is_persisted_ = true;
     relationship.isPersisted(true);
     return relationship;
   }
 
   Relationship.prototype.remove = function(cb) {
-    if (this.is_singleton)
+    if (this._is_singleton_)
       return cb(Error("To delete results of a query use delete(). remove() is for removing a relationship."),null);
     if (this.hasId()) {
       return Graph.request().delete('relationship/'+this.id, cb);

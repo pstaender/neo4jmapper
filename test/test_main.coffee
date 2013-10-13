@@ -301,7 +301,7 @@ describe 'Neo4jMapper', ->
         person = new Person()
         expect(person).to.be.an 'object'
         expect(person.label).to.be 'Person'
-        expect(person.constructor_name).to.be 'Person'
+        expect(person._constructor_name_).to.be 'Person'
         expect(person.fields.defaults.income).to.be.equal 50000
         expect(person.fields.defaults.job).to.be.equal 'Laborer'
         expect(person.fields.defaults.email).to.be.equal 'unknown'
@@ -316,7 +316,7 @@ describe 'Neo4jMapper', ->
           expect(err).to.be null
           director = new Director()
           expect(director.label).to.be.equal 'Director' 
-          expect(director.constructor_name).to.be.equal 'Director'
+          expect(director._constructor_name_).to.be.equal 'Director'
           expect(director.fields.defaults.income).to.be.equal 80000
           expect(director.fields.defaults.job).to.be.equal 'Director'
           expect(director.fields.defaults.email).to.be.equal 'unknown'
@@ -451,8 +451,8 @@ describe 'Neo4jMapper', ->
           Node.find { group_id: groupid }, (err, nodes) ->
             expect(err).to.be null
             expect(nodes).to.have.length 2
-            expect(nodes[0].constructor_name).to.be.equal 'Node'
-            expect(nodes[1].constructor_name).to.be.equal 'Node'
+            expect(nodes[0]._constructor_name_).to.be.equal 'Node'
+            expect(nodes[1]._constructor_name_).to.be.equal 'Node'
             class Developer extends Node
               fields:
                 indexes:
@@ -646,7 +646,7 @@ describe 'Neo4jMapper', ->
       Movie = Node.register_model('Movie')
       movie = new Movie()
       expect(movie.label).to.be.equal 'Movie'
-      expect(movie.constructor_name).to.be.equal 'Movie'
+      expect(movie._constructor_name_).to.be.equal 'Movie'
 
     it 'expect to find corresponding node to each model', (done) ->
       class Movie extends Node
@@ -667,13 +667,13 @@ describe 'Neo4jMapper', ->
       class Director extends Node
       new Director( name: 'Robert Zemeckis' ).save (err, robert) ->
         expect(err).to.be null
-        expect(robert.constructor_name).to.be 'Director'
+        expect(robert._constructor_name_).to.be 'Director'
         expect(robert.label).to.be 'Director'
         Node.findById robert.id, (err, found) ->
           expect(found.label).to.be.equal 'Director'
           Node.register_model(Director)
           found = Node.convert_node_to_model(found, Director)
-          expect(found.constructor_name).to.be.equal 'Director'
+          expect(found._constructor_name_).to.be.equal 'Director'
           done()
 
     it 'create, get and drop index', (done) ->
@@ -844,10 +844,10 @@ describe 'Neo4jMapper', ->
       Node.register_model(Person)
       new Person({ name: 'Alice' }).save (err, alice) ->
         Person.findById alice.id, (err, alice) ->
-          expect(alice.constructor_name).to.be.equal 'Person'
+          expect(alice._constructor_name_).to.be.equal 'Person'
           expect(alice.label).to.be.equal 'Person'
           # expect(alice.labels.constructor).to.be Array
-          #console.log alice.constructor_name
+          #console.log alice._constructor_name_
           done()
 
     it 'expect to enable and disable loading hook', (done) ->

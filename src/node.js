@@ -30,8 +30,8 @@ var __initNode__ = function(Graph, neo4jrestful) {
   // calls this.init(data,id) to set all values to default
   var Node = function Node(data, id) {
     // will be used for labels and classes
-    if (!this.constructor_name)
-      this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
+    if (!this._constructor_name_)
+      this._constructor_name_ = helpers.constructorNameOfFunction(this) || 'Node';
     // each node object has it's own restful client
     this.init(data, id);
   }
@@ -53,10 +53,10 @@ var __initNode__ = function(Graph, neo4jrestful) {
     // copy array
     this.labels = _.uniq(this.labels);
 
-    this.is_instanced = true;
+    this._is_instanced_ = true;
     // we will use a label by default if we have defined an inherited class of node
-    if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
-      this.label = this.cypher.label = this.constructor_name;
+    if ((this._constructor_name_ !== 'Node')&&(this._constructor_name_ !== 'Relationship')&&(this._constructor_name_ !== 'Path')) {
+      this.label = this.cypher.label = this._constructor_name_;
     }
     if (!this.label)
       this.label = null;
@@ -80,7 +80,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
         // do nothing
         model = model;
       } else if (typeof model === 'function') {
-        model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
+        model = model._constructor_name_ || helpers.constructorNameOfFunction(model) || null;
       } else if (node.label) {
         model = node.label;
       } else if (typeof fallbackModel === 'function') {
@@ -113,7 +113,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
   Node.prototype._response_ = null;                 // original response object
   Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query 
   Node.prototype._stream_ = null;                   // flag for processing result data
-  Node.prototype.is_singleton = false;              // flag that this object is a singleton
+  Node.prototype._is_singleton_ = false;              // flag that this object is a singleton
   Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
 
   // cypher property will be **copied** on each new objects node.cypher in resetQuery()
@@ -149,12 +149,12 @@ var __initNode__ = function(Graph, neo4jrestful) {
     by_id: null
   };
 
-  Node.prototype.is_instanced = null;               // flag that this object is instanced
+  Node.prototype._is_instanced_ = null;             // flag that this object is instanced
 
   Node.prototype.labels = null;                     // an array of all labels
   Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
   //TODO: check that it's still needed
-  Node.prototype.constructor_name = null;           // will be with the name of the function of the constructor
+  Node.prototype._constructor_name_ = null;           // will be with the name of the function of the constructor
   Node.prototype._parent_constructors_ = null;      // an array of parent constructors (e.g. Director extends Person -> 'Director','Person')
 
   Node.prototype._load_hook_reference_ = null;      // a reference to acticate or deactivate the load hook
@@ -179,7 +179,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
     if (typeof label === 'string')
       node.label = label;
     node.resetQuery();
-    node.is_singleton = true;
+    node._is_singleton_ = true;
     node.resetQuery();
     return node;
   }
@@ -270,7 +270,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
   }
 
   Node.prototype.hasId = function() {
-    return ((this.is_instanced) && (_.isNumber(this._id_))) ? true : false;
+    return ((this._is_instanced_) && (_.isNumber(this._id_))) ? true : false;
   }
 
   Node.prototype.setUriById = function(id) {
@@ -286,7 +286,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
     if ((typeof this.data === 'object') && (this.data !== null)) {
       var data = (useReference) ? this.data : _.extend(this.data);
       data = helpers.flattenObject(data);
-      // remove null values since nodejs cant store them
+      // remove null values since neo4j can't store them
       for(var key in data) {
         if ((typeof data[key] === 'undefined') || (data[key]===null))
           delete data[key];
@@ -521,7 +521,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
 
   Node.prototype.onSave = function(cb) {
     var self = this;
-    if (this.is_singleton)
+    if (this._is_singleton_)
       return cb(Error('Singleton instances can not be persisted'), null);
     if (!this.hasValidData())
       return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
@@ -533,8 +533,8 @@ var __initNode__ = function(Graph, neo4jrestful) {
       // copy persisted data on initially instanced node
       data.copyTo(self);
       data = self;
-      self.is_singleton = false;
-      self.is_instanced = true;
+      self._is_singleton_ = false;
+      self._is_instanced_ = true;
       if (!err)
         self.isPersisted(true);
       return cb(null, data, debug);
@@ -660,7 +660,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
     // if we are working on the prototype object
     // we won't mutate it and create a new node instance insetad
     var node;
-    if (!this.is_instanced)
+    if (!this._is_instanced_)
       node = new Node();
     else
       node = this;
@@ -1270,7 +1270,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
   // ### Sets or resets the START statement
   Node.prototype.start = function(start, cb) {
     var self = this;
-    if (!self.is_singleton)
+    if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     if (self.label) self.withLabel(self.label);
     //self.resetQuery();
@@ -1435,7 +1435,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
   Node.prototype.remove = function(cb) {
     var self = this;
     this.onBeforeRemove(function(/*err*/) {
-      if (self.is_singleton)
+      if (self._is_singleton_)
         return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
       if (self.hasId()) {
         return Graph.request().delete(self.__type__+'/'+self.id, cb);
@@ -1769,7 +1769,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
 
   Node.prototype.find = function(where, cb) {
     var self = this;
-    if (!self.is_singleton)
+    if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     self._query_history_.push({ find: true });
     if (self.label) self.withLabel(self.label);
@@ -1793,7 +1793,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
 
   Node.prototype.findById = function(id, cb) {
     var self = this;
-    if (!self.is_singleton)
+    if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     self._query_history_.push({ findById: id });
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
@@ -1817,7 +1817,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
     var self = this;
     if (typeof _limit_ === 'undefined')
       _limit_ = null;
-    if (!self.is_singleton)
+    if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     // we have s.th. like
     // { key: value }
@@ -1872,7 +1872,7 @@ var __initNode__ = function(Graph, neo4jrestful) {
 
   Node.prototype.findAll = function(cb) {
     var self = this;
-    if (!self.is_singleton)
+    if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     self._query_history_.push({ findAll: true });
     self.cypher.limit = null;
@@ -1990,9 +1990,9 @@ var __initNode__ = function(Graph, neo4jrestful) {
       Class = function() {
         this.init.apply(this, arguments);
         if (Class.prototype.label === null)
-          this.label = this.constructor_name = label;
+          this.label = this._constructor_name_ = label;
         else
-          this.label = this.constructor_name = Class.prototype.label;
+          this.label = this._constructor_name_ = Class.prototype.label;
       }
 
       _.extend(Class, ParentModel); // 'static' methods

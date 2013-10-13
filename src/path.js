@@ -25,7 +25,7 @@ var __initPath__ = function() {
       id: null,
       uri: null
     };
-    this.is_instanced = true;
+    this._is_instanced_ = true;
   }
 
   Path.prototype.classification = 'Path'; // only needed for toObject()
@@ -37,13 +37,13 @@ var __initPath__ = function() {
   Path.prototype.relationships = null;
   Path.prototype.nodes = null;
   Path.prototype._response_ = null;
-  Path.prototype.is_singleton = false;
-  Path.prototype.is_persisted = false;
-  Path.prototype.is_instanced = null;
+  Path.prototype._is_singleton_ = false;
+  Path.prototype._is_persisted_ = false;
+  Path.prototype._is_instanced_ = null;
 
   Path.prototype.singleton = function() {
     var path = new Path();
-    path.is_singleton = true;
+    path._is_singleton_ = true;
     return path;
   }
 
@@ -63,7 +63,7 @@ var __initPath__ = function() {
   Path.prototype.populateWithDataFromResponse = function(data) {
     // if we are working on the prototype object
     // we won't mutate it and create a new path instance insetad
-    var path = (this.is_instanced !== null) ? this : new Path();
+    var path = (this._is_instanced_ !== null) ? this : new Path();
     if (data) {
       if (_.isObject(data) && (!_.isArray(data)))
         path._response_ = data;
@@ -111,7 +111,7 @@ var __initPath__ = function() {
       path.length = data.length;
 
     }
-    path.is_persisted = true;
+    path._is_persisted_ = true;
     return path;
   }
 
