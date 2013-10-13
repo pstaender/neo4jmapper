@@ -208,6 +208,17 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  Graph.prototype.addParameters = function(parameters) {
+    if (typeof parameters !== 'object')
+      throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
+    if (this.cypher._useParameters === null)
+      this.cypher._useParameters = true;
+    if (!this.cypher.parameters)
+      this.cypher.parameters = {};
+    _.extend(this.cypher.parameters, parameters);
+    return this;
+  }
+
   // ### Deletes *all* nodes and *all* relationships
   Graph.prototype.wipeDatabase = function(cb) {
     var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";

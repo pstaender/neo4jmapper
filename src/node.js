@@ -113,7 +113,6 @@ var __initNode__ = function(Graph, neo4jrestful) {
   Node.prototype._response_ = null;                 // original response object
   Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query 
   Node.prototype._stream_ = null;                   // flag for processing result data
-  Node.prototype._is_singleton_ = false;              // flag that this object is a singleton
   Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
 
   // cypher property will be **copied** on each new objects node.cypher in resetQuery()
@@ -150,11 +149,12 @@ var __initNode__ = function(Graph, neo4jrestful) {
   };
 
   Node.prototype._is_instanced_ = null;             // flag that this object is instanced
+  Node.prototype._is_singleton_ = false;            // flag that this object is a singleton
 
   Node.prototype.labels = null;                     // an array of all labels
   Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
   //TODO: check that it's still needed
-  Node.prototype._constructor_name_ = null;           // will be with the name of the function of the constructor
+  Node.prototype._constructor_name_ = null;         // will be with the name of the function of the constructor
   Node.prototype._parent_constructors_ = null;      // an array of parent constructors (e.g. Director extends Person -> 'Director','Person')
 
   Node.prototype._load_hook_reference_ = null;      // a reference to acticate or deactivate the load hook

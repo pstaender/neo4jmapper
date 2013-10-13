@@ -319,8 +319,9 @@ describe 'Neo4jMapper (cypher queries)', ->
             Graph.start('start')
               .match('match')
               .onMatch('on match')
-              .where('n.name = {value1}')
+              .where('n.name = {value1} OR n.name = {value2}')
               .parameters({value1: 'Bob'})
+              .addParameters({value2: 'bob'})
               .with('with')
               .orderBy('order by')
               .skip(0)
@@ -341,7 +342,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               START start
               MATCH match
               ON MATCH on match
-              WHERE n.name = {value1}
+              WHERE n.name = {value1} OR n.name = {value2}
               WITH with
               ORDER BY order by
               SKIP 0
@@ -363,7 +364,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               START start
               MATCH match
               ON MATCH on match
-              WHERE n.name = {value1}
+              WHERE n.name = {value1} OR n.name = {value2}
               WITH with
               ORDER BY order by
               SKIP 0
@@ -381,7 +382,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               custom statement
               /* comment */;
             """,
-            { value1: 'Bob' }
+            { value1: 'Bob', value2: 'bob' }
           ]
 
         # http://gist.neo4j.org/?6506717
