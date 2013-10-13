@@ -23,8 +23,8 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
       position: this.position,
       isTransmitted: this.isTransmitted,
       position: this.position,
-      error: this.errors,
-      result: this.results,
+      errors: this.errors,
+      results: this.results,
     };
   }
 
@@ -40,14 +40,17 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Transaction.prototype.id = null;
   Transaction.prototype.uri = null
   Transaction.prototype.expires = null;
+  Transaction.prototype.results = null;
   Transaction.prototype._concurrentTransmission_ = 0;
   Transaction.prototype._responseError_ = null; //will contain response Error
-  // Transaction.prototype._resortResults_ = neo4jrestful.constructor.prototype._resortResults_;
+  Transaction.prototype._resortResults_ = true;
   // Transaction.prototype._loadOnResult_ = neo4jrestful.constructor.prototype._loadOnResult_;
 
   Transaction.prototype.begin = function(cypher, parameters, cb) {
     // reset
     this.statements = [];
+    this.results = [];
+    this.errors = [];
     this.id = null;
     return this.add(cypher, parameters, cb);
   }
@@ -104,10 +107,10 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
         // add to transaction
         this.status = 'adding';
         url = '/transaction/'+this.id;
-      } else if (this.status = 'closed') {
-        cb(Error('Transaction is closed. Create a new one'), null, null);
+      } else if (this.status = 'finalized') {
+        cb(Error('Transaction is committed. Create a new transaction instead.'), null, null);
       } else {
-        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|open');
+        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|open|finalized');
       }
       var statements = [];
       untransmittedStatements.forEach(function(statement, i){
@@ -138,10 +141,21 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     // if error on request/response
     self.status = (err) ? (err.status) ? err.status : self._response_.status : 'open';
     untransmittedStatements.forEach(function(statement, i){
-      if (response.errors[i])
+      if (response.errors[i]) {
         statement.error = response.errors[i];
-      if (response.results[i])
-        statement.results = response.results[i];
+        self.errors.push(response.errors[i]);
+      }
+      if (response.results[i]) {
+        if (self._resortResults_) {
+          // move row property one level above
+          // { rows: [ {}, {} ]} -> { [ {}, {} ]}
+          response.results[i].data.forEach(function(data, i){
+            if (data.row)
+              response.results[i].data[i] = data.row;
+          })
+        }
+        self.results.push(response.results[i]);
+      }
     });
     if ((err)||(!response))
       self._responseError_ = (self._responseError_) ? self._responseError_.push(err) : self._responseError_ = [ err ];
@@ -167,6 +181,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     if (data) {
       if ((data.transaction) && (data.transaction.expires))
         this.expires = new Date(data.transaction.expires);
+      // exists only on POST a new transaction
       if (data.commit) {
         this.uri = data.commit;
         this.id = this.uri.match(/\/transaction\/(\d+)\/commit$/)[1];
@@ -183,13 +198,22 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     return statements;
   }
 
-  Transaction.prototype.commit = function(cb) {
+  Transaction.prototype.commit = function(cypher, parameters, cb) {
     var self = this;
+    if (typeof cypher === 'string') {
+      if (typeof parameters === 'function') {
+        cb = parameters;
+        parameters = null;
+      }
+      this.add(cypher, parameters);
+    } else if (typeof cypher === 'function') {
+      cb = cypher;
+    } 
     if (typeof cb !== 'function')
       cb = this.onAfterCommit;
     this.status = 'committing';
     this.exec(function(err, transaction, debug) {
-      this.status = 'closed';
+      this.status = 'finalized';
       cb(err, transaction, debug);
     });
     return this;
@@ -217,6 +241,25 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
       // return this.commit();
     }
     return this;
+  }
+
+  Transaction.prototype.rollback = function(cb) {
+    if ((this.id)&&(this.status!=='finalized')) {
+      this.neo4jrestful.delete('/transaction/'+this.id, cb);
+    } else {
+      cb(Error('You can only perform a rollback on an open transaction.'), null);
+    }
+    return this;
+  }
+
+  Transaction.begin = function(cypher, parameters, cb) {
+    return new Transaction(cypher, parameters, cb);
+  }
+
+  Transaction.open = Transaction.begin;
+
+  Transaction.commit = function(cypher, parameters, cb) {
+    return new Transaction().commit(cypher, parameters, cb);
   }
   
   // Transaction.prototype.createObjectFromResponseData = neo4jrestful.constructor.prototype.createObjectFromResponseData;

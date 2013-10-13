@@ -60,8 +60,46 @@ describe 'Neo4jMapper (transaction)', ->
       expect(transaction.untransmittedStatements().length).to.be 0
       new Transaction(query, { l: 1 }).add(query, { l: 2 }).commit (err, transaction) ->
         expect(err).to.be null
-        result = transaction.statements[1].results
-        done()
+        result = transaction.statements[1].results        
+        query = 'CREATE (n {props}) RETURN id(n)'
+        Transaction.commit query, { props: { name: 'Philipp' } }, (err, transaction) ->
+          expect(err).to.be null
+          done()
+
+  it 'expect to get errors on wrong transactions', (done) ->
+    query = 'CREATE (n {props}) RETURN n AS node, id(n), as ID'
+    Transaction.commit query, { props: { name: 'Philipp' } }, (err, transaction) ->
+      expect(err).to.be null
+      expect(transaction.errors).to.have.length 1
+      done()
 
 
+  it 'expect to get usable results', (done) ->
+    query = 'CREATE (n {props}) RETURN n AS node, id(n) AS ID'
+    Transaction.commit query, { props: { name: 'Linda' } }, (err, transaction) ->
+      expect(err).to.be null
+      expect(transaction.results).to.have.length 1
+      expect(transaction.results[0].columns).to.have.length 2
+      expect(transaction.results[0].data[0][0].name).to.be.equal 'Linda'
+      expect(transaction.results[0].data[0][1]).to.be.above 0
+      expect(transaction.status).to.be.equal 'finalized'
+      done()
+
+  it.only 'expect to execute rollbacks', (done) ->
+    query = 'CREATE (n {props}) RETURN n AS node, id(n) AS ID'
+    Transaction.open query, { props: { name: 'Philipp' } }, (err, transaction) ->
+      expect(err).to.be null
+      id = transaction.results[0].data[0][1]#).to.be.above 0
+      expect(id).to.be.above 0
+      # check that node exists
+      client.get "/node/#{id}", (err, found) ->
+        expect(err).to.be null
+        expect(found.id).to.be.equal id
+        transaction.rollback (err) ->
+          expect(err).to.be null
+          # check that node doen't exists anymore
+          client.get "/node/#{id}", (err, found) ->
+            expect(err).to.be null
+            expect(found).to.be null
+            done()
 
