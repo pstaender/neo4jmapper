@@ -26,7 +26,7 @@ var __initGraph__ = function(neo4jrestful) {
 
   var Graph = function Graph(url) {
     if (url) {
-      this.neo4jrestful = new this.neo4jrestful.constructor(url);
+      this.neo4jrestful = new neo4jrestful.constructor(url);
     }
     this.resetQuery();
     return this;
