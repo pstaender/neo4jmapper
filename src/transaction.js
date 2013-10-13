@@ -96,21 +96,24 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
       if (!this.id) {
         // we have to begin a transaction
         if (this.status === 'committing') {
+          // begin and commit a transaction in one request
           url = '/transaction/commit';
         } else {
+          // begin a transaction
           this.status = 'begin';
           url = '/transaction';
         }
-        
-        
       } else if (this.status === 'open') {
         // add to transaction
         this.status = 'adding';
         url = '/transaction/'+this.id;
+      } else if (this.status === 'closing') {
+        // commit transaction
+        url = '/transaction/'+this.id+'/commit';
       } else if (this.status = 'finalized') {
         cb(Error('Transaction is committed. Create a new transaction instead.'), null, null);
       } else {
-        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|open|finalized');
+        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|closing|open|finalized');
       }
       var statements = [];
       untransmittedStatements.forEach(function(statement, i){
@@ -139,7 +142,12 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Transaction.prototype._applyResponse = function(err, response, debug, untransmittedStatements) {
     var self = this;
     // if error on request/response
-    self.status = (err) ? (err.status) ? err.status : self._response_.status : 'open';
+    self.status = 'open'
+    if (err) {
+      self.status = (err.status) ? err.status : err;
+      if (!self.status)
+        self.status = self._response_.status;
+    }
     untransmittedStatements.forEach(function(statement, i){
       if (response.errors[i]) {
         statement.error = response.errors[i];
@@ -150,8 +158,9 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
           // move row property one level above
           // { rows: [ {}, {} ]} -> { [ {}, {} ]}
           response.results[i].data.forEach(function(data, i){
-            if (data.row)
+            if ((response.results[i]) && (data.row)) {
               response.results[i].data[i] = data.row;
+            }
           })
         }
         self.results.push(response.results[i]);
@@ -209,15 +218,21 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     } else if (typeof cypher === 'function') {
       cb = cypher;
     } 
-    if (typeof cb !== 'function')
+    if (typeof cb !== 'function') {
       cb = this.onAfterCommit;
-    this.status = 'committing';
+      this.status = 'committing';
+    } else {
+      // if we have a cb, we close the transaction
+      this.status = 'closing';
+    }
     this.exec(function(err, transaction, debug) {
-      this.status = 'finalized';
+      self.status = 'finalized';
       cb(err, transaction, debug);
     });
     return this;
   }
+
+  Transaction.prototype.close = Transaction.prototype.commit;
 
   Transaction.create = function(cypher, parameters, cb) {
     return new Transaction(cypher, parameters, cb);

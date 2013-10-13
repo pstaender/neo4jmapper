@@ -27,6 +27,8 @@ else if window?
   {Graph,Node,helpers,client,Transaction} = neo4jmapper
   Neo4j = Neo4jMapper.init
 
+# TODO: fix test / find transaction that stays open
+
 describe 'Neo4jMapper (transaction)', ->
 
   it 'create new transaction', (done) ->
@@ -41,8 +43,10 @@ describe 'Neo4jMapper (transaction)', ->
     expect(t.statements[0].parameters).to.be.equal params
     expect(t.status).to.be 'begin'
     expect(t.neo4jrestful.absoluteUrl()).to.be.a 'string'
-    # with cb
-    transaction = new Transaction query, params, (err, response) ->
+    # done()
+    # # with cb
+    # TODO: fix test
+    transaction = new Transaction query, params, (err, transaction) ->
       expect(err).to.be null
       # check client is included as well
       o = transaction.toObject()
@@ -51,25 +55,27 @@ describe 'Neo4jMapper (transaction)', ->
       expect(o.expires.constructor).to.be Date
       expect(transaction.statements[0].isTransmitted).to.be true
       expect(transaction.status).to.be 'open'
-      done()
+      transaction.close ->
+        done()
 
   it 'expect to handle many statements in a transaction asnyc', (done) ->
     query = 'START n=node(*) MATCH (n)-[r]-() RETURN n LIMIT {l}'
-    t = new Transaction(query, { l: 1 }).add query, { l: 2 }, (err, transaction) ->
+    t = new Transaction(query, { l: 1 }).add(query, { l: 2 }).close (err, transaction) ->
       expect(err).to.be null
       expect(transaction.untransmittedStatements().length).to.be 0
+      expect(transaction.status).to.be.equal 'finalized'
       new Transaction(query, { l: 1 }).add(query, { l: 2 }).commit (err, transaction) ->
         expect(err).to.be null
+        expect(transaction.status).to.be.equal 'finalized'
         result = transaction.statements[1].results        
         query = 'CREATE (n {props}) RETURN id(n)'
-        Transaction.commit query, { props: { name: 'Philipp' } }, (err, transaction) ->
-          expect(err).to.be null
-          done()
+        done()
 
   it 'expect to get errors on wrong transactions', (done) ->
     query = 'CREATE (n {props}) RETURN n AS node, id(n), as ID'
     Transaction.commit query, { props: { name: 'Philipp' } }, (err, transaction) ->
       expect(err).to.be null
+      expect(transaction.status).to.be.equal 'finalized'
       expect(transaction.errors).to.have.length 1
       done()
 
@@ -85,21 +91,28 @@ describe 'Neo4jMapper (transaction)', ->
       expect(transaction.status).to.be.equal 'finalized'
       done()
 
-  it.only 'expect to execute rollbacks', (done) ->
+  it 'expect to execute rollbacks', (done) ->
     query = 'CREATE (n {props}) RETURN n AS node, id(n) AS ID'
-    Transaction.open query, { props: { name: 'Philipp' } }, (err, transaction) ->
+    Transaction.open query, { props: { name: 'Dave' } }, (err, transaction) ->
       expect(err).to.be null
-      id = transaction.results[0].data[0][1]#).to.be.above 0
-      expect(id).to.be.above 0
-      # check that node exists
-      client.get "/node/#{id}", (err, found) ->
+      expect(transaction.status).not.to.be.equal 'finalized'
+      transaction.add query, { props: { name: 'Taylor' } }, (err, transaction) ->
         expect(err).to.be null
-        expect(found.id).to.be.equal id
-        transaction.rollback (err) ->
+        expect(transaction.status).not.to.be.equal 'finalized'
+        id = transaction.results[0].data[0][1]
+        expect(transaction.results).to.have.length 2
+        expect(transaction.results[0].data[0][0].name).to.be.equal 'Dave'
+        expect(transaction.results[1].data[0][0].name).to.be.equal 'Taylor'
+        expect(id).to.be.above 0
+        # check that node exists
+        client.get "/node/#{id}", (err, found) ->
           expect(err).to.be null
-          # check that node doen't exists anymore
-          client.get "/node/#{id}", (err, found) ->
+          expect(found.id).to.be.equal id
+          transaction.rollback (err) ->
             expect(err).to.be null
-            expect(found).to.be null
-            done()
+            # check that node doen't exists anymore
+            client.get "/node/#{id}", (err, found) ->
+              expect(err).to.be null
+              expect(found).to.be null
+              done()
 
