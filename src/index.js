@@ -15,7 +15,8 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
     
     this.client = new Neo4jRestful();
 
-    this.Graph        = window.Neo4jMapper.initGraph(this.client);
+    var Transaction   = this.Transaction   = window.Neo4jMapper.initTransaction(this.client);
+    var Graph         = this.Graph         = window.Neo4jMapper.initGraph(this.client);
     var Node          = this.Node          = window.Neo4jMapper.initNode(this.Graph, this.client);
     var Relationship  = this.Relationship  = window.Neo4jMapper.initRelationship(this.Graph, this.client, Node);
     var Path          = this.Path          = window.Neo4jMapper.initPath(this.Graph, this.client);
@@ -27,7 +28,8 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
     
     this.client = new Neo4jRestful();
     
-    this.Graph         = (typeof window === 'object') ? window.Neo4jMapper.initNode(this.client) : require('./graph').init(this.client);
+    var Transaction   = this.Transaction   = require('./transaction').init(this.client);
+    var Graph         = this.Graph         = require('./graph').init(this.client);
     var Node          = this.Node          = require('./node').init(this.Graph, this.client);
     var Relationship  = this.Relationship  = require('./relationship').init(this.Graph, this.client, Node);
     var Path          = this.Path          = require('./path').init(this.Graph, this.client);
@@ -50,6 +52,7 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
 Neo4jMapper.prototype.Node = null;
 Neo4jMapper.prototype.Relationship = null;
 Neo4jMapper.prototype.Graph = null;
+Neo4jMapper.prototype.Transaction = null;
 Neo4jMapper.prototype.Path = null;
 Neo4jMapper.prototype.Neo4jRestful = null;
 Neo4jMapper.prototype.client = null;
