@@ -93,27 +93,21 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     } else {
       var url = '';
       var untransmittedStatements = this.untransmittedStatements();
-      if (!this.id) {
-        // we have to begin a transaction
-        if (this.status === 'committing') {
-          // begin and commit a transaction in one request
-          url = '/transaction/commit';
-        } else {
-          // begin a transaction
-          this.status = 'begin';
-          url = '/transaction';
-        }
+      if (this.status === 'committing') {
+        // commit transaction
+        url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
+      } else if (!this.id) {
+        // begin a transaction
+        this.status = 'begin';
+        url = '/transaction';
       } else if (this.status === 'open') {
         // add to transaction
         this.status = 'adding';
         url = '/transaction/'+this.id;
-      } else if (this.status === 'closing') {
-        // commit transaction
-        url = '/transaction/'+this.id+'/commit';
       } else if (this.status = 'finalized') {
         cb(Error('Transaction is committed. Create a new transaction instead.'), null, null);
       } else {
-        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|closing|open|finalized');
+        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|open|finalized');
       }
       var statements = [];
       untransmittedStatements.forEach(function(statement, i){
@@ -221,9 +215,6 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     if (typeof cb !== 'function') {
       cb = this.onAfterCommit;
       this.status = 'committing';
-    } else {
-      // if we have a cb, we close the transaction
-      this.status = 'closing';
     }
     this.exec(function(err, transaction, debug) {
       self.status = 'finalized';
