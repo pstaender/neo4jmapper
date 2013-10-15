@@ -628,7 +628,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
           node.label = labels[0]
         // convert node to it's model if it has a distinct label and differs from static method
         if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
-          node = Node.convert_node_to_model(node, node.label, DefaultConstructor);
+          node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
         next(null, node, debug);
       });
     } else {
@@ -1903,9 +1903,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
    * Static methods (misc)
    */
 
-  Node.prototype.copy_of = function(that) {
-    return _.extend({},that);
-  }
+  // Node.prototype.copy_of = function(that) {
+  //   return _.extend({},that);
+  // }
 
   /*
    * Singleton methods, shorthands for their corresponding (static) prototype methods
@@ -1953,20 +1953,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this.prototype.start(start, cb);
   }
 
-  // Exception rule on underscore and CamelCase naming convention
-  // on all find… methods to keep analogy to mongodb api 
-  Node.find_all               = function(cb) { return this.findAll(cb); }
-  Node.find_by_id             = function(id, cb) { return this.findById(id, cb); }
-  Node.find_one               = function(where, cb) { return this.findOne(where, cb); }
-  Node.find_or_create         = function(where, cb) { return this.findOrCreate(where, cb); }
-  Node.find_by_key_value      = function(key, value, cb) { return this.findByKeyValue(key, value, cb); }
-  Node.find_one_by_key_value  = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
-
   Node.query = function(cypherQuery, options, cb) {
     return this.prototype.singleton().query(cypherQuery, options, cb);
   }
 
-  Node.register_model = function(Class, label, prototype, cb) {
+  Node.registerModel = function(Class, label, prototype, cb) {
     var name = null
       , ParentModel = this;
 
@@ -2058,55 +2049,86 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return _.uniq(_.flatten(models));
   }
 
-  Node.unregister_model = function(Class) {
+  Node.unregisterModel = function(Class) {
     var name = (typeof Class === 'string') ? Class : helpers.constructorNameOfFunction(Class);
     if (typeof Node.__models__[name] === 'function')
       delete Node.__models__[name];
     return Node.__models__;
   }
 
-  Node.registered_models = function() {
+  Node.registeredModels = function() {
     return Node.__models__;
   }
 
-  Node.registered_model = function(model) {
+  Node.registeredModel = function(model) {
     if (typeof model === 'function') {
       model = helpers.constructorNameOfFunction(model);
     }
     return Node.registered_models()[model] || null;
   }
 
-  Node.convert_node_to_model = function(node, model, fallbackModel) {
+  Node.convertNodeToModel = function(node, model, fallbackModel) {
     return this.prototype.convertNodeToModel(node, model, fallbackModel);
   }
 
-  Node.ensure_index = function(cb) {
+  Node.ensureIndex = function(cb) {
     return this.singleton().ensureIndex(cb);
   }
 
-  Node.drop_index = function(fields, cb) {
+  Node.dropIndex = function(fields, cb) {
     return this.singleton().dropIndex(fields, cb);
   }
 
-  Node.drop_entire_index = function(cb) {
+  Node.dropEntireIndex = function(cb) {
     return this.singleton().dropEntireIndex(cb);
   }
 
-  Node.get_index = function(cb) {
+  Node.getIndex = function(cb) {
     return this.singleton().getIndex(cb);
   }
 
-  Node.disable_loading = function() {
+  Node.disableLoading = function() {
     return this.prototype.disableLoading();
   }
 
-  Node.enable_loading = function() {
+  Node.enableLoading = function() {
     return this.prototype.enableLoading();
   }
 
-  Node.delete_all_including_relations = function(cb) {
+  Node.deleteAllIncludingRelations = function(cb) {
     return this.find().deleteIncludingRelations(cb);
   }
+
+  Node.create = function(data, id) {
+    return new this(data, id);
+  }
+
+  // remove underscore naming
+
+  // Node.delete_all_including_relations = function(cb) { return this.deleteAllIncludingRelations(cb); }
+  // Node.enable_loading                 = function() { return this.enableLoading(); }
+  // Node.disable_loading                = function() { return this.disableLoading(); }
+  // Node.get_index                      = function(cb) { return this.getIndex(cb); }
+  // Node.drop_entire_index              = function(cb) { return this.dropEntireIndex(cb); }
+  // Node.dropIndex                      = function(fields, cb) { return this.dropEntireIndex(fields, cb); }
+  // Node.ensure_index                   = function(cb) { return this.ensureIndex(cb); }
+  // Node.convert_node_to_model          = function(node, model, fallbackModel) { return this.convertNodeToModel(node, model, fallbackModel); }
+
+  // Node.find_all                       = function(cb) { return this.findAll(cb); }
+  // Node.find_by_id                     = function(id, cb) { return this.findById(id, cb); }
+  // Node.find_one                       = function(where, cb) { return this.findOne(where, cb); }
+  // Node.find_or_create                 = function(where, cb) { return this.findOrCreate(where, cb); }
+  // Node.find_by_key_value              = function(key, value, cb) { return this.findByKeyValue(key, value, cb); }
+  // Node.find_one_by_key_value          = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
+
+  // keep in all upcoming version, because they are the only real global methods
+
+  // except these:
+
+  Node.registered_model               = Node.registeredModel;
+  Node.registered_models              = Node.registeredModels;
+  Node.unregister_model               = Node.unregisterModel;
+  Node.register_model                 = Node.registerModel;
 
   // only once
   if ((typeof Graph.prototype === 'object') && (!Node.prototype._addParametersToCypher)) {

@@ -305,6 +305,10 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   Relationship.prototype.hasId              = Node.prototype.hasId;
   Relationship.prototype._hashData_         = Node.prototype._hashData_;
 
+  Relationship.create = function(data, start, end, id) {
+    return new Relationship(data, start, end, id);
+  }
+
   return Relationship;
 }
 

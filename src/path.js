@@ -133,6 +133,10 @@ var __initPath__ = function() {
 
   Path.prototype.resetQuery = function() { return this; }
 
+  Path.create = function() {
+    return new Path();
+  }
+
   return Path;
 }
 

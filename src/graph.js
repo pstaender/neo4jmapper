@@ -569,35 +569,35 @@ var __initGraph__ = function(neo4jrestful) {
    * (are shortcuts to methods on new instanced Graph())
    */
   Graph.query = function(cypher, options, cb) {
-    return Graph.disable_processing().query(cypher, options, cb);
+    return Graph.disableProcessing().query(cypher, options, cb);
   }
 
   Graph.stream = function(cypher, options, cb) {
-    return new Graph.disable_processing().stream(cypher, options, cb);
+    return new Graph.disableProcessing().stream(cypher, options, cb);
   }
 
-  Graph.wipe_database = function(cb) {
+  Graph.wipeDatabase = function(cb) {
     return new Graph().wipeDatabase(cb);
   }
 
-  Graph.count_all_of_type = function(type, cb) {
+  Graph.countAllOfType = function(type, cb) {
     return new Graph().countAllOfType(type, cb);
   }
 
-  Graph.count_relationships = function(cb) {
+  Graph.countRelationships = function(cb) {
     return new Graph().countRelationships(cb);
   }
 
   // alias for count_relationships
-  Graph.count_relations = function(cb) {
+  Graph.countRelations = function(cb) {
     return new Graph().countRelationships(cb);
   }
   
-  Graph.count_nodes = function(cb) {
+  Graph.countNodes = function(cb) {
     return new Graph().countNodes(cb);
   }
   
-  Graph.count_all = function(cb) {
+  Graph.countAll = function(cb) {
     return new Graph().countAll(cb);
   }
 
@@ -606,35 +606,35 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.start = function(start, cb) {
-    return Graph.enable_processing().start(start, cb);
+    return Graph.enableProcessing().start(start, cb);
   }
 
-  Graph.enable_loading = function(classifications) {
+  Graph.enableLoading = function(classifications) {
     Graph.prototype.enableLoading(classifications);
     return new Graph();
   }
 
-  Graph.disable_loading = function() {
+  Graph.disableLoading = function() {
     Graph.prototype.disableLoading();
     return new Graph();
   }
 
-  Graph.disable_processing = function() {
+  Graph.disableProcessing = function() {
     Graph.prototype.disableProcessing();
     return new Graph();
   }
 
-  Graph.enable_processing = function() {
+  Graph.enableProcessing = function() {
     Graph.prototype.enableProcessing();
     return new Graph();
   }
 
-  Graph.enable_sorting = function() {
+  Graph.enableSorting = function() {
     Graph.prototype.enableSorting();
     return new Graph();
   }
 
-  Graph.disable_sorting = function() {
+  Graph.disableSorting = function() {
     Graph.prototype.disableSorting(false);
     return new Graph();
   }
@@ -644,7 +644,22 @@ var __initGraph__ = function(neo4jrestful) {
     return neo4jrestful.singleton();
   }
 
-  Graph.__top__ = true;
+  Graph.create = function(url) {
+    return new Graph(url);
+  }
+
+  // wipe_database function(cb) 
+  // count_all_of_type function(type, cb)
+  // count_relationships = function(cb)
+  // count_relations = function(cb)
+  // count_nodes = function(cb)
+  // count_all = function(cb)
+  // enable_loading = function(classifications)
+  // disable_loading = function()
+  // disable_processing = function()
+  // enable_processing = function()
+  // enable_sorting = function()
+  // disable_sorting = function() {
 
   return Graph;
 }

@@ -7,7 +7,7 @@ var Neo4j = require('../src')
  * best way to register a model
  * optional patch with your own methods and field definitions
  */
-var Movie = Node.register_model('Movie', {
+var Movie = Node.registerModel('Movie', {
   summary: function() {
     return 'Directed by '+this.data.director+' in '+this.data.year;
   },
@@ -23,7 +23,7 @@ var Movie = Node.register_model('Movie', {
   }
 });
 
-var Blockbuster = Movie.register_model('Blockbuster',{
+var Blockbuster = Movie.registerModel('Blockbuster',{
   fields: {
     defaults: {
       level: 'Blockbuster'
@@ -41,7 +41,7 @@ backToTheFuture = new Blockbuster({
  * the other way is to register your model first
  * and then extends your model via prototyping
  */
-var Director = Node.register_model('Director');
+var Director = Node.registerModel('Director');
 
 // override an existing method, toObject() for example
 Director.prototype.toObject = function() {

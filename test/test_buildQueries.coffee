@@ -267,7 +267,7 @@ describe 'Neo4jMapper (cypher queries)', ->
 
         "Actor.delete_all_including_relations()":
           [
-             Actor.delete_all_including_relations()
+             Actor.deleteAllIncludingRelations()
             "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
           ]
 

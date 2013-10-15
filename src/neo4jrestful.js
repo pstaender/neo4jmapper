@@ -617,6 +617,10 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     return client;
   }
 
+  Neo4jRestful.create = function(url, options) {
+    return new Neo4jRestful(url, options);
+  }
+
   return Neo4jRestful;
 };
 

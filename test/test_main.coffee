@@ -141,7 +141,7 @@ describe 'Neo4jMapper', ->
         done()
 
     it 'expect to query via Graph, with and without loading', (done) ->
-      Node.register_model 'Person', (err, Person) ->
+      Node.registerModel 'Person', (err, Person) ->
         name = String(Date())
         new Person(name: name).save (err, alice) ->
           new Person(name: 'otherPerson').save (err, bob) ->
@@ -180,7 +180,7 @@ describe 'Neo4jMapper', ->
                       done()
 
     it 'expect to query via Graph with parameters', (done) ->
-      Person = Node.register_model 'Person'
+      Person = Node.registerModel 'Person'
       name = String(Date())
       new Person(name: name).save (err, alice) ->
         new Person(name: 'otherPerson').save (err, bob) ->
@@ -192,7 +192,7 @@ describe 'Neo4jMapper', ->
               done()
 
     it 'expect to get many columns of graph queries', (done) ->
-      Person = Node.register_model 'Person'
+      Person = Node.registerModel 'Person'
       name = String(Date())
       new Person(name: name).save (err, alice) ->
         new Person(name: name).save (err, bob) ->
@@ -230,7 +230,7 @@ describe 'Neo4jMapper', ->
           expect(found[0].label).to.be.equal 'Person'
           id = found[0].id
           expect(id).to.be.a 'number'
-          Graph.disable_processing().start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, result, debug) ->
+          Graph.disableProcessing().start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, result, debug) ->
             expect(err).to.be null
             expect(result.columns).to.have.length 1
             expect(result.data).to.have.length 1
@@ -242,7 +242,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to make a stream request on nodes and models', (SkipInBrowser) (done) ->
       class Person extends Node
-      Node.register_model(Person)
+      Node.registerModel(Person)
       new Person({name: 'A'}).save ->
         new Person({name: 'B'}).save ->
           Person.findAll().count (err, count) ->
@@ -285,7 +285,7 @@ describe 'Neo4jMapper', ->
   describe 'node', ->
 
     it 'expect to allow inheritance', (done) ->
-      Node.register_model 'Person', { 
+      Node.registerModel 'Person', { 
         fields: {
           defaults: {
             email: 'unknown'
@@ -305,7 +305,7 @@ describe 'Neo4jMapper', ->
         expect(person.fields.defaults.income).to.be.equal 50000
         expect(person.fields.defaults.job).to.be.equal 'Laborer'
         expect(person.fields.defaults.email).to.be.equal 'unknown'
-        Person.register_model 'Director', { 
+        Person.registerModel 'Director', { 
           fields: {
             defaults: {
               income: 80000
@@ -326,7 +326,7 @@ describe 'Neo4jMapper', ->
           expect(director.labels[1]).to.be 'Person'
           expect(director).to.be.an 'object'
           expect(director.id).to.be null
-          Person.register_model 'Actor', { 
+          Person.registerModel 'Actor', { 
             fields: {
               defaults: {
                 job: 'Actor'
@@ -348,9 +348,9 @@ describe 'Neo4jMapper', ->
       class Extra extends Person
       class Actor extends Extra
       class Director extends Actor
-      Person = Node.register_model(Person)
-      Actor = Node.register_model(Actor)
-      Director = Node.register_model(Director)
+      Person = Node.registerModel(Person)
+      Actor = Node.registerModel(Actor)
+      Director = Node.registerModel(Director)
       director = new Director
       expect(director.labels).to.have.length 4
       expect(director.labels[0]).to.be.equal 'Director'
@@ -364,10 +364,10 @@ describe 'Neo4jMapper', ->
       done()
 
     it 'inheritance on models', (done) ->
-      Person   = Node.register_model('Person')
-      Extra    = Person.register_model('Extra')
-      Actor    = Extra.register_model('Actor')
-      Director = Actor.register_model('Director')
+      Person   = Node.registerModel('Person')
+      Extra    = Person.registerModel('Extra')
+      Actor    = Extra.registerModel('Actor')
+      Director = Actor.registerModel('Director')
       director = new Director
       expect(director.labels).to.have.length 4
       expect(director.labels[0]).to.be.equal 'Director'
@@ -437,8 +437,8 @@ describe 'Neo4jMapper', ->
         done()
 
     it 'expect to find many nodes with different labels', (done) ->
-      Node.unregister_model('Person')
-      Node.unregister_model('Developer')
+      Node.unregisterModel('Person')
+      Node.unregisterModel('Developer')
       groupid = new Date().getTime()
       new Node(name: 'Alice', group_id: groupid).addLabel('Person').save (err, alice) ->
         expect(err).to.be null
@@ -457,14 +457,14 @@ describe 'Neo4jMapper', ->
               fields:
                 indexes:
                   email: true
-            Developer.drop_entire_index (err) ->
+            Developer.dropEntireIndex (err) ->
               expect(err).to.be null
-              Node.register_model Developer, ->
+              Node.registerModel Developer, ->
                 Developer.find { group_id: groupid }, (err, nodes) ->
                   expect(err).to.be null
                   expect(nodes).to.have.length 1
                   expect(nodes[0].data.name).to.be.equal 'Bob'
-                  Developer.get_index (err, found) ->
+                  Developer.getIndex (err, found) ->
                     expect(found).to.have.length 1
                     expect(found[0]).to.be.equal 'email'
                     done()
@@ -636,21 +636,21 @@ describe 'Neo4jMapper', ->
 
     it 'expect to register and unregister models for nodes', ->
       class Person extends Node
-      Node.register_model(Person)
+      Node.registerModel(Person)
       expect(Node.registered_models()['Person'].constructor).to.be Person.constructor
-      Node.unregister_model(Person)
+      Node.unregisterModel(Person)
       expect(Node.registered_models()['Person']).to.be undefined
-      Node.register_model(Person)
-      Node.unregister_model('Person')
+      Node.registerModel(Person)
+      Node.unregisterModel('Person')
       expect(Node.registered_models()['Person']).to.be undefined
-      Movie = Node.register_model('Movie')
+      Movie = Node.registerModel('Movie')
       movie = new Movie()
       expect(movie.label).to.be.equal 'Movie'
       expect(movie._constructor_name_).to.be.equal 'Movie'
 
     it 'expect to find corresponding node to each model', (done) ->
       class Movie extends Node
-      Node.register_model(Movie)
+      Node.registerModel(Movie)
       Movie.findAll().count (err, countBefore) ->
         expect(err).to.be null
         expect(countBefore).to.be.a 'number'
@@ -671,27 +671,27 @@ describe 'Neo4jMapper', ->
         expect(robert.label).to.be 'Director'
         Node.findById robert.id, (err, found) ->
           expect(found.label).to.be.equal 'Director'
-          Node.register_model(Director)
-          found = Node.convert_node_to_model(found, Director)
+          Node.registerModel(Director)
+          found = Node.convertNodeToModel(found, Director)
           expect(found._constructor_name_).to.be.equal 'Director'
           done()
 
     it 'create, get and drop index', (done) ->
       # random label name to ensure that new indexes are created on each test 
       labelName = "Person#{new Date().getTime()}"
-      Node.register_model labelName, { fields: { indexes: { name: true } } }, (err, Person) ->
+      Node.registerModel labelName, { fields: { indexes: { name: true } } }, (err, Person) ->
         expect(err).to.be null
-        Person.get_index (err, res) ->
+        Person.getIndex (err, res) ->
           expect(err).to.be null
           expect(res).to.have.length 1
-          Person.drop_entire_index (err) ->
+          Person.dropEntireIndex (err) ->
             expect(err).to.be null
-            Person.get_index (err, res) ->
+            Person.getIndex (err, res) ->
               expect(err).to.be null
               expect(res).to.have.length 0
-              Person.ensure_index (err, res) ->
+              Person.ensureIndex (err, res) ->
                 expect(err).to.be null
-                Person.get_index (err, res) ->
+                Person.getIndex (err, res) ->
                   expect(err).to.be null
                   expect(res).to.have.length 1
                   done()
@@ -699,7 +699,7 @@ describe 'Neo4jMapper', ->
     it 'expect to autoindex models', (done) ->
       # random label name to ensure that new indexes are created on each test 
       labelName = "Movie#{new Date().getTime()}"
-      Node.register_model labelName, {
+      Node.registerModel labelName, {
         fields:
           indexes:
             uid: true
@@ -721,7 +721,7 @@ describe 'Neo4jMapper', ->
     it 'expect to have unique values', (done) ->
       # random label name to ensure that new indexes are created on each test
       labelName = "Label#{new Date().getTime()}"
-      Node.register_model labelName, {
+      Node.registerModel labelName, {
         fields:
           unique:
             uid: true
@@ -742,7 +742,7 @@ describe 'Neo4jMapper', ->
     it 'expect to set default values on models', (done) ->
       # we unregister model because it was registered before
       labelName = "Movie#{new Date().getTime()}"
-      Node.register_model labelName, {
+      Node.registerModel labelName, {
         fields:
           defaults:
             uid: -> new Date().getTime()
@@ -794,7 +794,7 @@ describe 'Neo4jMapper', ->
           defaults: {}
           indexes: {}
       p = new Person( name: 'Jeff Bridges' )
-      Node.register_model(Person)
+      Node.registerModel(Person)
       new Person( name: 'Jeff Bridges' ).save (err, jeff) ->
         jeff.allLabels (err, labels) ->
           expect(err).to.be null
@@ -841,7 +841,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to find node including labels', (done) ->
       class Person extends Node
-      Node.register_model(Person)
+      Node.registerModel(Person)
       new Person({ name: 'Alice' }).save (err, alice) ->
         Person.findById alice.id, (err, alice) ->
           expect(alice._constructor_name_).to.be.equal 'Person'
@@ -881,7 +881,7 @@ describe 'Neo4jMapper', ->
             uid: true
             name: true
       # we have to ensureIndex 
-      User.ensure_index (err) ->
+      User.ensureIndex (err) ->
         User.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
           expect(err).to.be null
           expect(found.data.uid).to.be.equal uid
@@ -1073,7 +1073,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to query nodes with regex', (done) ->
       uid = new Date().getTime()
-      Person = Node.register_model('Person')
+      Person = Node.registerModel('Person')
       new Person( { uid: uid, name: 'Alice' } ).save (err, alice) ->
         expect(err).to.be null
         Person.find { uid: uid, name: /^alice$/i }, (err, found, debug) ->
@@ -1091,7 +1091,7 @@ describe 'Neo4jMapper', ->
       uid = -> new Date().getTime()
       # we label to speed query up and to define testspecific graph
       labelName = "Label#{uid()}"
-      Node.register_model labelName, { fields: { indexes: { email: true } } }, (err, Model) ->
+      Node.registerModel labelName, { fields: { indexes: { email: true } } }, (err, Model) ->
         new Model( email: 'jackblack@tenacio.us', job: 'Actor' ).save (err, jb) ->
           expect(err).to.be null
           new Model( name: 'Jack Black', job: 'Actor' ).save (err, jb) ->

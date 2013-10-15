@@ -31,7 +31,7 @@ var Movie = (function(Node) {
 
 })(Node);
 
-Node.register_model(Movie);
+Node.registerModel(Movie);
 
 pulpFiction = new Movie({
   title: 'Pulp Fiction' 
