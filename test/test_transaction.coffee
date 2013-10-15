@@ -40,14 +40,16 @@ describe 'Neo4jMapper (transaction)', ->
     t = new Transaction()
     # without cb
     t = new Transaction query, params
-    expect(t.status).to.be 'creating'
     expect(t.neo4jrestful.absoluteUrl()).to.be.a 'string'
+    expect(t.status).to.be 'new'
     # # with cb
     # TODO: fix test
-    transaction = new Transaction query, params, (err, transaction) ->
+    new Transaction query, params, (err, transaction) ->
       expect(err).to.be null
       expect(transaction.status).to.be 'open'
-      transaction.close ->
+      # this is not a part of the test but must be done, to close the transaction to prevent (other) tests failing
+      transaction.close (err, t) ->
+        expect(t.status).to.be 'committed'
         done()
 
   it 'expect to create, add statements and close a transaction', (done) ->
@@ -59,11 +61,10 @@ describe 'Neo4jMapper (transaction)', ->
     expect(t.statements[0].parameters.props.name).to.be.equal 'Foo Fighters'
     expect(t.statements[1].statement).to.be.equal query
     expect(t.statements[1].parameters.props.name).to.be.equal 'Metallica'
-    expect(t.status).to.be 'creating'
+    expect(t.status).to.be 'new'
     expect(t.id).to.be null
     t.add query, paramsWith('Tomte'), (err, transaction) ->
       expect(err).to.be null
-      # console.log '::::'
       expect(transaction.statements).to.have.length 3
       expect(transaction.statements[2].statement).to.be.equal query
       expect(transaction.statements[2].parameters.props.name).to.be.equal 'Tomte'
@@ -74,7 +75,6 @@ describe 'Neo4jMapper (transaction)', ->
       id = transaction.id
       expect(id).to.be.above 0
       transaction.add query, paramsWith('Pink Floyd'), (err, transaction) ->
-        # console.log '?????', transaction.status
         expect(err).to.be null
         expect(transaction.statements).to.have.length 4
         expect(transaction.statements[3].parameters.props.name).to.be.equal 'Pink Floyd'
@@ -87,27 +87,28 @@ describe 'Neo4jMapper (transaction)', ->
         expect(transaction.id).to.be.equal id
         transaction.close (err, transaction) ->
           expect(err).to.be null
+          expect(transaction.id).to.be.equal id
           expect(transaction.status).to.be.equal 'committed'
           return done()
+    expect(t.status).to.be.equal 'creating'
 
-  it.only 'expect to handle many statements in a transaction asnyc', (done) ->
+  it 'expect to handle many statements in a transaction asnyc', (done) ->
     query = 'START n=node(*) MATCH (n)-[r]-() RETURN n LIMIT {l}'
-    t = new Transaction(query, { l: 1 }).add(query, { l: 2 }).close (err, transaction) ->
+    Transaction.begin(query, { l: 1 }).add(query, { l: 2 }).commit (err, transaction) ->
       expect(err).to.be null
       expect(transaction.untransmittedStatements().length).to.be 0
-      expect(transaction.status).to.be.equal 'finalized'
-      new Transaction(query, { l: 1 }).add(query, { l: 2 }).commit (err, transaction) ->
+      expect(transaction.status).to.be.equal 'committed'
+      # create = begin, close = commit
+      Transaction.create(query, { l: 1 }).add(query, { l: 2 }).close (err, transaction) ->
         expect(err).to.be null
-        expect(transaction.status).to.be.equal 'finalized'
-        result = transaction.statements[1].results        
-        query = 'CREATE (n {props}) RETURN id(n)'
+        expect(transaction.status).to.be.equal 'committed'
         done()
 
   it 'expect to get errors on wrong transactions', (done) ->
     query = 'CREATE (n {props}) RETURN n AS node, id(n), as ID'
     Transaction.commit query, { props: { name: 'Philipp' } }, (err, transaction) ->
       expect(err).to.be null
-      expect(transaction.status).to.be.equal 'finalized'
+      expect(transaction.status).to.be.equal 'committed'
       expect(transaction.errors).to.have.length 1
       done()
 
@@ -120,24 +121,24 @@ describe 'Neo4jMapper (transaction)', ->
       expect(transaction.results[0].columns).to.have.length 2
       expect(transaction.results[0].data[0][0].name).to.be.equal 'Linda'
       expect(transaction.results[0].data[0][1]).to.be.above 0
-      expect(transaction.status).to.be.equal 'finalized'
+      expect(transaction.status).to.be.equal 'committed'
       done()
 
   it 'expect to execute rollbacks', (done) ->
     query = 'CREATE (n {props}) RETURN n AS node, id(n) AS ID'
     Transaction.open()
       .add(query, { props: { name: 'Dave' } })
-      .add query, { props: { name: 'Andi' } }, (err, transaction) ->
-        return done()
+      .add query, { props: { name: 'Nate' } }, (err, transaction) ->
         expect(err).to.be null
         expect(transaction.status).not.to.be.equal 'finalized'
         transaction.add query, { props: { name: 'Taylor' } }, (err, transaction) ->
           expect(err).to.be null
           expect(transaction.status).not.to.be.equal 'finalized'
           id = transaction.results[0].data[0][1]
-          expect(transaction.results).to.have.length 2
+          expect(transaction.results).to.have.length 3
           expect(transaction.results[0].data[0][0].name).to.be.equal 'Dave'
-          expect(transaction.results[1].data[0][0].name).to.be.equal 'Taylor'
+          expect(transaction.results[1].data[0][0].name).to.be.equal 'Nate'
+          expect(transaction.results[2].data[0][0].name).to.be.equal 'Taylor'
           expect(id).to.be.above 0
           # check that node exists
           client.get "/node/#{id}", (err, found) ->

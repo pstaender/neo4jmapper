@@ -36,7 +36,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Transaction.prototype.statements = null;
   Transaction.prototype._response_ = null;
   Transaction.prototype.neo4jrestful = null;
-  Transaction.prototype.status = 'empty'; // creating|open|committing|committed
+  Transaction.prototype.status = ''; // new|creating|open|committing|committed
   Transaction.prototype.id = null;
   Transaction.prototype.uri = null
   Transaction.prototype.expires = null;
@@ -53,7 +53,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     this.results = [];
     this.errors = [];
     this.id = null;
-    this.status = 'open';
+    this.status = 'new';
     return this.add(cypher, parameters, cb);
   }
 
@@ -72,7 +72,10 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
       cb = args.cb;
       this.onResponse = cb;
     } else {
-      cb = function() { /* /dev/null/ */ };
+      // we execute if we have a callback
+      // till then we will collect the statements
+      return this;
+      //cb = function() { /* /dev/null/ */ };
     }
     return this.exec(cb);
   }
@@ -89,8 +92,8 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     
     if (this.status === 'committing') {
       // commit transaction
-      if (!this.id)
-        return this.exec(cb);
+      // if (!this.id)
+      //   return this;//.exec(cb);
       url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
     } else if (!this.id) {
       // begin a transaction
@@ -179,9 +182,10 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
         if (self._resortResults_) {
           // move row property one level above
           // { rows: [ {}, {} ]} -> { [ {}, {} ]}
-          response.results[i].data.forEach(function(data, i){
-            if ((response.results[i]) && (data.row)) {
-              response.results[i].data[i] = data.row;
+          response.results[i].data.forEach(function(data, j){
+            //if ((response.results[i]) && (data.row)) {
+            if (data.row) {
+              response.results[i].data[j] = data.row;
             }
           })
         }
@@ -214,8 +218,9 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
         this.expires = new Date(data.transaction.expires);
       // exists only on POST a new transaction
       if (data.commit) {
-        this.uri = data.commit;
-        this.id = this.uri.match(/\/transaction\/(\d+)\/commit$/)[1];
+        var match = data.commit.match(/^(.+?\/transaction\/(\d+))\/commit$/);
+        this.id = match[2];
+        this.uri = match[1];
       }
     }
   }
@@ -230,7 +235,6 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   }
 
   Transaction.prototype.commit = function(cypher, parameters, cb) {
-    // console.log('commit')
     var self = this;
     if (typeof cypher === 'function') {
       cb = cypher;
