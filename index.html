@@ -38,6 +38,7 @@ Features:
   * **Querying graph, nodes and relationships** via object-chaining
   * **Object Modeling** for labeling, indexing and other schema-like behaviour 
   * **processes and transforms data** (flatten/unflatten, escaping, loading/populating …)
+  * **Transactions** of queries
 
 ### Warning
 
@@ -503,6 +504,58 @@ Keep in mind that there is **no extra loading executed on stream results** to ke
         console.log(person.toObject());
       });
     }
+  });
+```
+
+## Transactions
+
+Currently you can only execute transactions on queries. In future releases transactions may available for `Node.` and `Graph.` objects. Also there is no loading of results implemented, yet.
+
+The api is self explaining:
+
+```js
+  Transaction.create(
+    'CREATE (n {props}) RETURN n AS NODE, id(n), as ID',
+    { props: { name: 'Dave Grohl' } }
+  ).add(
+    'CREATE (n {props}) RETURN n AS NODE, id(n), as ID',
+    { props: { name: 'Taylor Hawkins' } }
+  , function(err, openTransaction) {
+    console.log({
+      statusOfTransaction: openTransaction.status,
+      transactionId: openTransaction.id,
+      results: openTransaction.results,
+      errors: openTransaction.errors
+    });
+  });
+```
+
+Commit transactions:
+
+```js
+  Transaction.create(…, function(err, openTransaction) {
+    openTransaction.commit(function(err, committedTransaction) {
+      console.log('Transaction with ID '+committedTransaction.id+' is now committed: ', committedTransaction.status);
+    });
+  });
+```
+
+or in one step:
+
+```js
+  Transaction.commit(…, function(err, committedTransaction) {
+    …
+  });
+```
+
+Rollback / undo transactions:
+
+```js
+  // you can use new Transaction() instead of Transaction.create()
+  new Transaction(…, function(err, openTransaction) {
+    openTransaction.rollback(function(err, deletedTransaction) {
+      console.log('Transaction is rolled back');
+    });
   });
 ```
 
