@@ -11,7 +11,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Statement.prototype._transaction_ = null;
   Statement.prototype.statement = '';
   Statement.prototype.parameters = null;
-  Statement.prototype.isTransmitted = false;
+  Statement.prototype.status = null; // 'sending', 'sended'
   Statement.prototype.position = null;
   Statement.prototype.results = null;
   Statement.prototype.errors = null;
@@ -21,7 +21,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
       statement: this.statement,
       parameters: JSON.stringify(this.parameters),
       position: this.position,
-      isTransmitted: this.isTransmitted,
+      status: this.status,
       position: this.position,
       errors: this.errors,
       results: this.results,
@@ -36,7 +36,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Transaction.prototype.statements = null;
   Transaction.prototype._response_ = null;
   Transaction.prototype.neo4jrestful = null;
-  Transaction.prototype.status = 'offline';
+  Transaction.prototype.status = 'empty'; // creating|open|committing|committed
   Transaction.prototype.id = null;
   Transaction.prototype.uri = null
   Transaction.prototype.expires = null;
@@ -44,6 +44,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Transaction.prototype._concurrentTransmission_ = 0;
   Transaction.prototype._responseError_ = null; //will contain response Error
   Transaction.prototype._resortResults_ = true;
+  Transaction.prototype._detectTypes_ = false; // n AS (Node), id(n) AS (Node.id), r AS [Relationship]
   // Transaction.prototype._loadOnResult_ = neo4jrestful.constructor.prototype._loadOnResult_;
 
   Transaction.prototype.begin = function(cypher, parameters, cb) {
@@ -52,82 +53,108 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     this.results = [];
     this.errors = [];
     this.id = null;
+    this.status = 'open';
     return this.add(cypher, parameters, cb);
   }
 
   Transaction.prototype.add = function(cypher, parameters, cb) {
     var self = this;
-    if ((typeof cypher === 'object') && (cypher.constructor === Array)) {
-      // attach all objects from array
-      cypher.forEach(function(data){
-        if (data.statement) {
-          var statement = new Statement(this, data.statement, data.parameters);
-          statement.position = self.statements.length;
-          self.statements.push(statement);
-        }
-      });
-      cb = parameters;
-    } else if (typeof cypher === 'string') {
-      var statement = cypher;
-      if (typeof parameters === 'function') {
-        cb = parameters;
-        parameters = null;
-      }
-      var parameters = ((parameters) && (typeof parameters === 'object')) ? parameters : {};
-      var statement = new Statement(this, statement, parameters);
-      statement.position = this.statements.length;
-      this.statements.push(statement);
+    var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+    var statements = args.statements;
+    // we cancel the operation if we are comitting
+    if (this.status === 'committed') {
+      if (typeof args.cb === 'function')
+        cb(Error("You can't add statements after transaction is committed"), null);
+      return this;
+    }
+    this.addStatementsToQueue(statements);
+    if ((args.cb) && (!self.onResponse)) {
+      cb = args.cb;
+      this.onResponse = cb;
+    } else {
+      cb = function() { /* /dev/null/ */ };
     }
     return this.exec(cb);
   }
 
   Transaction.prototype.exec = function(cb) {
     var self = this;
-    if (typeof cb === 'function') {
-      this.onSucces = cb;
-    }
-    if ((this.status === 'begin')||(this.status === 'adding')) {
-      // there are currently running transmission
-      // it's already put on queue, so do nothing
+    // stop here if there is no callback attached
+    if (typeof cb !== 'function') {
       return this;
+    }
+
+    var url = '';
+    var untransmittedStatements = this.untransmittedStatements();
+    
+    if (this.status === 'committing') {
+      // commit transaction
+      if (!this.id)
+        return this.exec(cb);
+      url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
+    } else if (!this.id) {
+      // begin a transaction
+      this.status = 'creating';
+      url = '/transaction';
+    } else if (this.status === 'open') {
+      // add to transaction
+      this.status = 'adding';
+      url = '/transaction/'+this.id;
+    } else if (this.status = 'committed') {
+      cb(Error('Transaction is committed. Create a new transaction instead.'), null, null);
     } else {
-      var url = '';
-      var untransmittedStatements = this.untransmittedStatements();
-      if (this.status === 'committing') {
-        // commit transaction
-        url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
-      } else if (!this.id) {
-        // begin a transaction
-        this.status = 'begin';
-        url = '/transaction';
-      } else if (this.status === 'open') {
-        // add to transaction
-        this.status = 'adding';
-        url = '/transaction/'+this.id;
-      } else if (this.status = 'finalized') {
-        cb(Error('Transaction is committed. Create a new transaction instead.'), null, null);
-      } else {
-        throw Error('Transaction has a unknown status. Possible are: offline|begin|adding|committing|open|finalized');
-      }
-      var statements = [];
+      throw Error('Transaction has a unknown status. Possible are: creating|open|committing|committed');
+    }
+    var statements = [];
+    untransmittedStatements.forEach(function(statement, i){
+      self.statements[i].status = 'sending';
+      statements.push({ statement: statement.statement, parameters: statement.parameters });
+    });
+    this._concurrentTransmission_++;
+    this.neo4jrestful.post(url, { data: { statements: statements } }, function(err, response, debug) {
+      self._response_ = response;
+      self._concurrentTransmission_--;
+      self._applyResponse(err, response, debug, untransmittedStatements);
+      
       untransmittedStatements.forEach(function(statement, i){
-        statement.isTransmitted = true;
-        statements.push({ statement: statement.statement, parameters: statement.parameters });
+        self.statements[statement.position].status = statement.status = 'sended';
       });
-      this._concurrentTransmission_++;
-      this.neo4jrestful.post(url, { data: { statements: statements } }, function(err, response, debug) {
-        self._response_ = response;
-        self._concurrentTransmission_--;
-        self._applyResponse(err, response, debug, untransmittedStatements);
-        untransmittedStatements = self.untransmittedStatements();
-        if (untransmittedStatements.length > 0) {
-          // re call exec() until all statements are transmitted
-          // TODO: set a limit to avoid endless loop          
-          return self.exec(cb);
+      
+      untransmittedStatements = self.untransmittedStatements();
+
+      if (untransmittedStatements.length > 0) {
+        // re call exec() until all statements are transmitted
+        // TODO: set a limit to avoid endless loop          
+        return self.exec(cb);
+      }
+      // TODO: sort and populate resultset, but currently no good way to detect result objects
+      else if (self._concurrentTransmission_ === 0) {//  {
+        if (typeof self.onResponse === 'function') {
+          var cb = self.onResponse;
+          // release onResponse for (optional) next cb
+          self.onResponse = null;
+          // call final callback
+          if (self.status === 'committing')
+            self.status = 'committed';
+          cb(self._responseError_, self, debug);
+          return self;
         }
-        // TODO: sort and populate resultset, but currently no good way to detect result objects
-        if (self._concurrentTransmission_ === 0)
-          return self.onSucces(self._responseError_, self, debug);
+      }
+    });
+
+    return this;
+  }
+
+  Transaction.prototype.addStatementsToQueue = function(statements) {
+    var self = this;
+    if ((statements) && (statements.constructor === Array) && (statements.length > 0)) {
+      // attach all statments
+      statements.forEach(function(data){
+        if (data.statement) {
+          var statement = new Statement(self, data.statement, data.parameters);
+          statement.position = self.statements.length;
+          self.statements.push(statement);
+        }
       });
     }
     return this;
@@ -136,7 +163,8 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Transaction.prototype._applyResponse = function(err, response, debug, untransmittedStatements) {
     var self = this;
     // if error on request/response
-    self.status = 'open'
+    if (self.status !== 'committing')
+      self.status = 'open';
     if (err) {
       self.status = (err.status) ? err.status : err;
       if (!self.status)
@@ -195,32 +223,28 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   Transaction.prototype.untransmittedStatements = function() {
     var statements = [];
     this.statements.forEach(function(statement){
-      if ((statement)&&(!statement.isTransmitted))
+      if ((statement)&&(!statement.status))
         statements.push(statement);
     });
     return statements;
   }
 
   Transaction.prototype.commit = function(cypher, parameters, cb) {
+    // console.log('commit')
     var self = this;
-    if (typeof cypher === 'string') {
-      if (typeof parameters === 'function') {
-        cb = parameters;
-        parameters = null;
-      }
-      this.add(cypher, parameters);
-    } else if (typeof cypher === 'function') {
+    if (typeof cypher === 'function') {
       cb = cypher;
-    } 
-    if (typeof cb !== 'function') {
-      cb = this.onAfterCommit;
-      this.status = 'committing';
+    } else {
+      var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+      this.addStatementsToQueue(args.statements);
+      cb = args.cb;
     }
-    this.exec(function(err, transaction, debug) {
-      self.status = 'finalized';
-      cb(err, transaction, debug);
-    });
-    return this;
+    if (typeof cb !== 'function') {
+      throw Error('You need to attach a callback an a commit/close operation');
+    }
+    this.onResponse = cb;
+    this.status = 'committing';
+    return this.exec(cb);
   }
 
   Transaction.prototype.close = Transaction.prototype.commit;
@@ -229,24 +253,26 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     return new Transaction(cypher, parameters, cb);
   }
 
-  Transaction.prototype.onSucces = function(err, transaction, debug) {
-    if (typeof err === 'function') {
-      // we have s.th. like Transaction.create().add('…', {}).onSucces(function(err, res){ })
-      // then onCommit is used as setter
-      this.onSucces = err;
-      return this.exec();
-    }
-    return this;
-  }
+  Transaction.prototype.onResponse = null;
 
-  Transaction.prototype.onAfterCommit = function(err, response, debug) {
-    if (typeof err === 'function') {
-      // we have s.th. like Transaction.create().add('…', {}).onSucces(function(err, res){ })
-      // then onCommit is used as setter
-      this.onAfterCommit = err;
-      // return this.commit();
+  Transaction._sortTransactionArguments = function(cypher, parameters, cb) {
+    var statements = null;
+    if (typeof cypher === 'string') {
+      if (typeof parameters === 'function') {
+        cb = parameters;
+        parameters = {};
+      }
+      statements = [ { statement: cypher, parameters: parameters || {} } ];
+    } else if ((cypher) && (cypher.constructor === Array)) {
+      cb = parameters;
+      statements = cypher;
+    } else if ((cypher) && (cypher.statement)) {
+      statements = [ cypher ];
     }
-    return this;
+    return {
+      statements: statements,
+      cb: cb || null
+    }
   }
 
   Transaction.prototype.rollback = function(cb) {
@@ -258,10 +284,13 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     return this;
   }
 
+  Transaction.prototype.undo = Transaction.prototype.rollback;
+
   Transaction.begin = function(cypher, parameters, cb) {
     return new Transaction(cypher, parameters, cb);
   }
 
+  Transaction.create = Transaction.begin;
   Transaction.open = Transaction.begin;
 
   Transaction.commit = function(cypher, parameters, cb) {
