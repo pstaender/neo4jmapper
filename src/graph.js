@@ -12,7 +12,7 @@ var __initGraph__ = function(neo4jrestful) {
 
   if (typeof window === 'object') {
     helpers = window.Neo4jMapper.helpers;
-    _       = window._();
+    _       = window._;
   } else {
     helpers = require('./helpers');
     _       = require('underscore');
@@ -215,7 +215,10 @@ var __initGraph__ = function(neo4jrestful) {
       this.cypher._useParameters = true;
     if (!this.cypher.parameters)
       this.cypher.parameters = {};
-    _.extend(this.cypher.parameters, parameters);
+    // _.extend(this.cypher.parameters, parameters);
+    for (var attr in parameters) {
+      this.cypher.parameters[attr] = parameters[attr];
+    }
     return this;
   }
 
@@ -669,5 +672,5 @@ if (typeof window !== 'object') {
     init: __initGraph__
   };
 } else {
-  window.Neo4jMapper.initGraph = __initGraph__;
+  var initGraph = __initGraph__;
 }

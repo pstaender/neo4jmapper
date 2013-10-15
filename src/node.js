@@ -1903,9 +1903,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
    * Static methods (misc)
    */
 
-  // Node.prototype.copy_of = function(that) {
-  //   return _.extend({},that);
-  // }
+  Node.prototype.copy_of = function(that) {
+    return _.extend({},that);
+  }
 
   /*
    * Singleton methods, shorthands for their corresponding (static) prototype methods
@@ -2144,5 +2144,5 @@ if (typeof window !== 'object') {
     init: __initNode__
   }
 } else {
-  window.Neo4jMapper.initNode = __initNode__;
+  var initNode = __initNode__;
 }

@@ -18,6 +18,7 @@ task 'clientsidejs:build', ->
     src/node.js
     src/path.js
     src/relationship.js
+    src/transaction.js
     src/graph.js
     src/browser/browser_footer.js
   """

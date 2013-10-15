@@ -1,3 +1,4 @@
+
 var __initNeo4jRestful__ = function(urlOrOptions) {
 
   // will be set with environment depending values below
@@ -621,6 +622,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     return new Neo4jRestful(url, options);
   }
 
+  if (typeof window === 'object')
+    window.Neo4jRestful = Neo4jRestful;
+
   return Neo4jRestful;
 };
 
@@ -630,5 +634,5 @@ if (typeof window !== 'object') {
     init: __initNeo4jRestful__
   };
 } else {
-  window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;
+  var initNeo4jRestful = __initNeo4jRestful__;
 }

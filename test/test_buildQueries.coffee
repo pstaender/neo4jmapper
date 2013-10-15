@@ -16,6 +16,7 @@ if root?
 
 else if window?
   # tests in browser
+  _ = window._
   configForTest = _.extend({
     doLog: false
     wipeDatabase: false
@@ -23,7 +24,7 @@ else if window?
     startInstantly: false
   }, configForTest or {})
   Join = window.Join
-  neo4jmapper = Neo4jMapper.init(configForTest.neo4jURL)
+  neo4jmapper = window.Neo4jMapper.init(configForTest.neo4jURL)
   {Graph,Node,helpers,client} = neo4jmapper
   Neo4j = Neo4jMapper.init
 

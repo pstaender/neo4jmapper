@@ -9,7 +9,7 @@ test-complete:test-run
 	npm run clean
 
 test-build:
-	coffee -mcb test/
+	coffee -mc test/
 
 browser-build:test-build
 	npm run clean

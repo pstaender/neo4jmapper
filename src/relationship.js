@@ -317,5 +317,5 @@ if (typeof window !== 'object') {
     init: __initRelationship__
   }
 } else {
-  window.Neo4jMapper.initRelationship = __initRelationship__
+  var initRelationship = __initRelationship__;
 }

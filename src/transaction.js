@@ -1,8 +1,8 @@
 //http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
 
-var __initTransaction__ = function(neo4jrestful, Graph) {
+var __initTransaction__ = function(neo4jrestful) {
 
-  var Statement = function Statement(transaction, cypher, parameters, cb) {
+  var Statement = function Statement(transaction, cypher, parameters) {
     this._transaction_  = transaction;
     this.statement = cypher;
     this.parameters = parameters;
@@ -20,7 +20,6 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
     return {
       statement: this.statement,
       parameters: JSON.stringify(this.parameters),
-      position: this.position,
       status: this.status,
       position: this.position,
       errors: this.errors,
@@ -119,7 +118,7 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
       self._concurrentTransmission_--;
       self._applyResponse(err, response, debug, untransmittedStatements);
       
-      untransmittedStatements.forEach(function(statement, i){
+      untransmittedStatements.forEach(function(statement) {
         self.statements[statement.position].status = statement.status = 'sended';
       });
       
@@ -235,7 +234,6 @@ var __initTransaction__ = function(neo4jrestful, Graph) {
   }
 
   Transaction.prototype.commit = function(cypher, parameters, cb) {
-    var self = this;
     if (typeof cypher === 'function') {
       cb = cypher;
     } else {
@@ -313,5 +311,5 @@ if (typeof window !== 'object') {
     init: __initTransaction__
   };
 } else {
-  window.Neo4jMapper.initTransaction = __initTransaction__;
+  var initTransaction = __initTransaction__;
 }

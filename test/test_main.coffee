@@ -20,6 +20,7 @@ if root?
 
 else
   # tests in browser
+  _ = window._
   configForTest = _.extend({
     doLog: false
     wipeDatabase: false
@@ -27,7 +28,7 @@ else
     startInstantly: false
   }, configForTest or {})
   Join = window.Join
-  neo4jmapper = new Neo4jMapper(configForTest.neo4jURL)
+  neo4jmapper = new window.Neo4jMapper(configForTest.neo4jURL)
   {Graph,Node,Relationship,helpers,client,Neo4jRestful} = neo4jmapper
   Neo4j = Neo4jMapper
 
@@ -1034,21 +1035,17 @@ describe 'Neo4jMapper', ->
                           done()
 
     it 'expect to set default values for properties on relationships', (done) ->
-      Relationship::fields = {
-        defaults: {
-          created_on: -> new Date().getTime()
-        }
-      }
+      Relationship::fields.defaults.created_on = -> new Date().getTime()
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) ->
         alice.createRelationBetween bob, 'like', { since: 'years', nested: { values: true } }, ->
           alice.allRelations 'like', (err, relationships) ->
             expect(err).to.be null
             expect(relationships).to.have.length 2
             for relationship, i in relationships
-              expect(relationships[i].id).to.be.above 0
-              expect(relationships[i].data.since).to.be.equal 'years'
-              expect(relationships[i].data.nested.values).to.be.equal true
-              expect(relationships[i].data.created_on).to.be.above 0
+              expect(relationship.id).to.be.above 0
+              expect(relationship.data.since).to.be.equal 'years'
+              expect(relationship.data.nested.values).to.be.equal true
+              expect(relationship.data.created_on).to.be.above 0
             alice.incomingRelations (err, relationship) ->
               r = new Relationship()
               expect(relationship).to.have.length 1

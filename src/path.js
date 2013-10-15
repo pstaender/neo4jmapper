@@ -1,3 +1,4 @@
+
 var __initPath__ = function() {
 
   var helpers = null
@@ -145,5 +146,5 @@ if (typeof window !== 'object') {
     init: __initPath__
   };
 } else {
-  window.Neo4jMapper.initPath = __initPath__;
+  var initPath = __initPath__;
 }
