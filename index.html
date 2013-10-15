@@ -38,7 +38,7 @@ Features:
   * **Querying graph, nodes and relationships** via object-chaining
   * **Object Modeling** for labeling, indexing and other schema-like behaviour 
   * **processes and transforms data** (flatten/unflatten, escaping, loading/populating …)
-  * **Transactions** of queries
+  * **Transactions handling** of cypher-queries
 
 ### Warning
 
@@ -82,7 +82,8 @@ The most needed interfaces of Neo4jMapper:
 ```js
   var Node = neo4j.Node
     , Relationship = neo4j.Relationship
-    , Graph = neo4j.Graph;
+    , Graph = neo4j.Graph
+    , Transaction = neo4j.Transaction;
 ```
 
 ## CRUD Nodes
@@ -509,9 +510,20 @@ Keep in mind that there is **no extra loading executed on stream results** to ke
 
 ## Transactions
 
-Currently you can only execute transactions on queries. In future releases transactions may available for `Node.` and `Graph.` objects. Also there is no loading of results implemented, yet.
+Currently you can execute transactions on any cypher queries, that's the way to go:
 
-The api is self explaining:
+```js
+  Transaction.commit(
+    'CREATE (n {props}) RETURN n AS NODE, id(n), as ID',
+    // parameters are optional but recommend to use
+    { props: { name: 'Foo Fighters' } },
+    function(err, transaction) {
+      console.log(transaction.results[0]);
+    }
+  );
+```
+
+You can open transactions and add statements to the, aslong they're open. The api is self explaining:
 
 ```js
   Transaction.create(
@@ -540,15 +552,7 @@ Commit transactions:
   });
 ```
 
-or in one step:
-
-```js
-  Transaction.commit(…, function(err, committedTransaction) {
-    …
-  });
-```
-
-Rollback / undo transactions:
+Rollback open transactions:
 
 ```js
   // you can use new Transaction() instead of Transaction.create()
@@ -558,6 +562,8 @@ Rollback / undo transactions:
     });
   });
 ```
+
+In future releases transactions may available for `Node.` and `Graph.` objects as well. Also there is no loading of results implemented, yet.
 
 ## Naming conventions
 
