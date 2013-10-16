@@ -1,5 +1,5 @@
 REPORTER = spec
-VERSION = 2.0.0-M05
+VERSION = 2.0.0-M06
 NEO4JFOLDER = neo4jserver
 
 test:test-build

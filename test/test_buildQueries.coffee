@@ -91,13 +91,13 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findAll().match('n:Person')":
           [
              Node.findAll().match('n:Person')
-            "MATCH n:Person RETURN n;"
+            "MATCH (n:Person) RETURN n;"
           ]
 
         "Actor.findAll()":
           [
              Actor.findAll()
-            "START n = node(*) MATCH n:Actor RETURN n;"
+            "START n = node(*) MATCH (n:Actor) RETURN n;"
           ]
         
         "Node.findAll().skip(5)":
@@ -106,10 +106,10 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*) RETURN n SKIP 5;'
           ]
 
-        "Node.start().match('p:PERSON-[:KNOWS]->a:Actor-[:ACTS]->m:Movie').return('p AS Person')":
+        "Node.start().match('(p:PERSON)-[:KNOWS]->(a:Actor)-[:ACTS]->(m:Movie)').return('p AS Person')":
           [
-             Node.start().match('p:PERSON-[:KNOWS]->a:Actor-[:ACTS]->m:Movie').return('p AS Person')
-            'MATCH p:PERSON-[:KNOWS]->a:Actor-[:ACTS]->m:Movie RETURN p AS Person;'
+             Node.start().match('(p:PERSON)-[:KNOWS]->(a:Actor)-[:ACTS]->(m:Movie)').return('p AS Person')
+            'MATCH (p:PERSON)-[:KNOWS]->(a:Actor)-[:ACTS]->(m:Movie) RETURN p AS Person;'
           ]
         
 
@@ -239,7 +239,7 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
              Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
-            "START n = node(*) MATCH n:Actor WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            "START n = node(*) MATCH (n:Actor) WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
         
         "Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')":
@@ -263,25 +263,25 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findById(123).allRelations().delete()":
           [
              Node.findById(123).allRelations().delete()
-            "MATCH n-[r]-() WHERE id(n) = 123 DELETE r;"
+            "MATCH (n)-[r]-() WHERE id(n) = 123 DELETE r;"
           ]
 
-        "Actor.delete_all_including_relations()":
+        "Actor.deleteAllIncludingRelations()":
           [
              Actor.deleteAllIncludingRelations()
-            "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
+            "START n = node(*) MATCH (n:Actor)-[r?]-() DELETE n, r;"
           ]
 
         "Node.find().deleteIncludingRelations()":
           [
              Node.find().deleteIncludingRelations()
-            "START n = node(*) MATCH n-[r?]-() DELETE n, r;"
+            "START n = node(*) MATCH (n)-[r?]-() DELETE n, r;"
           ]
 
         "Actor.find().deleteIncludingRelations()":
           [
              Actor.find().deleteIncludingRelations()
-            "START n = node(*) MATCH n:Actor-[r?]-() DELETE n, r;"
+            "START n = node(*) MATCH (n:Actor)-[r?]-() DELETE n, r;"
           ]
 
         # "Node.findById(123).update({ name: 'Alice' })":

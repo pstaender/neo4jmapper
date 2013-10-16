@@ -749,7 +749,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       this.cypher.start.a = 'node('+start+')';
       this.cypher.start.b = 'node('+end+')';
       
-      var matchString = 'p = '+options.algorithm+'(a-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-b)';
+      var matchString = 'p = '+options.algorithm+'((a)-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-(b))';
       
       this.cypher.match.push(matchString.replace(/\[\:\*+/, '[*'));
       this.cypher.return_properties = ['p'];
@@ -878,8 +878,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
       query.start[this.__type_identifier__] = this.__type__+'(*)';
     }
     if ((!(query.match.length>0))&&(this.label)) {
-      // e.g. ~> MATCH n:Person
-      query.match.push(this.__type_identifier__+':'+this.label);
+      // e.g. ~> MATCH (n:Person)
+      if (this.__type_identifier__ === 'n')
+        query.match.push('(n:'+this.label+')');
+      else if (this.__type_identifier__ === 'r')
+        query.match.push('[r:'+this.label+']');
     }
 
     // rule(s) for findById
@@ -1147,7 +1150,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       relation = '';
     }
     self._query_history_.push({ allRelationships: true });
-    self.cypher.match.push('n'+label+'-[r'+relation+']-()');
+    self.cypher.match.push('(n)'+label+'-[r'+relation+']-()');
     self.cypher.return_properties = ['r'];
     self.exec(cb);
     return self; // return self for chaining
@@ -1242,6 +1245,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
   // ### Adds a string to the MATCH statement
   // e.g.: 'p:PERSON-[:KNOWS|:FOLLOWS]->a:Actor-[:ACTS]->m'
   Node.prototype.match = function(string, cb) {
+    // we guess that we match a node if we have s.th. like `n(:Person)`
+    if (/^n(\:[a-zA-Z]+)*$/.test(string))
+      string = '('+string+')';
     this._query_history_.push({ MATCH: string });
     this.cypher.match.push(string);
     this.exec(cb);
@@ -1427,7 +1433,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // this.cypher.start = {};
       this.cypher.start[this.__type_identifier__] = this.__type__+"(*)";
     }
-    this.cypher.match.push([ this.__type_identifier__+label+"-[r?]-()" ]);
+    this.cypher.match.push([ '('+this.__type_identifier__+label+")-[r?]-()" ]);
     this.cypher.return_properties = [ "n", "r" ];
     return this.delete(cb);
   }

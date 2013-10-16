@@ -149,7 +149,7 @@ describe 'Neo4jMapper', ->
             alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
               Graph
                 .start('n = node(*)')
-                .match('n:Person-[r?]-()')
+                .match('(n:Person)-[r?]-()')
                 .where({'n.name': name})
                 .return('n AS Node, r AS Relationship')
                 .enableLoading('node|relationship')
@@ -165,7 +165,7 @@ describe 'Neo4jMapper', ->
                   expect(relationship.from.label).to.be.equal 'Person'
                   Graph
                     .start('n = node(*)')
-                    .match('n:Person-[r?]-()')
+                    .match('(n:Person)-[r?]-()')
                     .where({'n.name': name})
                     .return('n AS Node, r AS Relationship')
                     .limit(1)
@@ -198,7 +198,7 @@ describe 'Neo4jMapper', ->
       new Person(name: name).save (err, alice) ->
         new Person(name: name).save (err, bob) ->
           alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
-            Graph.start('n = node(*)').match('n:Person-[r?]-()').where({ 'n.name': name }).return('n, r').limit(2).exec (err, found) ->
+            Graph.start('n = node(*)').match('(n:Person)-[r?]-()').where({ 'n.name': name }).return('n, r').limit(2).exec (err, found) ->
               expect(err).to.be null
               expect(found).to.have.length 2
               expect(found[0]).to.have.length 2
