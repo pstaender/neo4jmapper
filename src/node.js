@@ -150,6 +150,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype._is_instanced_ = null;             // flag that this object is instanced
   Node.prototype._is_singleton_ = false;            // flag that this object is a singleton
+  Node.prototype._is_loaded_ = null;
 
   Node.prototype.labels = null;                     // an array of all labels
   Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
@@ -623,38 +624,47 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
   }
 
-  Node.prototype.load = function(cb) {
+  Node.prototype.load = function(cb, debug) {
     var self = this;
-    return this.onBeforeLoad(self, function(err, node){
+    return this.onBeforeLoad(self, function(err, node) {
       if (err)
-        cb(err, node);
+        cb(err, node, debug);
       else
-        self.onAfterLoad(node, cb);
+        self.onAfterLoad(node, cb, debug);
     })
   }
 
-  Node.prototype.onBeforeLoad = function(node, next) {
+  Node.prototype.onBeforeLoad = function(node, next, debug) {
     if (node.hasId()) {
       var DefaultConstructor = this.recommendConstructor();
       // To check that it's invoked by Noder::find() or Person::find()
       var constructorNameOfStaticMethod = this.label || helpers.constructorNameOfFunction(DefaultConstructor);
-      node.allLabels(function(err, labels, debug) {
-        if (err)
-          return next(err, labels);
-        node.labels = labels;
-        if (labels.length === 1)
-          node.label = labels[0]
-        // convert node to it's model if it has a distinct label and differs from static method
-        if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
+
+      var _createNodeFromLabel = function(node, debug) {
+        // convert node to it's model if it has a distinct label and differs from constructor
+        if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {          
           node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
+        }
         next(null, node, debug);
-      });
+      }
+
+      if (node._skipLoadingLabels_) {
+        return _createNodeFromLabel(node, debug);
+      } else {
+        node.allLabels(function(err, labels, debug) {
+          if (err)
+            return next(err, labels);
+          node.setLabels(labels);
+          _createNodeFromLabel(node, debug);
+        });
+      }
     } else {
       next(null, node);
     } 
   }
 
   Node.prototype.onAfterLoad = function(node, next) {
+    node._is_loaded_ = true;
     next(null, node);
   }
 
@@ -1845,17 +1855,32 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var self = this;
     if (!self._is_singleton_)
       self = this.singleton(undefined, this);
+    var id = Number(id);
+    if (!id)
+      throw Error('You have to give a number like argument as id');
     self._query_history_.push({ findById: id });
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
       // to reduce calls we'll make a specific restful request for one node
-      Graph.request().get(this.__type__+'/'+id, function(err, object) {
-        if ((object) && (typeof self.load === 'function')) {
-          //  && (typeof node.load === 'function')     
-          object.load(cb);
-        } else {
-          cb(err, object);
-        }
-      });
+      Graph
+        .disableLoading()
+        .start('n = node('+id+')')
+        .return('n as node, labels(n) AS labels')
+        .exec(function(err, result, debug) {
+          if (err) {
+            // we ignore entity not found exception and return a null instead 
+            if (err.exception === 'EntityNotFoundException')
+              return cb(null, null, debug);
+            else
+              return cb(err, result, debug);
+          }
+          var node = result[0][0];
+          var labels = result[0][1];
+          node.setLabels(labels);
+          if ((typeof self.load === 'function') && (typeof node.load === 'function'))
+            node.load(cb, debug);
+          else
+            cb(null, node, debug);
+        });
       return this;
     } else {
       self.cypher.by_id = Number(id);

@@ -856,8 +856,6 @@ describe 'Neo4jMapper', ->
         Person.findById alice.id, (err, alice) ->
           expect(alice._constructor_name_).to.be.equal 'Person'
           expect(alice.label).to.be.equal 'Person'
-          # expect(alice.labels.constructor).to.be Array
-          #console.log alice._constructor_name_
           done()
 
     it 'expect to enable and disable loading hook', (done) ->
@@ -866,11 +864,13 @@ describe 'Neo4jMapper', ->
       new Person({ name: 'Alice' }).save (err, a) ->
         Person::findById a.id, (err, alice) ->
           expect(err).to.be null
-          expect(alice.label).to.be null
+          expect(alice.label).to.be.equal 'Person'
+          expect(alice._is_loaded_).to.be null
           Person::enableLoading()
           Person::findById alice.id, (err, alice) ->
             expect(err).to.be null
             expect(alice.label).to.be.equal 'Person'
+            expect(alice._is_loaded_).to.be true
             done()
 
     it 'expect to find labeled nodes', (done) ->
