@@ -546,7 +546,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       method = 'update';
       Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
         if (err) {
-          return cb(err, node);
+          return cb(err, res, debug);
         } else {
           self.isPersisted(true);
           cb(err, self, debug);

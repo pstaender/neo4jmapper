@@ -117,7 +117,7 @@ var escapeString = function(s) {
   // trim quotes if exists
   if ( (/^".+"$/.test(s)) || (/^'.+'$/.test(s)) )
     s = s.substr(1,s.length-2);
-  return s.replace(/([^\\]){1}(['"])/g,'$1\\$2');
+  return s.replace(/^(['"]{1})/, '\\$1').replace(/([^\\]){1}(['"]{1})/g,'$1\\$2');
 }
 
 var valueToStringForCypherQuery = function(value) {

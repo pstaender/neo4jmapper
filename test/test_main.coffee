@@ -592,7 +592,6 @@ describe 'Neo4jMapper', ->
         expect(dave.data.origin.country).to.be.equal 'USA'
         id = dave.id
         expect(id).to.be.above 0
-        t = Node.findById(id).update({ origin: { state: 'Ohio'} })
         Node.findById(id).update { origin: { state: 'Ohio'} }, (err, daveSaved) ->
           expect(err).to.be null
           expect(daveSaved.data.name).to.be.equal 'Dave Grohl'

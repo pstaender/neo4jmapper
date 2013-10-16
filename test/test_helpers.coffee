@@ -40,6 +40,8 @@ describe 'Neo4jMapper (helpers)', ->
     expect(s).to.be.equal "a test\\'s"
     s = helpers.escapeString('a test\'s')
     expect(s).to.be.equal "a test\\'s"
+    s = helpers.escapeString('""')
+    expect(s).to.be.equal '\\"\\"'
     expect(helpers.escapeString({})).to.be.an 'object'
 
   it 'sortStringAndCallbackArguments', ->
