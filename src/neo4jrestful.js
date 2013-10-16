@@ -130,6 +130,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
       self.checkAvailability();
   }
 
+  Neo4jRestful.RequestDebug = RequestDebug;
+  Neo4jRestful.CustomError  = CustomError;
+
   Neo4jRestful.prototype.options                    = null;
   // template for the header of each request to neo4j
   Neo4jRestful.prototype.header = {

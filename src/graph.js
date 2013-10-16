@@ -654,19 +654,6 @@ var __initGraph__ = function(neo4jrestful) {
     return new Graph(url);
   }
 
-  // wipe_database function(cb) 
-  // count_all_of_type function(type, cb)
-  // count_relationships = function(cb)
-  // count_relations = function(cb)
-  // count_nodes = function(cb)
-  // count_all = function(cb)
-  // enable_loading = function(classifications)
-  // disable_loading = function()
-  // disable_processing = function()
-  // enable_processing = function()
-  // enable_sorting = function()
-  // disable_sorting = function() {
-
   return Graph;
 }
 

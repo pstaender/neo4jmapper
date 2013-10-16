@@ -32,6 +32,8 @@ var __initTransaction__ = function(neo4jrestful) {
     this.begin(cypher, parameters, cb);
   }
 
+  Transaction.Statement = Statement;
+
   Transaction.prototype.statements = null;
   Transaction.prototype._response_ = null;
   Transaction.prototype.neo4jrestful = null;
@@ -298,9 +300,6 @@ var __initTransaction__ = function(neo4jrestful) {
   Transaction.commit = function(cypher, parameters, cb) {
     return new Transaction().commit(cypher, parameters, cb);
   }
-  
-  // Transaction.prototype.createObjectFromResponseData = neo4jrestful.constructor.prototype.createObjectFromResponseData;
-  // Transaction.prototype._processResult = Graph.prototype._processResult;
 
   return Transaction;
 

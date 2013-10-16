@@ -296,7 +296,6 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
   /* from Node */
   Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues
-  Relationship.prototype.copy_of            = Node.prototype.copy_of;
   Relationship.prototype.onSave             = Node.prototype.onSave;
   Relationship.prototype.hasValidData       = Node.prototype.hasValidData;
   Relationship.prototype.flattenData        = Node.prototype.flattenData;

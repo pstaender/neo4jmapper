@@ -1975,18 +1975,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   /*
-   * Static methods (misc)
-   */
-
-  Node.prototype.copy_of = function(that) {
-    return _.extend({},that);
-  }
-
-  /*
    * Singleton methods, shorthands for their corresponding (static) prototype methods
    */
-
-  // TODO: maybe better to replace manual argument passing with .apply method?!
 
   Node.singleton = function(id, label) {
     return this.prototype.singleton(id, label);
@@ -2178,32 +2168,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return new this(data, id);
   }
 
-  // remove underscore naming
-
-  // Node.delete_all_including_relations = function(cb) { return this.deleteAllIncludingRelations(cb); }
-  // Node.enable_loading                 = function() { return this.enableLoading(); }
-  // Node.disable_loading                = function() { return this.disableLoading(); }
-  // Node.get_index                      = function(cb) { return this.getIndex(cb); }
-  // Node.drop_entire_index              = function(cb) { return this.dropEntireIndex(cb); }
-  // Node.dropIndex                      = function(fields, cb) { return this.dropEntireIndex(fields, cb); }
-  // Node.ensure_index                   = function(cb) { return this.ensureIndex(cb); }
-  // Node.convert_node_to_model          = function(node, model, fallbackModel) { return this.convertNodeToModel(node, model, fallbackModel); }
-
-  // Node.find_all                       = function(cb) { return this.findAll(cb); }
-  // Node.find_by_id                     = function(id, cb) { return this.findById(id, cb); }
-  // Node.find_one                       = function(where, cb) { return this.findOne(where, cb); }
-  // Node.find_or_create                 = function(where, cb) { return this.findOrCreate(where, cb); }
-  // Node.find_by_key_value              = function(key, value, cb) { return this.findByKeyValue(key, value, cb); }
-  // Node.find_one_by_key_value          = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
-
-  // keep in all upcoming version, because they are the only real global methods
-
-  // except these:
-
-  Node.registered_model               = Node.registeredModel;
-  Node.registered_models              = Node.registeredModels;
-  Node.unregister_model               = Node.unregisterModel;
-  Node.register_model                 = Node.registerModel;
+  Node.registered_model   = Node.registeredModel;
+  Node.registered_models  = Node.registeredModels;
+  Node.unregister_model   = Node.unregisterModel;
+  Node.register_model     = Node.registerModel;
 
   // only once
   if ((typeof Graph.prototype === 'object') && (!Node.prototype._addParametersToCypher)) {
