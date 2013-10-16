@@ -284,14 +284,13 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) MATCH (n:Actor)-[r?]-() DELETE n, r;"
           ]
 
-        # "Node.findById(123).update({ name: 'Alice' })":
-        #   [
-        #      Node.findById(123).update({ 'name': 'Alice' }),
-        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;",
-        #     "START n = node(*) WHERE id(n) = 123 SET n.`name` = {value0} RETURN n;",
-        #     { value0: 'Alice' }
-        #     # { value0: 'Alice' }
-        #   ]
+        "Node.findById(123).update({ name: 'Alice' })":
+          [
+             Node.findById(123).update({ 'name': 'Alice' })
+            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;"
+            "START n = node(*) WHERE id(n) = 123 SET n.`name` = {_value0_} RETURN n;"
+            { _value0_: 'Alice'}
+          ]
 
         "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":
           [
@@ -467,7 +466,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             for key, value of todo[3]
               # check that value of parameter in query is same as expected (sequence of parameters has relevance)
               if query.cypher.parameters[Object.keys(query.cypher.parameters)[i]] isnt value
-                throw Error("Expected #{query.cypher.parameters[Object.keys(query.cypher.parameters)[i]]} to be equal #{functionCall} on ")
+                throw Error([ "Expected", query.cypher.parameters[Object.keys(query.cypher.parameters)[i]], "to be equal", value ].join(' '))
               i++
             query = query.toCypherQuery()
             query = _trim(query);

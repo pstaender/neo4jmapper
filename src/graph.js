@@ -543,6 +543,7 @@ var __initGraph__ = function(neo4jrestful) {
 
   Graph.prototype.log = function(){ /* > /dev/null */ };
 
+  // Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]
   Graph.prototype._addParametersToCypher = function(parameters) {
     if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
       if (!this.cypher.parameters)
@@ -550,6 +551,8 @@ var __initGraph__ = function(neo4jrestful) {
       for (var i=0; i < parameters.length; i++) {
         this._addParameterToCypher(parameters[i]);
       }
+    } else {
+      throw Error('You need to pass parameters as array');
     }
     return this.cypher.parameters;
   }

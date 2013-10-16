@@ -597,12 +597,27 @@ var __initNode__ = function(neo4jrestful, Graph) {
       data = helpers.flattenObject(data);
       this.cypher.set = [];
       for (var attribute in data) {
-        // OK
-        this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
+        this.addSetDefinition(attribute, data[attribute]);
       }
     }
     this.cypher._update = true;
     return this.exec(cb);
+  }
+
+  Node.prototype.addSetDefinition = function(attribute, value) {
+    // if already parameters are added, starting with {_value#i_} instead of {_value0_}
+    var parametersStartCountAt = ((this.cypher.parameters)&&(this.cypher.parameters.length > 0)) ? this.cypher.parameters.length : 0;
+    if (this.cypher._useParameters) {
+      var key = '_value'+parametersStartCountAt+'_';
+      var parameter = {};
+      parameter[key] = value;
+      this.cypher.set.push(
+        helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__type_identifier__, { valuesToParameters: true })
+      );      
+      this._addParameterToCypher(parameter);
+    } else {
+      this.cypher.set.push(helpers.cypherKeyValueToString(attribute, value, this.__type_identifier__));
+    }
   }
 
   Node.prototype.load = function(cb) {
@@ -1331,7 +1346,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var condition = new helpers.ConditionalParameters(_.extend(where), options)
       , whereCondition = condition.toString();
     this.cypher.where.push(whereCondition);
-    if (options.valuesToParameters)
+    if ((options.valuesToParameters) && (condition.parameters))
       this._addParametersToCypher(condition.parameters);
 
     this._query_history_.push({ WHERE: whereCondition });
@@ -1339,16 +1354,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
     this.exec(cb);
     return this; // return self for chaining
   }
-
-  // Node.prototype.useParameters = function(trueOrFalse) {
-  //   if (typeof trueOrFalse !== 'undefined')
-  //     this.cypher._useParameters = trueOrFalse;
-  //   return this;
-  // }
-
-  // Node.prototype.isUsingParameters = function() {
-  //   return this.cypher._useParameters;
-  // }
 
   Node.prototype.whereStartNode = function(where, cb) {
     return this.where(where, cb, { identifier: 'n' });

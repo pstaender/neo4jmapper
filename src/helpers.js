@@ -148,16 +148,16 @@ var cypherKeyValueToString = function(key, originalValue, identifier, conditiona
   // this.valuesToParameters
   if (_.isRegExp(value)) {
     value = valueToStringForCypherQuery(value);
-    value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+value+"'";
+    value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+value+"'";
     s = key + " =~ " + value;
   }
   else {
     // convert to string
     if ((_.isNumber(value)) || (_.isBoolean(value)))
-      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : valueToStringForCypherQuery(value);
+      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : valueToStringForCypherQuery(value);
     // else escape
     else
-      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+escapeString(value)+"'";
+      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+escapeString(value)+"'";
     s = key + " = " + value;
   }
   
