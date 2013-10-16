@@ -789,12 +789,11 @@ describe 'Neo4jMapper', ->
                 article.remove ->
                   done()
 
-    it.skip 'expect to add, remove and update labels of a node', (done) ->
+    it 'expect to add, remove and update labels of a node', (done) ->
       class Person extends Node
         fields:
           defaults: {}
           indexes: {}
-      p = new Person( name: 'Jeff Bridges' )
       Node.registerModel(Person)
       new Person( name: 'Jeff Bridges' ).save (err, jeff) ->
         jeff.allLabels (err, labels) ->
@@ -808,19 +807,27 @@ describe 'Neo4jMapper', ->
               jeff.allLabels (err, labels) ->
                 expect(err).to.be null
                 expect(labels).to.have.length 4
-                jeff.replaceLabels [ 'Person' ], (err) ->
-                  expect(err).to.be null
-                  jeff.allLabels (err, labels) ->
-                    expect(err).to.be null
-                    expect(labels).to.have.length 1
-                    expect(labels[0]).to.be.equal 'Person'
-                    Person.findById jeff.id, (err, found) ->
-                      expect(err).to.be null
-                      found.load (err, jeff) ->
-                        expect(jeff.label).to.be.equal 'Person'
-                        expect(jeff.labels).to.have.length 1
-                        expect(jeff.labels[0]).to.be.equal 'Person'
-                        done()
+                done()
+
+    it 'expect to replace labels of a node', (done) ->
+      class Person extends Node
+        fields:
+          defaults: {}
+          indexes: {}
+      Node.registerModel(Person)
+      new Person( name: 'Walter Sobchak' ).save (err, walt) ->
+        walt.allLabels (err, labels) ->
+          expect(err).to.be null
+          expect(labels).to.have.length 1
+          expect(labels[0]).to.be 'Person'
+          walt.replaceLabels [ 'Person', 'NRAMember' ], (err) ->
+            expect(err).to.be null
+            walt.allLabels (err, labels) ->
+              expect(err).to.be null
+              expect(labels).to.have.length 2
+              expect(labels[0]).to.be.equal 'Person'
+              expect(labels[1]).to.be.equal 'NRAMember'
+              done()
 
     it 'expect to set labels manually as array and persist them', (done) ->
       n = new Node( date: new Date )

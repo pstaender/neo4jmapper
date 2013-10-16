@@ -572,7 +572,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (labels.length > 0) {
       // we need to post the label in an extra request
       // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
-      node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
+      node.addLabels(labels, function(labelError, notUseableData, debugLabel) {
         // add label err if we have one
         if (labelError)
           err = labelError;
@@ -1714,12 +1714,21 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if ( (this.hasId()) && (_.isFunction(cb)) ) {
       if (!_.isArray(labels))
         labels = [ labels ];
-      self.allLabels(function(err, storedLabels) {
+      self.allLabels(function(err, storedLabels, debug) {
+        if (err)
+          return cb(err, storedLabels, debug);
         if (!_.isArray(storedLabels))
           storedLabels = [];
-        storedLabels.push(labels);
-        storedLabels = _.uniq(_.flatten(storedLabels));
-        self.replaceLabels(storedLabels, cb);
+        var addLabels = [];
+        // only add new labels
+        labels.forEach(function(label){
+          if (_.indexOf(storedLabels, label) === -1)
+            addLabels.push(label);
+        });
+        if (addLabels.length > 0)
+          self.createLabels(addLabels, cb);
+        else
+          cb(null, storedLabels, debug);
       });
     } else {
       // otherwise it can be used as a setter
@@ -1740,14 +1749,37 @@ var __initNode__ = function(neo4jrestful, Graph) {
       if (!_.isArray(labels))
         labels = [ labels ];
       self.labels = labels;
-      Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
+      // remove all labels
+      self.removeLabels(function(err, res, debug) {
+        if (err)
+          return cb(err, res, debug);
+        // add all labels
+        return self.addLabels(labels, cb);
+      })
+      //This doesn't work in Neo4j2M6 anymore
+      //Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
     }
     return this;
   }
 
   Node.prototype.removeLabels = function(cb) {
+    var id = this.id;
     if ( (this.hasId()) && (_.isFunction(cb)) ) {
-      return Graph.request().delete('node/'+this.id+'/labels', cb);
+      this.allLabels(function(err, labels, debug) {
+        if ((err)||(!labels))
+          return cb(err, labels, debug);
+        var todo = labels.length;
+        if (todo === 0)
+          return cb(null, null, debug);
+        labels.forEach(function(label) {
+          return Graph.request().delete('node/'+id+'/labels/'+label, function() {
+            todo--;
+            if (todo === 0)
+              cb(null, null, debug);
+          });
+        });
+      })
+      
     } else {
       return this;
     }
