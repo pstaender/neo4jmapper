@@ -32,31 +32,20 @@
   // Neo4jMapper is an **object mapper for neo4j databases**.
   // It's written in JavaScript and ready for server- and clientside use.
   // All operations are performed asynchronously since it's using neo4j's REST api.
-  //
-  // This file is used for nodejs,
-  // the browser equivalent is `./browser/browser_(header|footer).js` (will be available through `window.Neo4jMapper`)
   
   var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
   
-    var url = (typeof urlOrOptions === 'string') ? urlOrOptions : urlOrOptions.url;
-  
-    if (typeof url !== 'string')
-      throw Error('You must provide an url as string or as `.url` property on the option object');
-  
-    // cached?
-    if (typeof this.constructor.__sessions__[url] !== 'undefined')
-      return this.constructor.__sessions__[url];
-  
     if (typeof window === 'object') {
       // Browser
-      var Neo4jRestful  = this.Neo4jRestful  = window.Neo4jMapper.initNeo4jRestful(urlOrOptions);
+      var Neo4jRestful  = this.Neo4jRestful  = Neo4jRestful = initNeo4jRestful(urlOrOptions);
       
       this.client = new Neo4jRestful();
   
-      this.Graph        = window.Neo4jMapper.initGraph(this.client);
-      var Node          = this.Node          = window.Neo4jMapper.initNode(this.Graph, this.client);
-      var Relationship  = this.Relationship  = window.Neo4jMapper.initRelationship(this.Graph, this.client, Node);
-      var Path          = this.Path          = window.Neo4jMapper.initPath(this.Graph, this.client);
+      var Graph         = this.Graph         = window.Graph = initGraph(this.client);
+      var Transaction   = this.Transaction   = window.Transaction = initTransaction(this.client, this.Graph);
+      var Node          = this.Node          = window.Node = initNode(this.client, this.Graph);
+      var Relationship  = this.Relationship  = window.Relationship = initRelationship(this.client, this.Graph, Node);
+      var Path          = this.Path          = window.Path = initPath(this.client, this.Graph);
   
       Neo4jMapper.prototype.helpers = window.Neo4jMapper.helpers;
     } else {
@@ -65,10 +54,11 @@
       
       this.client = new Neo4jRestful();
       
-      this.Graph         = (typeof window === 'object') ? window.Neo4jMapper.initNode(this.client) : require('./graph').init(this.client);
-      var Node          = this.Node          = require('./node').init(this.Graph, this.client);
-      var Relationship  = this.Relationship  = require('./relationship').init(this.Graph, this.client, Node);
-      var Path          = this.Path          = require('./path').init(this.Graph, this.client);
+      var Graph         = this.Graph         = require('./graph').init(this.client);
+      var Transaction   = this.Transaction   = require('./transaction').init(this.client);
+      var Node          = this.Node          = require('./node').init(this.client, this.Graph);
+      var Relationship  = this.Relationship  = require('./relationship').init(this.client, this.Graph, Node);
+      var Path          = this.Path          = require('./path').init(this.client, this.Graph);
       
       Neo4jMapper.prototype.helpers = require('./helpers');
     }
@@ -81,23 +71,22 @@
         return Path;
       if (name === 'Relationship')
         return Relationship;
+      if (name === 'Graph')
+          return Graph;
+      if (name === 'Transaction')
+          return Transaction;
     }
-  
-    // cache session if is set to "active"
-    if (this.constructor.__sessions__)
-      this.constructor.__sessions__[urlOrOptions] = this;
   
   }
   
   Neo4jMapper.prototype.Node = null;
   Neo4jMapper.prototype.Relationship = null;
   Neo4jMapper.prototype.Graph = null;
+  Neo4jMapper.prototype.Transaction = null;
   Neo4jMapper.prototype.Path = null;
   Neo4jMapper.prototype.Neo4jRestful = null;
   Neo4jMapper.prototype.client = null;
-  
-  // cached sessions
-  Neo4jMapper.__sessions__ = {};
+  Neo4jMapper.prototype.helpers = null;
   
   Neo4jMapper.init = function(urlOrOptions) {
     return new Neo4jMapper(urlOrOptions);
@@ -305,7 +294,7 @@
     // trim quotes if exists
     if ( (/^".+"$/.test(s)) || (/^'.+'$/.test(s)) )
       s = s.substr(1,s.length-2);
-    return s.replace(/([^\\]){1}(['"])/g,'$1\\$2');
+    return s.replace(/^(['"]{1})/, '\\$1').replace(/([^\\]){1}(['"]{1})/g,'$1\\$2');
   }
   
   var valueToStringForCypherQuery = function(value) {
@@ -336,16 +325,16 @@
     // this.valuesToParameters
     if (_.isRegExp(value)) {
       value = valueToStringForCypherQuery(value);
-      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+value+"'";
+      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+value+"'";
       s = key + " =~ " + value;
     }
     else {
       // convert to string
       if ((_.isNumber(value)) || (_.isBoolean(value)))
-        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : valueToStringForCypherQuery(value);
+        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : valueToStringForCypherQuery(value);
       // else escape
       else
-        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? conditionalParametersObject.addValue(value) : "'"+escapeString(value)+"'";
+        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+escapeString(value)+"'";
       s = key + " = " + value;
     }
     
@@ -379,7 +368,7 @@
           for (var i=0; i < value.length; i++) {
             value[i] = (typeof value[i] === 'string') ? "'"+escapeString(value[i])+"'" : valueToStringForCypherQuery(value[i]);
           }
-          return 'IN( '+value.join(', ')+' )';
+          return 'IN [ '+value.join(', ')+' ]';
         }
         return '';
       },
@@ -743,6 +732,7 @@
   /*
    * include file: 'src/neo4jrestful.js'
    */
+  
   var __initNeo4jRestful__ = function(urlOrOptions) {
   
     // will be set with environment depending values below
@@ -798,7 +788,6 @@
     RequestDebug.prototype.options        = null;
     RequestDebug.prototype.requested_url  = '';
     RequestDebug.prototype.method         = '';
-    RequestDebug.prototype.data           = null;
     RequestDebug.prototype.header         = null;
     RequestDebug.prototype.res            = null;
     RequestDebug.prototype.status         = null;
@@ -1196,7 +1185,7 @@
       }
       var err = responseError;
       var self = this;
-      var statusCode = err.status;
+      var statusCode = this._response_.status;
       var error = ( err && err.responseText ) ? Error(err.responseText) : err;
       if (options.debug) {
         options._debug.res = res;
@@ -1238,7 +1227,7 @@
           self.log('**debug** Could not create/parse a valuable error object', e);
         }
       }
-      if ( (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
+      if ( (err) && (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
         // we ignore by default notfound exceptions, because they are no "syntactical" errors
         return cb(null, null, options._debug);
       } else {
@@ -1357,12 +1346,18 @@
   
     Neo4jRestful.prototype.singleton = function() {
       // creates a new instanced copy of this client
-      // console.log('::', this._connectionString());
       var client = new Neo4jRestful(this._connectionString());
       // thats the method we need and why we're doing this singleton() function here
       client.constructorOf = this.constructorOf;
       return client;
     }
+  
+    Neo4jRestful.create = function(url, options) {
+      return new Neo4jRestful(url, options);
+    }
+  
+    if (typeof window === 'object')
+      window.Neo4jRestful = Neo4jRestful;
   
     return Neo4jRestful;
   };
@@ -1373,7 +1368,7 @@
       init: __initNeo4jRestful__
     };
   } else {
-    window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;
+    var initNeo4jRestful = __initNeo4jRestful__;
   }
     
   /*
@@ -1389,7 +1384,7 @@
   // * underscorejs
   // * sequence (https://github.com/coolaj86/futures)
   
-  var __initNode__ = function(Graph, neo4jrestful) {
+  var __initNode__ = function(neo4jrestful, Graph) {
   
     var helpers = null;
     var _ = null;
@@ -1411,8 +1406,8 @@
     // calls this.init(data,id) to set all values to default
     var Node = function Node(data, id) {
       // will be used for labels and classes
-      if (!this.constructor_name)
-        this.constructor_name = helpers.constructorNameOfFunction(this) || 'Node';
+      if (!this._constructor_name_)
+        this._constructor_name_ = helpers.constructorNameOfFunction(this) || 'Node';
       // each node object has it's own restful client
       this.init(data, id);
     }
@@ -1434,10 +1429,10 @@
       // copy array
       this.labels = _.uniq(this.labels);
   
-      this.is_instanced = true;
+      this._is_instanced_ = true;
       // we will use a label by default if we have defined an inherited class of node
-      if ((this.constructor_name !== 'Node')&&(this.constructor_name !== 'Relationship')&&(this.constructor_name !== 'Path')) {
-        this.label = this.cypher.label = this.constructor_name;
+      if ((this._constructor_name_ !== 'Node')&&(this._constructor_name_ !== 'Relationship')&&(this._constructor_name_ !== 'Path')) {
+        this.label = this.cypher.label = this._constructor_name_;
       }
       if (!this.label)
         this.label = null;
@@ -1461,7 +1456,7 @@
           // do nothing
           model = model;
         } else if (typeof model === 'function') {
-          model = model.constructor_name || helpers.constructorNameOfFunction(model) || null;
+          model = model._constructor_name_ || helpers.constructorNameOfFunction(model) || null;
         } else if (node.label) {
           model = node.label;
         } else if (typeof fallbackModel === 'function') {
@@ -1494,7 +1489,6 @@
     Node.prototype._response_ = null;                 // original response object
     Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query 
     Node.prototype._stream_ = null;                   // flag for processing result data
-    Node.prototype.is_singleton = false;              // flag that this object is a singleton
     Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
   
     // cypher property will be **copied** on each new objects node.cypher in resetQuery()
@@ -1530,12 +1524,13 @@
       by_id: null
     };
   
-    Node.prototype.is_instanced = null;               // flag that this object is instanced
+    Node.prototype._is_instanced_ = null;             // flag that this object is instanced
+    Node.prototype._is_singleton_ = false;            // flag that this object is a singleton
   
     Node.prototype.labels = null;                     // an array of all labels
     Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
     //TODO: check that it's still needed
-    Node.prototype.constructor_name = null;           // will be with the name of the function of the constructor
+    Node.prototype._constructor_name_ = null;         // will be with the name of the function of the constructor
     Node.prototype._parent_constructors_ = null;      // an array of parent constructors (e.g. Director extends Person -> 'Director','Person')
   
     Node.prototype._load_hook_reference_ = null;      // a reference to acticate or deactivate the load hook
@@ -1560,7 +1555,7 @@
       if (typeof label === 'string')
         node.label = label;
       node.resetQuery();
-      node.is_singleton = true;
+      node._is_singleton_ = true;
       node.resetQuery();
       return node;
     }
@@ -1651,7 +1646,7 @@
     }
   
     Node.prototype.hasId = function() {
-      return ((this.is_instanced) && (_.isNumber(this._id_))) ? true : false;
+      return ((this._is_instanced_) && (_.isNumber(this._id_))) ? true : false;
     }
   
     Node.prototype.setUriById = function(id) {
@@ -1667,7 +1662,7 @@
       if ((typeof this.data === 'object') && (this.data !== null)) {
         var data = (useReference) ? this.data : _.extend(this.data);
         data = helpers.flattenObject(data);
-        // remove null values since nodejs cant store them
+        // remove null values since neo4j can't store them
         for(var key in data) {
           if ((typeof data[key] === 'undefined') || (data[key]===null))
             delete data[key];
@@ -1902,7 +1897,7 @@
   
     Node.prototype.onSave = function(cb) {
       var self = this;
-      if (this.is_singleton)
+      if (this._is_singleton_)
         return cb(Error('Singleton instances can not be persisted'), null);
       if (!this.hasValidData())
         return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
@@ -1914,8 +1909,8 @@
         // copy persisted data on initially instanced node
         data.copyTo(self);
         data = self;
-        self.is_singleton = false;
-        self.is_instanced = true;
+        self._is_singleton_ = false;
+        self._is_instanced_ = true;
         if (!err)
           self.isPersisted(true);
         return cb(null, data, debug);
@@ -1927,7 +1922,7 @@
         method = 'update';
         Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
           if (err) {
-            return cb(err, node);
+            return cb(err, res, debug);
           } else {
             self.isPersisted(true);
             cb(err, self, debug);
@@ -1978,12 +1973,27 @@
         data = helpers.flattenObject(data);
         this.cypher.set = [];
         for (var attribute in data) {
-          // OK
-          this.cypher.set.push(helpers.cypherKeyValueToString(attribute, data[attribute], this.__type_identifier__));
+          this.addSetDefinition(attribute, data[attribute]);
         }
       }
       this.cypher._update = true;
       return this.exec(cb);
+    }
+  
+    Node.prototype.addSetDefinition = function(attribute, value) {
+      // if already parameters are added, starting with {_value#i_} instead of {_value0_}
+      var parametersStartCountAt = ((this.cypher.parameters)&&(this.cypher.parameters.length > 0)) ? this.cypher.parameters.length : 0;
+      if (this.cypher._useParameters) {
+        var key = '_value'+parametersStartCountAt+'_';
+        var parameter = {};
+        parameter[key] = value;
+        this.cypher.set.push(
+          helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__type_identifier__, { valuesToParameters: true })
+        );      
+        this._addParameterToCypher(parameter);
+      } else {
+        this.cypher.set.push(helpers.cypherKeyValueToString(attribute, value, this.__type_identifier__));
+      }
     }
   
     Node.prototype.load = function(cb) {
@@ -2009,7 +2019,7 @@
             node.label = labels[0]
           // convert node to it's model if it has a distinct label and differs from static method
           if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
-            node = Node.convert_node_to_model(node, node.label, DefaultConstructor);
+            node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
           next(null, node, debug);
         });
       } else {
@@ -2041,7 +2051,7 @@
       // if we are working on the prototype object
       // we won't mutate it and create a new node instance insetad
       var node;
-      if (!this.is_instanced)
+      if (!this._is_instanced_)
         node = new Node();
       else
         node = this;
@@ -2130,7 +2140,7 @@
         this.cypher.start.a = 'node('+start+')';
         this.cypher.start.b = 'node('+end+')';
         
-        var matchString = 'p = '+options.algorithm+'(a-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-b)';
+        var matchString = 'p = '+options.algorithm+'((a)-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-(b))';
         
         this.cypher.match.push(matchString.replace(/\[\:\*+/, '[*'));
         this.cypher.return_properties = ['p'];
@@ -2259,8 +2269,11 @@
         query.start[this.__type_identifier__] = this.__type__+'(*)';
       }
       if ((!(query.match.length>0))&&(this.label)) {
-        // e.g. ~> MATCH n:Person
-        query.match.push(this.__type_identifier__+':'+this.label);
+        // e.g. ~> MATCH (n:Person)
+        if (this.__type_identifier__ === 'n')
+          query.match.push('(n:'+this.label+')');
+        else if (this.__type_identifier__ === 'r')
+          query.match.push('[r:'+this.label+']');
       }
   
       // rule(s) for findById
@@ -2528,7 +2541,7 @@
         relation = '';
       }
       self._query_history_.push({ allRelationships: true });
-      self.cypher.match.push('n'+label+'-[r'+relation+']-()');
+      self.cypher.match.push('(n)'+label+'-[r'+relation+']-()');
       self.cypher.return_properties = ['r'];
       self.exec(cb);
       return self; // return self for chaining
@@ -2623,6 +2636,9 @@
     // ### Adds a string to the MATCH statement
     // e.g.: 'p:PERSON-[:KNOWS|:FOLLOWS]->a:Actor-[:ACTS]->m'
     Node.prototype.match = function(string, cb) {
+      // we guess that we match a node if we have s.th. like `n(:Person)`
+      if (/^n(\:[a-zA-Z]+)*$/.test(string))
+        string = '('+string+')';
       this._query_history_.push({ MATCH: string });
       this.cypher.match.push(string);
       this.exec(cb);
@@ -2651,7 +2667,7 @@
     // ### Sets or resets the START statement
     Node.prototype.start = function(start, cb) {
       var self = this;
-      if (!self.is_singleton)
+      if (!self._is_singleton_)
         self = this.singleton(undefined, this);
       if (self.label) self.withLabel(self.label);
       //self.resetQuery();
@@ -2706,7 +2722,7 @@
       var condition = new helpers.ConditionalParameters(_.extend(where), options)
         , whereCondition = condition.toString();
       this.cypher.where.push(whereCondition);
-      if (options.valuesToParameters)
+      if ((options.valuesToParameters) && (condition.parameters))
         this._addParametersToCypher(condition.parameters);
   
       this._query_history_.push({ WHERE: whereCondition });
@@ -2714,16 +2730,6 @@
       this.exec(cb);
       return this; // return self for chaining
     }
-  
-    // Node.prototype.useParameters = function(trueOrFalse) {
-    //   if (typeof trueOrFalse !== 'undefined')
-    //     this.cypher._useParameters = trueOrFalse;
-    //   return this;
-    // }
-  
-    // Node.prototype.isUsingParameters = function() {
-    //   return this.cypher._useParameters;
-    // }
   
     Node.prototype.whereStartNode = function(where, cb) {
       return this.where(where, cb, { identifier: 'n' });
@@ -2808,7 +2814,7 @@
         // this.cypher.start = {};
         this.cypher.start[this.__type_identifier__] = this.__type__+"(*)";
       }
-      this.cypher.match.push([ this.__type_identifier__+label+"-[r?]-()" ]);
+      this.cypher.match.push([ '('+this.__type_identifier__+label+")-[r?]-()" ]);
       this.cypher.return_properties = [ "n", "r" ];
       return this.delete(cb);
     }
@@ -2816,7 +2822,7 @@
     Node.prototype.remove = function(cb) {
       var self = this;
       this.onBeforeRemove(function(/*err*/) {
-        if (self.is_singleton)
+        if (self._is_singleton_)
           return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
         if (self.hasId()) {
           return Graph.request().delete(self.__type__+'/'+self.id, cb);
@@ -3078,6 +3084,7 @@
         return Graph.request().post('node/'+this.id+'/labels', { data: labels }, cb);
     }
   
+    //http://docs.neo4j.org/chunked/milestone/rest-api-node-labels.html
     Node.prototype.addLabels = function(labels, cb) {
       var self = this;
       if ( (this.hasId()) && (_.isFunction(cb)) ) {
@@ -3104,10 +3111,12 @@
     }
   
     Node.prototype.replaceLabels = function(labels, cb) {
+      var self = this;
       if ( (this.hasId()) && (_.isFunction(cb)) ) {
         if (!_.isArray(labels))
           labels = [ labels ];
-        Graph.request().put('node/'+this.id+'/labels', { data: labels }, cb);
+        self.labels = labels;
+        Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
       }
       return this;
     }
@@ -3150,7 +3159,7 @@
   
     Node.prototype.find = function(where, cb) {
       var self = this;
-      if (!self.is_singleton)
+      if (!self._is_singleton_)
         self = this.singleton(undefined, this);
       self._query_history_.push({ find: true });
       if (self.label) self.withLabel(self.label);
@@ -3174,7 +3183,7 @@
   
     Node.prototype.findById = function(id, cb) {
       var self = this;
-      if (!self.is_singleton)
+      if (!self._is_singleton_)
         self = this.singleton(undefined, this);
       self._query_history_.push({ findById: id });
       if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
@@ -3198,7 +3207,7 @@
       var self = this;
       if (typeof _limit_ === 'undefined')
         _limit_ = null;
-      if (!self.is_singleton)
+      if (!self._is_singleton_)
         self = this.singleton(undefined, this);
       // we have s.th. like
       // { key: value }
@@ -3253,7 +3262,7 @@
   
     Node.prototype.findAll = function(cb) {
       var self = this;
-      if (!self.is_singleton)
+      if (!self._is_singleton_)
         self = this.singleton(undefined, this);
       self._query_history_.push({ findAll: true });
       self.cypher.limit = null;
@@ -3334,20 +3343,11 @@
       return this.prototype.start(start, cb);
     }
   
-    // Exception rule on underscore and CamelCase naming convention
-    // on all find… methods to keep analogy to mongodb api 
-    Node.find_all               = function(cb) { return this.findAll(cb); }
-    Node.find_by_id             = function(id, cb) { return this.findById(id, cb); }
-    Node.find_one               = function(where, cb) { return this.findOne(where, cb); }
-    Node.find_or_create         = function(where, cb) { return this.findOrCreate(where, cb); }
-    Node.find_by_key_value      = function(key, value, cb) { return this.findByKeyValue(key, value, cb); }
-    Node.find_one_by_key_value  = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
-  
     Node.query = function(cypherQuery, options, cb) {
       return this.prototype.singleton().query(cypherQuery, options, cb);
     }
   
-    Node.register_model = function(Class, label, prototype, cb) {
+    Node.registerModel = function(Class, label, prototype, cb) {
       var name = null
         , ParentModel = this;
   
@@ -3371,9 +3371,9 @@
         Class = function() {
           this.init.apply(this, arguments);
           if (Class.prototype.label === null)
-            this.label = this.constructor_name = label;
+            this.label = this._constructor_name_ = label;
           else
-            this.label = this.constructor_name = Class.prototype.label;
+            this.label = this._constructor_name_ = Class.prototype.label;
         }
   
         _.extend(Class, ParentModel); // 'static' methods
@@ -3439,55 +3439,86 @@
       return _.uniq(_.flatten(models));
     }
   
-    Node.unregister_model = function(Class) {
+    Node.unregisterModel = function(Class) {
       var name = (typeof Class === 'string') ? Class : helpers.constructorNameOfFunction(Class);
       if (typeof Node.__models__[name] === 'function')
         delete Node.__models__[name];
       return Node.__models__;
     }
   
-    Node.registered_models = function() {
+    Node.registeredModels = function() {
       return Node.__models__;
     }
   
-    Node.registered_model = function(model) {
+    Node.registeredModel = function(model) {
       if (typeof model === 'function') {
         model = helpers.constructorNameOfFunction(model);
       }
       return Node.registered_models()[model] || null;
     }
   
-    Node.convert_node_to_model = function(node, model, fallbackModel) {
+    Node.convertNodeToModel = function(node, model, fallbackModel) {
       return this.prototype.convertNodeToModel(node, model, fallbackModel);
     }
   
-    Node.ensure_index = function(cb) {
+    Node.ensureIndex = function(cb) {
       return this.singleton().ensureIndex(cb);
     }
   
-    Node.drop_index = function(fields, cb) {
+    Node.dropIndex = function(fields, cb) {
       return this.singleton().dropIndex(fields, cb);
     }
   
-    Node.drop_entire_index = function(cb) {
+    Node.dropEntireIndex = function(cb) {
       return this.singleton().dropEntireIndex(cb);
     }
   
-    Node.get_index = function(cb) {
+    Node.getIndex = function(cb) {
       return this.singleton().getIndex(cb);
     }
   
-    Node.disable_loading = function() {
+    Node.disableLoading = function() {
       return this.prototype.disableLoading();
     }
   
-    Node.enable_loading = function() {
+    Node.enableLoading = function() {
       return this.prototype.enableLoading();
     }
   
-    Node.delete_all_including_relations = function(cb) {
+    Node.deleteAllIncludingRelations = function(cb) {
       return this.find().deleteIncludingRelations(cb);
     }
+  
+    Node.create = function(data, id) {
+      return new this(data, id);
+    }
+  
+    // remove underscore naming
+  
+    // Node.delete_all_including_relations = function(cb) { return this.deleteAllIncludingRelations(cb); }
+    // Node.enable_loading                 = function() { return this.enableLoading(); }
+    // Node.disable_loading                = function() { return this.disableLoading(); }
+    // Node.get_index                      = function(cb) { return this.getIndex(cb); }
+    // Node.drop_entire_index              = function(cb) { return this.dropEntireIndex(cb); }
+    // Node.dropIndex                      = function(fields, cb) { return this.dropEntireIndex(fields, cb); }
+    // Node.ensure_index                   = function(cb) { return this.ensureIndex(cb); }
+    // Node.convert_node_to_model          = function(node, model, fallbackModel) { return this.convertNodeToModel(node, model, fallbackModel); }
+  
+    // Node.find_all                       = function(cb) { return this.findAll(cb); }
+    // Node.find_by_id                     = function(id, cb) { return this.findById(id, cb); }
+    // Node.find_one                       = function(where, cb) { return this.findOne(where, cb); }
+    // Node.find_or_create                 = function(where, cb) { return this.findOrCreate(where, cb); }
+    // Node.find_by_key_value              = function(key, value, cb) { return this.findByKeyValue(key, value, cb); }
+    // Node.find_one_by_key_value          = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
+  
+    // keep in all upcoming version, because they are the only real global methods
+  
+    // except these:
+  
+    Node.registered_model               = Node.registeredModel;
+    Node.registered_models              = Node.registeredModels;
+    Node.unregister_model               = Node.unregisterModel;
+    Node.register_model                 = Node.registerModel;
   
     // only once
     if ((typeof Graph.prototype === 'object') && (!Node.prototype._addParametersToCypher)) {
@@ -3503,12 +3534,13 @@
       init: __initNode__
     }
   } else {
-    window.Neo4jMapper.initNode = __initNode__;
+    var initNode = __initNode__;
   }
     
   /*
    * include file: 'src/path.js'
    */
+  
   var __initPath__ = function() {
   
     var helpers = null
@@ -3536,7 +3568,7 @@
         id: null,
         uri: null
       };
-      this.is_instanced = true;
+      this._is_instanced_ = true;
     }
   
     Path.prototype.classification = 'Path'; // only needed for toObject()
@@ -3548,13 +3580,13 @@
     Path.prototype.relationships = null;
     Path.prototype.nodes = null;
     Path.prototype._response_ = null;
-    Path.prototype.is_singleton = false;
-    Path.prototype.is_persisted = false;
-    Path.prototype.is_instanced = null;
+    Path.prototype._is_singleton_ = false;
+    Path.prototype._is_persisted_ = false;
+    Path.prototype._is_instanced_ = null;
   
     Path.prototype.singleton = function() {
       var path = new Path();
-      path.is_singleton = true;
+      path._is_singleton_ = true;
       return path;
     }
   
@@ -3574,7 +3606,7 @@
     Path.prototype.populateWithDataFromResponse = function(data) {
       // if we are working on the prototype object
       // we won't mutate it and create a new path instance insetad
-      var path = (this.is_instanced !== null) ? this : new Path();
+      var path = (this._is_instanced_ !== null) ? this : new Path();
       if (data) {
         if (_.isObject(data) && (!_.isArray(data)))
           path._response_ = data;
@@ -3622,7 +3654,7 @@
         path.length = data.length;
   
       }
-      path.is_persisted = true;
+      path._is_persisted_ = true;
       return path;
     }
   
@@ -3644,6 +3676,10 @@
   
     Path.prototype.resetQuery = function() { return this; }
   
+    Path.create = function() {
+      return new Path();
+    }
+  
     return Path;
   }
   
@@ -3652,7 +3688,7 @@
       init: __initPath__
     };
   } else {
-    window.Neo4jMapper.initPath = __initPath__;
+    var initPath = __initPath__;
   }  
   /*
    * include file: 'src/relationship.js'
@@ -3663,7 +3699,7 @@
    * * make relationships queryable with custom queries
    */
   
-  var __initRelationship__ = function(Graph, neo4jrestful, Node) {
+  var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   
     // Requirements (for browser and nodejs):
     // * Node
@@ -3709,7 +3745,7 @@
         defaults: _.extend({}, this.fields.defaults),
         indexes: _.extend({}, this.fields.indexes) // TODO: implement
       });
-      this.is_instanced = true;
+      this._is_instanced_ = true;
     }
   
     Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
@@ -3724,10 +3760,10 @@
     Relationship.prototype._hashedData_ = null;
     Relationship.prototype.uri = null;
     Relationship.prototype._response_ = null;
-    Relationship.prototype.is_singleton = false;
-    Relationship.prototype.is_persisted = false;
+    Relationship.prototype._is_singleton_ = false;
+    Relationship.prototype._is_persisted_ = false;
     Relationship.prototype.cypher = {};
-    Relationship.prototype.is_instanced = null;
+    Relationship.prototype._is_instanced_ = null;
     Relationship.prototype.fields = {
       defaults: {},
       indexes: {}
@@ -3738,7 +3774,7 @@
   
     Relationship.prototype.singleton = function() {
       var relationship = new Relationship();
-      relationship.is_singleton = true;
+      relationship._is_singleton_ = true;
       // relationship.resetQuery();
       return relationship;
     }
@@ -3770,7 +3806,7 @@
   
     Relationship.prototype.findById = function(id, cb) {
       var self = this;
-      if (!self.is_singleton)
+      if (!self._is_singleton_)
         self = this.singleton(undefined, this);
       if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
         // to reduce calls we'll make a specific restful request for one node
@@ -3827,7 +3863,7 @@
       create = (typeof create !== 'undefined') ? create : false;
       // if we are working on the prototype object
       // we won't mutate it and create a new relationship instance insetad
-      var relationship = (this.is_instanced !== null) ? this : new Relationship();
+      var relationship = (this._is_instanced_ !== null) ? this : new Relationship();
       if (create)
         relationship = new Relationship();
       if (data) {
@@ -3851,13 +3887,13 @@
           relationship.setPointIdByUri('to', relationship._response_.end);
         }
       }
-      relationship.is_persisted = true;
+      relationship._is_persisted_ = true;
       relationship.isPersisted(true);
       return relationship;
     }
   
     Relationship.prototype.remove = function(cb) {
-      if (this.is_singleton)
+      if (this._is_singleton_)
         return cb(Error("To delete results of a query use delete(). remove() is for removing a relationship."),null);
       if (this.hasId()) {
         return Graph.request().delete('relationship/'+this.id, cb);
@@ -3964,6 +4000,10 @@
     Relationship.prototype.hasId              = Node.prototype.hasId;
     Relationship.prototype._hashData_         = Node.prototype._hashData_;
   
+    Relationship.create = function(data, start, end, id) {
+      return new Relationship(data, start, end, id);
+    }
+  
     return Relationship;
   }
   
@@ -3972,9 +4012,327 @@
       init: __initRelationship__
     }
   } else {
-    window.Neo4jMapper.initRelationship = __initRelationship__
+    var initRelationship = __initRelationship__;
   }
     
+  /*
+   * include file: 'src/transaction.js'
+   */
+  //http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
+  
+  var __initTransaction__ = function(neo4jrestful) {
+  
+    var Statement = function Statement(transaction, cypher, parameters) {
+      this._transaction_  = transaction;
+      this.statement = cypher;
+      this.parameters = parameters;
+    }
+  
+    Statement.prototype._transaction_ = null;
+    Statement.prototype.statement = '';
+    Statement.prototype.parameters = null;
+    Statement.prototype.status = null; // 'sending', 'sended'
+    Statement.prototype.position = null;
+    Statement.prototype.results = null;
+    Statement.prototype.errors = null;
+  
+    Statement.prototype.toObject = function() {
+      return {
+        statement: this.statement,
+        parameters: JSON.stringify(this.parameters),
+        status: this.status,
+        position: this.position,
+        errors: this.errors,
+        results: this.results,
+      };
+    }
+  
+    var Transaction = function Transaction(cypher, parameters, cb) {
+      this.neo4jrestful = neo4jrestful.singleton();
+      this.begin(cypher, parameters, cb);
+    }
+  
+    Transaction.prototype.statements = null;
+    Transaction.prototype._response_ = null;
+    Transaction.prototype.neo4jrestful = null;
+    Transaction.prototype.status = ''; // new|creating|open|committing|committed
+    Transaction.prototype.id = null;
+    Transaction.prototype.uri = null
+    Transaction.prototype.expires = null;
+    Transaction.prototype.results = null;
+    Transaction.prototype._concurrentTransmission_ = 0;
+    Transaction.prototype._responseError_ = null; //will contain response Error
+    Transaction.prototype._resortResults_ = true;
+    Transaction.prototype._detectTypes_ = false; // n AS (Node), id(n) AS (Node.id), r AS [Relationship]
+    // Transaction.prototype._loadOnResult_ = neo4jrestful.constructor.prototype._loadOnResult_;
+  
+    Transaction.prototype.begin = function(cypher, parameters, cb) {
+      // reset
+      this.statements = [];
+      this.results = [];
+      this.errors = [];
+      this.id = null;
+      this.status = 'new';
+      return this.add(cypher, parameters, cb);
+    }
+  
+    Transaction.prototype.add = function(cypher, parameters, cb) {
+      var self = this;
+      var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+      var statements = args.statements;
+      // we cancel the operation if we are comitting
+      if (this.status === 'committed') {
+        if (typeof args.cb === 'function')
+          cb(Error("You can't add statements after transaction is committed"), null);
+        return this;
+      }
+      this.addStatementsToQueue(statements);
+      if ((args.cb) && (!self.onResponse)) {
+        cb = args.cb;
+        this.onResponse = cb;
+      } else {
+        // we execute if we have a callback
+        // till then we will collect the statements
+        return this;
+        //cb = function() { /* /dev/null/ */ };
+      }
+      return this.exec(cb);
+    }
+  
+    Transaction.prototype.exec = function(cb) {
+      var self = this;
+      // stop here if there is no callback attached
+      if (typeof cb !== 'function') {
+        return this;
+      }
+  
+      var url = '';
+      var untransmittedStatements = this.untransmittedStatements();
+      
+      if (this.status === 'committing') {
+        // commit transaction
+        // if (!this.id)
+        //   return this;//.exec(cb);
+        url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
+      } else if (!this.id) {
+        // begin a transaction
+        this.status = 'creating';
+        url = '/transaction';
+      } else if (this.status === 'open') {
+        // add to transaction
+        this.status = 'adding';
+        url = '/transaction/'+this.id;
+      } else if (this.status = 'committed') {
+        cb(Error('Transaction is committed. Create a new transaction instead.'), null, null);
+      } else {
+        throw Error('Transaction has a unknown status. Possible are: creating|open|committing|committed');
+      }
+      var statements = [];
+      untransmittedStatements.forEach(function(statement, i){
+        self.statements[i].status = 'sending';
+        statements.push({ statement: statement.statement, parameters: statement.parameters });
+      });
+      this._concurrentTransmission_++;
+      this.neo4jrestful.post(url, { data: { statements: statements } }, function(err, response, debug) {
+        self._response_ = response;
+        self._concurrentTransmission_--;
+        self._applyResponse(err, response, debug, untransmittedStatements);
+        
+        untransmittedStatements.forEach(function(statement) {
+          self.statements[statement.position].status = statement.status = 'sended';
+        });
+        
+        untransmittedStatements = self.untransmittedStatements();
+  
+        if (untransmittedStatements.length > 0) {
+          // re call exec() until all statements are transmitted
+          // TODO: set a limit to avoid endless loop          
+          return self.exec(cb);
+        }
+        // TODO: sort and populate resultset, but currently no good way to detect result objects
+        else if (self._concurrentTransmission_ === 0) {//  {
+          if (typeof self.onResponse === 'function') {
+            var cb = self.onResponse;
+            // release onResponse for (optional) next cb
+            self.onResponse = null;
+            // call final callback
+            if (self.status === 'committing')
+              self.status = 'committed';
+            cb(self._responseError_, self, debug);
+            return self;
+          }
+        }
+      });
+  
+      return this;
+    }
+  
+    Transaction.prototype.addStatementsToQueue = function(statements) {
+      var self = this;
+      if ((statements) && (statements.constructor === Array) && (statements.length > 0)) {
+        // attach all statments
+        statements.forEach(function(data){
+          if (data.statement) {
+            var statement = new Statement(self, data.statement, data.parameters);
+            statement.position = self.statements.length;
+            self.statements.push(statement);
+          }
+        });
+      }
+      return this;
+    }
+  
+    Transaction.prototype._applyResponse = function(err, response, debug, untransmittedStatements) {
+      var self = this;
+      // if error on request/response
+      if (self.status !== 'committing')
+        self.status = 'open';
+      if (err) {
+        self.status = (err.status) ? err.status : err;
+        if (!self.status)
+          self.status = self._response_.status;
+      }
+      untransmittedStatements.forEach(function(statement, i){
+        if (response.errors[i]) {
+          statement.error = response.errors[i];
+          self.errors.push(response.errors[i]);
+        }
+        if (response.results[i]) {
+          if (self._resortResults_) {
+            // move row property one level above
+            // { rows: [ {}, {} ]} -> { [ {}, {} ]}
+            response.results[i].data.forEach(function(data, j){
+              //if ((response.results[i]) && (data.row)) {
+              if (data.row) {
+                response.results[i].data[j] = data.row;
+              }
+            })
+          }
+          self.results.push(response.results[i]);
+        }
+      });
+      if ((err)||(!response))
+        self._responseError_ = (self._responseError_) ? self._responseError_.push(err) : self._responseError_ = [ err ];
+      else
+        self.populateWithDataFromResponse(response);
+    }
+  
+    Transaction.prototype.toObject = function() {
+      var statements = [];
+      this.statements.forEach(function(stat){
+        statements.push(stat.toObject());
+      });
+      return {
+        id: this.id,
+        status: this.status,
+        statements: statements,
+        expires: this.expires,
+        uri: this.uri,
+      };
+    }
+  
+    Transaction.prototype.populateWithDataFromResponse = function(data) {
+      if (data) {
+        if ((data.transaction) && (data.transaction.expires))
+          this.expires = new Date(data.transaction.expires);
+        // exists only on POST a new transaction
+        if (data.commit) {
+          var match = data.commit.match(/^(.+?\/transaction\/(\d+))\/commit$/);
+          this.id = match[2];
+          this.uri = match[1];
+        }
+      }
+    }
+  
+    Transaction.prototype.untransmittedStatements = function() {
+      var statements = [];
+      this.statements.forEach(function(statement){
+        if ((statement)&&(!statement.status))
+          statements.push(statement);
+      });
+      return statements;
+    }
+  
+    Transaction.prototype.commit = function(cypher, parameters, cb) {
+      if (typeof cypher === 'function') {
+        cb = cypher;
+      } else {
+        var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+        this.addStatementsToQueue(args.statements);
+        cb = args.cb;
+      }
+      if (typeof cb !== 'function') {
+        throw Error('You need to attach a callback an a commit/close operation');
+      }
+      this.onResponse = cb;
+      this.status = 'committing';
+      return this.exec(cb);
+    }
+  
+    Transaction.prototype.close = Transaction.prototype.commit;
+  
+    Transaction.create = function(cypher, parameters, cb) {
+      return new Transaction(cypher, parameters, cb);
+    }
+  
+    Transaction.prototype.onResponse = null;
+  
+    Transaction._sortTransactionArguments = function(cypher, parameters, cb) {
+      var statements = null;
+      if (typeof cypher === 'string') {
+        if (typeof parameters === 'function') {
+          cb = parameters;
+          parameters = {};
+        }
+        statements = [ { statement: cypher, parameters: parameters || {} } ];
+      } else if ((cypher) && (cypher.constructor === Array)) {
+        cb = parameters;
+        statements = cypher;
+      } else if ((cypher) && (cypher.statement)) {
+        statements = [ cypher ];
+      }
+      return {
+        statements: statements,
+        cb: cb || null
+      }
+    }
+  
+    Transaction.prototype.rollback = function(cb) {
+      if ((this.id)&&(this.status!=='finalized')) {
+        this.neo4jrestful.delete('/transaction/'+this.id, cb);
+      } else {
+        cb(Error('You can only perform a rollback on an open transaction.'), null);
+      }
+      return this;
+    }
+  
+    Transaction.prototype.undo = Transaction.prototype.rollback;
+  
+    Transaction.begin = function(cypher, parameters, cb) {
+      return new Transaction(cypher, parameters, cb);
+    }
+  
+    Transaction.create = Transaction.begin;
+    Transaction.open = Transaction.begin;
+  
+    Transaction.commit = function(cypher, parameters, cb) {
+      return new Transaction().commit(cypher, parameters, cb);
+    }
+    
+    // Transaction.prototype.createObjectFromResponseData = neo4jrestful.constructor.prototype.createObjectFromResponseData;
+    // Transaction.prototype._processResult = Graph.prototype._processResult;
+  
+    return Transaction;
+  
+  }
+  
+  if (typeof window !== 'object') {
+    module.exports = exports = {
+      init: __initTransaction__
+    };
+  } else {
+    var initTransaction = __initTransaction__;
+  }  
   /*
    * include file: 'src/graph.js'
    */
@@ -3992,7 +4350,7 @@
   
     if (typeof window === 'object') {
       helpers = window.Neo4jMapper.helpers;
-      _       = window._();
+      _       = window._;
     } else {
       helpers = require('./helpers');
       _       = require('underscore');
@@ -4006,7 +4364,7 @@
   
     var Graph = function Graph(url) {
       if (url) {
-        this.neo4jrestful = new this.neo4jrestful.constructor(url);
+        this.neo4jrestful = new neo4jrestful.constructor(url);
       }
       this.resetQuery();
       return this;
@@ -4021,7 +4379,7 @@
       _useParameters: true   // better performance + rollback possible (upcoming feature)
     };
     Graph.prototype._loadOnResult_                = 'node|relationship|path';
-    Graph.prototype._smartResultSort_             = true; // see in graph.query() -> _increaseDone()
+    Graph.prototype._resortResults_               = true; // see in graph.query() -> _increaseDone()
     Graph.prototype._nativeResults_               = false; // it's not implemented, all results are processed so far
     
     // ### Will contain the info response of the neo4j database
@@ -4097,7 +4455,7 @@
           // * return only the data (columns are attached to graph._columns_)
           // * remove array if we only have one column
           // e.g. { columns: [ 'count' ], data: [ { 1 } ] } -> 1
-          if (self._smartResultSort_) {
+          if (self._resortResults_) {
             var cleanResult = result.data;
             // remove array, if we have only one column
             if (result.columns.length === 1) {
@@ -4185,6 +4543,20 @@
       if (this.cypher._useParameters === null)
         this.cypher._useParameters = true;
       this.cypher.parameters = parameters;
+      return this;
+    }
+  
+    Graph.prototype.addParameters = function(parameters) {
+      if (typeof parameters !== 'object')
+        throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
+      if (this.cypher._useParameters === null)
+        this.cypher._useParameters = true;
+      if (!this.cypher.parameters)
+        this.cypher.parameters = {};
+      // _.extend(this.cypher.parameters, parameters);
+      for (var attr in parameters) {
+        this.cypher.parameters[attr] = parameters[attr];
+      }
       return this;
     }
   
@@ -4483,7 +4855,7 @@
     Graph.prototype.sortResult = function(trueOrFalse) {
       if (typeof trueOrFalse === 'undefined')
         trueOrFalse = true;
-      this._smartResultSort_ = trueOrFalse;
+      this._resortResults_ = trueOrFalse;
       return this;
     }
   
@@ -4509,6 +4881,7 @@
   
     Graph.prototype.log = function(){ /* > /dev/null */ };
   
+    // Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]
     Graph.prototype._addParametersToCypher = function(parameters) {
       if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
         if (!this.cypher.parameters)
@@ -4516,6 +4889,8 @@
         for (var i=0; i < parameters.length; i++) {
           this._addParameterToCypher(parameters[i]);
         }
+      } else {
+        throw Error('You need to pass parameters as array');
       }
       return this.cypher.parameters;
     }
@@ -4538,35 +4913,35 @@
      * (are shortcuts to methods on new instanced Graph())
      */
     Graph.query = function(cypher, options, cb) {
-      return Graph.disable_processing().query(cypher, options, cb);
+      return Graph.disableProcessing().query(cypher, options, cb);
     }
   
     Graph.stream = function(cypher, options, cb) {
-      return new Graph.disable_processing().stream(cypher, options, cb);
+      return new Graph.disableProcessing().stream(cypher, options, cb);
     }
   
-    Graph.wipe_database = function(cb) {
+    Graph.wipeDatabase = function(cb) {
       return new Graph().wipeDatabase(cb);
     }
   
-    Graph.count_all_of_type = function(type, cb) {
+    Graph.countAllOfType = function(type, cb) {
       return new Graph().countAllOfType(type, cb);
     }
   
-    Graph.count_relationships = function(cb) {
+    Graph.countRelationships = function(cb) {
       return new Graph().countRelationships(cb);
     }
   
     // alias for count_relationships
-    Graph.count_relations = function(cb) {
+    Graph.countRelations = function(cb) {
       return new Graph().countRelationships(cb);
     }
     
-    Graph.count_nodes = function(cb) {
+    Graph.countNodes = function(cb) {
       return new Graph().countNodes(cb);
     }
     
-    Graph.count_all = function(cb) {
+    Graph.countAll = function(cb) {
       return new Graph().countAll(cb);
     }
   
@@ -4575,35 +4950,35 @@
     }
   
     Graph.start = function(start, cb) {
-      return Graph.enable_processing().start(start, cb);
+      return Graph.enableProcessing().start(start, cb);
     }
   
-    Graph.enable_loading = function(classifications) {
+    Graph.enableLoading = function(classifications) {
       Graph.prototype.enableLoading(classifications);
       return new Graph();
     }
   
-    Graph.disable_loading = function() {
+    Graph.disableLoading = function() {
       Graph.prototype.disableLoading();
       return new Graph();
     }
   
-    Graph.disable_processing = function() {
+    Graph.disableProcessing = function() {
       Graph.prototype.disableProcessing();
       return new Graph();
     }
   
-    Graph.enable_processing = function() {
+    Graph.enableProcessing = function() {
       Graph.prototype.enableProcessing();
       return new Graph();
     }
   
-    Graph.enable_sorting = function() {
+    Graph.enableSorting = function() {
       Graph.prototype.enableSorting();
       return new Graph();
     }
   
-    Graph.disable_sorting = function() {
+    Graph.disableSorting = function() {
       Graph.prototype.disableSorting(false);
       return new Graph();
     }
@@ -4613,7 +4988,22 @@
       return neo4jrestful.singleton();
     }
   
-    Graph.__top__ = true;
+    Graph.create = function(url) {
+      return new Graph(url);
+    }
+  
+    // wipe_database function(cb) 
+    // count_all_of_type function(type, cb)
+    // count_relationships = function(cb)
+    // count_relations = function(cb)
+    // count_nodes = function(cb)
+    // count_all = function(cb)
+    // enable_loading = function(classifications)
+    // disable_loading = function()
+    // disable_processing = function()
+    // enable_processing = function()
+    // enable_sorting = function()
+    // disable_sorting = function() {
   
     return Graph;
   }
@@ -4623,7 +5013,7 @@
       init: __initGraph__
     };
   } else {
-    window.Neo4jMapper.initGraph = __initGraph__;
+    var initGraph = __initGraph__;
   }  
   /*
    * include file: 'src/browser/browser_footer.js'
