@@ -1753,11 +1753,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
       self.removeLabels(function(err, res, debug) {
         if (err)
           return cb(err, res, debug);
-        // add all labels
+        // an add all labels
         return self.addLabels(labels, cb);
       })
-      //This doesn't work in Neo4j2M6 anymore
-      //Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
+      // This doesn't work anymore since v2 M6 …
+      // https://github.com/neo4j/neo4j/issues/1279
+      // Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
     }
     return this;
   }

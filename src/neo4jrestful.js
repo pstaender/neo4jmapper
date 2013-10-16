@@ -229,7 +229,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     
     // apply default options
     _.defaults(options, {
-      type: 'GET',
+      method: 'GET',
       data: null,
       debug: false,
       // use copy of header, not reference
