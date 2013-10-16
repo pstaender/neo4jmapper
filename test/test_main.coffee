@@ -604,7 +604,9 @@ describe 'Neo4jMapper', ->
             expect(daveSaved.data.origin.state).to.be.equal 'Ohio'
             expect(daveSaved.data.origin.country).to.be.equal 'United States of America'
             expect(daveSaved.id).to.be id
-            done()
+            Node.findById(1234567).update { name: 'Node that doesnt exists' }, (err, found) ->
+              expect(err.exception).to.be.equal 'EntityNotFoundException'
+              done()
 
     it 'expect to execute onBeforeSave hook if defined', (done) ->
       n = new Node()
