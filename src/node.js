@@ -1703,6 +1703,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       return Graph.request().post('node/'+this.id+'/labels', { data: labels }, cb);
   }
 
+  //http://docs.neo4j.org/chunked/milestone/rest-api-node-labels.html
   Node.prototype.addLabels = function(labels, cb) {
     var self = this;
     if ( (this.hasId()) && (_.isFunction(cb)) ) {
@@ -1729,10 +1730,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.replaceLabels = function(labels, cb) {
+    var self = this;
     if ( (this.hasId()) && (_.isFunction(cb)) ) {
       if (!_.isArray(labels))
         labels = [ labels ];
-      Graph.request().put('node/'+this.id+'/labels', { data: labels }, cb);
+      self.labels = labels;
+      Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
     }
     return this;
   }

@@ -789,7 +789,7 @@ describe 'Neo4jMapper', ->
                 article.remove ->
                   done()
 
-    it 'expect to add, remove and update labels of a node', (done) ->
+    it.skip 'expect to add, remove and update labels of a node', (done) ->
       class Person extends Node
         fields:
           defaults: {}
@@ -1113,7 +1113,7 @@ describe 'Neo4jMapper', ->
             Node::cypher._useParameters = false
             # excpetion here, check query string
             expect(Model.find(where).toCypherQuery().replace(/\n+/g, ' ').replace(/\s+/g, ' ')).to.be.equal """
-              START n = node(*) MATCH n:#{labelName} WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n;
+              START n = node(*) MATCH (n:#{labelName}) WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n;
             """
             Model.find where, (err, found) ->
               expect(err).to.be null
