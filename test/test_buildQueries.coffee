@@ -284,12 +284,12 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) MATCH (n:Actor)-[r?]-() DELETE n, r;"
           ]
 
-        "Node.findById(123).update({ name: 'Alice' })":
+        "Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })":
           [
-             Node.findById(123).update({ 'name': 'Alice' })
-            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice' RETURN n;"
-            "START n = node(*) WHERE id(n) = 123 SET n.`name` = {_value0_} RETURN n;"
-            { _value0_: 'Alice'}
+             Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })
+            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice', n.`email` = 'alice@home.com' RETURN n;"
+            "START n = node(*) WHERE id(n) = 123 SET n.`name` = {_value0_}, n.`email` = {_value1_} RETURN n;"
+            { _value0_: 'Alice', _value1_: 'alice@home.com' }
           ]
 
         "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":

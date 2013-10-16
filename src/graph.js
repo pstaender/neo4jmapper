@@ -558,9 +558,9 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.prototype._addParameterToCypher = function(parameter) {
-    if (typeof parameter === 'object') {
-      if (!this.cypher.parameters)
-        this.cypher.parameters = {};
+    if (!this.cypher.parameters)
+      this.cypher.parameters = {};
+    if (typeof parameter === 'object') {      
       _.extend(this.cypher.parameters, parameter);
     } else {
       // we name the parameter with `_value#_`

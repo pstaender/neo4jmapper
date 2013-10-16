@@ -605,16 +605,18 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.addSetDefinition = function(attribute, value) {
-    // if already parameters are added, starting with {_value#i_} instead of {_value0_}
-    var parametersStartCountAt = ((this.cypher.parameters)&&(this.cypher.parameters.length > 0)) ? this.cypher.parameters.length : 0;
     if (this.cypher._useParameters) {
+      if (!this.cypher.parameters)
+        this.cypher.parameters = {};
+      // if already parameters are added, starting with {_value#i_} instead of {_value0_}
+      var parametersStartCountAt = (this.cypher.parameters) ? Object.keys(this.cypher.parameters).length : 0;
       var key = '_value'+parametersStartCountAt+'_';
       var parameter = {};
       parameter[key] = value;
       this.cypher.set.push(
         helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__type_identifier__, { valuesToParameters: true })
-      );      
-      this._addParameterToCypher(parameter);
+      );
+      this._addParameterToCypher(value);
     } else {
       this.cypher.set.push(helpers.cypherKeyValueToString(attribute, value, this.__type_identifier__));
     }
