@@ -467,12 +467,12 @@ Coffeescript and it's class pattern is maybe the most convenient way to define m
       s = @data.firstName + " " + @data.surname
       s.trim()
 
-  Node.register_model Person, (err) -
+  Node.register_model Person, (err) ->
 
     alice = new Person firstName: 'Alice', surname: 'Springs'
     alice.fullname()
     ~ 'Alice Springs'
-    alice.save -
+    alice.save ->
       alice.label
       ~ 'Person'
 
@@ -526,7 +526,7 @@ Currently you can execute transactions on any cypher queries, that's the way to 
 You can open transactions and add statements to the, aslong they're open. The api is self explaining:
 
 ```js
-  Transaction.create(
+  Transaction.open(
     'CREATE (n {props}) RETURN n AS NODE, id(n), as ID',
     { props: { name: 'Dave Grohl' } }
   ).add(
@@ -545,7 +545,7 @@ You can open transactions and add statements to the, aslong they're open. The ap
 Commit transactions:
 
 ```js
-  Transaction.create(…, function(err, openTransaction) {
+  Transaction.open(…, function(err, openTransaction) {
     openTransaction.commit(function(err, committedTransaction) {
       console.log('Transaction with ID '+committedTransaction.id+' is now committed: ', committedTransaction.status);
     });
@@ -555,7 +555,7 @@ Commit transactions:
 Rollback open transactions:
 
 ```js
-  // you can use new Transaction() instead of Transaction.create()
+  // you can use new Transaction() instead of Transaction.open()
   new Transaction(…, function(err, openTransaction) {
     openTransaction.rollback(function(err, deletedTransaction) {
       console.log('Transaction is rolled back');
