@@ -187,13 +187,14 @@ var ConditionalParameters = function ConditionalParameters(conditions, options) 
 
   ConditionalParameters.parameterRuleset = {
     $IN: function(value) {
+      var s = '';
       if ((typeof value === 'object') && (value.length > 0)) {
         for (var i=0; i < value.length; i++) {
           value[i] = (typeof value[i] === 'string') ? "'"+escapeString(value[i])+"'" : valueToStringForCypherQuery(value[i]);
         }
-        return 'IN [ '+value.join(', ')+' ]';
+        s = value.join(', ');
       }
-      return '';
+      return 'IN [ ' + s + ' ]';
     },
     $in: function(value) { return this.$IN(value); }
 

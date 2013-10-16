@@ -451,7 +451,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     }
     var err = responseError;
     var self = this;
-    var statusCode = this._response_.status;
+    var statusCode = (this._response_) ? this._response_.status : null;
     var error = ( err && err.responseText ) ? Error(err.responseText) : err;
     if (options.debug) {
       options._debug.res = res;
