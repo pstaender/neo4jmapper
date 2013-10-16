@@ -47,9 +47,6 @@ describe 'Neo4jMapper (cypher queries)', ->
       catch e
         err = e
       expect(err).not.to.be null
-      
-      # expect(Node.findOne().deleteIncludingRelationships).withArgs(->).to.throwError()
-      # expect(Node.find().deleteIncludingRelationships().limit).withArgs(1, ->).to.throwError()
 
     it 'expect to build various kind of queries', ->
 
@@ -287,15 +284,15 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })":
           [
              Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })
-            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice', n.`email` = 'alice@home.com' RETURN n;"
-            "START n = node(*) WHERE id(n) = 123 SET n.`name` = {_value0_}, n.`email` = {_value1_} RETURN n;"
+            "START n = node(123) SET n.`name` = 'Alice', n.`email` = 'alice@home.com' RETURN n;"
+            "START n = node(123) SET n.`name` = {_value0_}, n.`email` = {_value1_} RETURN n;"
             { _value0_: 'Alice', _value1_: 'alice@home.com' }
           ]
 
         "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":
           [
              Node.findById(123).update({ 'name': 'Alice', 'age': 20 })
-            "START n = node(*) WHERE id(n) = 123 SET n.`name` = 'Alice', n.`age` = 20 RETURN n;"
+            "START n = node(123) SET n.`name` = 'Alice', n.`age` = 20 RETURN n;"
           ]
 
         "Node.findOne().whereRelationship({ length: 20 })":

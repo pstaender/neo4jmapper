@@ -600,6 +600,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
         this.addSetDefinition(attribute, data[attribute]);
       }
     }
+    this.cypher.start[this.__type_identifier__] =  this.__type__ + '(' + this.cypher.by_id + ')';
     this.cypher._update = true;
     return this.exec(cb);
   }
