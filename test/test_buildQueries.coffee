@@ -304,10 +304,10 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*), r = relationship(*) WHERE ( HAS (r.`length`) AND r.`length` = 20 ) RETURN n, r LIMIT 1;"
           ]
 
-        "Node.findAll().where( { name: { $in: [ 'a', 'b', 1, 2 ] } } )":
+        "Node.findAll().where( { $and : [ { name: { $in: [ 'a', 'b', 1, 2 ] } }, mail: { $in: 1 } ] } )":
           [
-             Node.findAll().where( { name: { $in: [ 'a', 'b', 1, 2 ] } } )
-            "START n = node(*) WHERE ( HAS (n.`name`) AND n.`name` IN [ 'a', 'b', 1, 2 ] ) RETURN n;"
+             Node.findAll().where( { $and : [ { name: { $in: [ 'a', 'b', 1, 2 ] } }, mail: { $in: 1 } ] } )
+            "START n = node(*) WHERE ( ( HAS (n.`name`) AND n.`name` IN [ 'a', 'b', 1, 2 ] AND HAS (n.`mail`) AND n.`mail` IN [ ] ) ) RETURN n;"
           ]
 
         #
