@@ -93,7 +93,7 @@ The most needed interfaces of Neo4jMapper:
 ```js
   var Node = neo4j.Node;
 
-  new Node( { name: 'Dave Grohl', year: 1969 } ).save(function(err, dave) {
+  Node.create( { name: 'Dave Grohl', year: 1969 }, function(err, dave) {
     if (err)
       console.error(err.message);
     else
@@ -112,7 +112,7 @@ Create relations between nodes:
       year: 1994,
       in: 'Seattle'
     }
-  } ).save(function(err, fooFighters) {
+  }).save( function(err, fooFighters) {
     dave.createRelationTo( fooFighters, 'PLAYS', function(err, relationship) {
       console.log('Created Relationship:', relationship.toObject());
       new Node( { name: 'Taylor Hawkins' } ).save(function(err, taylor) {
