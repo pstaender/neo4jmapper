@@ -180,6 +180,21 @@ describe 'Neo4jMapper', ->
                       expect(relationship.from.label).to.be undefined
                       done()
 
+    it 'expect to make many different queries parallel', (done) ->
+      todo = 40
+      for i in [0...todo]
+        id = new Date().getTime()
+        do (id) ->
+          Node.create { name: id }, (err, node) ->
+            expect(err).to.be null
+            expect(node.data.name).to.be.equal id
+            Graph.start().query 'START n=node('+node.id+') RETURN n', (err, found) ->
+              expect(err).to.be null
+              expect(found[0].data.name).to.be.equal id
+              todo--
+              if todo is 0
+                done()
+
     it 'expect to query via Graph with parameters', (done) ->
       Person = Node.registerModel 'Person'
       name = String(Date())

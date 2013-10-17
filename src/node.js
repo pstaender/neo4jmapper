@@ -2166,8 +2166,16 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this.find().deleteIncludingRelations(cb);
   }
 
-  Node.create = function(data, id) {
-    return new this(data, id);
+  Node.create = function(data, id, cb) {
+    if (typeof id === 'function') {
+      cb = id;
+      id = undefined;
+    }
+    if (typeof cb === 'function') {
+      return new this(data, id).save(cb);
+    } else {
+      return new this(data, id);
+    }
   }
 
   Node.registered_model   = Node.registeredModel;
