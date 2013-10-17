@@ -159,6 +159,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   // contains data of the response
   Neo4jRestful.prototype._response_                 = null;
   Neo4jRestful.prototype._columns_                  = null;
+  Neo4jRestful.prototype._detectTypesOnColumns_     = false; // n AS `(Node)`, labels(n) AS `(Node.id)`, r AS `[Relationship]`
 
   Neo4jRestful.prototype.query = function(cypher, options, cb) {
     var args;
@@ -333,6 +334,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
         delete self.header['X-Stream'];
         if (!count) {
           cb(null, Error('No matches in stream found ('+ root +')'));
+        } else if ((root) && (root.columns)) {
+          // attach columns
+          self._columns_ = root.columns;
         }
       });
 
@@ -521,17 +525,17 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
               data = data[0];
             if (done >= todo) {
               // done
-              cb(data);
-              cb(null);
+              cb(data, self);
+              cb(null, self);
             } else {
-              cb(data);
+              cb(data, self);
             }
           })
         } else {
-          cb(data);
+          cb(data, self);
         }
       } else {
-        cb(null);
+        cb(null, self);
       }
     });
   }

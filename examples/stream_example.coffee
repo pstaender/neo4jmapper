@@ -1,5 +1,5 @@
 Neo4jMapper = require('../src')
-{Graph,Node} = new Neo4jMapper('http://localhost:7420')
+{Graph,Node} = new Neo4jMapper('http://localhost:7474')
 
 count = 0
 startedOn = new Date().getTime()
@@ -17,13 +17,15 @@ graph = new Graph()
 graph.countNodes (err, countAll) ->
   perc = 100/countAll
 
-  Node.findAll().each (node) ->
-    if node is null
+  Graph.query('START n = node(*) RETURN n as node, labels(n) as `node.labels` LIMIT 500').each (data, res) ->
+    if data is null
       summary(count, countAll)
     else
       count++
       if displayProgress
         console.error (Math.floor(count*perc))+"%"
+      node = data[0]
+      node.setLabels(data[1])
       console.log node.toObject()
       
 

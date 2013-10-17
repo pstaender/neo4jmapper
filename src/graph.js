@@ -40,6 +40,7 @@ var __initGraph__ = function(neo4jrestful) {
     parameters: null,      // object with paremeters
     _useParameters: true   // better performance + rollback possible (upcoming feature)
   };
+  Graph.prototype._queryString_                 = ''; // stores a query string temporarily
   Graph.prototype._loadOnResult_                = 'node|relationship|path';
   Graph.prototype._resortResults_               = true; // see in graph.query() -> _increaseDone()
   Graph.prototype._nativeResults_               = false; // it's not implemented, all results are processed so far
@@ -69,22 +70,32 @@ var __initGraph__ = function(neo4jrestful) {
       cb = options;
       options = {};
     }
+    if (typeof options !== 'object') {
+      options = {};
+    }
 
     options.params = (typeof this.cypher._useParameters === 'boolean') ? this.cypher.parameters : {};
     options.context = self;
 
-    this.neo4jrestful.query(cypherQuery, options, function(err, res, debug) {
-      self._processResult(err, res, debug, options, function(err, res, debug) {
-        // Is used by Node on performing an "update" via a cypher query
-        // The result length is 1, so we remove the array
-        if ((res)&&(res.length===1)&&(options.cypher)) {
-          if ((options.cypher.limit === 1) || (options.cypher._update) || (typeof res[0] !== 'object')) {
-            res = res[0];
+    // we expect a cb in most cases and perfom the query immediately
+    if (typeof cb === 'function') {
+      this.neo4jrestful.query(cypherQuery, options, function(err, res, debug) {
+        self._processResult(err, res, debug, options, function(err, res, debug) {
+          // Is used by Node on performing an "update" via a cypher query
+          // The result length is 1, so we remove the array
+          if ((res)&&(res.length===1)&&(options.cypher)) {
+            if ((options.cypher.limit === 1) || (options.cypher._update) || (typeof res[0] !== 'object')) {
+              res = res[0];
+            }
           }
-        }
-        cb(err, res, debug);
+          cb(err, res, debug);
+        });
       });
-    })
+    } else {
+      // otherwise we store the query string and expect it will be executed with `.exec(cb)` or `.stream(cb)`
+      this._queryString_ = cypherQuery;
+    }
+
     return this;
   }
 
@@ -188,16 +199,18 @@ var __initGraph__ = function(neo4jrestful) {
       cb = options;
       options = undefined;
     }
-    this.neo4jrestful.stream(cypherQuery, options, function(data) {
-      // neo4jrestful alerady created an object, but not with a recommend constructtr
+    this.neo4jrestful.stream(cypherQuery, options, function(data, response) {
+      // neo4jrestful alerady created an object, but not with a recommend constructor
+      self._columns_ = response._columns_;
       if ((data) && (typeof data === 'object') && (data._response_)) {
         data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
       }
-
-      cb(data);
+      cb(data, self);
     });
     return this;
   }
+
+  Graph.prototype.each = Graph.prototype.stream;
 
   Graph.prototype.parameters = function(parameters) {
     if (typeof parameters !== 'object')
@@ -289,6 +302,7 @@ var __initGraph__ = function(neo4jrestful) {
   // ### Reset the query history
   Graph.prototype.resetQuery = function() {
     this._query_history_ = [];
+    this._queryString_ = '';
     this.cypher = {};
     for (var attr in Graph.prototype.cypher) {
       this.cypher[attr] = Graph.prototype.cypher[attr];
@@ -464,6 +478,10 @@ var __initGraph__ = function(neo4jrestful) {
       , defaultOptions = {
           niceFormat: true
         };
+    // if a query string is attached, return this and skip query building
+    if (this._queryString_) {
+      return this._queryString_;
+    }
     if (typeof options !== 'object')
       options = {};
     else

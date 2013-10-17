@@ -45,7 +45,6 @@ var __initTransaction__ = function(neo4jrestful) {
   Transaction.prototype._concurrentTransmission_ = 0;
   Transaction.prototype._responseError_ = null; //will contain response Error
   Transaction.prototype._resortResults_ = true;
-  Transaction.prototype._detectTypes_ = false; // n AS (Node), id(n) AS (Node.id), r AS [Relationship]
   // Transaction.prototype._loadOnResult_ = neo4jrestful.constructor.prototype._loadOnResult_;
 
   Transaction.prototype.begin = function(cypher, parameters, cb) {
