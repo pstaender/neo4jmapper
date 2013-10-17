@@ -32,23 +32,6 @@ All features of the library are available in modern Browsers (except streaming s
 
 You'll find a ready-to-use-console in `examples/browser/console/console.html`. To use it with your local database ensure  that you access the page from the same domain as your database to avoid `access-control-allow-origin` situation.
 
-## API Changes
-
-### v1.0beta to v1.0
-
-Regulary no API changes in a beta; but neo4jmapper is still in an early development stage, so some cleanup is needed before the final v1.0 will be released:
-
-  * **Renamed**: `node.removeWithRelationships` is now correctly called `node.removeIncludingRelationships`
-  * **Renamed**: *all* static methods have now underscore names (only Node.find… have both)
-    * Node.ensureIndex -> Node.ensure_index
-    * Node.dropIndex  -> Node.drop_index
-    * Node.dropEntireIndex -> Node.drop_entire_index
-    * Node.getIndex -> Node.get_index
-  * **Removed**: `Node.findByUniqueKeyValue`, use `Node.findByKeyValue` or `Node.findOneByKeyValue` instead
-  * **Removed**: `Node.find().andWhere()`, use `Node.find().where()` instead and combine your conditions with an `$and` operator if needed
-  * **Removed**: `Graph.start().addValue` removed, use `Graph.start().addParameters()` or `Graph.start().addParameter()` instead
-  * **Renamed**: methods containing `…Relationships` naming will now be shorter called `…Relations`, e.g.: withRelations, incomingRelations, outgoingRelations ()
-
 ## TODO
 
 There are some steps to take, especially some methods for daily use are missing, yet. But the basic set of operations are already implemented and tested.
@@ -61,7 +44,7 @@ There are some steps to take, especially some methods for daily use are missing,
 
 ### So far tested against:
 
-* Neo4j v2 Milestone 5
+* Neo4j v2 Milestone 6
 * Node 0.8 - 0.11 [see Travis](https://travis-ci.org/pstaender/neo4jmapper)
 * Chrome (v22+) and Safari (v7+)
 
