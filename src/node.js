@@ -592,6 +592,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
       cb(Error('To perform an update you need to pass valid data for updating as first argument'), null);
     }
     else if (this.hasId()) {
+      if (typeof cb !== 'function')
+        throw Error('To perform an .update() on an instanced node, you have to give a cb as argument');
       this.findById(this._id_).update(data, cb);
       return this;
     } else {
