@@ -1,11 +1,9 @@
 // # Neo4jMapper
 // **(c) 2013 by Philipp Ständer <philipp.staender@gmail.com>**
 //
-// **Distributed under the GNU General Public License**
+// *Distributed under the GNU General Public License*
 //
 // Neo4jMapper is an **object mapper for neo4j databases**.
-// It's written in JavaScript and ready for server- and clientside use.
-// All operations are performed asynchronously since it's using neo4j's REST api.
 
 var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
 
@@ -37,18 +35,24 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
     Neo4jMapper.prototype.helpers = require('./helpers');
   }
 
-  // this method returns instanced constructor for internal usage
+  // this method returns constructor for superordinate availability in objects of current scope
   this.client.constructorOf = function(name) {
-    if (name === 'Node')
-      return Node;
-    if (name === 'Path')
-      return Path;
-    if (name === 'Relationship')
-      return Relationship;
-    if (name === 'Graph')
+    switch(name) {
+      case 'Node':
+        return Node;
+      case 'Path':
+        return Path;
+      case 'Relationship':
+        return Relationship;
+      case 'Graph':
         return Graph;
-    if (name === 'Transaction')
+      case 'Transaction':
         return Transaction;
+      case 'Statement':
+        return Transaction.Statement;
+      default:
+        return null;
+    }
   }
 
 }
