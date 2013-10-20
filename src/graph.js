@@ -44,18 +44,18 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._loadOnResult_                = 'node|relationship|path';
   Graph.prototype._resortResults_               = true; // see in graph.query() -> _increaseDone()
   Graph.prototype._nativeResults_               = false; // it's not implemented, all results are processed so far
-  
+
   // ### Will contain the info response of the neo4j database
   Graph.prototype.info        = null;
   Graph.prototype._response_  = null; // contains the last response object
   Graph.prototype._columns_   = null;
 
-  Graph.prototype.exec = function(query, cb) {    
+  Graph.prototype.exec = function(query, cb) {
     if (typeof query !== 'string') {
       cb = query;
       query = this.toCypherQuery();
     }
-    if (typeof cb === 'function') { 
+    if (typeof cb === 'function') {
       this.query(query, {}, cb);
     }
     return this;
@@ -153,11 +153,11 @@ var __initGraph__ = function(neo4jrestful) {
       for (var column=0; column < result.data[row].length; column++) {
         var data = result.data[row][column];
         // try to create an instance if we have an object here
-        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, options.recommendConstructor) : data;          
+        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, options.recommendConstructor) : data;
         result.data[row][column] = object;
 
         (function(object, isLastObject) {
-          
+
           if (object) {
             if ((object.classification === 'Node') && (loadNode)) {
               todo++;
@@ -172,7 +172,7 @@ var __initGraph__ = function(neo4jrestful) {
               object.load(__increaseDone);
             }
           }
-          
+
           // if no loading is activated and at the last row+column, execute cb
           if ((isLastObject) && (todo === 0))
             __increaseDone();
@@ -284,7 +284,7 @@ var __initGraph__ = function(neo4jrestful) {
     return this.countAllOfType('all', cb);
   }
 
-  // ### Queries information of the database and stores it on `this.info` 
+  // ### Queries information of the database and stores it on `this.info`
   Graph.prototype.about = function(cb) {
     var self = this;
     if (this.info)
@@ -467,6 +467,16 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(cb);
   }
 
+  Graph.prototype.union = function(s, cb) {
+    this._query_history_.push({ UNION: s });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.using = function(s, cb) {
+    this._query_history_.push({ USING: s });
+    return this.exec(cb);
+  }
+
   Graph.prototype.comment = function(comment, cb) {
     this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
     return this.exec(cb);
@@ -578,7 +588,7 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._addParameterToCypher = function(parameter) {
     if (!this.cypher.parameters)
       this.cypher.parameters = {};
-    if (typeof parameter === 'object') {      
+    if (typeof parameter === 'object') {
       _.extend(this.cypher.parameters, parameter);
     } else {
       // we name the parameter with `_value#_`
@@ -616,11 +626,11 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.countRelations = function(cb) {
     return new Graph().countRelationships(cb);
   }
-  
+
   Graph.countNodes = function(cb) {
     return new Graph().countNodes(cb);
   }
-  
+
   Graph.countAll = function(cb) {
     return new Graph().countAll(cb);
   }
