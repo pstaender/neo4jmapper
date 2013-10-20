@@ -23,9 +23,9 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   }
 
   // Constructor
-  var Relationship = function Relationship(data, start, end, id) {
-    this.id = id || null;
+  var Relationship = function Relationship(type, data, start, end, id, cb) {
     this.data = data || {};
+    this.type = this._type_ = type || null;
     this.from = {
       id: null,
       uri: null
@@ -34,29 +34,35 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       id: null,
       uri: null
     };
-    if (_.isString(start))
+    if (Number(start))
       this.setPointUriById('from', start);
-    else if (_.isNumber(start))
+    else if (start)
       this.setPointIdByUri('from', start);
-    if (_.isString(end))
+    if (Number(end))
       this.setPointUriById('to', end);
-    else if (_.isNumber(end))
+    else if (end)
       this.setPointIdByUri('to', end);
-    // this.resetQuery();
-    if (id) {
-      this.setUriById(id);
-    }
     this.fields = _.extend({},{
       defaults: _.extend({}, this.fields.defaults),
       indexes: _.extend({}, this.fields.indexes) // TODO: implement
     });
     this._is_instanced_ = true;
+    if (typeof id === 'number') {
+      this.setUriById(id);
+      this.id = this._id_ = id;
+    } else {
+      cb = id;
+    }
+    if (typeof cb === 'function') {
+      return this.save(cb);
+    }
   }
 
   Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
   Relationship.prototype.data = {};
   Relationship.prototype.start = null;
   Relationship.prototype.type = null;
+  Relationship.prototype._type_ = null; // like `_id_` to keep a reference to the legacy type
   Relationship.prototype.end = null;
   Relationship.prototype.from = null;
   Relationship.prototype.to = null;
@@ -87,10 +93,10 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   Relationship.prototype.setPointUriById = function(startOrEnd, id) {
     if (typeof startOrEnd !== 'string')
       startOrEnd = 'from';
-    if ((startOrEnd !== 'from')||(startOrEnd !== 'to'))
+    if ((startOrEnd !== 'from')&&(startOrEnd !== 'to'))
       throw Error("You have to set startOrEnd argument to 'from' or 'to'");
     if (_.isNumber(id)) {
-      this[startOrEnd].uri = Graph.prototype.neo4jmapper.absoluteUrl('/relationship/'+id);
+      this[startOrEnd].uri = neo4jrestful.absoluteUrl('/relationship/'+id);
       this[startOrEnd].id = id;
     }
     return this;
@@ -117,7 +123,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       // to reduce calls we'll make a specific restful request for one node
       return Graph.request().get(this.__type__+'/'+id, function(err, object) {
         if ((object) && (typeof self.load === 'function')) {
-          //  && (typeof node.load === 'function')     
+          //  && (typeof node.load === 'function')
           object.load(cb);
         } else {
           cb(err, object);
@@ -125,30 +131,6 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       });
     }
     return this;
-  }
-
-  Relationship.prototype.update = function(data, cb) {
-    var self = this;
-    if (helpers.isValidData(data)) {
-      this.data = _.extend(this.data, data);
-      data = this.flattenData();
-    } else {
-      cb = data;
-    }
-    if (!this.hasId())
-      return cb(Error('Singleton instances can not be persisted'), null);
-    if (this.hasId()) {
-      // copy 'private' _id_ to public
-      this.id = this._id_;
-      Graph.request().put(this.__type__+'/'+this.id+'/properties', { data: data }, function(err,data){
-        if (err)
-          return cb(err, data);
-        else
-          return cb(null, self);
-      });
-    } else {
-      return cb(Error('You have to save() the relationship before you can perform an update'), null);
-    }
   }
 
   Relationship.prototype.save = function(cb) {
@@ -162,6 +144,100 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
           self.onAfterSave(self, cb, debug);
         });
     });
+  }
+
+  Relationship.prototype.onSave = function(cb) {
+    var self = this;
+    if (this._is_singleton_)
+      return cb(Error('Singleton instances can not be persisted'), null);
+    if (!this.hasValidData())
+      return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
+    this.resetQuery();
+    this.applyDefaultValues();
+
+    this.id = this._id_;
+
+    var relationshipProperties = this.data;
+    var relationshipPropertiesFlatten = this.flattenData();
+
+    if (!this.type)
+      throw Error("Type for a relationship is mandatory, e.g. `relationship.type = 'KNOW'`");
+    if ((!this.from)||(!this.from.id))
+      throw Error('Relationship requires a `relationship.from` startnode');
+    if ((!this.to)||(!this.to.id))
+      throw Error('Relationship requires a `relationship.to` endnode');
+
+    var url = null;
+
+    if (this.hasId()) {
+
+      if ((this._type_) && (this.type !== this._type_)) {
+        // type has changed
+        // since we can't update a relationship type (only properties)
+        // we have to create a new relationship and delete the "old" one
+        return Relationship.create(this.type, this.data, this.start, this.end, function(err, relationship, debug) {
+          if (err) {
+            return cb(err, relationship, debug);
+          } else {
+            self.remove(function(err, res, debugDelete) {
+              if (err) {
+                return cb(err, res, debugDelete);
+              } else {
+                relationship.copyTo(self);
+                return cb(null, self, debug);
+              }
+            })
+          }
+        })
+      }
+
+      // UPDATE properties
+      url = 'relationship/'+this._id_+'/properties';
+      Graph.request().put(url, { data: relationshipPropertiesFlatten }, function(err, res, debug) {
+        if (err) {
+          return cb(err, res, debug);
+        } else {
+          var relationType = self.type;
+          // update `type` and `to`
+          Graph.request().put('relationship/'+self.id, { data: { to: self.to.uri, type: relationType } }, function(err, res, debugUpdate) {
+            if (err) {
+              return cb(err, res, debugUpdate);
+            } else {
+              self.type = self._type_ = relationType;
+              self.data = _.extend(relationshipProperties);
+              return cb(err, self, [ debug, debugUpdate ]);
+            }
+          })
+        }
+      });
+    } else {
+      // CREATE
+      url = 'node/'+this.from.id+'/relationships';
+      var data = {
+        to: this.to.uri,
+        type: this.type,
+        data: relationshipPropertiesFlatten,
+      };
+      Graph.request().post(url, { data: data }, function(err, relationship, debug) {
+        if ((err) || (!relationship))
+          return cb(err, relationship, debug);
+        else {
+          relationship.copyTo(self);
+          return cb(null, self, debug);
+        }
+      });
+    }
+  }
+
+  Relationship.prototype.update = function(data, cb) {
+    var self = this;
+    if (helpers.isValidData(data)) {
+      this.data = _.extend(this.data, data);
+      data = this.flattenData();
+    } else {
+      cb = data;
+    }
+    return this.save(cb);
   }
 
   Relationship.prototype.populateWithDataFromResponse = function(data, create) {
@@ -179,7 +255,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       relationship.data = relationship._response_.data;
       relationship.data = helpers.unflattenObject(this.data);
       relationship.uri  = relationship._response_.self;
-      relationship.type = relationship._response_.type;
+      relationship.type = relationship._type_ = relationship._response_.type;
       if ((relationship._response_.self) && (relationship._response_.self.match(/[0-9]+$/))) {
         relationship.id = relationship._id_ = Number(relationship._response_.self.match(/[0-9]+$/)[0]);
       }
@@ -221,7 +297,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
           if (done === 2) {
             cb((errors.length === 0) ? null : errors, self);
           }
-            
+
         });
       })(attributes[i]);
     }
@@ -244,7 +320,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       });
     } else {
       next(null, relationship);
-    } 
+    }
   }
 
   Relationship.prototype.onAfterLoad = function(relationship, next) {
@@ -255,7 +331,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     var o = {
       id: this.id,
       classification: this.classification,
-      data: _.extend(this.data),
+      data: _.clone(this.data),
       start: this.start,
       end: this.end,
       from: _.extend(this.from),
@@ -268,6 +344,13 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     if ( (o.to)   && (typeof o.to.toObject === 'function') )
       o.to   = o.to.toObject();
     return o;
+  }
+
+  Relationship.prototype._hashData_ = function() {
+    if (this.hasValidData())
+      return helpers.md5(JSON.stringify(this.toObject()));
+    else
+      return null;
   }
 
   Relationship.prototype.onBeforeSave = function(node, next) {
@@ -294,18 +377,34 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     return Relationship;
   }
 
+
   /* from Node */
   Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues
-  Relationship.prototype.onSave             = Node.prototype.onSave;
+
+  // Copys only the node's relevant data(s) to another object
+  Relationship.prototype.copyTo = function(r) {
+    r.id = r._id_ = this._id_;
+    r.data   = _.clone(this.data);
+    r.uri = this.uri;
+    r._response_ = _.clone(this._response_);
+    r.from = _.clone(this.from);
+    r.to = _.clone(this.to);
+    r.start = this.start;
+    r.end = this.end;
+    r.type = r._type_ = this._type_;
+    return r;
+  }
+
+
+  // Relationship.prototype.onSave = Node.prototype.onSave;
   Relationship.prototype.hasValidData       = Node.prototype.hasValidData;
   Relationship.prototype.flattenData        = Node.prototype.flattenData;
   Relationship.prototype.setUriById         = Node.prototype.setUriById;
   Relationship.prototype.isPersisted        = Node.prototype.isPersisted;
   Relationship.prototype.hasId              = Node.prototype.hasId;
-  Relationship.prototype._hashData_         = Node.prototype._hashData_;
 
-  Relationship.create = function(data, start, end, id) {
-    return new Relationship(data, start, end, id);
+  Relationship.create = function(type, data, start, end, id, cb) {
+    return new Relationship(type, data, start, end, id, cb);
   }
 
   return Relationship;

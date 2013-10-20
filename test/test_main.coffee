@@ -36,7 +36,7 @@ client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLo
 
 version = client.version
 
-SkipInNode = (a) -> unless window? then null else a 
+SkipInNode = (a) -> unless window? then null else a
 SkipInBrowser = (a) -> if window? then null else a
 
 # if process?.env?.TRAVIS
@@ -77,7 +77,7 @@ describe 'Neo4jMapper', ->
 
       # prefered way
       neo4j = new Neo4j(configForTest.neo4jURL)
-      neo4j.client.checkAvailability join.add()      
+      neo4j.client.checkAvailability join.add()
 
       join.when ->
         for arg in Array::slice.apply(arguments)
@@ -86,7 +86,7 @@ describe 'Neo4jMapper', ->
         done()
 
     it "expect #{if configForTest.wipeDatabase then "" else "not "}to remove all nodes and relationships from the database", (done) ->
-      return done() unless configForTest.wipeDatabase      
+      return done() unless configForTest.wipeDatabase
       graph = new Graph()
       graph.wipeDatabase (err, res) ->
         expect(err).to.be null
@@ -96,7 +96,7 @@ describe 'Neo4jMapper', ->
       graph = new Graph()
       graph.about (err, data) ->
         expect(err).to.be null
-        expect(graph.info).to.be.an 'object' 
+        expect(graph.info).to.be.an 'object'
         done()
 
     it 'expect to get a neo4j version value', (done) ->
@@ -301,7 +301,7 @@ describe 'Neo4jMapper', ->
   describe 'node', ->
 
     it 'expect to allow inheritance', (done) ->
-      Node.registerModel 'Person', { 
+      Node.registerModel 'Person', {
         fields: {
           defaults: {
             email: 'unknown'
@@ -321,7 +321,7 @@ describe 'Neo4jMapper', ->
         expect(person.fields.defaults.income).to.be.equal 50000
         expect(person.fields.defaults.job).to.be.equal 'Laborer'
         expect(person.fields.defaults.email).to.be.equal 'unknown'
-        Person.registerModel 'Director', { 
+        Person.registerModel 'Director', {
           fields: {
             defaults: {
               income: 80000
@@ -331,7 +331,7 @@ describe 'Neo4jMapper', ->
         }, (err, Director) ->
           expect(err).to.be null
           director = new Director()
-          expect(director.label).to.be.equal 'Director' 
+          expect(director.label).to.be.equal 'Director'
           expect(director._constructor_name_).to.be.equal 'Director'
           expect(director.fields.defaults.income).to.be.equal 80000
           expect(director.fields.defaults.job).to.be.equal 'Director'
@@ -342,7 +342,7 @@ describe 'Neo4jMapper', ->
           expect(director.labels[1]).to.be 'Person'
           expect(director).to.be.an 'object'
           expect(director.id).to.be null
-          Person.registerModel 'Actor', { 
+          Person.registerModel 'Actor', {
             fields: {
               defaults: {
                 job: 'Actor'
@@ -488,7 +488,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to remove a node', (done) ->
       node = new Node title: 'test'
-      node.save -> 
+      node.save ->
         new Graph().countNodes (err, countNodesBefore) ->
           node.remove (err) ->
             new Graph().countNodes (err, countNodesAfter) ->
@@ -695,7 +695,7 @@ describe 'Neo4jMapper', ->
           done()
 
     it 'create, get and drop index', (done) ->
-      # random label name to ensure that new indexes are created on each test 
+      # random label name to ensure that new indexes are created on each test
       labelName = "Person#{new Date().getTime()}"
       Node.registerModel labelName, { fields: { indexes: { name: true } } }, (err, Person) ->
         expect(err).to.be null
@@ -715,7 +715,7 @@ describe 'Neo4jMapper', ->
                   done()
 
     it 'expect to autoindex models', (done) ->
-      # random label name to ensure that new indexes are created on each test 
+      # random label name to ensure that new indexes are created on each test
       labelName = "Movie#{new Date().getTime()}"
       Node.registerModel labelName, {
         fields:
@@ -905,7 +905,7 @@ describe 'Neo4jMapper', ->
           indexes:
             uid: true
             name: true
-      # we have to ensureIndex 
+      # we have to ensureIndex
       User.ensureIndex (err) ->
         User.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
           expect(err).to.be null
@@ -934,7 +934,6 @@ describe 'Neo4jMapper', ->
         expect(node.isPersisted()).to.be false
         node.save (err, node) ->
           expect(err).to.be null
-          # -->
           expect(node.isPersisted()).to.be true
           Node.findById node.id, (err, node) ->
             expect(err).to.be null
@@ -989,7 +988,6 @@ describe 'Neo4jMapper', ->
                     expect(relationship).to.be.an 'object'
                     new Graph().countRelations (err, countedRelationshipsFinally) ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
-                      # console.log bob.neo4jrestful.header
                       bob.createOrUpdateRelationFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
                         expect(err).to.be null
                         expect(relationship).to.be.an 'object'
@@ -1058,7 +1056,7 @@ describe 'Neo4jMapper', ->
                           expect(result).to.have.length 3
                           done()
 
-    it 'expect to set default values for properties on relationships', (done) ->
+    it 'expect to create and update relationships with default values', (done) ->
       Relationship::fields.defaults.created_on = -> new Date().getTime()
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) ->
         alice.createRelationBetween bob, 'like', { since: 'years', nested: { values: true } }, ->
@@ -1074,7 +1072,39 @@ describe 'Neo4jMapper', ->
               r = new Relationship()
               expect(relationship).to.have.length 1
               Relationship::fields.defaults = {}
-              done()
+              r = Relationship.create('know', { since: 'years' }, alice.uri, bob.uri)
+              expect(r.isPersisted()).to.be false
+              expect(r.start).to.be null
+              expect(r.end).to.be null
+              expect(r.id).to.be null
+              expect(r.type).to.be 'know'
+              expect(r.data).to.be.eql { since: 'years' }
+              expect(r.classification).to.be 'Relationship'
+              # persist relationship
+              r.save (err, r, debug) ->
+                id = r.id
+                expect(id).to.be.above 0
+                expect(r.type).to.be 'know'
+                expect(r.data).to.be.eql { since: 'years' }
+                Relationship.findById id, (err, foundRelation) ->
+                  expect(err).to.be null
+                  expect(foundRelation.id).to.be.equal id
+                  expect(foundRelation.type).to.be 'know'
+                  expect(foundRelation.data).to.be.eql { since: 'years' }
+                  r.data = { since: 'a while', year: 2000 }
+                  r.type = 'like'
+                  r.save (err, newRelation, debug) ->
+                    expect(err).to.be null
+                    expect(newRelation.id).to.be.above id
+                    expect(newRelation.data).to.be.eql { since: 'a while', year: 2000 }
+                    expect(newRelation.type).to.be 'like'
+                    Relationship.findById id, (err, oldRelation) ->
+                      expect(err).to.be null
+                      expect(oldRelation).to.be null
+                      Relationship.findById newRelation.id, (err, foundRelation) ->
+                        expect(foundRelation.data).to.be.eql newRelation.data
+                        expect(foundRelation.type).to.be newRelation.type
+                        done()
 
     it 'expect to get start and end nodes from relationships', (done) ->
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) -> new Node({name: 'Charles'}).save (err, charles) ->
@@ -1166,7 +1196,7 @@ describe 'Neo4jMapper', ->
                   # TODO: maybe seperate test?!
                   expect(err).to.be null
                   # expect(path.constructor).to.be.equal Array
-                  # expect(path).to.have.length 1 
+                  # expect(path).to.have.length 1
                   # path = path[0]
                   expect(path.length).to.be 2
                   expect(path.nodes).to.have.length 3
@@ -1212,7 +1242,7 @@ describe 'Neo4jMapper', ->
     it 'expect to trigger load hook and loading both nodes on getById', (done) ->
       new Node( name: 'Alice' ).save (err, a) ->
         new Node( name: 'Bob' ).save (err, b) ->
-          a.createRelationTo b, 'related', { since: 'year' }, (err, result) -> 
+          a.createRelationTo b, 'related', { since: 'year' }, (err, result) ->
             expect(err).to.be null
             Relationship.findById result.id, (err, relationship) ->
               expect(err).to.be null
