@@ -29,11 +29,19 @@ var __initNode__ = function(neo4jrestful, Graph) {
   // ### Constructor
   // calls this.init(data,id) to set all values to default
   var Node = function Node(data, id) {
+    var cb = null;
+    // id can be a callback as well
+    if (typeof id === 'function') {
+      cb = id;
+      id = undefined;
+    }
     // will be used for labels and classes
     if (!this._constructor_name_)
       this._constructor_name_ = helpers.constructorNameOfFunction(this) || 'Node';
     // each node object has it's own restful client
     this.init(data, id);
+    if (cb)
+      return this.save(cb);
   }
 
   // ### Initialize all values on node object
@@ -111,7 +119,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.uri = null;                        // uri of the node
   Node.prototype._response_ = null;                 // original response object
-  Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query 
+  Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query
   Node.prototype._stream_ = null;                   // flag for processing result data
   Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
 
@@ -127,7 +135,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     distinct: null,         // `DISTINCT` option
     return_properties: [],  // [a|b|n|r|p], will be joined with `, `
     where: [],              // `WHERE`  statements, will be joined with `AND`
-    hasProperty: [],   
+    hasProperty: [],
     from: null,             // Number
     to: null,               // Number
     direction: null,        // (incoming|outgoing|all)
@@ -208,7 +216,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   // ### Hook: onBeforeInitialize
   // Can be monkey-pacthed and be used to execute code
   // on prototype base during registering a model
-  // HINT: call the cb() finnaly  
+  // HINT: call the cb() finnaly
   Node.prototype.onBeforeInitialize = function(next) {
     return next(null,null);
   }
@@ -345,7 +353,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var fields = this.fieldsToIndex();
     var keys = [];
     _.each(fields, function(toBeIndexed, field) {
-      if (toBeIndexed === true) 
+      if (toBeIndexed === true)
         keys.push(field);
     });
     keys = _.uniq(_.union(keys, this.uniqueFields()));
@@ -364,7 +372,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.uniqueFields = function() {
     var keys = [];
     _.each(this.fields.unique, function(isUnique, field) {
-      if (isUnique === true) 
+      if (isUnique === true)
         keys.push(field);
     });
     return keys;
@@ -393,13 +401,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var url = 'schema/index/'+options.label;
     var queryHead = "CREATE CONSTRAINT ON (n:" + options.label + ") ASSERT ";
     // get all indexes fields
-    // TODO: find a way to distinct index 
+    // TODO: find a way to distinct index
     this.getIndex(function(err, indexedFields) {
       // sort out fields that are already indexed
       for (var i=0; i < indexedFields.length; i++) {
         keys = _.without(keys, indexedFields[i]);
       }
-      // return without any arguments if there are no fields to index 
+      // return without any arguments if there are no fields to index
       if (keys.length === 0)
         return cb(null, null);
       _.each(keys, function(key){
@@ -484,7 +492,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype._hashData_ = function() {
     if (this.hasValidData())
-      return helpers.md5(JSON.stringify(this.data));
+      return helpers.md5(JSON.stringify(this.toObject()));
     else
       return null;
   }
@@ -520,6 +528,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.onBeforeSave = function(node, next) { next(null, null); }
 
+
   Node.prototype.onSave = function(cb) {
     var self = this;
     if (this._is_singleton_)
@@ -528,23 +537,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
       return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
     this.resetQuery();
     this.applyDefaultValues();
-    var method = null;
 
-    function __prepareData(err, data, debug, cb) {
-      // copy persisted data on initially instanced node
-      data.copyTo(self);
-      data = self;
-      self._is_singleton_ = false;
-      self._is_instanced_ = true;
-      if (!err)
-        self.isPersisted(true);
-      return cb(null, data, debug);
-    }
-    
     this.id = this._id_;
 
     if (this.id > 0) {
-      method = 'update';
+      // PUT / update
       Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
         if (err) {
           return cb(err, res, debug);
@@ -554,15 +551,72 @@ var __initNode__ = function(neo4jrestful, Graph) {
         }
       });
     } else {
-      method = 'create';
+      // POST / create
       Graph.request().post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
-        if ((err) || (!node))
+        if ((err) || (!node)) {
           return cb(err, node);
-        else
-          return __prepareData(err, node, debug, cb);
+        } else {
+          // copy persisted data on initially instanced node
+          node.copyTo(self);
+          node = self;
+          node._is_singleton_ = false;
+          node._is_instanced_ = true;
+          if (!err)
+            node.isPersisted(true);
+          return cb(null, node, debug);
+        }
       });
     }
   }
+
+
+
+  // is used for Nodes + Relationships
+  // TODO: maybe one function for node and for relationship would be a better solution (and outsource of __prepareData)
+  // Node.prototype.onSave = function(cb) {
+  //   var self = this;
+  //   if (this._is_singleton_)
+  //     return cb(Error('Singleton instances can not be persisted'), null);
+  //   if (!this.hasValidData())
+  //     return cb(Error('Node does not contain valid data. `n.data` must be an object.'));
+  //   this.resetQuery();
+  //   this.applyDefaultValues();
+
+  //   this.id = this._id_;
+
+  //   var data = this.flattenData();
+
+  //   var url = null;
+
+  //   if (this.id > 0) {
+  //     // method: PUT/UPDATE
+  //     url = '/node/properties';
+  //     Graph.request().put(url, { data: data }, function(err, res, debug) {
+  //       if (err) {
+  //         return cb(err, res, debug);
+  //       } else {
+  //         self.isPersisted(true);
+  //         return cb(err, self, debug);
+  //       }
+  //     });
+  //   } else {
+  //     // method: POST/CREATE
+  //     url = this.__type__;
+  //     Graph.request().post(url, { data: data }, function(err, node, debug) {
+  //       if ((err) || (!node))
+  //         return cb(err, node, debug);
+  //       else {
+  //         // copy persisted data of response object `node` on source node
+  //         node.copyTo(self);
+  //         self._is_singleton_ = false;
+  //         self._is_instanced_ = true;
+  //         if (!err)
+  //           self.isPersisted(true);
+  //         return cb(null, self, debug);
+  //       }
+  //     });
+  //   }
+  // }
 
   Node.prototype.onAfterSave = function(err, node, next, debug) {
     // we use labelsAsArray to avoid duplicate labels
@@ -644,7 +698,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
       var _createNodeFromLabel = function(node, debug) {
         // convert node to it's model if it has a distinct label and differs from constructor
-        if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {          
+        if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {
           node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
         }
         next(null, node, debug);
@@ -662,7 +716,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       }
     } else {
       next(null, node);
-    } 
+    }
   }
 
   Node.prototype.onAfterLoad = function(node, next) {
@@ -778,9 +832,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // this.cypher.start = {};
       this.cypher.start.a = 'node('+start+')';
       this.cypher.start.b = 'node('+end+')';
-      
+
       var matchString = 'p = '+options.algorithm+'((a)-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-(b))';
-      
+
       this.cypher.match.push(matchString.replace(/\[\:\*+/, '[*'));
       this.cypher.return_properties = ['p'];
     }
@@ -924,7 +978,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
         query.where.push("id("+identifier+") = "+query.by_id);
       }
     }
-    // add all `HAS (property)` statements to where 
+    // add all `HAS (property)` statements to where
     if (query.hasProperty.length > 0) {
       // remove duplicate properties, not necessary but looks nicer
       var whereHasProperties = _.uniq(query.hasProperty);
@@ -948,7 +1002,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       graph.where(query.where.join(' AND '));
     if (query.set)
       graph.set(query.set);
-    
+
     if (query.action)
       graph.custom(query.action+' '+query.actionWith);
     else if (query._distinct)
@@ -973,13 +1027,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (this.cypher.by_id)
       return this.cypher.by_id;
     else
-      return (this.hasId()) ? this.id : fallback; 
+      return (this.hasId()) ? this.id : fallback;
   }
 
   Node.prototype._end_node_id = function(fallback) {
     if (typeof fallback === 'undefined')
       fallback = '*'
-    return (this.cypher.to > 0) ? this.cypher.to : fallback; 
+    return (this.cypher.to > 0) ? this.cypher.to : fallback;
   }
 
   Node.prototype.singletonForQuery = function(cypher) {
@@ -991,12 +1045,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.exec = function(cb, cypher_or_request) {
     var request = null
       , cypherQuery = null;
-    // you can alternatively use an url 
+    // you can alternatively use an url
     if (typeof cypher_or_request === 'string')
       cypherQuery = cypher_or_request;
     else if (typeof cypher_or_request === 'object')
       request = _.extend({ type: 'get', data: {}, url: null }, cypher_or_request);
-    
+
     if (typeof cb === 'function') {
       var cypher = this.toCypherQuery();
       // reset node, because it might be called from prototype
@@ -1011,14 +1065,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
           this.query(cypher, cb);
       } else {
         this.query(cypher, cb);
-      } 
+      }
     }
     return this;
   }
 
   Node.prototype.query = function(cypherQuery, options, cb) {
     var self = this;
-    
+
     // sort arguments
     if (typeof options !== 'object') {
       cb = options;
@@ -1338,7 +1392,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       options.identifier = 'n';
 
     // add identifier to return properties if not exists already
-    if (_.indexOf(this.cypher.return_properties, options.identifier) === -1) 
+    if (_.indexOf(this.cypher.return_properties, options.identifier) === -1)
       this.cypher.return_properties.push(options.identifier);
 
 
@@ -1472,7 +1526,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.onBeforeRemove = function(next) { next(null,null); }
 
-  // was mistakenly called `removeWithRelationships`, so it is renamed 
+  // was mistakenly called `removeWithRelationships`, so it is renamed
   Node.prototype.removeIncludingRelations = function(cb) {
     var self = this;
     return this.removeAllRelations(function(err) {
@@ -1536,24 +1590,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (options.properties)
       options.properties = helpers.flattenObject(options.properties);
 
-    var _create_relationship_by_options = function(options) {
-      Graph.request().post('node/'+options.from_id+'/relationships', {
-        data: {
-          to: new Node({},options.to_id).uri,
-          type: options.type,
-          data: options.properties
-        }
-      }, function(err, relationship) {
-        // to execute the hooks we manually perform the save method
-        // TODO: make a static method in relationships, s.th. create_between_nodes(startId, endId, data)
-        if (err)
-          return cb(err, relationship);
-        else {
-          relationship.save(cb);
-        }
-      });
-      return self;
-    }
 
     if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
       if (options.distinct) {
@@ -1566,6 +1602,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
               if (relationship) {
                 if (options.properties)
                   relationship.data = options.properties;
+                if (options.type)
+                  relationship.type = options.type;
                 relationship.save(cb);
               } else {
                 cb(err, relationship);
@@ -1573,12 +1611,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
             })
           } else {
             // we create a new one
-            return _create_relationship_by_options(options);
+            neo4jrestful.constructorOf('Relationship').create(options.type, options.properties, options.from_id, options.to_id, cb);
+            return self;
           }
         });
       } else {
         // create relationship
-        return _create_relationship_by_options(options);
+        neo4jrestful.constructorOf('Relationship').create(options.type, options.properties, options.from_id, options.to_id, cb);
+        return self;
       }
     } else {
       cb(Error('Missing from_id('+options.from_id+') or to_id('+options.to_id+') OR no cb attached'), null);
@@ -1795,7 +1835,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
           });
         });
       })
-      
+
     } else {
       return this;
     }
@@ -1805,7 +1845,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return {
       id: this.id,
       classification: this.classification,
-      data: _.extend(this.data),
+      data: _.clone(this.data),
       uri: this.uri,
       label: (this.label) ? this.label : null,
       labels: (this.labels.length > 0) ? _.clone(this.labels) : []
@@ -1827,7 +1867,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   /*
    * STATIC METHODS for `find` Queries
-   */ 
+   */
 
   Node.prototype.find = function(where, cb) {
     var self = this;
@@ -1869,7 +1909,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
         .return('n as node, labels(n) AS labels')
         .exec(function(err, result, debug) {
           if (err) {
-            // we ignore entity not found exception and return a null instead 
+            // we ignore entity not found exception and return a null instead
             if (err.exception === 'EntityNotFoundException')
               return cb(null, null, debug);
             else
@@ -1887,7 +1927,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     } else {
       self.cypher.by_id = Number(id);
       return self.findByKeyValue({ id: id }, cb);
-    } 
+    }
   }
 
   Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
@@ -1938,7 +1978,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
           }
         });
       }
-     
+
     }
     return self;
   }
@@ -1970,7 +2010,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
           return cb(Error("More than one node found… You have query one distinct result"), null);
         // else
         var node = new self.constructor(where);
-        node.save(cb);  
+        node.save(cb);
       }
     });
     return this;
@@ -2083,7 +2123,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // we expect to have a `class`-object as known from CoffeeScript
       Class.prototype.labels = Class.getParentModels();
       if (typeof label === 'string') {
-        name = label; 
+        name = label;
       } else {
         name = helpers.constructorNameOfFunction(Class);
         cb = label;
@@ -2104,7 +2144,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       while((Class.__super__) && (i < 10)) {
         i++;
         modelName = helpers.constructorNameOfFunction(Class.__super__);
-        
+
         if (!/^(Node|Relationship|Path)/.test(modelName))
           models.push(modelName);
         if ((Class.prototype.labels)&&(Class.prototype.labels.length > 0))
@@ -2166,16 +2206,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this.find().deleteIncludingRelations(cb);
   }
 
-  Node.create = function(data, id, cb) {
-    if (typeof id === 'function') {
-      cb = id;
-      id = undefined;
-    }
-    if (typeof cb === 'function') {
-      return new this(data, id).save(cb);
-    } else {
-      return new this(data, id);
-    }
+  Node.create = function(data, id) {
+    return new this(data, id);
   }
 
   Node.registered_model   = Node.registeredModel;
