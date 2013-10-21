@@ -13,7 +13,7 @@
   <script src="js/readme.js"></script>
   <link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/tomorrow.min.css">
   <script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
-  
+
   <link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet" type="text/css" />
   <link href="css/layout.css" media="all" rel="stylesheet" type="text/css" />
   <!--<link href="js/rainbow/themes/github.css" rel="stylesheet" type="text/css"> -->
@@ -36,13 +36,17 @@ Neo4jMapper helps to get trivial neo4j-database-tasks quickly done.
 Features:
 
   * **Querying graph, nodes and relationships** via object-chaining
-  * **Object Modeling** for labeling, indexing and other schema-like behaviour 
+  * **Object Modeling** for labeling, indexing and other schema-like behaviour
   * **processes and transforms data** (flatten/unflatten, escaping, loading/populating …)
   * **Transactions handling** of cypher-queries
 
 ### Warning
 
 **Neo4jMapper is not ready for productive environments until Neo4j v2 isn't finally released**. Neo4j v2 or above is mandatory. Currently it's tested against Neo4j Milestone 2.0.0-M05.
+
+### Sourcecode inline Documentation
+
+[Generated sourcecode documentation, quite incomplete but may offer a good introduction to the neo4jmapper models.](docs/)
 
 ## How to use
 
@@ -97,7 +101,7 @@ The most needed interfaces of Neo4jMapper:
     if (err)
       console.error(err.message);
     else
-      console.log('Node is persisted:', dave.toObject()); 
+      console.log('Node is persisted:', dave.toObject());
   });
 ```
 
@@ -129,7 +133,7 @@ Create relations with attributes:
   taylor.createRelationTo( fooFighters, 'PLAYS', { instrument: 'drums' }, cb );
 ```
 
-### Update 
+### Update
 
 ```js
   console.log(dave.data.name);
@@ -381,7 +385,7 @@ Use `Graph.request()` to query natively:
 
 ### Modeling
 
-We can define models based on the `Node` model (similar to models you might know from backbonejs for instance). 
+We can define models based on the `Node` model (similar to models you might know from backbonejs for instance).
 
 Every extended model enjoys label support.
 
@@ -753,7 +757,7 @@ To let buil Neo4j the index in the background for you, you just have to define t
       },
       indexes: {
         email: true # will be autoindex
-        uid: 'my_person_index' # will be indexed on the legacy way with 'my_person_index' namespace 
+        uid: 'my_person_index' # will be indexed on the legacy way with 'my_person_index' namespace
       }
     }
 
@@ -770,7 +774,7 @@ Neo4jMapper won't drop indexed or unique defined fields for you, because it does
     Person.dropEntireIndex(function(err, Per) {
       console.log("Dropped entire index for label 'Person'");
     });
-  }); 
+  });
 ```
 
 ## Hooks
@@ -844,7 +848,7 @@ If a node is populated with data from a response, you can process your node/data
 
 To reduce database requests you can switch load hooks on and off
 
-  * `Node.prototype.disableLoading()` / `Node.prototype.enableLoading()` 
+  * `Node.prototype.disableLoading()` / `Node.prototype.enableLoading()`
   * `Node.disableLoading()` / `Node.enableLoading()` in global context
   * `Graph.request()` or `Graph.disableProcessing().query()` to request natively
 

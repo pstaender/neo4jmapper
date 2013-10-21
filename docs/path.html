@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Path</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="graph.html">
+                graph.js
+              </a>
+            
+              
+              <a class="source" href="helpers.html">
+                helpers.js
+              </a>
+            
+              
+              <a class="source" href="index.html">
+                index.js
+              </a>
+            
+              
+              <a class="source" href="neo4jrestful.html">
+                neo4jrestful.js
+              </a>
+            
+              
+              <a class="source" href="node.html">
+                node.js
+              </a>
+            
+              
+              <a class="source" href="path.html">
+                path.js
+              </a>
+            
+              
+              <a class="source" href="relationship.html">
+                relationship.js
+              </a>
+            
+              
+              <a class="source" href="transaction.html">
+                transaction.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1>Path</h1>
+<p>Path Object represents a path between two Nodes</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> __initPath__ = <span class="keyword">function</span>(neo4jrestful) {
+
+  <span class="keyword">var</span> helpers = <span class="literal">null</span>
+    , _       = <span class="literal">null</span>
+
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> window === <span class="string">'object'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>browser</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    helpers = window.Neo4jMapper.helpers;
+    _       = window._;
+  } <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>nodejs</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    helpers = require(<span class="string">'./helpers'</span>)
+    _       = require(<span class="string">'underscore'</span>);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Constructor of Path</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> Path = <span class="function"><span class="keyword">function</span> <span class="title">Path</span><span class="params">()</span> {</span>
+    <span class="keyword">this</span>.nodes = [];
+    <span class="keyword">this</span>.relationships = [];
+    <span class="keyword">this</span>.from = {
+      id: <span class="literal">null</span>,
+      uri: <span class="literal">null</span>
+    };
+    <span class="keyword">this</span>.to = {
+      id: <span class="literal">null</span>,
+      uri: <span class="literal">null</span>
+    };
+    <span class="keyword">this</span>._is_instanced_ = <span class="literal">true</span>;
+  }
+
+  Path.prototype.classification   = <span class="string">'Path'</span>;   <span class="comment">// only needed for toObject()</span>
+  Path.prototype.from             = <span class="literal">null</span>;
+  Path.prototype.to               = <span class="literal">null</span>;
+  Path.prototype.start            = <span class="literal">null</span>;
+  Path.prototype.end              = <span class="literal">null</span>;
+  Path.prototype.length           = <span class="number">0</span>;
+  Path.prototype.relationships    = <span class="literal">null</span>;
+  Path.prototype.nodes            = <span class="literal">null</span>;
+  Path.prototype._response_       = <span class="literal">null</span>;
+  Path.prototype._is_singleton_   = <span class="literal">false</span>;
+  Path.prototype._is_persisted_   = <span class="literal">false</span>;
+  Path.prototype._is_instanced_   = <span class="literal">null</span>;
+
+  Path.prototype.singleton = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> path = <span class="keyword">new</span> Path();
+    path._is_singleton_ = <span class="literal">true</span>;
+    <span class="keyword">return</span> path;
+  }
+
+  <span class="comment">/*
+  [
+    { start: 'http://localhost:7419/db/data/node/1019',
+      nodes:
+       [ 'http://localhost:7419/db/data/node/1019',
+         'http://localhost:7419/db/data/node/1020',
+         'http://localhost:7419/db/data/node/1021' ],
+      length: 2,
+      relationships:
+       [ 'http://localhost:7419/db/data/relationship/315',
+         'http://localhost:7419/db/data/relationship/316' ],
+      end: 'http://localhost:7419/db/data/node/1021' } ]
+  */</span>
+  Path.prototype.populateWithDataFromResponse = <span class="keyword">function</span>(data) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>if we are working on the prototype object
+we won&#39;t mutate it and create a new path instance insetad</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> path = (<span class="keyword">this</span>._is_instanced_ !== <span class="literal">null</span>) ? <span class="keyword">this</span> : <span class="keyword">new</span> Path();
+    <span class="keyword">if</span> (data) {
+      <span class="keyword">if</span> (_.isObject(data) &amp;&amp; (!_.isArray(data)))
+        path._response_ = data;
+      <span class="keyword">else</span>
+        path._response_ = data[<span class="number">0</span>];
+
+      <span class="keyword">if</span> (_.isArray(data.nodes)) {
+        <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; data.nodes.length; i++) {
+          <span class="keyword">var</span> url = data.nodes[i];
+          <span class="keyword">if</span> (<span class="regexp">/[0-9]+$/</span>.test(url))
+            data.nodes[i] = {
+              uri: url,
+              id: Number(url.match(<span class="regexp">/[0-9]+$/</span>)[<span class="number">0</span>])
+            }
+        }
+      }
+
+      path.nodes = _.extend(data.nodes);
+
+      <span class="keyword">if</span> (_.isArray(data.relationships)) {
+        <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; data.relationships.length; i++) {
+          <span class="keyword">var</span> url = data.relationships[i];
+          <span class="keyword">if</span> (<span class="regexp">/[0-9]+$/</span>.test(url))
+            data.relationships[i] = {
+              uri: url,
+              id: Number(url.match(<span class="regexp">/[0-9]+$/</span>)[<span class="number">0</span>])
+            }
+        }
+      }
+
+      path.relationships = _.extend(data.relationships);
+
+      path.from = {
+        id: Number(data.start.match(<span class="regexp">/[0-9]+$/</span>)[<span class="number">0</span>]),
+        uri: data.start
+      }
+
+      path.to = {
+        id: Number(data.end.match(<span class="regexp">/[0-9]+$/</span>)[<span class="number">0</span>]),
+        uri: data.end
+      }
+
+      path.start = data.start;
+      path.end = data.end;
+      path.length = data.length;
+
+    }
+    path._is_persisted_ = <span class="literal">true</span>;
+    <span class="keyword">return</span> path;
+  }
+
+  Path.prototype.load = <span class="keyword">function</span>(cb) {
+    cb(<span class="literal">null</span>, <span class="keyword">this</span>);
+  }
+
+  Path.prototype.toObject = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+      classification: <span class="keyword">this</span>.classification,
+      start: <span class="keyword">this</span>.start,
+      end: <span class="keyword">this</span>.end,
+      from: _.extend(<span class="keyword">this</span>.from),
+      to: _.extend(<span class="keyword">this</span>.to),
+      relationships: _.extend(<span class="keyword">this</span>.relationships),
+      nodes: _.extend(<span class="keyword">this</span>.nodes)
+    };
+  }
+
+  Path.prototype.resetQuery = <span class="keyword">function</span>() { <span class="keyword">return</span> <span class="keyword">this</span>; }
+
+  Path.create = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">new</span> Path();
+  }
+
+  <span class="keyword">return</span> neo4jrestful.Path = Path;
+}
+
+<span class="keyword">if</span> (<span class="keyword">typeof</span> window !== <span class="string">'object'</span>) {
+  module.exports = exports = {
+    init: __initPath__
+  };
+} <span class="keyword">else</span> {
+  window.Neo4jMapper.initPath = __initPath__;
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

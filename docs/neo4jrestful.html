@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>neo4jrestful.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="graph.html">
+                graph.js
+              </a>
+            
+              
+              <a class="source" href="helpers.html">
+                helpers.js
+              </a>
+            
+              
+              <a class="source" href="index.html">
+                index.js
+              </a>
+            
+              
+              <a class="source" href="neo4jrestful.html">
+                neo4jrestful.js
+              </a>
+            
+              
+              <a class="source" href="node.html">
+                node.js
+              </a>
+            
+              
+              <a class="source" href="path.html">
+                path.js
+              </a>
+            
+              
+              <a class="source" href="relationship.html">
+                relationship.js
+              </a>
+            
+              
+              <a class="source" href="transaction.html">
+                transaction.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>neo4jrestful.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+<span class="keyword">var</span> __initNeo4jRestful__ = <span class="keyword">function</span>(urlOrOptions) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>will be set with environment depending values below</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> helpers                    = <span class="literal">null</span>;
+  <span class="keyword">var</span> _                          = <span class="literal">null</span>;
+  <span class="keyword">var</span> jQuery                     = <span class="literal">null</span>;
+  <span class="keyword">var</span> Sequence                   = <span class="literal">null</span>;
+  <span class="keyword">var</span> JSONStream                 = <span class="literal">null</span>;
+  <span class="keyword">var</span> request                    = <span class="literal">null</span>;
+  <span class="keyword">var</span> __established_connection__ = {};    <span class="comment">// a flag of all different db connections (differs by url)</span>
+
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> window === <span class="string">'object'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>browser</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    helpers      = window.Neo4jMapper.helpers;
+    _            = window._;
+    jQuery       = window.jQuery;
+    Sequence     = window.Sequence;
+    request      = window.superagent;
+  } <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>nodejs</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    helpers      = require(<span class="string">'./helpers'</span>);
+    _            = require(<span class="string">'underscore'</span>);
+    jQuery       = <span class="literal">null</span>;
+    Sequence     = require(<span class="string">'./lib/sequence'</span>);
+    request      = require(<span class="string">'request'</span>);
+    JSONStream   = require(<span class="string">'JSONStream'</span>);
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>Base for QueryError and CypherQueryError</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> CustomError = <span class="function"><span class="keyword">function</span> <span class="title">CustomError</span><span class="params">(message)</span> {</span>
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> message === <span class="string">'string'</span>)
+      <span class="keyword">this</span>.message = message;
+  }
+
+  CustomError.prototype.message = <span class="string">''</span>;
+  CustomError.prototype.name = <span class="string">''</span>;
+  CustomError.prototype.exception = <span class="literal">null</span>;
+  CustomError.prototype.cypher = <span class="literal">null</span>;
+  CustomError.prototype.stacktrace = <span class="literal">null</span>;
+  CustomError.prototype.statusCode = <span class="literal">null</span>;
+  CustomError.prototype.method = <span class="literal">null</span>;
+  CustomError.prototype.url = <span class="literal">null</span>;
+  CustomError.prototype.data = <span class="literal">null</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>will be used to debug request+response</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> RequestDebug = <span class="function"><span class="keyword">function</span> <span class="title">RequestDebug</span><span class="params">(obj)</span> {</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>apply given data to current object</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ((<span class="keyword">typeof</span> obj === <span class="string">'object'</span>) &amp;&amp; (obj))
+      <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> obj)
+        <span class="keyword">this</span>[key] = obj[key];
+  }
+
+  RequestDebug.prototype.options        = <span class="literal">null</span>;
+  RequestDebug.prototype.requested_url  = <span class="string">''</span>;
+  RequestDebug.prototype.method         = <span class="string">''</span>;
+  RequestDebug.prototype.header         = <span class="literal">null</span>;
+  RequestDebug.prototype.res            = <span class="literal">null</span>;
+  RequestDebug.prototype.status         = <span class="literal">null</span>;
+  RequestDebug.prototype.err            = <span class="literal">null</span>;
+  RequestDebug.prototype.responseTime   = <span class="literal">null</span>;
+
+  <span class="keyword">var</span> QueryError = <span class="keyword">function</span>(message, options, name) {
+    <span class="keyword">var</span> error = <span class="keyword">new</span> CustomError(message);
+    error.name = (<span class="keyword">typeof</span> name === <span class="string">'string'</span>) ? name : <span class="string">"QueryError"</span>;
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'object'</span>) {
+      error = _.extend(error, options);
+    }
+  }
+
+  <span class="keyword">var</span> CypherQueryError = <span class="keyword">function</span>(message, options) {
+    <span class="keyword">var</span> error = QueryError(message, options, <span class="string">'CypherQueryError'</span>);
+    <span class="keyword">return</span> _.extend(<span class="keyword">this</span>, error);
+  }
+
+  <span class="comment">/*
+   * Constructor
+   */</span>
+  <span class="keyword">var</span> Neo4jRestful = <span class="function"><span class="keyword">function</span> <span class="title">Neo4jRestful</span><span class="params">(url, options)</span> {</span>
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;
+    <span class="keyword">var</span> urlPattern = <span class="regexp">/^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i</span>;
+    <span class="keyword">var</span> urlMatches = <span class="literal">null</span>;
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> url === <span class="string">'undefined'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>use global</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      url = urlOrOptions;
+    }
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> options !== <span class="string">'object'</span>) {
+      options = (<span class="keyword">typeof</span> url === <span class="string">'object'</span>) ? url : {};
+    }
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> url === <span class="string">'string'</span>) {
+      options.url = url;
+    }
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> options.url === <span class="string">'string'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>check url
+ensure one trailing slash</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      options.url = options.url.replace(<span class="regexp">/\/*$/</span>, <span class="string">'/'</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>stop here if we don&#39;t have a valid url</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (!urlPattern.test(options.url)) {
+        <span class="keyword">var</span> message = <span class="string">"Your URL ("</span>+url+<span class="string">") needs to match the default url pattern 'http(s)://(username:password@)domain(:port)/(endpoint)…'"</span>;
+        <span class="keyword">throw</span> Error(message);
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>extract all parts from the given url
+TODO: use extractet Options</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      urlMatches = options.url.match(urlPattern);
+      <span class="keyword">this</span>.urlOptions = _.defaults({
+        <span class="string">'protocol'</span>: urlMatches[<span class="number">1</span>],
+        <span class="string">'user'</span>: urlMatches[<span class="number">4</span>],
+        <span class="string">'password'</span>: urlMatches[<span class="number">5</span>],
+        <span class="string">'domain'</span>: urlMatches[<span class="number">6</span>],
+        <span class="string">'port'</span>: urlMatches[<span class="number">8</span>],
+        <span class="string">'endpoint'</span>: urlMatches[<span class="number">9</span>]
+      }, <span class="keyword">this</span>.urlOptions);
+      <span class="keyword">if</span> (<span class="keyword">this</span>.urlOptions.endpoint) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>strip preceding slash(es)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">this</span>.urlOptions.endpoint = <span class="keyword">this</span>.urlOptions.endpoint.replace(<span class="regexp">/^\/+/</span>, <span class="string">''</span>);
+      }
+    } <span class="keyword">else</span> {
+      <span class="keyword">throw</span> Error(<span class="string">'No url found. Argument must be either an URL as string or an option object including an `.url` property.'</span>);
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>we may have an error handler in options, if so, assign it to this object</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">typeof</span> options.onConnectionError === <span class="string">'function'</span>) {
+      <span class="keyword">this</span>.onConnectionError = options.onConnectionError;
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>copy header</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    self.header = _.extend({}, Neo4jRestful.prototype.header);
+
+    <span class="keyword">if</span> (!__established_connection__[<span class="keyword">this</span>.absoluteUrl(<span class="string">'/'</span>)])
+      self.checkAvailability();
+  }
+
+  Neo4jRestful.RequestDebug = RequestDebug;
+  Neo4jRestful.CustomError  = CustomError;
+
+  Neo4jRestful.prototype.options                    = <span class="literal">null</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>template for the header of each request to neo4j</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Neo4jRestful.prototype.header = {
+    <span class="string">'Accept'</span>: <span class="string">'application/json'</span>,
+    <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>
+  };
+  Neo4jRestful.prototype.timeout                    = <span class="number">5000</span>;
+  Neo4jRestful.prototype.debug                      = <span class="literal">true</span>; <span class="comment">// can be deactivated but will not make any performance difference</span>
+  Neo4jRestful.prototype.exact_version              = <span class="literal">null</span>;
+  Neo4jRestful.prototype.version                    = <span class="literal">null</span>;
+  Neo4jRestful.prototype.ignore_exception_pattern   = <span class="regexp">/^(Node|Relationship)NotFoundException$/</span>; <span class="comment">// in some case we will ignore exceptions from neo4j, e.g. not found</span>
+  Neo4jRestful.prototype.urlOptions = {
+    protocol: <span class="string">'http'</span>,
+    domain: <span class="string">'localhost'</span>,
+    port: <span class="number">7474</span>,
+    user: <span class="string">''</span>,
+    password: <span class="string">''</span>,
+    endpoint: <span class="string">'db/data/'</span>
+  };</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>is used for measurement of request-to-respond</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Neo4jRestful.prototype._request_on_               = <span class="literal">null</span>;
+  Neo4jRestful.prototype._response_on_              = <span class="literal">null</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>contains data of the response</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Neo4jRestful.prototype._response_                 = <span class="literal">null</span>;
+  Neo4jRestful.prototype._columns_                  = <span class="literal">null</span>;
+  Neo4jRestful.prototype._detectTypesOnColumns_     = <span class="literal">false</span>; <span class="comment">// n AS `(Node)`, labels(n) AS `(Node.id)`, r AS `[Relationship]`</span>
+
+  Neo4jRestful.prototype.query = <span class="keyword">function</span>(cypher, options, cb) {
+    <span class="keyword">var</span> args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) );
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> cypher === <span class="string">'string'</span>) {
+      <span class="keyword">this</span>.log(<span class="string">'**info**'</span>, <span class="string">'cypher:'</span>, cypher.trim().replace(<span class="regexp">/\s+/g</span>,<span class="string">' '</span>));
+      <span class="keyword">this</span>.post(<span class="string">'/'</span>+<span class="keyword">this</span>.urlOptions.endpoint+<span class="string">'cypher'</span>,{
+        data: {
+          query: cypher,
+          params: options.params || {}
+        }
+      }, <span class="keyword">function</span>(err, result, debug){
+        <span class="keyword">return</span> cb(err, result, debug);
+      });
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p><a href="http://docs.neo4j.org/chunked/preview/rest-api-transactional.html">http://docs.neo4j.org/chunked/preview/rest-api-transactional.html</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Neo4jRestful.prototype.statement = <span class="keyword">function</span>() {
+    <span class="keyword">throw</span> Error(<span class="string">'Not implemented, yet'</span>);
+  }
+
+  Neo4jRestful.prototype.checkAvailability = <span class="keyword">function</span>(cb) {
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;
+    <span class="keyword">this</span>._sendHttpRequest({
+      method: <span class="string">'GET'</span>,
+      url: self.absoluteUrl(<span class="string">'/'</span>),
+      timeout: self.timeout
+    }, <span class="keyword">function</span>(err, res) {
+        <span class="keyword">var</span> body = (res) ? res.body : <span class="literal">null</span>;
+        <span class="keyword">if</span> ((<span class="keyword">typeof</span> res !== <span class="string">'undefined'</span>) &amp;&amp; (res.status === <span class="number">200</span>)&amp;&amp;(body)&amp;&amp;(body.neo4j_version)) {
+          self.exact_version = body.neo4j_version;
+          self.version = Number(self.exact_version.replace(<span class="regexp">/^([0-9]+\.*[0-9]*)(.*)$/</span>, <span class="string">'$1'</span>));
+          <span class="keyword">var</span> error = (self.version &lt; <span class="number">2</span>) ? Error(<span class="string">'Neo4jMapper is not build+tested for neo4j version below v2'</span>) : <span class="literal">null</span>;
+          __established_connection__[self.absoluteUrl(<span class="string">'/'</span>)] = <span class="literal">true</span>;
+          <span class="keyword">if</span> (<span class="keyword">typeof</span> cb === <span class="string">'function'</span>)
+            cb(error, body.neo4j_version);
+        } <span class="keyword">else</span> {
+          __established_connection__[self.absoluteUrl(<span class="string">'/'</span>)] = <span class="literal">false</span>;
+          self.onConnectionError(Error(<span class="string">"Can't detect neo4j… Sure neo4j service is available on "</span>+self.absoluteUrl(<span class="string">'/'</span>)+<span class="string">"? "</span>+((err) ? <span class="string">'('</span>+err.message+<span class="string">')'</span> : <span class="string">''</span>)), self);
+        }
+      }
+    );
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+  }
+
+  Neo4jRestful.prototype.absoluteUrl = <span class="keyword">function</span>(url) {
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> url !== <span class="string">'string'</span>)
+      url = <span class="string">''</span>;
+    <span class="keyword">if</span> (!url)
+      url = <span class="keyword">this</span>.url || <span class="string">'/'</span>;
+    <span class="keyword">if</span> (url) {
+      <span class="keyword">var</span> baseUrl = <span class="keyword">this</span>._connectionString();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>strip redundant endpoints if they exists</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">return</span> baseUrl + url.replace(<span class="regexp">/^\/+/</span>, <span class="string">''</span>).replace(<span class="keyword">new</span> RegExp(<span class="string">'^'</span>+<span class="keyword">this</span>.urlOptions.endpoint.split(<span class="string">'/'</span>).join(<span class="string">'\\/'</span>)+<span class="string">'*'</span>), <span class="string">''</span>);
+    }
+  }
+
+  Neo4jRestful.prototype._connectionString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.urlOptions.protocol + <span class="string">'://'</span>
+      + String(((<span class="keyword">this</span>.urlOptions.user)&amp;&amp;(<span class="keyword">this</span>.urlOptions.password)) ? <span class="keyword">this</span>.urlOptions.user + <span class="string">':'</span> + <span class="keyword">this</span>.urlOptions.password+<span class="string">'@'</span> : <span class="string">''</span> )
+      + <span class="keyword">this</span>.urlOptions.domain
+      + <span class="string">':'</span> + <span class="keyword">this</span>.urlOptions.port
+      + <span class="string">'/'</span> + <span class="keyword">this</span>.urlOptions.endpoint;
+  }
+
+  Neo4jRestful.prototype.request = <span class="keyword">function</span>(url, options, cb) {
+    <span class="keyword">var</span> debug = <span class="literal">null</span>; <span class="comment">// debug object</span>
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'undefined'</span>)
+      options = {};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>apply default options</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    _.defaults(options, {
+      method: <span class="string">'GET'</span>,
+      data: <span class="literal">null</span>,
+      debug: <span class="literal">false</span>,</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>use copy of header, not reference</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      header: _.extend({},<span class="keyword">this</span>.header)
+    });
+
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> url !== <span class="string">'string'</span>) {
+
+      <span class="keyword">throw</span> Error(<span class="string">"First argument 'url' must be string"</span>);
+
+    }
+
+    <span class="keyword">this</span>.url = options.url = url;
+    <span class="keyword">this</span>.header = options.header;
+
+    <span class="keyword">var</span> requestedUrl = <span class="keyword">this</span>.absoluteUrl();
+    <span class="keyword">var</span> data = options.data;
+
+    <span class="keyword">if</span> ( (<span class="keyword">typeof</span> data === <span class="string">'object'</span>) &amp;&amp; (data !== <span class="literal">null</span>) )
+     data = JSON.stringify(options.data);
+
+    <span class="keyword">if</span> (<span class="keyword">this</span>.debug)
+      options.debug = <span class="literal">true</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>create debug object</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (options.debug)
+      debug = <span class="keyword">new</span> RequestDebug({
+        options: options,
+        requested_url: requestedUrl,
+        method: options.method,
+        data: data,
+        header: <span class="keyword">this</span>.header,
+        res: <span class="literal">null</span>,
+        status: <span class="literal">null</span>,
+        err: <span class="literal">null</span>
+      });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p>options for makeRequest()</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> _options_ = {
+      requestedUrl: requestedUrl,
+      method: options.method,
+      data: data,
+      options: options,
+      debug: debug,
+      url: url
+    };
+
+    <span class="keyword">return</span> <span class="keyword">this</span>._makeRequest(_options_, cb);
+  }
+
+  Neo4jRestful.prototype._makeRequest = <span class="keyword">function</span>(_options_, cb) {
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p>apply default options on options</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    _.defaults(_options_, {
+      cache: <span class="literal">false</span>,
+      timeout: <span class="keyword">this</span>.timeout,
+      loadNode: <span class="literal">true</span> <span class="comment">// enables the load hooks</span>
+    });</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>create final options object from <em>options</em>.options</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> options = _options_.options;
+
+    options.absolute_url = _options_.requestedUrl;
+    options.url = _options_.url;
+    options.method = _options_.method;
+    options.data = _options_.data;
+    options._debug = _options_.debug;
+
+    <span class="keyword">this</span>.log(<span class="string">'**debug**'</span>, <span class="string">'URI:'</span>, options.method+<span class="string">":"</span>+options.url+<span class="string">" ("</span>+options.absolute_url+<span class="string">")"</span>);
+    <span class="keyword">this</span>.log(<span class="string">'**debug**'</span>, <span class="string">'sendedData:'</span>, options.data);
+    <span class="keyword">this</span>.log(<span class="string">'**debug**'</span>, <span class="string">'sendedHeader:'</span>, self.header);
+
+    <span class="keyword">this</span>._request_on_ = <span class="keyword">new</span> Date().getTime();
+
+    <span class="keyword">var</span> requestOptions = {
+      method: options.method,
+      url: options.absolute_url,
+      header: self.header
+    };
+
+    <span class="keyword">if</span> (options.data)
+      requestOptions.data = options.data;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>stream</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">this</span>.header[<span class="string">'X-Stream'</span>] === <span class="string">'true'</span>) {
+
+      <span class="keyword">var</span> stream = JSONStream.parse([<span class="string">'data'</span>, <span class="literal">true</span>]);
+
+      stream.on(<span class="string">'data'</span>, cb);
+      stream.on(<span class="string">'end'</span>, <span class="keyword">function</span>() {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>prevent to pass undefined, but maybe an undefined is more clear</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        cb(<span class="literal">null</span>, <span class="literal">null</span>);
+      });
+
+      stream.on(<span class="string">'root'</span>, <span class="keyword">function</span>(root, count) {
+        self._response_on_ = <span class="keyword">new</span> Date().getTime();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>remove x-stream from header</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">delete</span> self.header[<span class="string">'X-Stream'</span>];
+        <span class="keyword">if</span> (!count) {
+          cb(<span class="literal">null</span>, Error(<span class="string">'No matches in stream found ('</span>+ root +<span class="string">')'</span>));
+        } <span class="keyword">else</span> <span class="keyword">if</span> ((root) &amp;&amp; (root.columns)) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>attach columns</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          self._columns_ = root.columns;
+        }
+      });
+
+      requestOptions.stream = stream;
+
+    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>now finally send the request</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">this</span>._sendHttpRequest(requestOptions, <span class="keyword">function</span>(err, res) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>req.end(function(err, res) {</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      self._response_ = res;
+      self._response_on_ = <span class="keyword">new</span> Date().getTime();
+      <span class="keyword">if</span> (options._debug)
+        options._debug.responseTime = self.responseTime();
+      <span class="keyword">if</span> (err) {
+        self.onError(cb, err, <span class="string">'error'</span>, options);
+      } <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>we might have a reponse with a failure status code</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (res.status &gt;= <span class="number">400</span>) {
+          self.onError(cb, res.body, <span class="string">'error'</span>, options);
+        } <span class="keyword">else</span> {
+          <span class="keyword">if</span> (res.body)
+            self._columns_ = res.body.columns || <span class="literal">null</span>;
+          self.onSuccess(cb, res.body, <span class="string">'success'</span>, options);
+        }
+      }
+    });
+
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h3">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <h3>Wrapper for superagent and request</h3>
+<p>Private method, can be indirectly &#39;accessed&#39; via neo4jrestful.get|post|delete|put or neo4jrestfule.request</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Neo4jRestful.prototype._sendHttpRequest = <span class="keyword">function</span>(options, cb) {
+    _.defaults(options, {
+      header: {},
+      data: <span class="literal">null</span>,
+      method: <span class="string">'GET'</span>,
+      timeout: <span class="literal">null</span>,
+      stream: <span class="literal">false</span>
+    });
+    <span class="keyword">var</span> isBrowser = Boolean(<span class="keyword">typeof</span> window === <span class="string">'object'</span>);
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> cb !== <span class="string">'function'</span>)
+      <span class="keyword">throw</span> Error(<span class="string">'Callback as 2nd argument is mandatory'</span>);
+    <span class="keyword">if</span> ((<span class="keyword">typeof</span> options !== <span class="string">'object'</span>)||(!options.url))
+      cb(Error(<span class="string">"Set { url: '…' } as argument"</span>));
+    <span class="keyword">if</span> (isBrowser) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h3">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <h3>superagent for browserside usage</h3>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> req = window.superagent(options.method, options.url).set(options.header);
+      <span class="keyword">if</span> (options.data)
+        req.send(options.data);
+      <span class="keyword">if</span> (options.stream) {
+        <span class="keyword">return</span> req.pipe(options.stream);
+      } <span class="keyword">else</span> {
+        <span class="keyword">return</span> req.end(<span class="keyword">function</span>(err, res) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>compatibility of superagent to response api</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          <span class="keyword">if</span> (<span class="keyword">typeof</span> res === <span class="string">'object'</span>) {
+            res.statusCode = res.status;
+          }
+          <span class="keyword">return</span> cb(err, res);
+        });
+      }
+
+    } <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h3">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <h3>request module for nodejs</h3>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> req = request;
+      options.json = <span class="literal">true</span>;
+      <span class="keyword">if</span> (options.data) {
+        <span class="keyword">if</span> (<span class="keyword">typeof</span> options.data === <span class="string">'string'</span>)
+          options.body = options.data;
+        <span class="keyword">else</span>
+          options.json = options.data;
+      }
+      <span class="keyword">if</span> (options.stream) {
+        <span class="keyword">return</span> req(options).pipe(options.stream);
+      } <span class="keyword">else</span> {
+        <span class="keyword">return</span> req(options, <span class="keyword">function</span>(err, res) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>compatibility of response to superagent api</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          <span class="keyword">if</span> (<span class="keyword">typeof</span> res === <span class="string">'object'</span>) {
+            res.status = res.statusCode;
+          }
+          <span class="keyword">return</span> cb(err, res);
+        });
+      }
+    }
+  }
+
+  Neo4jRestful.prototype.onProcess = <span class="keyword">function</span>(res, next, debug) {
+    <span class="keyword">if</span> (_.isArray(res)) {
+      <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; res.length; i++) {
+        res[i] = <span class="keyword">this</span>.createObjectFromResponseData(res[i]);
+      }
+    } <span class="keyword">else</span> <span class="keyword">if</span> (_.isObject(res)) {
+      res = <span class="keyword">this</span>.createObjectFromResponseData(res);
+    }
+    next(<span class="literal">null</span>, res, debug);
+  }
+
+  Neo4jRestful.prototype.onSuccess = <span class="keyword">function</span>(next, res, status, options) {
+    <span class="keyword">if</span> (options.debug) {
+      options._debug.res = res;
+      options._debug.status = status;
+    }
+    <span class="keyword">if</span> (status === <span class="string">'success'</span>) {
+      <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>.onProcess === <span class="string">'function'</span>)
+        <span class="keyword">return</span> <span class="keyword">this</span>.onProcess(res, next, options._debug);
+      <span class="keyword">else</span>
+        <span class="keyword">return</span> next(<span class="literal">null</span>, res, options._debug);
+    } <span class="keyword">else</span> {
+      next(res, status, options._debug);
+    }
+  }
+
+  Neo4jRestful.prototype.onError = <span class="keyword">function</span>(cb, responseError, res, options) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>in some (rare) case, we get an empty {} as error</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ( (responseError) &amp;&amp; (<span class="keyword">typeof</span> responseError === <span class="string">'object'</span>) &amp;&amp; (Object.keys(responseError).length === <span class="number">0</span>) ) {
+      <span class="keyword">return</span> cb(<span class="literal">null</span>, res.body || <span class="literal">null</span>, options._debug);
+    }
+    <span class="keyword">var</span> err = responseError;
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;
+    <span class="keyword">var</span> statusCode = (<span class="keyword">this</span>._response_) ? <span class="keyword">this</span>._response_.status : <span class="literal">null</span>;
+    <span class="keyword">var</span> error = ( err &amp;&amp; err.responseText ) ? Error(err.responseText) : err;
+    <span class="keyword">if</span> (options.debug) {
+      options._debug.res = res;
+      options._debug.err = err;
+      options._debug.error = error;
+    }
+
+    <span class="keyword">try</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-39">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-39">&#182;</a>
+              </div>
+              <p>jquery is an optional feature since superagent</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (jQuery) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-40">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-40">&#182;</a>
+              </div>
+              <p>try to extract the first <p> or <pre> from html body, else return error object for better debugging</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">if</span> (jQuery(err.responseText).find(<span class="string">'body pre:first, body p:first'</span>)[<span class="number">0</span>])
+          err.responseText = jQuery(err.responseText).find(<span class="string">'body pre:first, body p:first'</span>).first().text().trim().replace(<span class="regexp">/(\s|\n)+/g</span>,<span class="string">' '</span>);
+        <span class="keyword">else</span> <span class="keyword">if</span> (jQuery(err.responseText).text()) {
+          err.responseText = jQuery(err.responseText).text().trim();
+        }
+      } <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-41">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-41">&#182;</a>
+              </div>
+              <p>remove all tags to get plain message
+TODO: find a real jQuery replacement</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        err.responseText = err.responseText.replace(<span class="regexp">/(&lt;([^&gt;]+)&gt;)/ig</span>,<span class="string">''</span>).trim();
+      }
+    } <span class="keyword">catch</span>(e) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-42">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-42">&#182;</a>
+              </div>
+              <p>ignore exception</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-43">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-43">&#182;</a>
+              </div>
+              <p>try to create a valuable error object from response</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> ((err)&amp;&amp;(err.responseText)&amp;&amp;(<span class="keyword">typeof</span> err.responseText === <span class="string">'string'</span>)) {
+      <span class="keyword">try</span> {
+        <span class="keyword">var</span> err = JSON.parse(err.responseText);
+        <span class="keyword">var</span> ErrorHandler = (<span class="regexp">/^(\/)*db\/data(\/)*$/</span>.test(options.url)) ? CypherQueryError : QueryError;
+        err = <span class="keyword">new</span> ErrorHandler(err.message, {
+          stacktrace: err.stacktrace,
+          exception: err.exception,
+          statusCode: statusCode,
+          url: options.url,
+          method: options.method,
+          data: data
+        });
+      } <span class="keyword">catch</span> (e) {
+        self.log(<span class="string">'**debug** Could not create/parse a valuable error object'</span>, e);
+      }
+    }
+    <span class="keyword">if</span> ( (err) &amp;&amp; (err.exception) &amp;&amp; (self.ignore_exception_pattern) &amp;&amp; (self.ignore_exception_pattern.test(err.exception)) ) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-44">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-44">&#182;</a>
+              </div>
+              <p>we ignore by default notfound exceptions, because they are no &quot;syntactical&quot; errors</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">return</span> cb(<span class="literal">null</span>, <span class="literal">null</span>, options._debug);
+    } <span class="keyword">else</span> {
+      <span class="keyword">return</span> cb(err, <span class="literal">null</span>, options._debug);
+    }
+  }
+
+  Neo4jRestful.prototype.stream = <span class="keyword">function</span>(cypher, options, cb) {
+    <span class="keyword">var</span> args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) );
+    <span class="keyword">this</span>.header[<span class="string">'X-Stream'</span>] = <span class="string">'true'</span>;
+    <span class="keyword">var</span> self = <span class="keyword">this</span>
+      , todo = <span class="number">0</span>
+      , done = <span class="number">0</span>;
+
+    <span class="keyword">return</span> <span class="keyword">this</span>.query(cypher, options, <span class="keyword">function</span>(data) {
+      <span class="keyword">if</span> (data) {
+        <span class="keyword">if</span> (<span class="keyword">typeof</span> self.onProcess === <span class="string">'function'</span>) {
+          todo++;
+          self.onProcess(data, <span class="keyword">function</span>(err, data) {
+            <span class="keyword">if</span> ( (data) &amp;&amp; (data.length === <span class="number">1</span>) )
+              data = data[<span class="number">0</span>];
+            <span class="keyword">if</span> (done &gt;= todo) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-45">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-45">&#182;</a>
+              </div>
+              <p>done</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>              cb(data, self);
+              cb(<span class="literal">null</span>, self);
+            } <span class="keyword">else</span> {
+              cb(data, self);
+            }
+          })
+        } <span class="keyword">else</span> {
+          cb(data, self);
+        }
+      } <span class="keyword">else</span> {
+        cb(<span class="literal">null</span>, self);
+      }
+    });
+  }
+
+  Neo4jRestful.prototype.get = <span class="keyword">function</span>(url, options, cb) {
+    <span class="keyword">var</span> args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = <span class="string">'GET'</span> ) );
+    <span class="keyword">return</span> <span class="keyword">this</span>.request(url, options, cb);
+  }
+
+  Neo4jRestful.prototype.post = <span class="keyword">function</span>(url, options, cb) {
+    <span class="keyword">var</span> args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = <span class="string">'POST'</span> ) );
+    <span class="keyword">return</span> <span class="keyword">this</span>.request(url, options, cb);
+  }
+  Neo4jRestful.prototype.put = <span class="keyword">function</span>(url, options, cb) {
+    <span class="keyword">var</span> args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = <span class="string">'PUT'</span> ) );
+    <span class="keyword">return</span> <span class="keyword">this</span>.request(url, options, cb);
+  }
+
+  Neo4jRestful.prototype.<span class="keyword">delete</span> = <span class="keyword">function</span>(url, options, cb) {
+    <span class="keyword">var</span> args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = <span class="string">'DELETE'</span> ) );
+    <span class="keyword">return</span> <span class="keyword">this</span>.request(url, options, cb);
+  }
+
+  Neo4jRestful.prototype.log = <span class="keyword">function</span>(){ <span class="comment">/* &gt; /dev/null */</span> };
+
+  Neo4jRestful.prototype.createObjectFromResponseData = <span class="keyword">function</span>(responseData, Class) {
+    <span class="keyword">var</span> uri = (responseData) ? responseData.self : <span class="literal">null</span>;
+    <span class="keyword">var</span> Node = <span class="keyword">this</span>.constructorOf(<span class="string">'Node'</span>);
+    <span class="keyword">var</span> Relationship = <span class="keyword">this</span>.constructorOf(<span class="string">'Relationship'</span>);
+    <span class="keyword">var</span> Path = <span class="keyword">this</span>.constructorOf(<span class="string">'Path'</span>);
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> Class !== <span class="string">'function'</span>)
+      Class = Node;
+    <span class="keyword">if</span> (uri) {
+      <span class="keyword">if</span> (<span class="regexp">/\/db\/data\/node\/[0-9]+\/*$/</span>.test(uri)) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-46">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-46">&#182;</a>
+              </div>
+              <p>we have a node or an inheriated class</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">var</span> n = <span class="keyword">new</span> Class();
+        n = n.populateWithDataFromResponse(responseData);
+        <span class="keyword">return</span> n;
+      } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="regexp">/\/db\/data\/relationship\/[0-9]+\/*$/</span>.test(uri)) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-47">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-47">&#182;</a>
+              </div>
+              <p>we have a relationship</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">var</span> r = <span class="keyword">new</span> Relationship();
+        r = r.populateWithDataFromResponse(responseData);
+        <span class="keyword">return</span> r;
+      }
+    }
+    <span class="keyword">else</span>
+      <span class="keyword">if</span> ((_.isNumber(responseData.length))&amp;&amp;(_.isString(responseData.start))) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-48">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-48">&#182;</a>
+              </div>
+              <p>we have a path</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">var</span> p = <span class="keyword">new</span> Path();
+        p = p.populateWithDataFromResponse(responseData);
+        <span class="keyword">return</span> p;
+      }
+    <span class="keyword">return</span> responseData;
+  }
+
+  Neo4jRestful.prototype.responseTime = <span class="keyword">function</span>() {
+    <span class="keyword">if</span> ((<span class="keyword">this</span>._request_on_ &gt; <span class="number">0</span>) &amp;&amp; (<span class="keyword">this</span>._response_on_ &gt; <span class="number">0</span>)) {
+      <span class="keyword">return</span> <span class="keyword">this</span>._response_on_ - <span class="keyword">this</span>._request_on_;
+    } <span class="keyword">else</span> {
+      <span class="keyword">return</span> <span class="literal">null</span>;
+    }
+  }
+
+  Neo4jRestful.prototype.responseTimeAsString = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> time = <span class="keyword">this</span>.responseTime();
+    <span class="keyword">if</span> (time) {
+      <span class="keyword">return</span> Math.floor(time/<span class="number">10</span>)/<span class="number">100</span> + <span class="string">'[s]'</span>;
+    } <span class="keyword">else</span> {
+      <span class="keyword">return</span> <span class="string">''</span>;
+    }
+  }
+
+  Neo4jRestful.prototype.onConnectionError = <span class="keyword">function</span>(<span class="comment">/* err, self */</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-49">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-49">&#182;</a>
+              </div>
+              <p>overwrite with your own function to decide what to do if no connection can be established</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="comment">/* /dev/null */</span>
+  }
+
+  Neo4jRestful.prototype.singleton = <span class="keyword">function</span>() {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-50">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-50">&#182;</a>
+              </div>
+              <p>creates a new instanced copy of this client</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> client = <span class="keyword">new</span> Neo4jRestful(<span class="keyword">this</span>._connectionString());</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-51">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-51">&#182;</a>
+              </div>
+              <p>thats the method we need and why we&#39;re doing this singleton() function here</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    client.constructorOf = <span class="keyword">this</span>.constructorOf;
+    <span class="keyword">return</span> client;
+  }
+
+  Neo4jRestful.create = <span class="keyword">function</span>(url, options) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Neo4jRestful(url, options);
+  }
+
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> window === <span class="string">'object'</span>)
+    window.Neo4jRestful = Neo4jRestful;
+
+  <span class="keyword">return</span> Neo4jRestful;
+};
+
+<span class="keyword">if</span> (<span class="keyword">typeof</span> window !== <span class="string">'object'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-52">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-52">&#182;</a>
+              </div>
+              <p>nodejs</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  module.exports = exports = {
+    init: __initNeo4jRestful__
+  };
+} <span class="keyword">else</span> {
+  window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

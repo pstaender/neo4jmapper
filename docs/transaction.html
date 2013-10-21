@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>Transaction</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page">
+            
+              
+              <a class="source" href="graph.html">
+                graph.js
+              </a>
+            
+              
+              <a class="source" href="helpers.html">
+                helpers.js
+              </a>
+            
+              
+              <a class="source" href="index.html">
+                index.js
+              </a>
+            
+              
+              <a class="source" href="neo4jrestful.html">
+                neo4jrestful.js
+              </a>
+            
+              
+              <a class="source" href="node.html">
+                node.js
+              </a>
+            
+              
+              <a class="source" href="path.html">
+                path.js
+              </a>
+            
+              
+              <a class="source" href="relationship.html">
+                relationship.js
+              </a>
+            
+              
+              <a class="source" href="transaction.html">
+                transaction.js
+              </a>
+            
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1>Transaction</h1>
+<p>Can be used to send (many) cypher statement(s) as transaction
+see: <a href="http://docs.neo4j.org/chunked/preview/rest-api-transactional.html"><a href="http://docs.neo4j.org/chunked/preview/rest-api-transactional.html">http://docs.neo4j.org/chunked/preview/rest-api-transactional.html</a></a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> __initTransaction__ = <span class="keyword">function</span>(neo4jrestful) {
+
+  <span class="keyword">var</span> Statement = <span class="function"><span class="keyword">function</span> <span class="title">Statement</span><span class="params">(transaction, cypher, parameters)</span> {</span>
+    <span class="keyword">this</span>._transaction_  = transaction;
+    <span class="keyword">this</span>.statement = cypher;
+    <span class="keyword">this</span>.parameters = parameters;
+  }
+
+  Statement.prototype._transaction_ = <span class="literal">null</span>;
+  Statement.prototype.statement = <span class="string">''</span>;
+  Statement.prototype.parameters = <span class="literal">null</span>;
+  Statement.prototype.status = <span class="literal">null</span>; <span class="comment">// 'sending', 'sended'</span>
+  Statement.prototype.position = <span class="literal">null</span>;
+  Statement.prototype.results = <span class="literal">null</span>;
+  Statement.prototype.errors = <span class="literal">null</span>;
+
+  Statement.prototype.toObject = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+      statement: <span class="keyword">this</span>.statement,
+      parameters: JSON.stringify(<span class="keyword">this</span>.parameters),
+      status: <span class="keyword">this</span>.status,
+      position: <span class="keyword">this</span>.position,
+      errors: <span class="keyword">this</span>.errors,
+      results: <span class="keyword">this</span>.results,
+    };
+  }
+
+  <span class="keyword">var</span> Transaction = <span class="function"><span class="keyword">function</span> <span class="title">Transaction</span><span class="params">(cypher, parameters, cb)</span> {</span>
+    <span class="keyword">this</span>.neo4jrestful = neo4jrestful.singleton();
+    <span class="keyword">this</span>.begin(cypher, parameters, cb);
+  }
+
+  Transaction.Statement = Statement;
+
+  Transaction.prototype.statements = <span class="literal">null</span>;
+  Transaction.prototype._response_ = <span class="literal">null</span>;
+  Transaction.prototype.neo4jrestful = <span class="literal">null</span>;
+  Transaction.prototype.status = <span class="string">''</span>; <span class="comment">// new|creating|open|committing|committed</span>
+  Transaction.prototype.id = <span class="literal">null</span>;
+  Transaction.prototype.uri = <span class="literal">null</span>
+  Transaction.prototype.expires = <span class="literal">null</span>;
+  Transaction.prototype.results = <span class="literal">null</span>;
+  Transaction.prototype._concurrentTransmission_ = <span class="number">0</span>;
+  Transaction.prototype._responseError_ = <span class="literal">null</span>; <span class="comment">//will contain response Error</span>
+  Transaction.prototype._resortResults_ = <span class="literal">true</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Transaction.prototype.<em>loadOnResult</em> = neo4jrestful.constructor.prototype.<em>loadOnResult</em>;</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  Transaction.prototype.begin = <span class="keyword">function</span>(cypher, parameters, cb) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>reset</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">this</span>.statements = [];
+    <span class="keyword">this</span>.results = [];
+    <span class="keyword">this</span>.errors = [];
+    <span class="keyword">this</span>.id = <span class="literal">null</span>;
+    <span class="keyword">this</span>.status = <span class="string">'new'</span>;
+    <span class="keyword">return</span> <span class="keyword">this</span>.add(cypher, parameters, cb);
+  }
+
+  Transaction.prototype.add = <span class="keyword">function</span>(cypher, parameters, cb) {
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;
+    <span class="keyword">var</span> args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+    <span class="keyword">var</span> statements = args.statements;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>we cancel the operation if we are comitting</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">this</span>.status === <span class="string">'committed'</span>) {
+      <span class="keyword">if</span> (<span class="keyword">typeof</span> args.cb === <span class="string">'function'</span>)
+        cb(Error(<span class="string">"You can't add statements after transaction is committed"</span>), <span class="literal">null</span>);
+      <span class="keyword">return</span> <span class="keyword">this</span>;
+    }
+    <span class="keyword">this</span>.addStatementsToQueue(statements);
+    <span class="keyword">if</span> ((args.cb) &amp;&amp; (!self.onResponse)) {
+      cb = args.cb;
+      <span class="keyword">this</span>.onResponse = cb;
+    } <span class="keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>we execute if we have a callback
+till then we will collect the statements</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">return</span> <span class="keyword">this</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>cb = function() { /<em> /dev/null/ </em>/ };</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.exec(cb);
+  }
+
+  Transaction.prototype.exec = <span class="keyword">function</span>(cb) {
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>stop here if there is no callback attached</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">typeof</span> cb !== <span class="string">'function'</span>) {
+      <span class="keyword">return</span> <span class="keyword">this</span>;
+    }
+
+    <span class="keyword">var</span> url = <span class="string">''</span>;
+    <span class="keyword">var</span> untransmittedStatements = <span class="keyword">this</span>.untransmittedStatements();
+
+    <span class="keyword">if</span> (<span class="keyword">this</span>.status === <span class="string">'committing'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>commit transaction
+if (!this.id)
+  return this;//.exec(cb);</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      url = (<span class="keyword">this</span>.id) ? <span class="string">'/transaction/'</span>+<span class="keyword">this</span>.id+<span class="string">'/commit'</span> : <span class="string">'/transaction/commit'</span>;
+    } <span class="keyword">else</span> <span class="keyword">if</span> (!<span class="keyword">this</span>.id) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>begin a transaction</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">this</span>.status = <span class="string">'creating'</span>;
+      url = <span class="string">'/transaction'</span>;
+    } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>.status === <span class="string">'open'</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>add to transaction</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">this</span>.status = <span class="string">'adding'</span>;
+      url = <span class="string">'/transaction/'</span>+<span class="keyword">this</span>.id;
+    } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>.status = <span class="string">'committed'</span>) {
+      cb(Error(<span class="string">'Transaction is committed. Create a new transaction instead.'</span>), <span class="literal">null</span>, <span class="literal">null</span>);
+    } <span class="keyword">else</span> {
+      <span class="keyword">throw</span> Error(<span class="string">'Transaction has a unknown status. Possible are: creating|open|committing|committed'</span>);
+    }
+    <span class="keyword">var</span> statements = [];
+    untransmittedStatements.forEach(<span class="keyword">function</span>(statement, i){
+      self.statements[i].status = <span class="string">'sending'</span>;
+      statements.push({ statement: statement.statement, parameters: statement.parameters });
+    });
+    <span class="keyword">this</span>._concurrentTransmission_++;
+    <span class="keyword">this</span>.neo4jrestful.post(url, { data: { statements: statements } }, <span class="keyword">function</span>(err, response, debug) {
+      self._response_ = response;
+      self._concurrentTransmission_--;
+      self._applyResponse(err, response, debug, untransmittedStatements);
+
+      untransmittedStatements.forEach(<span class="keyword">function</span>(statement) {
+        self.statements[statement.position].status = statement.status = <span class="string">'sended'</span>;
+      });
+
+      untransmittedStatements = self.untransmittedStatements();
+
+      <span class="keyword">if</span> (untransmittedStatements.length &gt; <span class="number">0</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>re call exec() until all statements are transmitted
+TODO: set a limit to avoid endless loop</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>        <span class="keyword">return</span> self.exec(cb);
+      }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>TODO: sort and populate resultset, but currently no good way to detect result objects</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">else</span> <span class="keyword">if</span> (self._concurrentTransmission_ === <span class="number">0</span>) {<span class="comment">//  {</span>
+        <span class="keyword">if</span> (<span class="keyword">typeof</span> self.onResponse === <span class="string">'function'</span>) {
+          <span class="keyword">var</span> cb = self.onResponse;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>release onResponse for (optional) next cb</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          self.onResponse = <span class="literal">null</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>call final callback</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          <span class="keyword">if</span> (self.status === <span class="string">'committing'</span>)
+            self.status = <span class="string">'committed'</span>;
+          cb(self._responseError_, self, debug);
+          <span class="keyword">return</span> self;
+        }
+      }
+    });
+
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+  }
+
+  Transaction.prototype.addStatementsToQueue = <span class="keyword">function</span>(statements) {
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;
+    <span class="keyword">if</span> ((statements) &amp;&amp; (statements.constructor === Array) &amp;&amp; (statements.length &gt; <span class="number">0</span>)) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>attach all statments</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      statements.forEach(<span class="keyword">function</span>(data){
+        <span class="keyword">if</span> (data.statement) {
+          <span class="keyword">var</span> statement = <span class="keyword">new</span> Statement(self, data.statement, data.parameters);
+          statement.position = self.statements.length;
+          self.statements.push(statement);
+        }
+      });
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+  }
+
+  Transaction.prototype._applyResponse = <span class="keyword">function</span>(err, response, debug, untransmittedStatements) {
+    <span class="keyword">var</span> self = <span class="keyword">this</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>if error on request/response</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (self.status !== <span class="string">'committing'</span>)
+      self.status = <span class="string">'open'</span>;
+    <span class="keyword">if</span> (err) {
+      self.status = (err.status) ? err.status : err;
+      <span class="keyword">if</span> (!self.status)
+        self.status = self._response_.status;
+    }
+    untransmittedStatements.forEach(<span class="keyword">function</span>(statement, i){
+      <span class="keyword">if</span> (response.errors[i]) {
+        statement.error = response.errors[i];
+        self.errors.push(response.errors[i]);
+      }
+      <span class="keyword">if</span> (response.results[i]) {
+        <span class="keyword">if</span> (self._resortResults_) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>move row property one level above
+{ rows: [ {}, {} ]} -&gt; { [ {}, {} ]}</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          response.results[i].data.forEach(<span class="keyword">function</span>(data, j){</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>if ((response.results[i]) &amp;&amp; (data.row)) {</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>            <span class="keyword">if</span> (data.row) {
+              response.results[i].data[j] = data.row;
+            }
+          })
+        }
+        self.results.push(response.results[i]);
+      }
+    });
+    <span class="keyword">if</span> ((err)||(!response))
+      self._responseError_ = (self._responseError_) ? self._responseError_.push(err) : self._responseError_ = [ err ];
+    <span class="keyword">else</span>
+      self.populateWithDataFromResponse(response);
+  }
+
+  Transaction.prototype.toObject = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> statements = [];
+    <span class="keyword">this</span>.statements.forEach(<span class="keyword">function</span>(stat){
+      statements.push(stat.toObject());
+    });
+    <span class="keyword">return</span> {
+      id: <span class="keyword">this</span>.id,
+      status: <span class="keyword">this</span>.status,
+      statements: statements,
+      expires: <span class="keyword">this</span>.expires,
+      uri: <span class="keyword">this</span>.uri,
+    };
+  }
+
+  Transaction.prototype.populateWithDataFromResponse = <span class="keyword">function</span>(data) {
+    <span class="keyword">if</span> (data) {
+      <span class="keyword">if</span> ((data.transaction) &amp;&amp; (data.transaction.expires))
+        <span class="keyword">this</span>.expires = <span class="keyword">new</span> Date(data.transaction.expires);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>exists only on POST a new transaction</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">if</span> (data.commit) {
+        <span class="keyword">var</span> match = data.commit.match(<span class="regexp">/^(.+?\/transaction\/(\d+))\/commit$/</span>);
+        <span class="keyword">this</span>.id = match[<span class="number">2</span>];
+        <span class="keyword">this</span>.uri = match[<span class="number">1</span>];
+      }
+    }
+  }
+
+  Transaction.prototype.untransmittedStatements = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> statements = [];
+    <span class="keyword">this</span>.statements.forEach(<span class="keyword">function</span>(statement){
+      <span class="keyword">if</span> ((statement)&amp;&amp;(!statement.status))
+        statements.push(statement);
+    });
+    <span class="keyword">return</span> statements;
+  }
+
+  Transaction.prototype.commit = <span class="keyword">function</span>(cypher, parameters, cb) {
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> cypher === <span class="string">'function'</span>) {
+      cb = cypher;
+    } <span class="keyword">else</span> {
+      <span class="keyword">var</span> args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+      <span class="keyword">this</span>.addStatementsToQueue(args.statements);
+      cb = args.cb;
+    }
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> cb !== <span class="string">'function'</span>) {
+      <span class="keyword">throw</span> Error(<span class="string">'You need to attach a callback an a commit/close operation'</span>);
+    }
+    <span class="keyword">this</span>.onResponse = cb;
+    <span class="keyword">this</span>.status = <span class="string">'committing'</span>;
+    <span class="keyword">return</span> <span class="keyword">this</span>.exec(cb);
+  }
+
+  Transaction.prototype.close = Transaction.prototype.commit;
+
+  Transaction.create = <span class="keyword">function</span>(cypher, parameters, cb) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Transaction(cypher, parameters, cb);
+  }
+
+  Transaction.prototype.onResponse = <span class="literal">null</span>;
+
+  Transaction._sortTransactionArguments = <span class="keyword">function</span>(cypher, parameters, cb) {
+    <span class="keyword">var</span> statements = <span class="literal">null</span>;
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> cypher === <span class="string">'string'</span>) {
+      <span class="keyword">if</span> (<span class="keyword">typeof</span> parameters === <span class="string">'function'</span>) {
+        cb = parameters;
+        parameters = {};
+      }
+      statements = [ { statement: cypher, parameters: parameters || {} } ];
+    } <span class="keyword">else</span> <span class="keyword">if</span> ((cypher) &amp;&amp; (cypher.constructor === Array)) {
+      cb = parameters;
+      statements = cypher;
+    } <span class="keyword">else</span> <span class="keyword">if</span> ((cypher) &amp;&amp; (cypher.statement)) {
+      statements = [ cypher ];
+    }
+    <span class="keyword">return</span> {
+      statements: statements,
+      cb: cb || <span class="literal">null</span>
+    }
+  }
+
+  Transaction.prototype.rollback = <span class="keyword">function</span>(cb) {
+    <span class="keyword">if</span> ((<span class="keyword">this</span>.id)&amp;&amp;(<span class="keyword">this</span>.status!==<span class="string">'finalized'</span>)) {
+      <span class="keyword">this</span>.neo4jrestful.<span class="keyword">delete</span>(<span class="string">'/transaction/'</span>+<span class="keyword">this</span>.id, cb);
+    } <span class="keyword">else</span> {
+      cb(Error(<span class="string">'You can only perform a rollback on an open transaction.'</span>), <span class="literal">null</span>);
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+  }
+
+  Transaction.prototype.undo = Transaction.prototype.rollback;
+
+  Transaction.begin = <span class="keyword">function</span>(cypher, parameters, cb) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Transaction(cypher, parameters, cb);
+  }
+
+  Transaction.create = Transaction.begin;
+  Transaction.open = Transaction.begin;
+
+  Transaction.commit = <span class="keyword">function</span>(cypher, parameters, cb) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Transaction().commit(cypher, parameters, cb);
+  }
+
+  <span class="keyword">return</span> neo4jrestful.Transaction = Transaction;
+
+}
+
+<span class="keyword">if</span> (<span class="keyword">typeof</span> window !== <span class="string">'object'</span>) {
+  module.exports = exports = {
+    init: __initTransaction__
+  };
+} <span class="keyword">else</span> {
+  window.Neo4jMapper.initTransaction = __initTransaction__;
+}</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
