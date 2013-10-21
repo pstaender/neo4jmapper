@@ -38,6 +38,7 @@ Neo4jMapper is available in modern Browsers (except the streaming feature), but 
   * reference documentation
   * cleanup redundant tests
   * tests for concurrent different databases connections
+  * fix global scope issue on browser-side-test-suite
 
 ### Tested against:
 

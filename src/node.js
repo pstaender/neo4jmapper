@@ -26,7 +26,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     Sequence     = require('./lib/sequence');
   }
 
-  // ### Constructor
+  // ### Constructor of Node
   // calls this.init(data,id) to set all values to default
   var Node = function Node(data, id) {
     var cb = null;
@@ -105,10 +105,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.__models__ = {};                             // contains all globally registered models
 
-  Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of the object for the user
-  Node.prototype.data = {};                         // will contain all data for the node
-  Node.prototype.id = null;                         // ”public“ id attribute
-  Node.prototype._id_ = null;                       // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
+  Node.prototype.classification   = 'Node';         // only needed for toObject(), just for better identification of the object for the user
+  Node.prototype.data             = {};             // will contain all data for the node
+  Node.prototype.id               = null;           // ”public“ id attribute
+  Node.prototype._id_             = null;           // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
   // can be used to define schema-like-behavior
   // TODO: implement unique
   Node.prototype.fields = {
@@ -117,11 +117,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
     unique: {}
   };
 
-  Node.prototype.uri = null;                        // uri of the node
-  Node.prototype._response_ = null;                 // original response object
-  Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query
-  Node.prototype._stream_ = null;                   // flag for processing result data
-  Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
+  Node.prototype.uri              = null;           // uri of the node
+  Node.prototype._response_       = null;           // original response object
+  Node.prototype._query_history_  = null;           // an array that contains all query actions chronologically, is also a flag for a modified query
+  Node.prototype._stream_         = null;           // flag for processing result data
+  Node.prototype._hashedData_     = null;           // contains md5 hash of a persisted object
 
   // cypher property will be **copied** on each new objects node.cypher in resetQuery()
   Node.prototype.cypher = {
@@ -156,26 +156,24 @@ var __initNode__ = function(neo4jrestful, Graph) {
     by_id: null
   };
 
-  Node.prototype._is_instanced_ = null;             // flag that this object is instanced
-  Node.prototype._is_singleton_ = false;            // flag that this object is a singleton
-  Node.prototype._is_loaded_ = null;
+  Node.prototype._is_instanced_           = null;   // flag that this object is instanced
+  Node.prototype._is_singleton_           = false;  // flag that this object is a singleton
+  Node.prototype._is_loaded_              = null;
 
-  Node.prototype.labels = null;                     // an array of all labels
-  Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
-  //TODO: check that it's still needed
-  Node.prototype._constructor_name_ = null;         // will be with the name of the function of the constructor
-  Node.prototype._parent_constructors_ = null;      // an array of parent constructors (e.g. Director extends Person -> 'Director','Person')
+  Node.prototype.labels                   = null;   // an array of all labels
+  Node.prototype.label                    = null;   // will be set with a label a) if only one label exists b) if one label matches to model
 
-  Node.prototype._load_hook_reference_ = null;      // a reference to acticate or deactivate the load hook
+  Node.prototype._constructor_name_       = null;   // will be with the name of the function of the constructor
+  Node.prototype._load_hook_reference_    = null;   // a reference to acticate or deactivate the load hook
 
-  Node.prototype.__already_initialized__ = false;   // flag to avoid many initializations of a model
+  Node.prototype.__already_initialized__  = false;  // flag to avoid many initializations of a model
 
-  // you should **never** change this value
+  // should **never** be changed
   // it's used to dictinct nodes and relationships
   // many queries containg `node()` command will use this value
   // e.g. n = node(*)
-  Node.prototype.__type__ = 'node';
-  Node.prototype.__type_identifier__ = 'n';
+  Node.prototype.__TYPE__                 = 'node';
+  Node.prototype.__TYPE_IDENTIFIER__      = 'n';
 
   // ### Create a singleton
   // Here a singleton is a node object that is used as
@@ -284,7 +282,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.setUriById = function(id) {
     if (_.isNumber(id))
-      this.uri = Graph.request().absoluteUrl(this.__type__+'/'+id);
+      this.uri = Graph.request().absoluteUrl(this.__TYPE__+'/'+id);
     return this;
   }
 
@@ -534,7 +532,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (this._is_singleton_)
       return cb(Error('Singleton instances can not be persisted'), null);
     if (!this.hasValidData())
-      return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
+      return cb(Error(this.__TYPE__+' does not contain valid data. `'+this.__TYPE__+'.data` must be an object.'));
     this.resetQuery();
     this.applyDefaultValues();
 
@@ -542,7 +540,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
     if (this.id > 0) {
       // PUT / update
-      Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
+      Graph.request().put(this.__TYPE__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
         if (err) {
           return cb(err, res, debug);
         } else {
@@ -552,7 +550,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       });
     } else {
       // POST / create
-      Graph.request().post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
+      Graph.request().post(this.__TYPE__, { data: this.flattenData() }, function(err, node, debug) {
         if ((err) || (!node)) {
           return cb(err, node);
         } else {
@@ -601,7 +599,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   //     });
   //   } else {
   //     // method: POST/CREATE
-  //     url = this.__type__;
+  //     url = this.__TYPE__;
   //     Graph.request().post(url, { data: data }, function(err, node, debug) {
   //       if ((err) || (!node))
   //         return cb(err, node, debug);
@@ -657,7 +655,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
         this.addSetDefinition(attribute, data[attribute]);
       }
     }
-    this.cypher.start[this.__type_identifier__] =  this.__type__ + '(' + this.cypher.by_id + ')';
+    this.cypher.start[this.__TYPE_IDENTIFIER__] =  this.__TYPE__ + '(' + this.cypher.by_id + ')';
     this.cypher._update = true;
     return this.exec(cb);
   }
@@ -672,11 +670,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
       var parameter = {};
       parameter[key] = value;
       this.cypher.set.push(
-        helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__type_identifier__, { valuesToParameters: true })
+        helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__TYPE_IDENTIFIER__, { valuesToParameters: true })
       );
       this._addParameterToCypher(value);
     } else {
-      this.cypher.set.push(helpers.cypherKeyValueToString(attribute, value, this.__type_identifier__));
+      this.cypher.set.push(helpers.cypherKeyValueToString(attribute, value, this.__TYPE_IDENTIFIER__));
     }
   }
 
@@ -855,7 +853,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
     if (Object.keys(this.cypher.start).length < 1) {
       // this.cypher.start = {};
-      this.cypher.start[this.__type_identifier__] = this.__type__+'(*)'; // all nodes by default
+      this.cypher.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)'; // all nodes by default
     }
     this.cypher.count = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
     if (this.cypher._distinct)
@@ -959,19 +957,19 @@ var __initNode__ = function(neo4jrestful, Graph) {
     // Set a fallback to START n = node(*) if it's not null
     if ((this.cypher.start) && (Object.keys(this.cypher.start).length < 1)&&(!(query.match.length > 0))) {
       // query.start = 'n = node(*)';
-      query.start[this.__type_identifier__] = this.__type__+'(*)';
+      query.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)';
     }
     if ((!(query.match.length>0))&&(this.label)) {
       // e.g. ~> MATCH (n:Person)
-      if (this.__type_identifier__ === 'n')
+      if (this.__TYPE_IDENTIFIER__ === 'n')
         query.match.push('(n:'+this.label+')');
-      else if (this.__type_identifier__ === 'r')
+      else if (this.__TYPE_IDENTIFIER__ === 'r')
         query.match.push('[r:'+this.label+']');
     }
 
     // rule(s) for findById
     if (query.by_id > 0) {
-      var identifier = query.node_identifier || this.__type_identifier__;
+      var identifier = query.node_identifier || this.__TYPE_IDENTIFIER__;
       // put in where clause if `START n = node(*)` or no START statement exists
       if ( (Object.keys(this.cypher.start).length < 1) || (this.cypher.start.n === 'node(*)') ) {
         // we have to use the id method for the special key `id`
@@ -1288,7 +1286,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       cb = null;
     }
     if (typeof identifier === 'undefined')
-      identifier = this.__type_identifier__;
+      identifier = this.__TYPE_IDENTIFIER__;
     if ((typeof identifier === 'string') && (/^[nmr]$/i.test(identifier))) {
       if (identifier === 'n') this.whereNodeHasProperty(property);
       if (identifier === 'm') this.whereEndNodeHasProperty(property);
@@ -1505,9 +1503,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var label = (this.label) ? ":"+this.label : "";
     if (Object.keys(this.cypher.start).length < 1) {
       // this.cypher.start = {};
-      this.cypher.start[this.__type_identifier__] = this.__type__+"(*)";
+      this.cypher.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+"(*)";
     }
-    this.cypher.match.push([ '('+this.__type_identifier__+label+")-[r?]-()" ]);
+    this.cypher.match.push([ '('+this.__TYPE_IDENTIFIER__+label+")-[r?]-()" ]);
     this.cypher.return_properties = [ "n", "r" ];
     return this.delete(cb);
   }
@@ -1516,9 +1514,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var self = this;
     this.onBeforeRemove(function(/*err*/) {
       if (self._is_singleton_)
-        return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
+        return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__TYPE__),null);
       if (self.hasId()) {
-        return Graph.request().delete(self.__type__+'/'+self.id, cb);
+        return Graph.request().delete(self.__TYPE__+'/'+self.id, cb);
       }
     })
     return this;
@@ -1949,7 +1947,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       key = 'id';
     if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
       self._query_history_.push({ findByKeyValue: true });
-      var identifier = self.cypher.node_identifier || self.__type_identifier__;
+      var identifier = self.cypher.node_identifier || self.__TYPE_IDENTIFIER__;
       if (self.cypher.return_properties.length === 0)
         self.cypher.return_properties = [ identifier ];
       if (key !== 'id') {
@@ -2221,7 +2219,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     Node.prototype._addParameterToCypher          = Graph.prototype._addParameterToCypher;
   }
 
-  return Node;
+  return neo4jrestful.Node = Node;
 }
 
 if (typeof window !== 'object') {
@@ -2229,5 +2227,5 @@ if (typeof window !== 'object') {
     init: __initNode__
   }
 } else {
-  var initNode = __initNode__;
+  window.Neo4jMapper.initNode = __initNode__;
 }

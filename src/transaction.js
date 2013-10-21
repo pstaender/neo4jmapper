@@ -1,4 +1,6 @@
-//http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
+// # Transaction
+// Can be used to send (many) cypher statement(s) as transaction
+// see: [http://docs.neo4j.org/chunked/preview/rest-api-transactional.html](http://docs.neo4j.org/chunked/preview/rest-api-transactional.html)
 
 var __initTransaction__ = function(neo4jrestful) {
 
@@ -89,7 +91,7 @@ var __initTransaction__ = function(neo4jrestful) {
 
     var url = '';
     var untransmittedStatements = this.untransmittedStatements();
-    
+
     if (this.status === 'committing') {
       // commit transaction
       // if (!this.id)
@@ -118,16 +120,16 @@ var __initTransaction__ = function(neo4jrestful) {
       self._response_ = response;
       self._concurrentTransmission_--;
       self._applyResponse(err, response, debug, untransmittedStatements);
-      
+
       untransmittedStatements.forEach(function(statement) {
         self.statements[statement.position].status = statement.status = 'sended';
       });
-      
+
       untransmittedStatements = self.untransmittedStatements();
 
       if (untransmittedStatements.length > 0) {
         // re call exec() until all statements are transmitted
-        // TODO: set a limit to avoid endless loop          
+        // TODO: set a limit to avoid endless loop
         return self.exec(cb);
       }
       // TODO: sort and populate resultset, but currently no good way to detect result objects
@@ -300,7 +302,7 @@ var __initTransaction__ = function(neo4jrestful) {
     return new Transaction().commit(cypher, parameters, cb);
   }
 
-  return Transaction;
+  return neo4jrestful.Transaction = Transaction;
 
 }
 
@@ -309,5 +311,5 @@ if (typeof window !== 'object') {
     init: __initTransaction__
   };
 } else {
-  var initTransaction = __initTransaction__;
+  window.Neo4jMapper.initTransaction = __initTransaction__;
 }

@@ -50,15 +50,15 @@ var getIdFromObject = function(o) {
 // source: https://gist.github.com/penguinboy/762197
 var flattenObject = function(ob) {
   var toReturn = {};
-  
+
   for (var i in ob) {
     if (!ob.hasOwnProperty(i)) continue;
-    
+
     if ((typeof ob[i]) === 'object') {
       var flatObject = flattenObject(ob[i]);
       for (var x in flatObject) {
         if (!flatObject.hasOwnProperty(x)) continue;
-        
+
         toReturn[i + '.' + x] = flatObject[x];
       }
     } else {
@@ -160,7 +160,7 @@ var cypherKeyValueToString = function(key, originalValue, identifier, conditiona
       value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+escapeString(value)+"'";
     s = key + " = " + value;
   }
-  
+
   return s;
 }
 
@@ -239,7 +239,7 @@ var ConditionalParameters = function ConditionalParameters(conditions, options) 
               // k = key/property, remove identifier e.g. n.name
               var property = k.replace(/^[nmrp]\./,'');
               value = condition[key][k];
-              
+
               // only check for attributes if not s.th. like `n.name? = …`
               var identifierWithProperty = (/\?$/.test(property)) ? '' : property;
               if (identifierWithProperty) {
@@ -257,7 +257,7 @@ var ConditionalParameters = function ConditionalParameters(conditions, options) 
               } else if ((typeof value === 'object')&&(value !== null)&&(Object.keys(value).length === 1)&&(typeof ConditionalParameters.parameterRuleset[Object.keys(value)[0]] === 'function')) {
                 properties.push(hasAttribute+' '+(identifierWithProperty || k)+' '+ConditionalParameters.parameterRuleset[Object.keys(value)[0]](value[Object.keys(value)[0]]));
               } else {
-                properties.push(hasAttribute+this.cypherKeyValueToString(k, value, 
+                properties.push(hasAttribute+this.cypherKeyValueToString(k, value,
                   // only add an identifier if we have NOT s.th. like
                   // n.name = ''  or r.since …
                   (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
@@ -281,7 +281,7 @@ var ConditionalParameters = function ConditionalParameters(conditions, options) 
       this._s = this.convert();
     return this._s;
   }
-  
+
   // assign parameters and option(s)
   if (typeof conditions === 'object') {
     this.conditions = (conditions) ? conditions : {};

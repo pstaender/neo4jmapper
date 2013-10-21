@@ -1,5 +1,6 @@
-
-var __initPath__ = function() {
+// # Path
+// Path Object represents a path between two Nodes
+var __initPath__ = function(neo4jrestful) {
 
   var helpers = null
     , _       = null
@@ -14,7 +15,7 @@ var __initPath__ = function() {
     _       = require('underscore');
   }
 
-  // Constructor
+  // Constructor of Path
   var Path = function Path() {
     this.nodes = [];
     this.relationships = [];
@@ -29,18 +30,18 @@ var __initPath__ = function() {
     this._is_instanced_ = true;
   }
 
-  Path.prototype.classification = 'Path'; // only needed for toObject()
-  Path.prototype.from = null;
-  Path.prototype.to = null;
-  Path.prototype.start = null;
-  Path.prototype.end = null;
-  Path.prototype.length = 0;
-  Path.prototype.relationships = null;
-  Path.prototype.nodes = null;
-  Path.prototype._response_ = null;
-  Path.prototype._is_singleton_ = false;
-  Path.prototype._is_persisted_ = false;
-  Path.prototype._is_instanced_ = null;
+  Path.prototype.classification   = 'Path';   // only needed for toObject()
+  Path.prototype.from             = null;
+  Path.prototype.to               = null;
+  Path.prototype.start            = null;
+  Path.prototype.end              = null;
+  Path.prototype.length           = 0;
+  Path.prototype.relationships    = null;
+  Path.prototype.nodes            = null;
+  Path.prototype._response_       = null;
+  Path.prototype._is_singleton_   = false;
+  Path.prototype._is_persisted_   = false;
+  Path.prototype._is_instanced_   = null;
 
   Path.prototype.singleton = function() {
     var path = new Path();
@@ -138,7 +139,7 @@ var __initPath__ = function() {
     return new Path();
   }
 
-  return Path;
+  return neo4jrestful.Path = Path;
 }
 
 if (typeof window !== 'object') {
@@ -146,5 +147,5 @@ if (typeof window !== 'object') {
     init: __initPath__
   };
 } else {
-  var initPath = __initPath__;
+  window.Neo4jMapper.initPath = __initPath__;
 }

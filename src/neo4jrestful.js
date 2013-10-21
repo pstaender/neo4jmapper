@@ -230,7 +230,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     var debug = null; // debug object
     if (typeof options === 'undefined')
       options = {};
-    
+
     // apply default options
     _.defaults(options, {
       method: 'GET',
@@ -241,7 +241,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     });
 
     if (typeof url !== 'string') {
-      
+
       throw Error("First argument 'url' must be string");
 
     }
@@ -270,7 +270,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
         status: null,
         err: null
       });
-    
+
     // options for makeRequest()
     var _options_ = {
       requestedUrl: requestedUrl,
@@ -292,7 +292,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
       timeout: this.timeout,
       loadNode: true // enables the load hooks
     });
-    
+
     // create final options object from _options_.options
     var options = _options_.options;
 
@@ -316,7 +316,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
     if (options.data)
       requestOptions.data = options.data;
-    
+
     // stream
     if (this.header['X-Stream'] === 'true') {
 
@@ -343,7 +343,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
       requestOptions.stream = stream;
 
     }
-    
+
     // now finally send the request
     this._sendHttpRequest(requestOptions, function(err, res) {
     // req.end(function(err, res) {
@@ -451,9 +451,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
   Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
     // in some (rare) case, we get an empty {} as error
-    // e.g. 7b5ec0f0424d676adc67a477d0500c6d6a35799d:test_main.coffee:675 on initial tests
-    // for now we ignore those errors until we how to deal with them
-    if ( (typeof responseError === 'object') && (Object.keys(responseError).length === 0) ) {
+    if ( (responseError) && (typeof responseError === 'object') && (Object.keys(responseError).length === 0) ) {
       return cb(null, res.body || null, options._debug);
     }
     var err = responseError;
@@ -641,5 +639,5 @@ if (typeof window !== 'object') {
     init: __initNeo4jRestful__
   };
 } else {
-  var initNeo4jRestful = __initNeo4jRestful__;
+  window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;
 }

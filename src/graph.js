@@ -5,8 +5,8 @@
 var __initGraph__ = function(neo4jrestful) {
 
   // Requirements (for browser and nodejs):
-  // * neo4jmapper helpers
-  // * underscorejs
+  //   * neo4jmapper helpers
+  //   * underscorejs
   var _       = null;
   var helpers = null;
 
@@ -22,8 +22,7 @@ var __initGraph__ = function(neo4jrestful) {
   if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
     throw Error('You have to use an Neo4jRestful object as argument')
 
-  // Constructor
-
+  // Constructor of Graph
   var Graph = function Graph(url) {
     if (url) {
       this.neo4jrestful = new neo4jrestful.constructor(url);
@@ -34,21 +33,21 @@ var __initGraph__ = function(neo4jrestful) {
 
   Graph.prototype.neo4jrestful                  = neo4jrestful;
   Graph.prototype._query_history_               = null;
-  // see graph.resetQuery for initialization
+  // see graph.resetQuery() for initialization
   Graph.prototype.cypher = {
-    query: null,           // the cypher query string
-    parameters: null,      // object with paremeters
-    _useParameters: true   // better performance + rollback possible (upcoming feature)
+    query: null,                                                // the cypher query string
+    parameters: null,                                           // object with paremeters
+    _useParameters: true                                        // better performance + rollback possible (upcoming feature)
   };
-  Graph.prototype._queryString_                 = ''; // stores a query string temporarily
+  Graph.prototype._queryString_                 = '';           // stores a query string temporarily
   Graph.prototype._loadOnResult_                = 'node|relationship|path';
-  Graph.prototype._resortResults_               = true; // see in graph.query() -> _increaseDone()
-  Graph.prototype._nativeResults_               = false; // it's not implemented, all results are processed so far
+  Graph.prototype._resortResults_               = true;         // see in graph.query() -> _increaseDone()
+  Graph.prototype._nativeResults_               = false;        // it's not implemented, all results are processed so far
 
-  // ### Will contain the info response of the neo4j database
-  Graph.prototype.info        = null;
-  Graph.prototype._response_  = null; // contains the last response object
-  Graph.prototype._columns_   = null;
+  Graph.prototype.info                          = null;         // contains the info response of the neo4j database
+
+  Graph.prototype._response_                    = null;         // contains the last response object
+  Graph.prototype._columns_                     = null;         // contains `columns` of { columns: [ … ], data: [ … ] }
 
   Graph.prototype.exec = function(query, cb) {
     if (typeof query !== 'string') {
@@ -682,7 +681,7 @@ var __initGraph__ = function(neo4jrestful) {
     return new Graph(url);
   }
 
-  return Graph;
+  return neo4jrestful.Graph = Graph;
 }
 
 if (typeof window !== 'object') {
@@ -690,5 +689,5 @@ if (typeof window !== 'object') {
     init: __initGraph__
   };
 } else {
-  var initGraph = __initGraph__;
+  window.Neo4jMapper.initGraph = __initGraph__;
 }

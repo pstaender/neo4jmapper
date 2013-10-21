@@ -1,3 +1,4 @@
+// # Relationship
 /*
  * TODO:
  * * make query mapper from Node available for relationships as well
@@ -5,11 +6,6 @@
  */
 
 var __initRelationship__ = function(neo4jrestful, Graph, Node) {
-
-  // Requirements (for browser and nodejs):
-  // * Node
-  // * neo4jmapper helpres
-  // * underscorejs
 
   var helpers  = null;
   var _        = null;
@@ -22,7 +18,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     _        = require('underscore');
   }
 
-  // Constructor
+  // Constructor of Relationship
   var Relationship = function Relationship(type, data, start, end, id, cb) {
     this.data = data || {};
     this.type = this._type_ = type || null;
@@ -58,30 +54,31 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     }
   }
 
-  Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
-  Relationship.prototype.data = {};
-  Relationship.prototype.start = null;
-  Relationship.prototype.type = null;
-  Relationship.prototype._type_ = null; // like `_id_` to keep a reference to the legacy type
-  Relationship.prototype.end = null;
-  Relationship.prototype.from = null;
-  Relationship.prototype.to = null;
-  Relationship.prototype.id = null;
-  Relationship.prototype._id_ = null;
-  Relationship.prototype._hashedData_ = null;
-  Relationship.prototype.uri = null;
-  Relationship.prototype._response_ = null;
-  Relationship.prototype._is_singleton_ = false;
-  Relationship.prototype._is_persisted_ = false;
-  Relationship.prototype.cypher = {};
-  Relationship.prototype._is_instanced_ = null;
+  Relationship.prototype.classification   = 'Relationship'; // only needed for toObject()
+  Relationship.prototype.data             = {};
+  Relationship.prototype.start            = null;
+  Relationship.prototype.type             = null;
+  Relationship.prototype._type_           = null;           // like `_id_` to keep a reference to the legacy type
+  Relationship.prototype.end              = null;
+  Relationship.prototype.from             = null;
+  Relationship.prototype.to               = null;
+  Relationship.prototype.id               = null;
+  Relationship.prototype._id_             = null;
+  Relationship.prototype._hashedData_     = null;
+  Relationship.prototype.uri              = null;
+  Relationship.prototype._response_       = null;
+  Relationship.prototype._is_singleton_   = false;
+  Relationship.prototype._is_persisted_   = false;
+  Relationship.prototype.cypher           = {};
+  Relationship.prototype._is_instanced_   = null;
   Relationship.prototype.fields = {
     defaults: {},
     indexes: {}
   };
 
-  Relationship.prototype.__type__ = 'relationship';
-  Relationship.prototype.__type_identifier__ = 'r';
+  // should **never** be changed
+  Relationship.prototype.__TYPE__ = 'relationship';
+  Relationship.prototype.__TYPE_IDENTIFIER__ = 'r';
 
   Relationship.prototype.singleton = function() {
     var relationship = new Relationship();
@@ -121,7 +118,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       self = this.singleton(undefined, this);
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
       // to reduce calls we'll make a specific restful request for one node
-      return Graph.request().get(this.__type__+'/'+id, function(err, object) {
+      return Graph.request().get(this.__TYPE__+'/'+id, function(err, object) {
         if ((object) && (typeof self.load === 'function')) {
           //  && (typeof node.load === 'function')
           object.load(cb);
@@ -151,7 +148,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     if (this._is_singleton_)
       return cb(Error('Singleton instances can not be persisted'), null);
     if (!this.hasValidData())
-      return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
+      return cb(Error(this.__TYPE__+' does not contain valid data. `'+this.__TYPE__+'.data` must be an object.'));
     this.resetQuery();
     this.applyDefaultValues();
 
@@ -230,7 +227,6 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   }
 
   Relationship.prototype.update = function(data, cb) {
-    var self = this;
     if (helpers.isValidData(data)) {
       this.data = _.extend(this.data, data);
       data = this.flattenData();
@@ -407,7 +403,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     return new Relationship(type, data, start, end, id, cb);
   }
 
-  return Relationship;
+  return neo4jrestful.Relationship = Relationship;
 }
 
 if (typeof window !== 'object') {
@@ -415,5 +411,5 @@ if (typeof window !== 'object') {
     init: __initRelationship__
   }
 } else {
-  var initRelationship = __initRelationship__;
+  window.Neo4jMapper.initRelationship = __initRelationship__;
 }
