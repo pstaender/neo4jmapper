@@ -502,18 +502,28 @@ var __initGraph__ = function(neo4jrestful) {
         s += queryFragment;
         continue;
       }
-      var attribute = Object.keys(this._query_history_[i])[0]
-        , forQuery = this._query_history_[i][attribute];
+      var attribute = Object.keys(this._query_history_[i])[0];
+      var forQuery = this._query_history_[i][attribute];
       // remove underscore from attribute, e.g. ORDER_BY -> ORDER BY
       attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');
       if (options.niceFormat) {
         // extend attribute-string with whitespace
         attribute = attribute + Array(chopLength - attribute.length).join(' ');
       }
-      if (forQuery !== null)
-        s += '\n'+attribute+' '+String(forQuery)+' ';
+      if (forQuery !== null) {
+        if (typeof forQuery === 'string') {
+          // remove dupliacted statement fragment identifier, e.g. START START … -> START …
+          forQuery = forQuery.trim().replace(new RegExp('^'+attribute+'\\s+', 'i'), '');
+          // remove trailing semicolon
+          forQuery = forQuery.replace(/\;$/, '');
+        } else {
+          forQuery = String(forQuery);
+        }
+        s += '\n'+attribute+' '+forQuery+' ';
+      }
     }
-    return s.trim()+';';
+    s = s.trim();
+    return s + ';';
   }
 
   // # Enables loading for specific types

@@ -53,20 +53,20 @@ describe 'Neo4jMapper (cypher queries)', ->
       # we will deactivate temporarily parameter seperating for testing the query building
       # http://docs.neo4j.org/chunked/stable/rest-api-cypher.html#rest-api-send-queries-with-parameters
       expect(Node::cypher._useParameters).to.be true
-      
+
 
       class Actor extends Node
       Node.register_model(Actor)
       node = new Node()
       results = []
       testQueries = ->
-        
+
         "Node.findAll()":
           [
              Node.findAll()
             'START n = node(*) RETURN n;'
           ]
-        
+
         "Node.findById(123)":
           [
             Node.findById(123)
@@ -78,7 +78,7 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node.findOne()
             'START n = node(*) RETURN n LIMIT 1;'
           ]
-        
+
         "Node.findAll().limit(10)":
           [
              Node.findAll().limit(10)
@@ -96,7 +96,7 @@ describe 'Neo4jMapper (cypher queries)', ->
              Actor.findAll()
             "START n = node(*) MATCH (n:Actor) RETURN n;"
           ]
-        
+
         "Node.findAll().skip(5)":
           [
              Node.findAll().skip(5)
@@ -108,7 +108,7 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node.start().match('(p:PERSON)-[:KNOWS]->(a:Actor)-[:ACTS]->(m:Movie)').return('p AS Person')
             'MATCH (p:PERSON)-[:KNOWS]->(a:Actor)-[:ACTS]->(m:Movie) RETURN p AS Person;'
           ]
-        
+
 
         "Node.findAll().orderBy( { 'name': 'DESC' } )":
           [
@@ -121,7 +121,7 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node.findAll().orderNodeBy({'name': 'ASC'})
             'START n = node(*) WHERE HAS (n.`name`) RETURN n ORDER BY n.`name` ASC;'
           ]
-        
+
         'Node.findAll().incomingRelations()':
           [
              Node.findAll().incomingRelations()
@@ -133,7 +133,7 @@ describe 'Neo4jMapper (cypher queries)', ->
              Actor.findAll().incomingRelations()
             'START n = node(*) MATCH (n:Actor)<-[r]-() RETURN r;'
           ]
-        
+
         'Node.findAll().outgoingRelations()':
           [
              Node.findAll().outgoingRelations()
@@ -145,7 +145,7 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node.findAll().incomingRelations()
             'START n = node(*) MATCH (n)<-[r]-() RETURN r;'
           ]
-        
+
         "Node.findOne().withRelations('know')":
           [
              Node.findOne().withRelations('know')
@@ -186,13 +186,13 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) MATCH (n)-[r]->() WHERE ( HAS (n.`name`) AND n.`name` = {_value0_} ) RETURN r LIMIT 1;"
             { _value0_: 'Alice'}
           ]
-        
+
         "Node.findAll().outgoingRelations('know').distinct().count()":
           [
              Node.findAll().outgoingRelations('know').distinct().count()
             'START n = node(*) MATCH (n)-[r:know]->() RETURN COUNT(DISTINCT *);'
           ]
-        
+
         "Node.singleton(1).incomingRelationsFrom(2, 'like').where({ 'since': 'years' })":
           [
              Node.singleton(1).incomingRelationsFrom(2, 'like').where({ 'since': 'years' })
@@ -224,7 +224,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = {_value0_} AND HAS (n.`b`) AND n.`b` = {_value1_} ) ) RETURN n;"
             { _value0_: 1, _value1_: 2 }
           ]
-        
+
         "Node.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
              Node.find().where( { $or : [ { 'n.firstname': /alice/i } , { 'n.surname': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
@@ -238,7 +238,7 @@ describe 'Neo4jMapper (cypher queries)', ->
              Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
             "START n = node(*) MATCH (n:Actor) WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
-        
+
         "Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')":
           [
             Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')
@@ -250,13 +250,13 @@ describe 'Neo4jMapper (cypher queries)', ->
              Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).return('n.name AS Name')
             "START n = node(*) WHERE ( HAS (n.`city`) AND n.city = 'berlin' AND ( HAS (n.`name`) AND n.name = 'peter' AND NOT ( HAS (n.`name`) AND n.name = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
           ]
-        
+
         "Node.findById(123).incomingRelations().delete()":
           [
              Node.findById(123).incomingRelations().delete()
             "START n = node(123) MATCH (n)<-[r]-() DELETE r;"
           ]
-        
+
         "Node.findById(123).allRelations().delete()":
           [
              Node.findById(123).allRelations().delete()
@@ -313,69 +313,69 @@ describe 'Neo4jMapper (cypher queries)', ->
 
         "Graph.start()…":
           [
-            Graph.start('start')
-              .match('match')
-              .onMatch('on match')
+            Graph.start('_start_')
+              .match('_match_')
+              .onMatch('_on match_')
               .where('n.name = {value1} OR n.name = {value2}')
               .parameters({value1: 'Bob'})
               .addParameters({value2: 'bob'})
-              .with('with')
-              .orderBy('order by')
+              .with('_with_')
+              .orderBy('_order by_')
               .skip(0)
               .limit(0)
-              .delete('delete')
-              .return('return')
-              .create('create')
-              .onCreate('on create')
-              .createUnique('create unique')
-              .merge('merge')
-              .remove('remove')
-              .set('set')
-              .foreach('foreach')
-              .case('case')
+              .delete('_delete_')
+              .return('_return_')
+              .create('_create_')
+              .onCreate('_on create_')
+              .createUnique('_create unique_')
+              .merge('_merge_')
+              .remove('_remove_')
+              .set('_set_')
+              .foreach('_foreach_')
+              .case('CASE  _case_   END')
               .custom('custom statement')
               .comment('comment'),
             """
-              START start
-              MATCH match
-              ON MATCH on match
+              START _start_
+              MATCH _match_
+              ON MATCH _on match_
               WHERE n.name = {value1} OR n.name = {value2}
-              WITH with
-              ORDER BY order by
+              WITH _with_
+              ORDER BY _order by_
               SKIP 0
               LIMIT 0
-              DELETE delete
-              RETURN return
-              CREATE create
-              ON CREATE on create
-              CREATE UNIQUE create unique
-              MERGE merge
-              REMOVE remove
-              SET set
-              FOREACH foreach
-              CASE case END
+              DELETE _delete_
+              RETURN _return_
+              CREATE _create_
+              ON CREATE _on create_
+              CREATE UNIQUE _create unique_
+              MERGE _merge_
+              REMOVE _remove_
+              SET _set_
+              FOREACH _foreach_
+              CASE _case_ END
               custom statement
               /* comment */;
             """,
             """
-              START start
-              MATCH match
-              ON MATCH on match
+              START _start_
+              MATCH _match_
+              ON MATCH _on match_
               WHERE n.name = {value1} OR n.name = {value2}
-              WITH with
-              ORDER BY order by
+              WITH _with_
+              ORDER BY _order by_
               SKIP 0
               LIMIT 0
-              DELETE delete
-              RETURN return
-              CREATE create
-              ON CREATE on create
-              CREATE UNIQUE create unique
-              MERGE merge
-              REMOVE remove
-              SET set
-              FOREACH foreach
-              CASE case END
+              DELETE _delete_
+              RETURN _return_
+              CREATE _create_
+              ON CREATE _on create_
+              CREATE UNIQUE _create unique_
+              MERGE _merge_
+              REMOVE _remove_
+              SET _set_
+              FOREACH _foreach_
+              CASE _case_ END
               custom statement
               /* comment */;
             """,
@@ -399,8 +399,8 @@ describe 'Neo4jMapper (cypher queries)', ->
             .return(  '(c.move+1)/2 as move, position.to_move as player, m.move, next.score as score')
             .limit(20),
             """
-              MATCH (game:Game)-[c:contains]->(position:Position) 
-              /* Select games with title "Wes vs Alvin" */ 
+              MATCH (game:Game)-[c:contains]->(position:Position)
+              /* Select games with title "Wes vs Alvin" */
               WHERE HAS (game.title) AND game.title = 'Wes vs Alvin'
               WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position)
               WITH positions, c, position
@@ -411,8 +411,8 @@ describe 'Neo4jMapper (cypher queries)', ->
               LIMIT 20;
             """,
             """
-              MATCH (game:Game)-[c:contains]->(position:Position) 
-              /* Select games with title "Wes vs Alvin" */ 
+              MATCH (game:Game)-[c:contains]->(position:Position)
+              /* Select games with title "Wes vs Alvin" */
               WHERE HAS (game.title) AND game.title = {_value0_}
               WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position)
               WITH positions, c, position
