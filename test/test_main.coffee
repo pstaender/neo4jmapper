@@ -197,20 +197,24 @@ describe 'Neo4jMapper', ->
               if todo is 0
                 done()
 
-    it.skip 'expect to request many concurrent queries on different databases', (done) ->
+    it 'expect to request many concurrent queries on different databases', (done) ->
       todo = 40
-      [ configForTest.neo4jURL, 'http://zeitpulse.com:7480' ].forEach (url) ->
-        {Node, Graph, client} = new Neo4j(url)
-        do (Node, Graph, client) ->
-          client.constructor::log = Graph::log = require('./log')#-> console.log(Array.prototype.slice.call(arguments).join(' '))
+      databases = [ configForTest.neo4jURL ]
+      databases.push(configForTest.neo4jURL2) if configForTest.neo4jURL2
+      databases.forEach (url) ->
+        # we have to distinct between our default and local variables with _…_
+        _Neo4j_ = new Neo4j(url)
+        _Node_ = _Neo4j_.Node
+        _Graph_ = _Neo4j_.Graph
+        _client_ = _Neo4j_.client
+        do (_Node_, _Graph_, _client_) ->
+          # client.constructor::log = Graph::log = require('./log')#-> console.log(Array.prototype.slice.call(arguments).join(' '))
           [0...todo].forEach (i) ->
-            # do (Node, Graph, id) ->
             id = generateUID()
-            Node.create { name: id }, (err, node) ->
+            _Node_.create { name: id }, (err, node) ->
               expect(err).to.be null
               expect(node.data.name).to.be.equal id
-              console.log(node.uri)
-              Graph.start().query 'START n=node('+node.id+') RETURN n', (err, found, debug) ->
+              _Graph_.start().query 'START n=node('+node.id+') RETURN n', (err, found, debug) ->
                 expect(err).to.be null
                 expect(found[0].data.name).to.be.equal id
                 todo--
@@ -1078,7 +1082,7 @@ describe 'Neo4jMapper', ->
                           done()
 
     it 'expect to create and update relationships with default values', (done) ->
-      Relationship::fields.defaults.created_on = -> new Date().getTime()
+      Node.Relationship::fields.defaults.created_on = -> new Date().getTime()
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) ->
         alice.createRelationBetween bob, 'like', { since: 'years', nested: { values: true } }, ->
           alice.allRelations 'like', (err, relationships) ->
@@ -1092,7 +1096,7 @@ describe 'Neo4jMapper', ->
             alice.incomingRelations (err, relationship) ->
               r = new Relationship()
               expect(relationship).to.have.length 1
-              Relationship::fields.defaults = {}
+              Node.Relationship::fields.defaults = {}
               r = Relationship.create('know', { since: 'years' }, alice.uri, bob.uri)
               expect(r.isPersisted()).to.be false
               expect(r.start).to.be null
@@ -1301,7 +1305,7 @@ describe 'Neo4jMapper', ->
                     done()
 
     it 'expect to have schema like behaviour on relationships', (done) ->
-      Relationship::fields.defaults =
+      Node.Relationship::fields.defaults =
         created_on: -> String(new Date)
         checked: true
       new Node( name: 'Alice' ).save (err, a) ->

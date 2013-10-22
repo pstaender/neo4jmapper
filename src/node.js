@@ -38,7 +38,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
     // will be used for labels and classes
     if (!this._constructor_name_)
       this._constructor_name_ = helpers.constructorNameOfFunction(this) || 'Node';
-    // each node object has it's own restful client
     this.init(data, id);
     if (cb)
       return this.save(cb);
@@ -122,6 +121,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype._query_history_  = null;           // an array that contains all query actions chronologically, is also a flag for a modified query
   Node.prototype._stream_         = null;           // flag for processing result data
   Node.prototype._hashedData_     = null;           // contains md5 hash of a persisted object
+  Node.prototype.Relationship     = null;           // constructor object for Relationship()
 
   // cypher property will be **copied** on each new objects node.cypher in resetQuery()
   Node.prototype.cypher = {
@@ -1596,7 +1596,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
             return cb(err, result);
           if ((result) && (result.length === 1)) {
             // if we have only one relationship, we update this one
-            neo4jrestful.constructorOf('Relationship').findById(result[0].id, function(err, relationship){
+            Node.Relationship.findById(result[0].id, function(err, relationship){
               if (relationship) {
                 if (options.properties)
                   relationship.data = options.properties;
@@ -1609,13 +1609,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
             })
           } else {
             // we create a new one
-            neo4jrestful.constructorOf('Relationship').create(options.type, options.properties, options.from_id, options.to_id, cb);
+            Node.Relationship.create(options.type, options.properties, options.from_id, options.to_id, cb);
             return self;
           }
         });
       } else {
         // create relationship
-        neo4jrestful.constructorOf('Relationship').create(options.type, options.properties, options.from_id, options.to_id, cb);
+        Node.Relationship.create(options.type, options.properties, options.from_id, options.to_id, cb);
         return self;
       }
     } else {

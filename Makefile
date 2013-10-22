@@ -43,8 +43,9 @@ installneo4j:
 	rm -rf $(NEO4JFOLDER) $(NEO4JFOLDER_ALT)
 	mkdir $(NEO4JFOLDER) $(NEO4JFOLDER_ALT)
 	wget http://dist.neo4j.org/neo4j-community-$(VERSION)-unix.tar.gz
-	cp neo4j-community-$(VERSION)-unix.tar.gz $(NEO4JFOLDER)
-	cp neo4j-community-$(VERSION)-unix.tar.gz $(NEO4JFOLDER_ALT)
-	cd $(NEO4JFOLDER) && tar -zxvf neo4j-community-$(VERSION)-unix.tar.gz && ./neo4j-community-$(VERSION)/bin/neo4j start
-	cd $(NEO4JFOLDER_ALT) && tar -zxvf neo4j-community-$(VERSION)-unix.tar.gz && sed -i 's/org.neo4j.server.webserver.port=7474/org.neo4j.server.webserver.port=7676/g' ./neo4j-community-$(VERSION)/conf/neo4j-server.properties && sed -i 's/org.neo4j.server.webserver.https.port=7473/org.neo4j.server.webserver.port=7673/g' ./neo4j-community-$(VERSION)/conf/neo4j-server.properties && ./neo4j-community-$(VERSION)/bin/neo4j start
+	tar -zxvf neo4j-community-$(VERSION)-unix.tar.gz
+	cp -r neo4j-community-$(VERSION)/* $(NEO4JFOLDER)/
+	cp -r neo4j-community-$(VERSION)/* $(NEO4JFOLDER_ALT)/
+	cd $(NEO4JFOLDER) && ./bin/neo4j start
+	cd $(NEO4JFOLDER_ALT) && sed -i 's/org.neo4j.server.webserver.port=7474/org.neo4j.server.webserver.port=7676/g' conf/neo4j-server.properties && sed -i 's/org.neo4j.server.webserver.https.port=7473/org.neo4j.server.webserver.https.port=7673/g' conf/neo4j-server.properties && ./bin/neo4j start
 	sleep 3

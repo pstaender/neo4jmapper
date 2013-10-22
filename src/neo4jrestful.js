@@ -565,9 +565,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
   Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
     var uri = (responseData) ? responseData.self : null;
-    var Node = this.constructorOf('Node');
-    var Relationship = this.constructorOf('Relationship');
-    var Path = this.constructorOf('Path');
+    var Node = Neo4jRestful.Node;
+    var Relationship = Neo4jRestful.Relationship;
+    var Path = Neo4jRestful.Path;
     if (typeof Class !== 'function')
       Class = Node;
     if (uri) {
@@ -617,10 +617,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
   Neo4jRestful.prototype.singleton = function() {
     // creates a new instanced copy of this client
-    var client = new Neo4jRestful(this._connectionString());
-    // thats the method we need and why we're doing this singleton() function here
-    client.constructorOf = this.constructorOf;
-    return client;
+    return new Neo4jRestful(this._connectionString());
   }
 
   Neo4jRestful.create = function(url, options) {

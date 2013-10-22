@@ -188,7 +188,7 @@ var __initGraph__ = function(neo4jrestful) {
   // ### Shortcut for neo4jrestul.stream
   Graph.prototype.stream = function(cypherQuery, options, cb) {
     var self = this;
-    var Node = neo4jrestful.constructorOf('Node');
+    var Node = Graph.Node;
     var recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
     if (typeof cypherQuery !== 'string') {
       cb = cypherQuery;

@@ -7,53 +7,42 @@
 
 var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
 
+  var _client_ = null;
+
   if (typeof window === 'object') {
     // Browser
     var Neo4jRestful  = this.Neo4jRestful  = window.Neo4jMapper.initNeo4jRestful(urlOrOptions);
 
-    this.client = new Neo4jRestful();
+    this.client = _client_ = new Neo4jRestful();
 
-    var Graph         = this.Graph         = window.Neo4jMapper.initGraph(this.client);
-    var Transaction   = this.Transaction   = window.Neo4jMapper.initTransaction(this.client, this.Graph);
-    var Node          = this.Node          = window.Neo4jMapper.initNode(this.client, this.Graph);
-    var Relationship  = this.Relationship  = window.Neo4jMapper.initRelationship(this.client, this.Graph, Node);
-    var Path          = this.Path          = window.Neo4jMapper.initPath(this.client, this.Graph);
+    this.Graph         = window.Neo4jMapper.initGraph(_client_);
+    this.Transaction   = window.Neo4jMapper.initTransaction(_client_, this.Graph);
+    this.Node          = window.Neo4jMapper.initNode(_client_, this.Graph);
+    this.Relationship  = window.Neo4jMapper.initRelationship(_client_, this.Graph, this.Node);
+    this.Path          = window.Neo4jMapper.initPath(_client_, this.Graph);
 
     Neo4jMapper.prototype.helpers = window.Neo4jMapper.helpers;
   } else {
     // NodeJS
     var Neo4jRestful  = this.Neo4jRestful  = require('./neo4jrestful').init(urlOrOptions);
 
-    this.client = new Neo4jRestful();
+    this.client = _client_ = new Neo4jRestful();
 
-    var Graph         = this.Graph         = require('./graph').init(this.client);
-    var Transaction   = this.Transaction   = require('./transaction').init(this.client);
-    var Node          = this.Node          = require('./node').init(this.client, this.Graph);
-    var Relationship  = this.Relationship  = require('./relationship').init(this.client, this.Graph, Node);
-    var Path          = this.Path          = require('./path').init(this.client, this.Graph);
+    this.Graph         = require('./graph').init(_client_);
+    this.Transaction   = require('./transaction').init(_client_);
+    this.Node          = require('./node').init(_client_, this.Graph);
+    this.Relationship  = require('./relationship').init(_client_, this.Graph, this.Node);
+    this.Path          = require('./path').init(_client_, this.Graph);
 
     Neo4jMapper.prototype.helpers = require('./helpers');
   }
 
-  // this method returns constructor for superordinate availability in objects of current scope
-  this.client.constructorOf = function(name) {
-    switch(name) {
-      case 'Node':
-        return Node;
-      case 'Path':
-        return Path;
-      case 'Relationship':
-        return Relationship;
-      case 'Graph':
-        return Graph;
-      case 'Transaction':
-        return Transaction;
-      case 'Statement':
-        return Transaction.Statement;
-      default:
-        return null;
-    }
-  }
+  // create references among the constructors themeselves
+  this.Node.Relationship          = this.Relationship;
+  this.Relationship.Node          = this.Node;
+  this.Neo4jRestful.Node          = this.Node;
+  this.Neo4jRestful.Path          = this.Path;
+  this.Neo4jRestful.Relationship  = this.Relationship;
 
 }
 

@@ -285,7 +285,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     var errors = [];
     for (var i = 0; i < 2; i++) {
       (function(point){
-        neo4jrestful.constructorOf('Node').findById(self[point].id,function(err,node) {
+        Relationship.Node.findById(self[point].id,function(err,node) {
           self[point] = node;
           if (err)
             errors.push(err);
