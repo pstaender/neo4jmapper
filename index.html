@@ -487,6 +487,16 @@ Coffeescript and it's class pattern is maybe the most convenient way to define m
     Node.registerModel(Director)
 ```
 
+To use default values on Relationships, use the setter (available on `Node` as well):
+
+```
+  Relationship.setDefaultFields({
+    created_on: function() {
+      return new Date().getTime();
+    }
+  });
+```
+
 ### Iterate on large results (streaming)
 
 Note: Sreaming is only working on NodeJS for now
