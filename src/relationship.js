@@ -391,13 +391,16 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     return r;
   }
 
-
-  // Relationship.prototype.onSave = Node.prototype.onSave;
   Relationship.prototype.hasValidData       = Node.prototype.hasValidData;
   Relationship.prototype.flattenData        = Node.prototype.flattenData;
   Relationship.prototype.setUriById         = Node.prototype.setUriById;
   Relationship.prototype.isPersisted        = Node.prototype.isPersisted;
   Relationship.prototype.hasId              = Node.prototype.hasId;
+
+  Relationship.setDefaultFields             = Node.setDefaultFields;
+  Relationship.setIndexFields               = Node.setIndexFields;
+  Relationship.setUniqueFields              = Node.setUniqueFields;
+  Relationship._setModelFields              = Node._setModelFields;
 
   Relationship.create = function(type, data, start, end, id, cb) {
     return new Relationship(type, data, start, end, id, cb);

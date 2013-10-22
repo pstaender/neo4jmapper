@@ -2208,6 +2208,30 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return new this(data, id);
   }
 
+  Node.setDefaultFields = function(fields) {
+    return this._setModelFields('defaults', fields);
+  }
+
+  Node.setIndexFields = function(fields) {
+    return this._setModelFields('indexes', fields);
+  }
+
+  Node.setUniqueFields = function(fields) {
+    return this._setModelFields('unique', fields);
+  }
+
+  Node._setModelFields = function(part, fields) {
+    // part: defaults|unique|indexes
+    for (var attribute in this.prototype.fields[part])
+      // delete previous fields
+      delete(this.prototype.fields[part][attribute]);
+    if ((typeof fields === 'object') && (fields !== null)) {
+      for (var attribute in fields)
+        this.prototype.fields[part][attribute] = fields[attribute]
+    }
+    return this;
+  }
+
   Node.registered_model   = Node.registeredModel;
   Node.registered_models  = Node.registeredModels;
   Node.unregister_model   = Node.unregisterModel;

@@ -12,7 +12,7 @@ if root?
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
   # patter matching for objects we will need for the tests
-  {Graph,Node,Relationship,helpers,client,Neo4jRestful}  = new Neo4j {
+  {Graph,Node,Relationship,Path,helpers,client,Neo4jRestful}  = new Neo4j {
     url: configForTest.neo4jURL
     onConnectionError: (err) ->
       throw err
@@ -29,7 +29,7 @@ else
   }, configForTest or {})
   Join = window.Join
   neo4jmapper = new window.Neo4jMapper(configForTest.neo4jURL)
-  {Graph,Node,Relationship,helpers,client,Neo4jRestful} = neo4jmapper
+  {Graph,Node,Relationship,Path,helpers,client,Neo4jRestful} = neo4jmapper
   Neo4j = Neo4jMapper
 
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
@@ -67,6 +67,18 @@ describe 'Neo4jMapper', ->
           expect(res.columns).to.have.length 1
           expect(res.data).to.have.length 1
           done()
+
+  describe 'references', ->
+
+    it 'expect to work with the same object references', ->
+      expect(Node.Relationship).to.be.equal Relationship
+      expect(Relationship.Node).to.be.equal Node
+      expect(Neo4jRestful.Node).to.be.equal Node
+      expect(Neo4jRestful.Path).to.be.equal Path
+      expect(Neo4jRestful.Relationship).to.be.equal Relationship
+      expect(client.Node).to.be.equal Node
+      expect(client.Path).to.be.equal Path
+      expect(client.Relationship).to.be.equal Relationship
 
   describe 'graph', ->
 
@@ -1082,13 +1094,15 @@ describe 'Neo4jMapper', ->
                           done()
 
     it 'expect to create and update relationships with default values', (done) ->
-      Node.Relationship::fields.defaults.created_on = -> new Date().getTime()
+      Relationship.setDefaultFields
+        created_on: -> new Date().getTime()
       new Node({ name: 'Alice'}).save (err, alice) -> new Node({name: 'Bob'}).save (err, bob) ->
         alice.createRelationBetween bob, 'like', { since: 'years', nested: { values: true } }, ->
           alice.allRelations 'like', (err, relationships) ->
             expect(err).to.be null
             expect(relationships).to.have.length 2
             for relationship, i in relationships
+              # console.log relationship.toObject()
               expect(relationship.id).to.be.above 0
               expect(relationship.data.since).to.be.equal 'years'
               expect(relationship.data.nested.values).to.be.equal true
@@ -1096,7 +1110,7 @@ describe 'Neo4jMapper', ->
             alice.incomingRelations (err, relationship) ->
               r = new Relationship()
               expect(relationship).to.have.length 1
-              Node.Relationship::fields.defaults = {}
+              Relationship.setDefaultFields({})
               r = Relationship.create('know', { since: 'years' }, alice.uri, bob.uri)
               expect(r.isPersisted()).to.be false
               expect(r.start).to.be null
@@ -1305,7 +1319,7 @@ describe 'Neo4jMapper', ->
                     done()
 
     it 'expect to have schema like behaviour on relationships', (done) ->
-      Node.Relationship::fields.defaults =
+      Relationship.setDefaultFields
         created_on: -> String(new Date)
         checked: true
       new Node( name: 'Alice' ).save (err, a) ->
