@@ -1,6 +1,7 @@
 REPORTER = spec
 VERSION = 2.0.0-M06
 NEO4JFOLDER = neo4jserver
+NEO4JFOLDER_ALT = $(NEO4JFOLDER)_alt
 
 test:test-build
 	@NODE_ENV=test mocha --reporter $(REPORTER)
@@ -39,11 +40,11 @@ test-coveralls:test-build
 	npm run clear
 
 installneo4j:
-	rm -rf $(NEO4JFOLDER)
-	mkdir $(NEO4JFOLDER)
-	cd $(NEO4JFOLDER) && wget http://dist.neo4j.org/neo4j-community-$(VERSION)-unix.tar.gz
-	cd $(NEO4JFOLDER) && tar -zxvf neo4j-community-$(VERSION)-unix.tar.gz
-	sed -i 's/HEADLESS=false/HEADLESS=true/g' ./$(NEO4JFOLDER)/neo4j-community-$(VERSION)/bin/neo4j
-	./$(NEO4JFOLDER)/neo4j-community-$(VERSION)/bin/neo4j -u neo4j install
-	service neo4j-service start
+	rm -rf $(NEO4JFOLDER) $(NEO4JFOLDER_ALT)
+	mkdir $(NEO4JFOLDER) $(NEO4JFOLDER_ALT)
+	wget http://dist.neo4j.org/neo4j-community-$(VERSION)-unix.tar.gz
+	cp neo4j-community-$(VERSION)-unix.tar.gz $(NEO4JFOLDER)
+	cp neo4j-community-$(VERSION)-unix.tar.gz $(NEO4JFOLDER_ALT)
+	cd $(NEO4JFOLDER) && tar -zxvf neo4j-community-$(VERSION)-unix.tar.gz && ./neo4j-community-$(VERSION)/bin/neo4j start
+	cd $(NEO4JFOLDER_ALT) && tar -zxvf neo4j-community-$(VERSION)-unix.tar.gz && sed -i 's/org.neo4j.server.webserver.port=7474/org.neo4j.server.webserver.port=7676/g' ./neo4j-community-$(VERSION)/conf/neo4j-server.properties && sed -i 's/org.neo4j.server.webserver.https.port=7473/org.neo4j.server.webserver.port=7673/g' ./neo4j-community-$(VERSION)/conf/neo4j-server.properties && ./neo4j-community-$(VERSION)/bin/neo4j start
 	sleep 3
