@@ -412,11 +412,11 @@ Every extended model enjoys label support.
     var alice = new Person({firstName: 'Alice', surname: 'Springs'});
 
     alice.fullname();
-    ~ Alice Springs
+    ~> Alice Springs
 
     alice.save(function(err, alice) {
       alice.toObject();
-      ~ { id: 81238,
+      ~> { id: 81238,
       classification: 'Node',
       data:
        { created_on: 1374758483622,
@@ -445,7 +445,7 @@ Every extended model enjoys label support.
       name: 'Roman Polanski'
     } ).save(function(err, polanski) {
       polanski.toObject();
-      ~ { id: 81239,
+      ~> { id: 81239,
       classification: 'Node',
       data:
        { created_on: 1374758483625,
@@ -468,8 +468,9 @@ Coffeescript and it's class pattern is maybe the most convenient way to define m
       indexes:
         email: true
       defaults:
-        created_on: - new Date().getTime()
-    fullname: -
+        created_on: ->
+          new Date().getTime()
+    fullname: ->
       s = @data.firstName + " " + @data.surname
       s.trim()
 
@@ -477,10 +478,10 @@ Coffeescript and it's class pattern is maybe the most convenient way to define m
 
     alice = new Person firstName: 'Alice', surname: 'Springs'
     alice.fullname()
-    ~ 'Alice Springs'
+    ~> 'Alice Springs'
     alice.save ->
       alice.label
-      ~ 'Person'
+      ~> 'Person'
 
     class Director extends Person
     Node.registerModel(Director)
@@ -589,7 +590,7 @@ The query method names are heavily inspired by mongodb and mongoose - so most of
 Neo4jMapper is using the following identifiers in cypher queries:
 
   * `n` for a single [n]ode or a start node
-  * `m` for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~ `START n = node(32), m = node(12) MATCH (n)
+  * `m` for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~> `START n = node(32), m = node(12) MATCH (n)
 
 ## Debugging
 
