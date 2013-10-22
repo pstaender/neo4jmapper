@@ -39,6 +39,8 @@ version = client.version
 SkipInNode = (a) -> unless window? then null else a
 SkipInBrowser = (a) -> if window? then null else a
 
+generateUID = -> String(new Date().getTime())+String(Math.round(Math.random()*10000000))
+
 # if process?.env?.TRAVIS
 #   # cancel tests because travis doesn't support neo4j v2, yet
 #   return describe 'Neo4jMapper', ->
@@ -180,10 +182,10 @@ describe 'Neo4jMapper', ->
                       expect(relationship.from.label).to.be undefined
                       done()
 
-    it 'expect to make many different queries parallel', (done) ->
+    it 'expect to make many different concurrent queries', (done) ->
       todo = 40
       for i in [0...todo]
-        id = new Date().getTime()
+        id = generateUID()
         do (id) ->
           Node.create { name: id }, (err, node) ->
             expect(err).to.be null
@@ -194,6 +196,26 @@ describe 'Neo4jMapper', ->
               todo--
               if todo is 0
                 done()
+
+    it.skip 'expect to request many concurrent queries on different databases', (done) ->
+      todo = 40
+      [ configForTest.neo4jURL, 'http://zeitpulse.com:7480' ].forEach (url) ->
+        {Node, Graph, client} = new Neo4j(url)
+        do (Node, Graph, client) ->
+          client.constructor::log = Graph::log = require('./log')#-> console.log(Array.prototype.slice.call(arguments).join(' '))
+          [0...todo].forEach (i) ->
+            # do (Node, Graph, id) ->
+            id = generateUID()
+            Node.create { name: id }, (err, node) ->
+              expect(err).to.be null
+              expect(node.data.name).to.be.equal id
+              console.log(node.uri)
+              Graph.start().query 'START n=node('+node.id+') RETURN n', (err, found, debug) ->
+                expect(err).to.be null
+                expect(found[0].data.name).to.be.equal id
+                todo--
+                if todo is 0
+                  done()
 
     it 'expect to query via Graph with parameters', (done) ->
       Person = Node.registerModel 'Person'
@@ -725,8 +747,7 @@ describe 'Neo4jMapper', ->
               id: true
         }, (err, Movie) ->
           deathAndMaiden = new Movie title: 'Death and the Maiden'
-          uid = new Date().getTime()
-          deathAndMaiden.data.uid = uid
+          deathAndMaiden.data.uid = uid = generateUID()
           deathAndMaiden.save (err) ->
             expect(err).to.be null
             Movie.findAll().where { uid: uid }, (err, found) ->
@@ -944,7 +965,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to set default values and index values', (done) ->
       Node::fields.defaults =
-        uid: -> new Date().getTime()
+        uid: -> generateUID()
         nested:
           hasValue: true
       node = new Node()
@@ -1139,9 +1160,8 @@ describe 'Neo4jMapper', ->
       # In this test case we test all query building features at once
       # so it's kind of an acceptance test
       # and this tast maybe the one who brakes the most on changes ;)
-      uid = -> new Date().getTime()
       # we label to speed query up and to define testspecific graph
-      labelName = "Label#{uid()}"
+      labelName = "Label#{generateUID()}"
       Node.registerModel labelName, { fields: { indexes: { email: true } } }, (err, Model) ->
         new Model( email: 'jackblack@tenacio.us', job: 'Actor' ).save (err, jb) ->
           expect(err).to.be null
