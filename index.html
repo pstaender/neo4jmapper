@@ -230,9 +230,11 @@ or query on instanced nodes:
 
 ### Query Graph
 
-Get processed and loaded results by using `Graph.start()…`
+There are three ways to query the Graph:
 
-Here are some possible ways to go:
+  * `Graph.start().…` The best way to go, results will contain only data and found objects will be loaded (columns definitions may redundant here, but are available on `graph._columns_` anyhow)
+  * `Graph.query(…)` or `Graph.stream(…)` won't process the result, except detecting object type (Node, Relationship, Path)
+  * `Graph.request().[post|get|delete|put|query](…)` will request straightly the restful api and result won't be processed at all
 
 ```js
   Graph.start().query( "CUSTOM CYPHER QUERY" , function(err, rows) {
@@ -349,7 +351,7 @@ Here are most of all available methods to query the graph. `…` represents the 
 
 #### Direct Queries
 
-If you want to have better performance, you can pass-through cypher queries 1:1 and get the almost native results from neo4j - almost because every result part will be parsed + transformed to a Node / Relationship / Path object.
+If you want to have better performance, you can pass-through cypher queries 1:1 and get almost native results:
 
 Just start with `Graph.query(…)`:
 
@@ -359,7 +361,7 @@ Just start with `Graph.query(…)`:
   });
 ```
 
-Same works with stream:
+Same with stream:
 
 ```js
   Graph.stream( "START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
