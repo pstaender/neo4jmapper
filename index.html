@@ -765,6 +765,16 @@ To let buil Neo4j the index in the background for you, you just have to define t
     polanski = new Person()
 ```
 
+You can also use default values for Relationships:
+
+```js
+  Node.Relationship.fields.defaults = {
+    created_on = function() {
+      return new Date().getTime();
+    }
+  }
+```
+
 ### Drop indexes
 
 Neo4jMapper won't drop indexed or unique defined fields for you, because it doesn't have any migration features. But you can drop the index on a Model by yourself via:
