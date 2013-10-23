@@ -4,19 +4,14 @@
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
   <title>Neo4jMapper</title>
   <script src="js/jquery.min.js"></script>
-  <!-- <script src="js/markdown.min.js"></script> -->
   <script src="js/showdown/showdown.js"></script>
   <script src="js/showdown/extensions/github.js"></script>
-  <!-- <script src="js/rainbow/rainbow.min.js"></script>
-  <script src="js/rainbow/language/javascript.js"></script>
-  <script src="js/rainbow/language/coffeescript.js"></script> -->
   <script src="js/readme.js"></script>
   <link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/tomorrow.min.css">
   <script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
 
   <link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet" type="text/css" />
   <link href="css/layout.css" media="all" rel="stylesheet" type="text/css" />
-  <!--<link href="js/rainbow/themes/github.css" rel="stylesheet" type="text/css"> -->
 
 </head>
 <body>
@@ -232,7 +227,7 @@ or query on instanced nodes:
 
 There are three ways to query the Graph:
 
-  * `Graph.start().…` The best way to go, results will contain only data and found objects will be loaded (columns definitions may redundant here, but are available on `graph._columns_` anyhow)
+  * `Graph.start().…` The best way to go, results will contain only data and found objects will be loaded (columns definitions may redundant here, but are available on `graph._columns_` anyhow), beside you can start with the following Statements: `Graph.[start|create|match|where|with|return](statement, [cb])…`
   * `Graph.query(…)` or `Graph.stream(…)` won't process the result, except detecting object type (Node, Relationship, Path)
   * `Graph.request().[post|get|delete|put|query](…)` will request straightly the restful api and result won't be processed at all
 
