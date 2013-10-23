@@ -1,6 +1,32 @@
 // **The Graph** respresents the database
 // You can perform basic actions and queries directly on the entire graphdatabase
 
+// ###[Query Structure](http://docs.neo4j.org/refcard/2.0/)
+
+// Read Query Structure:
+// [START]
+// [MATCH]
+// [WHERE]
+// [WITH [ORDER BY] [SKIP] [LIMIT]]
+// RETURN [ORDER BY] [SKIP] [LIMIT]
+//
+// Write-Only Query Structure:
+// (CREATE [UNIQUE] | MERGE)*
+// [SET|DELETE|FOREACH]*
+// [RETURN [ORDER BY] [SKIP] [LIMIT]]
+//
+// Read-Write Query Structure:
+// [START]
+// [MATCH]
+// [WHERE]
+// [WITH [ORDER BY] [SKIP] [LIMIT]]
+// [CREATE [UNIQUE]|MERGE]*
+// [SET|DELETE|FOREACH]*
+// [RETURN [ORDER BY] [SKIP] [LIMIT]]
+//
+// TODO: maybe check of valid query structure?!
+
+
 // Initialize the Graph object with a neo4jrestful client
 var __initGraph__ = function(neo4jrestful) {
 
@@ -631,7 +657,6 @@ var __initGraph__ = function(neo4jrestful) {
     return new Graph().countRelationships(cb);
   }
 
-  // alias for count_relationships
   Graph.countRelations = function(cb) {
     return new Graph().countRelationships(cb);
   }
@@ -650,6 +675,22 @@ var __initGraph__ = function(neo4jrestful) {
 
   Graph.start = function(start, cb) {
     return Graph.enableProcessing().start(start, cb);
+  }
+
+  Graph.custom = function(statement, cb) {
+    return Graph.start().custom(statement, cb);
+  }
+
+  Graph.match = function(statement, cb) {
+    return Graph.start().match(statement, cb);
+  }
+
+  Graph.where = function(statement, cb) {
+    return Graph.start().where(statement, cb);
+  }
+
+  Graph.return = function(statement, cb) {
+    return Graph.start().return(statement, cb);
   }
 
   Graph.enableLoading = function(classifications) {
@@ -687,8 +728,12 @@ var __initGraph__ = function(neo4jrestful) {
     return neo4jrestful.singleton();
   }
 
-  Graph.create = function(url) {
+  Graph.new = function(url) {
     return new Graph(url);
+  }
+
+  Graph.create = function(statement, cb) {
+    return Graph.start().create(statement, cb);
   }
 
   return neo4jrestful.Graph = Graph;
