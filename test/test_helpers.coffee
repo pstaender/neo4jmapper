@@ -1,3 +1,4 @@
+# nodejs
 if root?
   # external modules
   require('source-map-support').install()
@@ -11,22 +12,25 @@ if root?
   # neo4j mapper modules
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
-  # patter matching for objects we will need for the tests
-  {Graph,Node,helpers,client}  = new Neo4j(configForTest.neo4jURL)
-
-else if window?
-  # tests in browser
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client}  = new Neo4j {
+    url: configForTest.neo4jURL
+    onConnectionError: (err) ->
+      throw err
+  }
+# browser
+else
   _ = window._
   configForTest = _.extend({
     doLog: false
     wipeDatabase: false
     neo4jURL: 'http://yourserver:0000/'
-    startInstantly: false
   }, configForTest or {})
   Join = window.Join
-  neo4jmapper = window.Neo4jMapper.init(configForTest.neo4jURL)
-  {Graph,Node,helpers,client} = neo4jmapper
-  Neo4j = Neo4jMapper.init
+  neo4jmapper = new window.Neo4jMapper(configForTest.neo4jURL)
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client} = neo4jmapper
+  Neo4j = Neo4jMapper
+
+client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
 
 describe 'Neo4jMapper (helpers)', ->
 
@@ -51,7 +55,7 @@ describe 'Neo4jMapper (helpers)', ->
     {string, callback} = helpers.sortStringAndCallbackArguments ->
     expect(string).to.be null
     expect(callback).to.be.a 'function'
-    
+
 
   it 'sortStringAndOptionsArguments', ->
     {string, options} = helpers.sortStringAndOptionsArguments 'string', { option: true }
@@ -71,7 +75,7 @@ describe 'Neo4jMapper (helpers)', ->
     {options, callback} = helpers.sortOptionsAndCallbackArguments ->
     expect(callback).to.be.a 'function'
     expect(Object.keys(options)).to.have.length 0
-  
+
   describe 'constructorNameOfFunction', ->
 
     it 'expect to get the correct constructor name', ->
@@ -83,9 +87,9 @@ describe 'Neo4jMapper (helpers)', ->
         // this is necessary to give the constructed node a name context
         this.init.apply(this, arguments);
       }
-      
+
       _.extend(Movie.prototype, Node.prototype);
-      
+
       Movie.prototype.label = Movie.prototype.constructor_name = 'Movie';
 
       Movie.prototype.fields = {
@@ -93,7 +97,7 @@ describe 'Neo4jMapper (helpers)', ->
           genre: 'Blockbuster'
         }
       };
-      
+
       return Movie;
     })(Node)`
       expect(helpers.constructorNameOfFunction(Movie)).to.be.equal 'Movie'
@@ -138,7 +142,7 @@ describe 'Neo4jMapper (helpers)', ->
       ]
       resultShouldBe = "( HAS (n.`name`) AND n.name = 'Alice\\'s' AND HAS(n.email)) )"
       expect(new helpers.ConditionalParameters(condition, { valuesToParameters: false, identifier: 'n' }).toString()).to.be.equal resultShouldBe
-    
+
     it 'expect to transform an key-value-object to with $OR and $AND operators', ->
       resultShouldBe = """
         ( ( HAS (n.name) AND n.name =~ '(?i)Alice' AND ( HAS (n.email) AND n.email =~ '^alice@home\\\\.com$' OR ( HAS (n.email) AND n.email = 'alice@home.de' AND HAS (n.country) AND n.country = 'de_DE' ) ) ) )

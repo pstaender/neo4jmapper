@@ -1,3 +1,4 @@
+# nodejs
 if root?
   # external modules
   require('source-map-support').install()
@@ -11,22 +12,23 @@ if root?
   # neo4j mapper modules
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
-  # patter matching for objects we will need for the tests
-  {Graph,Node,helpers,client}  = new Neo4j(configForTest.neo4jURL)
-
-else if window?
-  # tests in browser
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client}  = new Neo4j {
+    url: configForTest.neo4jURL
+    onConnectionError: (err) ->
+      throw err
+  }
+# browser
+else
   _ = window._
   configForTest = _.extend({
     doLog: false
     wipeDatabase: false
     neo4jURL: 'http://yourserver:0000/'
-    startInstantly: false
   }, configForTest or {})
   Join = window.Join
-  neo4jmapper = window.Neo4jMapper.init(configForTest.neo4jURL)
-  {Graph,Node,helpers,client} = neo4jmapper
-  Neo4j = Neo4jMapper.init
+  neo4jmapper = new window.Neo4jMapper(configForTest.neo4jURL)
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client} = neo4jmapper
+  Neo4j = Neo4jMapper
 
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
 

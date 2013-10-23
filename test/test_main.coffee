@@ -1,3 +1,4 @@
+# nodejs
 if root?
   # external modules
   require('source-map-support').install()
@@ -11,25 +12,22 @@ if root?
   # neo4j mapper modules
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
-  # patter matching for objects we will need for the tests
-  {Graph,Node,Relationship,Path,helpers,client,Neo4jRestful}  = new Neo4j {
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client}  = new Neo4j {
     url: configForTest.neo4jURL
     onConnectionError: (err) ->
       throw err
   }
-
+# browser
 else
-  # tests in browser
   _ = window._
   configForTest = _.extend({
     doLog: false
     wipeDatabase: false
     neo4jURL: 'http://yourserver:0000/'
-    startInstantly: false
   }, configForTest or {})
   Join = window.Join
   neo4jmapper = new window.Neo4jMapper(configForTest.neo4jURL)
-  {Graph,Node,Relationship,Path,helpers,client,Neo4jRestful} = neo4jmapper
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client} = neo4jmapper
   Neo4j = Neo4jMapper
 
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
@@ -41,10 +39,7 @@ SkipInBrowser = (a) -> if window? then null else a
 
 generateUID = -> String(new Date().getTime())+String(Math.round(Math.random()*10000000))
 
-# if process?.env?.TRAVIS
-#   # cancel tests because travis doesn't support neo4j v2, yet
-#   return describe 'Neo4jMapper', ->
-#     it "expect to have a neo4j database above version 2.0"
+
 
 describe 'Neo4jMapper', ->
 
