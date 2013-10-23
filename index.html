@@ -37,11 +37,11 @@ Features:
 
 ### Warning
 
-**Neo4jMapper is not ready for productive environments until Neo4j v2 isn't finally released**. Neo4j v2 or above is mandatory. Currently it's tested against Neo4j Milestone 2.0.0-M05.
+**Neo4jMapper is designed for the upcoming version 2 of Neo4j, which is currently in a pre-release-state**. Until the final release of Neo4j v2 is available, some features/api might change.
 
 ### Sourcecode inline Documentation
 
-[Generated sourcecode documentation, quite incomplete but may offer a good introduction to the neo4jmapper models.](docs/)
+[Generated sourcecode documentation, quite incomplete but may give a good introduction to the neo4jmapper models.](docs/)
 
 ## How to use
 
@@ -76,7 +76,7 @@ To use multiple database connections:
   var neo4j2 = new Neo4j('http://elsewhere:7070');
 ```
 
-The most needed interfaces of Neo4jMapper:
+Most of the time you might work with the following interfaces:
 
 ```js
   var Node = neo4j.Node
@@ -90,8 +90,6 @@ The most needed interfaces of Neo4jMapper:
 ### Create
 
 ```js
-  var Node = neo4j.Node;
-
   Node.create( { name: 'Dave Grohl', year: 1969 }, function(err, dave) {
     if (err)
       console.error(err.message);
@@ -103,7 +101,7 @@ The most needed interfaces of Neo4jMapper:
 Create relations between nodes:
 
 ```js
-  new Node( {
+  Node.create( {
     name: 'Foo Fighters',
     // arrays + nested objects are possible (but they don't make much sense in a graphdb)
     genres: [ 'Alternative Rock', 'Post-Grunge' ],
@@ -260,7 +258,7 @@ Streaming gets interesting on large results:
 Disable explicitly sort + loading to speed up response time (both are activated by default using `start()`):
 
 ```js
-  Graph.start()
+  Graph
     .disableProcessing()
     .query( … , cb)
   // or if you want to choose what to switch on and off
@@ -274,7 +272,6 @@ You can chain your query elements and use conditional parameters for where claus
 
 ```js
   Graph
-    .start()
     .match('(game:Game)-[c:contains]-(position:Position)')
     .where({ 'game.title': 'Wes vs Alvin' }) // values will be escaped
     .with('game, collect(position) AS positions')
