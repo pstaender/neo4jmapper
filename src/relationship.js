@@ -402,9 +402,11 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   Relationship.setUniqueFields              = Node.setUniqueFields;
   Relationship._setModelFields              = Node._setModelFields;
 
-  Relationship.create = function(type, data, start, end, id, cb) {
+  Relationship.new = function(type, data, start, end, id, cb) {
     return new Relationship(type, data, start, end, id, cb);
   }
+
+  Relationship.create = Relationship.new;
 
   return neo4jrestful.Relationship = Relationship;
 }

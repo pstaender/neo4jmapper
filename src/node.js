@@ -2204,8 +2204,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this.find().deleteIncludingRelations(cb);
   }
 
-  Node.create = function(data, id) {
-    return new this(data, id);
+  Node.create = function(data, id, cb) {
+    var node = new this(data, id);
+    if (typeof cb === 'function')
+      return node.save(cb);
+  }
+
+  Node.new = function(data, id, cb) {
+    return this.create(data, id, cb);
   }
 
   Node.setDefaultFields = function(fields) {

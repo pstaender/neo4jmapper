@@ -135,9 +135,11 @@ var __initPath__ = function(neo4jrestful) {
 
   Path.prototype.resetQuery = function() { return this; }
 
-  Path.create = function() {
+  Path.new = function() {
     return new Path();
   }
+
+  Path.create = Path.new;
 
   return neo4jrestful.Path = Path;
 }
