@@ -674,7 +674,7 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.start = function(start, cb) {
-    return Graph.enableProcessing().start(start, cb);
+    return new Graph().enableProcessing().start(start, cb);
   }
 
   Graph.custom = function(statement, cb) {
@@ -694,33 +694,27 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.enableLoading = function(classifications) {
-    Graph.prototype.enableLoading(classifications);
-    return new Graph().enableLoading(classifications);
+    return Graph.start().enableLoading(classifications);
   }
 
   Graph.disableLoading = function() {
-    Graph.prototype.disableLoading();
-    return new Graph().disableLoading();
+    return Graph.start().disableLoading();
   }
 
   Graph.disableProcessing = function() {
-    Graph.prototype.disableProcessing();
-    return new Graph().disableProcessing();
+    return Graph.start().disableProcessing();
   }
 
   Graph.enableProcessing = function() {
-    Graph.prototype.enableProcessing();
-    return new Graph().enableProcessing();
+    return Graph.start().enableProcessing();
   }
 
   Graph.enableSorting = function() {
-    Graph.prototype.enableSorting();
-    return new Graph().enableSorting();
+    return Graph.start().enableSorting();
   }
 
   Graph.disableSorting = function() {
-    Graph.prototype.disableSorting();
-    return new Graph().disableSorting();
+    return Graph.start().disableSorting();
   }
 
   Graph.request = function() {
