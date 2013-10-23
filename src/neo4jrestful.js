@@ -27,6 +27,14 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     JSONStream   = require('JSONStream');
   }
 
+  var ResponseError = function ResponseError(message, code) {
+    var e = new Error(message);
+    e.code = code;
+    return e;
+  }
+
+  ResponseError.prototype.code = 0;
+
   // Base for QueryError and CypherQueryError
   var CustomError = function CustomError(message) {
     if (typeof message === 'string')
@@ -346,7 +354,6 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
     // now finally send the request
     this._sendHttpRequest(requestOptions, function(err, res) {
-    // req.end(function(err, res) {
       self._response_ = res;
       self._response_on_ = new Date().getTime();
       if (options._debug)
@@ -423,7 +430,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     }
   }
 
-  Neo4jRestful.prototype.onProcess = function(res, next, debug) {
+  Neo4jRestful.prototype.onProcess = function(res, cb, debug) {
     if (_.isArray(res)) {
       for (var i=0; i < res.length; i++) {
         res[i] = this.createObjectFromResponseData(res[i]);
@@ -431,21 +438,21 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     } else if (_.isObject(res)) {
       res = this.createObjectFromResponseData(res);
     }
-    next(null, res, debug);
+    cb(null, res, debug);
   }
 
-  Neo4jRestful.prototype.onSuccess = function(next, res, status, options) {
+  Neo4jRestful.prototype.onSuccess = function(cb, res, status, options) {
     if (options.debug) {
       options._debug.res = res;
       options._debug.status = status;
     }
     if (status === 'success') {
       if (typeof this.onProcess === 'function')
-        return this.onProcess(res, next, options._debug);
+        return this.onProcess(res, cb, options._debug);
       else
-        return next(null, res, options._debug);
+        return cb(null, res, options._debug);
     } else {
-      next(res, status, options._debug);
+      cb(res, status, options._debug);
     }
   }
 
@@ -458,6 +465,11 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     var self = this;
     var statusCode = (this._response_) ? this._response_.status : null;
     var error = ( err && err.responseText ) ? Error(err.responseText) : err;
+    if (!error) {
+      // TODO: code with description
+      var errDescription = 'Response Error ('+this._response_.status+')';
+      error = new ResponseError(errDescription, this._response_.status);
+    }
     if (options.debug) {
       options._debug.res = res;
       options._debug.err = err;
@@ -502,7 +514,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
       // we ignore by default notfound exceptions, because they are no "syntactical" errors
       return cb(null, null, options._debug);
     } else {
-      return cb(err, null, options._debug);
+      return cb(err || error, null, options._debug);
     }
   }
 
