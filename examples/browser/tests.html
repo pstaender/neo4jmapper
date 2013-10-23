@@ -28,9 +28,11 @@
   <script type="text/javascript" src="test_main.js"></script>
   <script type="text/javascript" src="test_buildQueries.js"></script>
   <script type="text/javascript" src="test_helpers.js"></script>
-  <script>      
+  <script>
       onload = function(){
-        mocha.checkLeaks();
+        mocha
+          .checkLeaks()
+          .timeout(10000);
         var runner = mocha.run();
       };
     </script>
