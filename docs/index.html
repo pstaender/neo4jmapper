@@ -73,13 +73,15 @@
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
               <h1>Neo4jMapper</h1>
-<p><strong>(c) 2013 by Philipp Ständer <a href="&#109;&#97;&#x69;&#x6c;&#x74;&#x6f;&#58;&#x70;&#104;&#x69;&#x6c;&#x69;&#x70;&#x70;&#46;&#115;&#x74;&#97;&#x65;&#110;&#x64;&#101;&#114;&#x40;&#103;&#109;&#x61;&#105;&#x6c;&#x2e;&#99;&#x6f;&#x6d;">&#x70;&#104;&#x69;&#x6c;&#x69;&#x70;&#x70;&#46;&#115;&#x74;&#97;&#x65;&#110;&#x64;&#101;&#114;&#x40;&#103;&#109;&#x61;&#105;&#x6c;&#x2e;&#99;&#x6f;&#x6d;</a></strong></p>
+<p><strong>(c) 2013 by Philipp Ständer <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#112;&#104;&#105;&#x6c;&#x69;&#112;&#x70;&#46;&#115;&#116;&#x61;&#101;&#110;&#x64;&#101;&#114;&#64;&#103;&#109;&#x61;&#105;&#x6c;&#x2e;&#x63;&#x6f;&#x6d;">&#112;&#104;&#105;&#x6c;&#x69;&#112;&#x70;&#46;&#115;&#116;&#x61;&#101;&#110;&#x64;&#101;&#114;&#64;&#103;&#109;&#x61;&#105;&#x6c;&#x2e;&#x63;&#x6f;&#x6d;</a></strong></p>
 <p><em>Distributed under the GNU General Public License</em></p>
 <p>Neo4jMapper is an <strong>object mapper for neo4j databases</strong>.</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="keyword">var</span> Neo4jMapper = <span class="function"><span class="keyword">function</span> <span class="title">Neo4jMapper</span><span class="params">(urlOrOptions)</span> {</span>
+
+  <span class="keyword">var</span> _client_ = <span class="literal">null</span>;
 
   <span class="keyword">if</span> (<span class="keyword">typeof</span> window === <span class="string">'object'</span>) {</pre></div></div>
             
@@ -98,13 +100,13 @@
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> Neo4jRestful  = <span class="keyword">this</span>.Neo4jRestful  = window.Neo4jMapper.initNeo4jRestful(urlOrOptions);
 
-    <span class="keyword">this</span>.client = <span class="keyword">new</span> Neo4jRestful();
+    <span class="keyword">this</span>.client = _client_ = <span class="keyword">new</span> Neo4jRestful();
 
-    <span class="keyword">var</span> Graph         = <span class="keyword">this</span>.Graph         = window.Neo4jMapper.initGraph(<span class="keyword">this</span>.client);
-    <span class="keyword">var</span> Transaction   = <span class="keyword">this</span>.Transaction   = window.Neo4jMapper.initTransaction(<span class="keyword">this</span>.client, <span class="keyword">this</span>.Graph);
-    <span class="keyword">var</span> Node          = <span class="keyword">this</span>.Node          = window.Neo4jMapper.initNode(<span class="keyword">this</span>.client, <span class="keyword">this</span>.Graph);
-    <span class="keyword">var</span> Relationship  = <span class="keyword">this</span>.Relationship  = window.Neo4jMapper.initRelationship(<span class="keyword">this</span>.client, <span class="keyword">this</span>.Graph, Node);
-    <span class="keyword">var</span> Path          = <span class="keyword">this</span>.Path          = window.Neo4jMapper.initPath(<span class="keyword">this</span>.client, <span class="keyword">this</span>.Graph);
+    <span class="keyword">this</span>.Graph         = window.Neo4jMapper.initGraph(_client_);
+    <span class="keyword">this</span>.Transaction   = window.Neo4jMapper.initTransaction(_client_, <span class="keyword">this</span>.Graph);
+    <span class="keyword">this</span>.Node          = window.Neo4jMapper.initNode(_client_, <span class="keyword">this</span>.Graph);
+    <span class="keyword">this</span>.Relationship  = window.Neo4jMapper.initRelationship(_client_, <span class="keyword">this</span>.Graph, <span class="keyword">this</span>.Node);
+    <span class="keyword">this</span>.Path          = window.Neo4jMapper.initPath(_client_, <span class="keyword">this</span>.Graph);
 
     Neo4jMapper.prototype.helpers = window.Neo4jMapper.helpers;
   } <span class="keyword">else</span> {</pre></div></div>
@@ -124,13 +126,13 @@
             
             <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> Neo4jRestful  = <span class="keyword">this</span>.Neo4jRestful  = require(<span class="string">'./neo4jrestful'</span>).init(urlOrOptions);
 
-    <span class="keyword">this</span>.client = <span class="keyword">new</span> Neo4jRestful();
+    <span class="keyword">this</span>.client = _client_ = <span class="keyword">new</span> Neo4jRestful();
 
-    <span class="keyword">var</span> Graph         = <span class="keyword">this</span>.Graph         = require(<span class="string">'./graph'</span>).init(<span class="keyword">this</span>.client);
-    <span class="keyword">var</span> Transaction   = <span class="keyword">this</span>.Transaction   = require(<span class="string">'./transaction'</span>).init(<span class="keyword">this</span>.client);
-    <span class="keyword">var</span> Node          = <span class="keyword">this</span>.Node          = require(<span class="string">'./node'</span>).init(<span class="keyword">this</span>.client, <span class="keyword">this</span>.Graph);
-    <span class="keyword">var</span> Relationship  = <span class="keyword">this</span>.Relationship  = require(<span class="string">'./relationship'</span>).init(<span class="keyword">this</span>.client, <span class="keyword">this</span>.Graph, Node);
-    <span class="keyword">var</span> Path          = <span class="keyword">this</span>.Path          = require(<span class="string">'./path'</span>).init(<span class="keyword">this</span>.client, <span class="keyword">this</span>.Graph);
+    <span class="keyword">this</span>.Graph         = require(<span class="string">'./graph'</span>).init(_client_);
+    <span class="keyword">this</span>.Transaction   = require(<span class="string">'./transaction'</span>).init(_client_);
+    <span class="keyword">this</span>.Node          = require(<span class="string">'./node'</span>).init(_client_, <span class="keyword">this</span>.Graph);
+    <span class="keyword">this</span>.Relationship  = require(<span class="string">'./relationship'</span>).init(_client_, <span class="keyword">this</span>.Graph, <span class="keyword">this</span>.Node);
+    <span class="keyword">this</span>.Path          = require(<span class="string">'./path'</span>).init(_client_, <span class="keyword">this</span>.Graph);
 
     Neo4jMapper.prototype.helpers = require(<span class="string">'./helpers'</span>);
   }</pre></div></div>
@@ -144,28 +146,15 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
-              <p>this method returns constructor for superordinate availability in objects of current scope</p>
+              <p>create references among the constructors themeselves</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.client.constructorOf = <span class="keyword">function</span>(name) {
-    <span class="keyword">switch</span>(name) {
-      <span class="keyword">case</span> <span class="string">'Node'</span>:
-        <span class="keyword">return</span> Node;
-      <span class="keyword">case</span> <span class="string">'Path'</span>:
-        <span class="keyword">return</span> Path;
-      <span class="keyword">case</span> <span class="string">'Relationship'</span>:
-        <span class="keyword">return</span> Relationship;
-      <span class="keyword">case</span> <span class="string">'Graph'</span>:
-        <span class="keyword">return</span> Graph;
-      <span class="keyword">case</span> <span class="string">'Transaction'</span>:
-        <span class="keyword">return</span> Transaction;
-      <span class="keyword">case</span> <span class="string">'Statement'</span>:
-        <span class="keyword">return</span> Transaction.Statement;
-      <span class="keyword">default</span>:
-        <span class="keyword">return</span> <span class="literal">null</span>;
-    }
-  }
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">this</span>.Node.Relationship          = <span class="keyword">this</span>.Relationship;
+  <span class="keyword">this</span>.Relationship.Node          = <span class="keyword">this</span>.Node;
+  <span class="keyword">this</span>.Neo4jRestful.Node          = <span class="keyword">this</span>.Node;
+  <span class="keyword">this</span>.Neo4jRestful.Path          = <span class="keyword">this</span>.Path;
+  <span class="keyword">this</span>.Neo4jRestful.Relationship  = <span class="keyword">this</span>.Relationship;
 
 }
 

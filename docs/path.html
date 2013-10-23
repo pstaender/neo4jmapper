@@ -263,9 +263,11 @@ we won&#39;t mutate it and create a new path instance insetad</p>
 
   Path.prototype.resetQuery = <span class="keyword">function</span>() { <span class="keyword">return</span> <span class="keyword">this</span>; }
 
-  Path.create = <span class="keyword">function</span>() {
+  Path.<span class="keyword">new</span> = <span class="keyword">function</span>() {
     <span class="keyword">return</span> <span class="keyword">new</span> Path();
   }
+
+  Path.create = Path.<span class="keyword">new</span>;
 
   <span class="keyword">return</span> neo4jrestful.Path = Path;
 }

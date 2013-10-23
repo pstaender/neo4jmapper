@@ -502,7 +502,7 @@ we won&#39;t mutate it and create a new relationship instance insetad</p>
     <span class="keyword">var</span> errors = [];
     <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; <span class="number">2</span>; i++) {
       (<span class="keyword">function</span>(point){
-        neo4jrestful.constructorOf(<span class="string">'Node'</span>).findById(self[point].id,<span class="keyword">function</span>(err,node) {
+        Relationship.Node.findById(self[point].id,<span class="keyword">function</span>(err,node) {
           self[point] = node;
           <span class="keyword">if</span> (err)
             errors.push(err);
@@ -618,30 +618,24 @@ we won&#39;t mutate it and create a new relationship instance insetad</p>
     r.end = <span class="keyword">this</span>.end;
     r.type = r._type_ = <span class="keyword">this</span>._type_;
     <span class="keyword">return</span> r;
-  }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-14">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
-              </div>
-              <p>Relationship.prototype.onSave = Node.prototype.onSave;</p>
+  }
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  Relationship.prototype.hasValidData       = Node.prototype.hasValidData;
+  Relationship.prototype.hasValidData       = Node.prototype.hasValidData;
   Relationship.prototype.flattenData        = Node.prototype.flattenData;
   Relationship.prototype.setUriById         = Node.prototype.setUriById;
   Relationship.prototype.isPersisted        = Node.prototype.isPersisted;
   Relationship.prototype.hasId              = Node.prototype.hasId;
 
-  Relationship.create = <span class="keyword">function</span>(type, data, start, end, id, cb) {
+  Relationship.setDefaultFields             = Node.setDefaultFields;
+  Relationship.setIndexFields               = Node.setIndexFields;
+  Relationship.setUniqueFields              = Node.setUniqueFields;
+  Relationship._setModelFields              = Node._setModelFields;
+
+  Relationship.<span class="keyword">new</span> = <span class="keyword">function</span>(type, data, start, end, id, cb) {
     <span class="keyword">return</span> <span class="keyword">new</span> Relationship(type, data, start, end, id, cb);
   }
+
+  Relationship.create = Relationship.<span class="keyword">new</span>;
 
   <span class="keyword">return</span> neo4jrestful.Relationship = Relationship;
 }

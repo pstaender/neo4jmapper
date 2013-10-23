@@ -80,6 +80,26 @@
               </div>
               <p><strong>The Graph</strong> respresents the database
 You can perform basic actions and queries directly on the entire graphdatabase</p>
+<h3><a href="http://docs.neo4j.org/refcard/2.0/">Query Structure</a></h3>
+<p>Read Query Structure:
+[START]
+[MATCH]
+[WHERE]
+[WITH [ORDER BY] [SKIP] [LIMIT]]
+RETURN [ORDER BY] [SKIP] [LIMIT]</p>
+<p>Write-Only Query Structure:
+(CREATE [UNIQUE] | MERGE)<em>
+[SET|DELETE|FOREACH]</em>
+[RETURN [ORDER BY] [SKIP] [LIMIT]]</p>
+<p>Read-Write Query Structure:
+[START]
+[MATCH]
+[WHERE]
+[WITH [ORDER BY] [SKIP] [LIMIT]]
+[CREATE [UNIQUE]|MERGE]<em>
+[SET|DELETE|FOREACH]</em>
+[RETURN [ORDER BY] [SKIP] [LIMIT]]</p>
+<p>TODO: maybe check of valid query structure?!</p>
 <p>Initialize the Graph object with a neo4jrestful client</p>
 
             </div>
@@ -469,7 +489,7 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
             
             <div class="content"><div class='highlight'><pre>  Graph.prototype.stream = <span class="keyword">function</span>(cypherQuery, options, cb) {
     <span class="keyword">var</span> self = <span class="keyword">this</span>;
-    <span class="keyword">var</span> Node = neo4jrestful.constructorOf(<span class="string">'Node'</span>);
+    <span class="keyword">var</span> Node = Graph.Node;
     <span class="keyword">var</span> recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
     <span class="keyword">if</span> (<span class="keyword">typeof</span> cypherQuery !== <span class="string">'string'</span>) {
       cb = cypherQuery;
@@ -980,8 +1000,8 @@ Graph.prototype.statement = null;</p>
             <div class="content"><div class='highlight'><pre>        s += queryFragment;
         <span class="keyword">continue</span>;
       }
-      <span class="keyword">var</span> attribute = Object.keys(<span class="keyword">this</span>._query_history_[i])[<span class="number">0</span>]
-        , forQuery = <span class="keyword">this</span>._query_history_[i][attribute];</pre></div></div>
+      <span class="keyword">var</span> attribute = Object.keys(<span class="keyword">this</span>._query_history_[i])[<span class="number">0</span>];
+      <span class="keyword">var</span> forQuery = <span class="keyword">this</span>._query_history_[i][attribute];</pre></div></div>
             
         </li>
         
@@ -1014,11 +1034,8 @@ Graph.prototype.statement = null;</p>
             
             <div class="content"><div class='highlight'><pre>        attribute = attribute + Array(chopLength - attribute.length).join(<span class="string">' '</span>);
       }
-      <span class="keyword">if</span> (forQuery !== <span class="literal">null</span>)
-        s += <span class="string">'\n'</span>+attribute+<span class="string">' '</span>+String(forQuery)+<span class="string">' '</span>;
-    }
-    <span class="keyword">return</span> s.trim()+<span class="string">';'</span>;
-  }</pre></div></div>
+      <span class="keyword">if</span> (forQuery !== <span class="literal">null</span>) {
+        <span class="keyword">if</span> (<span class="keyword">typeof</span> forQuery === <span class="string">'string'</span>) {</pre></div></div>
             
         </li>
         
@@ -1026,8 +1043,47 @@ Graph.prototype.statement = null;</p>
         <li id="section-36">
             <div class="annotation">
               
-              <div class="pilwrap for-h1">
+              <div class="pilwrap ">
                 <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>remove dupliacted statement fragment identifier, e.g. START START … -&gt; START …</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          forQuery = forQuery.trim().replace(<span class="keyword">new</span> RegExp(<span class="string">'^'</span>+attribute+<span class="string">'\\s+'</span>, <span class="string">'i'</span>), <span class="string">''</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>remove trailing semicolon</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>          forQuery = forQuery.replace(<span class="regexp">/\;$/</span>, <span class="string">''</span>);
+        } <span class="keyword">else</span> {
+          forQuery = String(forQuery);
+        }
+        s += <span class="string">'\n'</span>+attribute+<span class="string">' '</span>+forQuery+<span class="string">' '</span>;
+      }
+    }
+    s = s.trim();
+    <span class="keyword">return</span> s + <span class="string">';'</span>;
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap for-h1">
+                <a class="pilcrow" href="#section-38">&#182;</a>
               </div>
               <h1>Enables loading for specific types</h1>
 <p>Define type(s) simply in a string
@@ -1048,11 +1104,11 @@ e.g.:
         </li>
         
         
-        <li id="section-37">
+        <li id="section-39">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-39">&#182;</a>
               </div>
               <h1>Disables loading on results (speeds up queries but less convenient)</h1>
 
@@ -1066,11 +1122,11 @@ e.g.:
         </li>
         
         
-        <li id="section-38">
+        <li id="section-40">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-40">&#182;</a>
               </div>
               <h1>Sort Results</h1>
 <p>By default we get results like:
@@ -1113,11 +1169,11 @@ If you want to have access to the columns anyway, you can get them on <code>grap
         </li>
         
         
-        <li id="section-39">
+        <li id="section-41">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-41">&#182;</a>
               </div>
               <p>Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]</p>
 
@@ -1146,11 +1202,11 @@ If you want to have access to the columns anyway, you can get them on <code>grap
         </li>
         
         
-        <li id="section-40">
+        <li id="section-42">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-42">&#182;</a>
               </div>
               <p>we name the parameter with <code>_value#_</code></p>
 
@@ -1184,22 +1240,9 @@ If you want to have access to the columns anyway, you can get them on <code>grap
 
   Graph.countRelationships = <span class="keyword">function</span>(cb) {
     <span class="keyword">return</span> <span class="keyword">new</span> Graph().countRelationships(cb);
-  }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-41">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
-              </div>
-              <p>alias for count_relationships</p>
+  }
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  Graph.countRelations = <span class="keyword">function</span>(cb) {
+  Graph.countRelations = <span class="keyword">function</span>(cb) {
     <span class="keyword">return</span> <span class="keyword">new</span> Graph().countRelationships(cb);
   }
 
@@ -1219,34 +1262,50 @@ If you want to have access to the columns anyway, you can get them on <code>grap
     <span class="keyword">return</span> Graph.enableProcessing().start(start, cb);
   }
 
+  Graph.custom = <span class="keyword">function</span>(statement, cb) {
+    <span class="keyword">return</span> Graph.start().custom(statement, cb);
+  }
+
+  Graph.match = <span class="keyword">function</span>(statement, cb) {
+    <span class="keyword">return</span> Graph.start().match(statement, cb);
+  }
+
+  Graph.where = <span class="keyword">function</span>(statement, cb) {
+    <span class="keyword">return</span> Graph.start().where(statement, cb);
+  }
+
+  Graph.<span class="keyword">return</span> = <span class="keyword">function</span>(statement, cb) {
+    <span class="keyword">return</span> Graph.start().<span class="keyword">return</span>(statement, cb);
+  }
+
   Graph.enableLoading = <span class="keyword">function</span>(classifications) {
     Graph.prototype.enableLoading(classifications);
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph();
+    <span class="keyword">return</span> <span class="keyword">new</span> Graph().enableLoading(classifications);
   }
 
   Graph.disableLoading = <span class="keyword">function</span>() {
     Graph.prototype.disableLoading();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph();
+    <span class="keyword">return</span> <span class="keyword">new</span> Graph().disableLoading();
   }
 
   Graph.disableProcessing = <span class="keyword">function</span>() {
     Graph.prototype.disableProcessing();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph();
+    <span class="keyword">return</span> <span class="keyword">new</span> Graph().disableProcessing();
   }
 
   Graph.enableProcessing = <span class="keyword">function</span>() {
     Graph.prototype.enableProcessing();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph();
+    <span class="keyword">return</span> <span class="keyword">new</span> Graph().enableProcessing();
   }
 
   Graph.enableSorting = <span class="keyword">function</span>() {
     Graph.prototype.enableSorting();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph();
+    <span class="keyword">return</span> <span class="keyword">new</span> Graph().enableSorting();
   }
 
   Graph.disableSorting = <span class="keyword">function</span>() {
-    Graph.prototype.disableSorting(<span class="literal">false</span>);
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph();
+    Graph.prototype.disableSorting();
+    <span class="keyword">return</span> <span class="keyword">new</span> Graph().disableSorting();
   }
 
   Graph.request = <span class="keyword">function</span>() {</pre></div></div>
@@ -1254,11 +1313,11 @@ If you want to have access to the columns anyway, you can get them on <code>grap
         </li>
         
         
-        <li id="section-42">
+        <li id="section-43">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-43">&#182;</a>
               </div>
               <p>creates a new neo4jrestful client</p>
 
@@ -1267,8 +1326,12 @@ If you want to have access to the columns anyway, you can get them on <code>grap
             <div class="content"><div class='highlight'><pre>    <span class="keyword">return</span> neo4jrestful.singleton();
   }
 
-  Graph.create = <span class="keyword">function</span>(url) {
+  Graph.<span class="keyword">new</span> = <span class="keyword">function</span>(url) {
     <span class="keyword">return</span> <span class="keyword">new</span> Graph(url);
+  }
+
+  Graph.create = <span class="keyword">function</span>(statement, cb) {
+    <span class="keyword">return</span> Graph.start().create(statement, cb);
   }
 
   <span class="keyword">return</span> neo4jrestful.Graph = Graph;

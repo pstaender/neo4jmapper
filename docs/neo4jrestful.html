@@ -146,7 +146,15 @@
     Sequence     = require(<span class="string">'./lib/sequence'</span>);
     request      = require(<span class="string">'request'</span>);
     JSONStream   = require(<span class="string">'JSONStream'</span>);
-  }</pre></div></div>
+  }
+
+  <span class="keyword">var</span> ResponseError = <span class="function"><span class="keyword">function</span> <span class="title">ResponseError</span><span class="params">(message, code)</span> {</span>
+    <span class="keyword">var</span> e = <span class="keyword">new</span> Error(message);
+    e.code = code;
+    <span class="keyword">return</span> e;
+  }
+
+  ResponseError.prototype.code = <span class="number">0</span>;</pre></div></div>
             
         </li>
         
@@ -792,22 +800,8 @@ TODO: use extractet Options</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">this</span>._sendHttpRequest(requestOptions, <span class="keyword">function</span>(err, res) {</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-31">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
-              </div>
-              <p>req.end(function(err, res) {</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      self._response_ = res;
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">this</span>._sendHttpRequest(requestOptions, <span class="keyword">function</span>(err, res) {
+      self._response_ = res;
       self._response_on_ = <span class="keyword">new</span> Date().getTime();
       <span class="keyword">if</span> (options._debug)
         options._debug.responseTime = self.responseTime();
@@ -818,11 +812,11 @@ TODO: use extractet Options</p>
         </li>
         
         
-        <li id="section-32">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <p>we might have a reponse with a failure status code</p>
 
@@ -843,11 +837,11 @@ TODO: use extractet Options</p>
         </li>
         
         
-        <li id="section-33">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-33">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <h3>Wrapper for superagent and request</h3>
 <p>Private method, can be indirectly &#39;accessed&#39; via neo4jrestful.get|post|delete|put or neo4jrestfule.request</p>
@@ -872,11 +866,11 @@ TODO: use extractet Options</p>
         </li>
         
         
-        <li id="section-34">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-34">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <h3>superagent for browserside usage</h3>
 
@@ -893,11 +887,11 @@ TODO: use extractet Options</p>
         </li>
         
         
-        <li id="section-35">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <p>compatibility of superagent to response api</p>
 
@@ -915,11 +909,11 @@ TODO: use extractet Options</p>
         </li>
         
         
-        <li id="section-36">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-36">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <h3>request module for nodejs</h3>
 
@@ -941,11 +935,11 @@ TODO: use extractet Options</p>
         </li>
         
         
-        <li id="section-37">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>compatibility of response to superagent api</p>
 
@@ -960,7 +954,7 @@ TODO: use extractet Options</p>
     }
   }
 
-  Neo4jRestful.prototype.onProcess = <span class="keyword">function</span>(res, next, debug) {
+  Neo4jRestful.prototype.onProcess = <span class="keyword">function</span>(res, cb, debug) {
     <span class="keyword">if</span> (_.isArray(res)) {
       <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; res.length; i++) {
         res[i] = <span class="keyword">this</span>.createObjectFromResponseData(res[i]);
@@ -968,21 +962,21 @@ TODO: use extractet Options</p>
     } <span class="keyword">else</span> <span class="keyword">if</span> (_.isObject(res)) {
       res = <span class="keyword">this</span>.createObjectFromResponseData(res);
     }
-    next(<span class="literal">null</span>, res, debug);
+    cb(<span class="literal">null</span>, res, debug);
   }
 
-  Neo4jRestful.prototype.onSuccess = <span class="keyword">function</span>(next, res, status, options) {
+  Neo4jRestful.prototype.onSuccess = <span class="keyword">function</span>(cb, res, status, options) {
     <span class="keyword">if</span> (options.debug) {
       options._debug.res = res;
       options._debug.status = status;
     }
     <span class="keyword">if</span> (status === <span class="string">'success'</span>) {
       <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>.onProcess === <span class="string">'function'</span>)
-        <span class="keyword">return</span> <span class="keyword">this</span>.onProcess(res, next, options._debug);
+        <span class="keyword">return</span> <span class="keyword">this</span>.onProcess(res, cb, options._debug);
       <span class="keyword">else</span>
-        <span class="keyword">return</span> next(<span class="literal">null</span>, res, options._debug);
+        <span class="keyword">return</span> cb(<span class="literal">null</span>, res, options._debug);
     } <span class="keyword">else</span> {
-      next(res, status, options._debug);
+      cb(res, status, options._debug);
     }
   }
 
@@ -991,11 +985,11 @@ TODO: use extractet Options</p>
         </li>
         
         
-        <li id="section-38">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p>in some (rare) case, we get an empty {} as error</p>
 
@@ -1008,6 +1002,24 @@ TODO: use extractet Options</p>
     <span class="keyword">var</span> self = <span class="keyword">this</span>;
     <span class="keyword">var</span> statusCode = (<span class="keyword">this</span>._response_) ? <span class="keyword">this</span>._response_.status : <span class="literal">null</span>;
     <span class="keyword">var</span> error = ( err &amp;&amp; err.responseText ) ? Error(err.responseText) : err;
+    <span class="keyword">if</span> (!error) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-38">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-38">&#182;</a>
+              </div>
+              <p>TODO: code with description</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="keyword">var</span> errDescription = <span class="string">'Response Error ('</span>+<span class="keyword">this</span>._response_.status+<span class="string">')'</span>;
+      error = <span class="keyword">new</span> ResponseError(errDescription, <span class="keyword">this</span>._response_.status);
+    }
     <span class="keyword">if</span> (options.debug) {
       options._debug.res = res;
       options._debug.err = err;
@@ -1130,7 +1142,7 @@ TODO: find a real jQuery replacement</p>
             
             <div class="content"><div class='highlight'><pre>      <span class="keyword">return</span> cb(<span class="literal">null</span>, <span class="literal">null</span>, options._debug);
     } <span class="keyword">else</span> {
-      <span class="keyword">return</span> cb(err, <span class="literal">null</span>, options._debug);
+      <span class="keyword">return</span> cb(err || error, <span class="literal">null</span>, options._debug);
     }
   }
 
@@ -1206,9 +1218,9 @@ TODO: find a real jQuery replacement</p>
 
   Neo4jRestful.prototype.createObjectFromResponseData = <span class="keyword">function</span>(responseData, Class) {
     <span class="keyword">var</span> uri = (responseData) ? responseData.self : <span class="literal">null</span>;
-    <span class="keyword">var</span> Node = <span class="keyword">this</span>.constructorOf(<span class="string">'Node'</span>);
-    <span class="keyword">var</span> Relationship = <span class="keyword">this</span>.constructorOf(<span class="string">'Relationship'</span>);
-    <span class="keyword">var</span> Path = <span class="keyword">this</span>.constructorOf(<span class="string">'Path'</span>);
+    <span class="keyword">var</span> Node = Neo4jRestful.Node;
+    <span class="keyword">var</span> Relationship = Neo4jRestful.Relationship;
+    <span class="keyword">var</span> Path = Neo4jRestful.Path;
     <span class="keyword">if</span> (<span class="keyword">typeof</span> Class !== <span class="string">'function'</span>)
       Class = Node;
     <span class="keyword">if</span> (uri) {
@@ -1323,23 +1335,7 @@ TODO: find a real jQuery replacement</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">var</span> client = <span class="keyword">new</span> Neo4jRestful(<span class="keyword">this</span>._connectionString());</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-51">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-51">&#182;</a>
-              </div>
-              <p>thats the method we need and why we&#39;re doing this singleton() function here</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    client.constructorOf = <span class="keyword">this</span>.constructorOf;
-    <span class="keyword">return</span> client;
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">return</span> <span class="keyword">new</span> Neo4jRestful(<span class="keyword">this</span>._connectionString());
   }
 
   Neo4jRestful.create = <span class="keyword">function</span>(url, options) {
@@ -1357,11 +1353,11 @@ TODO: find a real jQuery replacement</p>
         </li>
         
         
-        <li id="section-52">
+        <li id="section-51">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-52">&#182;</a>
+                <a class="pilcrow" href="#section-51">&#182;</a>
               </div>
               <p>nodejs</p>
 
