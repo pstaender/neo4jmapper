@@ -535,10 +535,10 @@ Currently you can execute transactions on any cypher queries, that's the way to 
   );
 ```
 
-You can open transactions and add statements to the, aslong they're open. The api is self explaining:
+You can create open transaction and add statements to aslong they aren't committed. The api is self explaining (instead of `Transaction.create` you can use `Transaction.open` to keep the neo4j terminology):
 
 ```js
-  Transaction.open(
+  Transaction.create(
     'CREATE (n {props}) RETURN n AS NODE, id(n), as ID',
     { props: { name: 'Dave Grohl' } }
   ).add(
@@ -557,7 +557,7 @@ You can open transactions and add statements to the, aslong they're open. The ap
 Commit transactions:
 
 ```js
-  Transaction.open(…, function(err, openTransaction) {
+  Transaction.create(…, function(err, openTransaction) {
     openTransaction.commit(function(err, committedTransaction) {
       console.log('Transaction with ID '+committedTransaction.id+' is now committed: ', committedTransaction.status);
     });
@@ -567,12 +567,18 @@ Commit transactions:
 Rollback open transactions:
 
 ```js
-  // you can use new Transaction() instead of Transaction.open()
-  new Transaction(…, function(err, openTransaction) {
+  Transaction.create(…, function(err, openTransaction) {
     openTransaction.rollback(function(err, deletedTransaction) {
       console.log('Transaction is rolled back');
     });
   });
+```
+
+You can commit / rollback all open transactions with:
+
+```js
+  Transaction.commitAll(cb);
+  Transaction.rollbackAll(cb);
 ```
 
 In future releases transactions may available for `Node.` and `Graph.` objects as well. Also there is no loading of results implemented, yet.
