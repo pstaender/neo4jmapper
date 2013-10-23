@@ -33,17 +33,15 @@ Neo4jMapper is available in modern Browsers (except the streaming feature), but 
 
 ## TODO
 
-  * implement: relationship (index)
+  * implement: index relationship
   * implement: stream feature for browser-side-usage
-  * reference documentation
+  * complete documentation
   * cleanup redundant tests
-  * tests for concurrent different databases connections
-  * fix global scope issue on browser-side-test-suite
 
 ### Tested against:
 
 * Neo4j v2 Milestone 6
-* Node 0.8 - 0.11 [see Travis](https://travis-ci.org/pstaender/neo4jmapper)
+* Node 0.8 - 0.11 [see Travis CI](https://travis-ci.org/pstaender/neo4jmapper)
 * Chrome (v22+) and Safari (v7+)
 
 ## LICENSE
