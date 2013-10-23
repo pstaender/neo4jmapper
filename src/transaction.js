@@ -59,7 +59,6 @@ var __initTransaction__ = function(neo4jrestful) {
   }
 
   Transaction.prototype.add = function(cypher, parameters, cb) {
-    var self = this;
     var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
     var statements = args.statements;
     // we cancel the operation if we are comitting

@@ -1902,9 +1902,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
       // to reduce calls we'll make a specific restful request for one node
       Graph
-        .disableLoading()
         .start('n = node('+id+')')
         .return('n as node, labels(n) AS labels')
+        .disableLoading()
         .exec(function(err, result, debug) {
           if (err) {
             // we ignore entity not found exception and return a null instead
