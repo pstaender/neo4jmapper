@@ -1,3 +1,4 @@
+# nodejs
 if root?
   # external modules
   require('source-map-support').install()
@@ -11,26 +12,27 @@ if root?
   # neo4j mapper modules
   Neo4j         = require("../#{configForTest.srcFolder}/index.js")
 
-  # patter matching for objects we will need for the tests
-  {Graph,Node,helpers,client,Transaction}  = new Neo4j(configForTest.neo4jURL)
-
-else if window?
-  # tests in browser
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client}  = new Neo4j {
+    url: configForTest.neo4jURL
+    onConnectionError: (err) ->
+      throw err
+  }
+# browser
+else
   _ = window._
   configForTest = _.extend({
     doLog: false
     wipeDatabase: false
     neo4jURL: 'http://yourserver:0000/'
-    startInstantly: false
   }, configForTest or {})
   Join = window.Join
-  neo4jmapper = window.Neo4jMapper.init(configForTest.neo4jURL)
-  {Graph,Node,helpers,client,Transaction} = neo4jmapper
-  Neo4j = Neo4jMapper.init
+  neo4jmapper = new window.Neo4jMapper(configForTest.neo4jURL)
+  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client} = neo4jmapper
+  Neo4j = Neo4jMapper
 
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
 
-# TODO: fix test / find transaction that stays open
+generateUID = -> String(new Date().getTime())+String(Math.round(Math.random()*10000000))
 
 describe 'Neo4jMapper (transaction)', ->
 
@@ -132,6 +134,8 @@ describe 'Neo4jMapper (transaction)', ->
       .add query, { props: { name: 'Nate' } }, (err, transaction) ->
         expect(err).to.be null
         expect(transaction.status).not.to.be.equal 'finalized'
+        expect(transaction.results[0].data[0][0].name).to.be.equal 'Dave'
+        expect(transaction.results[1].data[0][0].name).to.be.equal 'Nate'
         transaction.add query, { props: { name: 'Taylor' } }, (err, transaction) ->
           expect(err).to.be null
           expect(transaction.status).not.to.be.equal 'finalized'
@@ -152,4 +156,70 @@ describe 'Neo4jMapper (transaction)', ->
                 expect(err).to.be null
                 expect(found).to.be null
                 done()
+
+  it 'expect to rollback or commit all open transactions', (done) ->
+    zero = Object.keys(Transaction.__open_transactions__)
+    query = 'CREATE (n {props}) RETURN n AS node, id(n) AS ID'
+    # check aliases
+    expect(Transaction.commitAll).to.be.equal Transaction.closeAll
+    expect(Transaction.rollbackAll).to.be.equal Transaction.deleteAll
+    expect(Transaction.rollbackAll).to.be.equal Transaction.undoAll
+    t = Transaction.open()
+      .add(query, { props: { name: 'Dave' } })
+      .add(query, { props: { name: 'Nate' } })
+    expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero
+    t.exec (err) ->
+      expect(err).to.be null
+      expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero + 1
+      t.delete (err) ->
+        expect(err).to.be null
+        expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero
+        Transaction.open()
+          .add(query, { props: { name: 'Dave' } })
+          .add query, { props: { name: 'Nate' } }, (err, t) ->
+            expect(err).to.be null
+            expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero + 1
+            t.close (err) ->
+              expect(err).to.be null
+              expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero
+              # commit all open transactions
+              uid1 = generateUID()
+              uid2 = generateUID()
+              Transaction
+                .open()
+                .add query, { props: { name: uid1 } }, (err, t1) ->
+                  expect(err).to.be null
+                  nodeID1 = t1.results[0].data[0][1]
+                  expect(nodeID1).to.be.above 0
+                  Transaction.open query, { props: { name: uid2 } }, (err, t2) ->
+                    expect(err).to.be null
+                    nodeID2 = t2.results[0].data[0][1]
+                    expect(nodeID2).to.be.above 0
+                    expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero + 2
+                    Node.findById nodeID1, (err, found) ->
+                      expect(found.id).to.be.equal nodeID1
+                      Node.findById nodeID2, (err, found) ->
+                        expect(found.id).to.be.equal nodeID2
+                        Transaction.commitAll (err) ->
+                          expect(err).to.be null
+                          expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero
+                          # rollback all open transactions
+                          uid1 = generateUID()
+                          uid2 = generateUID()
+                          Transaction.open query, { props: { name: uid1 } }, (err, t1) ->
+                            nodeID1 = t1.results[0].data[0][1]
+                            Transaction.open query, { props: { name: uid2 } }, (err, t2) ->
+                              nodeID2 = t2.results[0].data[0][1]
+                              expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero + 2
+                              Transaction.rollbackAll (err) ->
+                                expect(Object.keys(Transaction.__open_transactions__)).to.have.length zero
+                                Node.findById nodeID1, (err, found) ->
+                                  expect(err).to.be null
+                                  expect(found).to.be null
+                                  Node.findById nodeID2, (err, found) ->
+                                    expect(err).to.be null
+                                    expect(found).to.be null
+                                    #Transaction.commitAll (err) ->
+                                    done()
+
 

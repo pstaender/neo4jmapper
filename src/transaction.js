@@ -44,10 +44,9 @@ var __initTransaction__ = function(neo4jrestful) {
   Transaction.prototype.uri = null
   Transaction.prototype.expires = null;
   Transaction.prototype.results = null;
-  Transaction.prototype._concurrentTransmission_ = 0;
+  Transaction.prototype._concurrentTransmissions_ = 0;
   Transaction.prototype._responseError_ = null; //will contain response Error
   Transaction.prototype._resortResults_ = true;
-  // Transaction.prototype._loadOnResult_ = neo4jrestful.constructor.prototype._loadOnResult_;
 
   Transaction.prototype.begin = function(cypher, parameters, cb) {
     // reset
@@ -65,19 +64,21 @@ var __initTransaction__ = function(neo4jrestful) {
     var statements = args.statements;
     // we cancel the operation if we are comitting
     if (this.status === 'committed') {
-      if (typeof args.cb === 'function')
-        cb(Error("You can't add statements after transaction is committed"), null);
+      var err = Error("You can't add statements after transaction is committed");
+      if (typeof args.cb === 'function') {
+        cb(err, null);
+      } else {
+        throw err;
+      }
       return this;
     }
     this.addStatementsToQueue(statements);
-    if ((args.cb) && (!self.onResponse)) {
+    if (args.cb) {
       cb = args.cb;
-      this.onResponse = cb;
     } else {
       // we execute if we have a callback
-      // till then we will collect the statements
+      // till then we'll collect the statements
       return this;
-      //cb = function() { /* /dev/null/ */ };
     }
     return this.exec(cb);
   }
@@ -88,14 +89,13 @@ var __initTransaction__ = function(neo4jrestful) {
     if (typeof cb !== 'function') {
       return this;
     }
+    self.onResponse = cb;
 
     var url = '';
     var untransmittedStatements = this.untransmittedStatements();
 
     if (this.status === 'committing') {
       // commit transaction
-      // if (!this.id)
-      //   return this;//.exec(cb);
       url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
     } else if (!this.id) {
       // begin a transaction
@@ -115,10 +115,10 @@ var __initTransaction__ = function(neo4jrestful) {
       self.statements[i].status = 'sending';
       statements.push({ statement: statement.statement, parameters: statement.parameters });
     });
-    this._concurrentTransmission_++;
+    this._concurrentTransmissions_++;
     this.neo4jrestful.post(url, { data: { statements: statements } }, function(err, response, debug) {
       self._response_ = response;
-      self._concurrentTransmission_--;
+      self._concurrentTransmissions_--;
       self._applyResponse(err, response, debug, untransmittedStatements);
 
       untransmittedStatements.forEach(function(statement) {
@@ -133,7 +133,7 @@ var __initTransaction__ = function(neo4jrestful) {
         return self.exec(cb);
       }
       // TODO: sort and populate resultset, but currently no good way to detect result objects
-      else if (self._concurrentTransmission_ === 0) {//  {
+      else if (self._concurrentTransmissions_ === 0) {//  {
         if (typeof self.onResponse === 'function') {
           var cb = self.onResponse;
           // release onResponse for (optional) next cb
@@ -194,10 +194,16 @@ var __initTransaction__ = function(neo4jrestful) {
         self.results.push(response.results[i]);
       }
     });
-    if ((err)||(!response))
+    if ((err)||(!response)) {
       self._responseError_ = (self._responseError_) ? self._responseError_.push(err) : self._responseError_ = [ err ];
-    else
+    } else {
       self.populateWithDataFromResponse(response);
+      // keep track of open transactions
+      if (self.status === 'open')
+        Transaction.__open_transactions__[self.id] = self;
+      else
+        delete Transaction.__open_transactions__[self.id];
+    }
   }
 
   Transaction.prototype.toObject = function() {
@@ -221,7 +227,7 @@ var __initTransaction__ = function(neo4jrestful) {
       // exists only on POST a new transaction
       if (data.commit) {
         var match = data.commit.match(/^(.+?\/transaction\/(\d+))\/commit$/);
-        this.id = match[2];
+        this.id = Number(match[2]);
         this.uri = match[1];
       }
     }
@@ -258,6 +264,10 @@ var __initTransaction__ = function(neo4jrestful) {
     return new Transaction(cypher, parameters, cb);
   }
 
+  Transaction.new = function(cypher, parameters) {
+    return new Transaction(cypher, parameters);
+  }
+
   Transaction.prototype.onResponse = null;
 
   Transaction._sortTransactionArguments = function(cypher, parameters, cb) {
@@ -281,15 +291,22 @@ var __initTransaction__ = function(neo4jrestful) {
   }
 
   Transaction.prototype.rollback = function(cb) {
+    var self = this;
     if ((this.id)&&(this.status!=='finalized')) {
-      this.neo4jrestful.delete('/transaction/'+this.id, cb);
+      this.neo4jrestful.delete('/transaction/'+this.id, function(err, res, debug) {
+        // remove from open_transactions
+        if (!err)
+          delete Transaction.__open_transactions__[self.id];
+        cb(err, res, debug);
+      });
     } else {
       cb(Error('You can only perform a rollback on an open transaction.'), null);
     }
     return this;
   }
 
-  Transaction.prototype.undo = Transaction.prototype.rollback;
+  Transaction.prototype.undo   = Transaction.prototype.rollback;
+  Transaction.prototype.delete = Transaction.prototype.rollback;
 
   Transaction.begin = function(cypher, parameters, cb) {
     return new Transaction(cypher, parameters, cb);
@@ -301,6 +318,45 @@ var __initTransaction__ = function(neo4jrestful) {
   Transaction.commit = function(cypher, parameters, cb) {
     return new Transaction().commit(cypher, parameters, cb);
   }
+
+  Transaction.executeAllOpenTransactions = function(cb, action) {
+    // action can be commit|rollback
+    if (typeof action === 'undefined')
+      action = 'commit';
+    var count = Object.keys(Transaction.__open_transactions__).length;
+    var errors = [];
+    var debugs = [];
+
+    var _onDone_ = function(err, res, debug) {
+      count--;
+      if (err)
+        errors.push(err);
+      debugs.push(debug);
+      if (count === 0)
+        cb( ((errors.length > 0) ? errors : null), null, debugs );
+    }
+
+    for (var id in Transaction.__open_transactions__) {
+      Transaction.__open_transactions__[id][action](_onDone_);
+    }
+
+    return this;
+  }
+
+  Transaction.commitAll   = function(cb) {
+    return this.executeAllOpenTransactions(cb, 'commit');
+  }
+  Transaction.closeAll    = Transaction.commitAll;
+
+  Transaction.rollbackAll = function(cb) {
+    Transaction.executeAllOpenTransactions(cb, 'rollback');
+  }
+
+  Transaction.deleteAll   = Transaction.rollbackAll;
+  Transaction.undoAll     = Transaction.rollbackAll;
+
+  // all open transactions
+  Transaction.__open_transactions__ = {};
 
   return neo4jrestful.Transaction = Transaction;
 
