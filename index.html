@@ -187,11 +187,13 @@ Some examples:
 ```
 
 ```js
-  Node.find( { year: 1969 } ).limit( 10, function(err, found) {
-    if (found) {
-      console.log(found.length + ' nodes found');
-    }
-  });
+  Node
+    .find( { year: 1969 } )
+    .limit( 10, function(err, found) {
+      if (found) {
+        console.log(found.length + ' nodes found');
+      }
+    });
 ```
 
 You can use `$and`, `$or`, `$not`, `$xor` and `$in` operators in where conditions:
@@ -221,57 +223,31 @@ or query on instanced nodes:
   });
 ```
 
-### Query Graph
+## Query Graph
 
-There are three ways to query the Graph:
+There are three different ways to query the Graph:
 
-  * `Graph.start().…` The best way to go, results will contain only data and found objects will be loaded (columns definitions may redundant here, but are available on `graph._columns_` anyhow), beside you can start with the following Statements: `Graph.[start|create|match|where|with|return](statement, [cb])…`
-  * `Graph.query(…)` or `Graph.stream(…)` won't process the result, except detecting object type (Node, Relationship, Path)
-  * `Graph.request().[post|get|delete|put|query](…)` will request straightly the restful api and result won't be processed at all
+  * Graph.start()
+  * Graph.query() / Graph.stream()
+  * Graph.request().…
 
-```js
-  Graph.start().query( "CUSTOM CYPHER QUERY" , function(err, rows) {
-    if (err) {
-      console.error(err); // includes a stack + a reasonable error message
-    } else {
-      if (rows)
-        rows.forEach(function(row) {
-          console.log(row.toObject());
-        });
-      }
-    }
-  });
-```
-
-Streaming gets interesting on large results:
-
-```js
-  Graph.start().stream( "CUSTOM CYPHER QUERY" , function(result) {
-    if (result) {
-      console.log(result.toObject());
-    } else {
-      console.log('Done');
-    }
-  });
-```
-
-Disable explicitly sort + loading to speed up response time (both are activated by default using `start()`):
+### Recommend: Get everything as expected with Graph.start()
 
 ```js
   Graph
-    .disableProcessing()
-    .query( … , cb)
-  // or if you want to choose what to switch on and off
-  Graph.start()
-    .disableLoading()
-    .disableSorting()
-    .query( … , cb)
+    .start()
+    .match('(n)-[r]-()', cb);
 ```
 
-You can chain your query elements and use conditional parameters for where clauses:
+Leave the `Graph.start()` statement empty if you don't need it.
+
+Beside you can also start with: `Graph.[start|create|match|where|with|return]`
+
+You can chain your query elements and use conditional parameters in where clauses:
 
 ```js
   Graph
+    .start()
     .match('(game:Game)-[c:contains]-(position:Position)')
     .where({ 'game.title': 'Wes vs Alvin' }) // values will be escaped
     .with('game, collect(position) AS positions')
@@ -314,7 +290,8 @@ You can chain your query elements and use conditional parameters for where claus
 Here are most of all available methods to query the graph. `…` represents the strings containing the statements:
 
 ```js
-  Graph.start(…)
+  Graph
+    .start(…)
     .match(…)
     .onMatch(…)
     .where('n.name = {value1}')
@@ -341,41 +318,73 @@ Here are most of all available methods to query the graph. `…` represents the 
     .exec(cb) // or .stream(cb)
 ```
 
-#### Direct Queries
+You can also use `Graph.enableProcessing().…` instead of `Graph.start()…` if you like explicitily wordings.
 
-If you want to have better performance, you can pass-through cypher queries 1:1 and get almost native results:
+Results will contain the relevant data column and found objects will be loaded as expected (columns definitions may redundant here, but are available on `graph._columns_` anyhow).
 
-Just start with `Graph.query(…)`:
-
-```js
-  Graph.query( "START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
-    console.log(err, result);
-  });
-```
-
-Same with stream:
+### Query with minimal processing of the results
 
 ```js
-  Graph.stream( "START n = node(*) MATCH n-[r]-() RETURN n;", function(result) {
-    if (result)
-      console.log(err, result);
-    else
-      console.log('done');
-  });
+  Graph
+    .query(cypherQueryString, cb);
 ```
 
-#### Native Queries and native Results
+Sort + loading are explicitly disabled to decrease response time (both are activated by default using `Graph.start()`).
 
-Use `Graph.request()` to query natively:
+You can also choose what to switch on and off:
 
 ```js
-  Graph.request().query( "START n = node(*) MATCH n-[r]-() RETURN n;", function(err, result) {
-    console.log(err, result);
-  });
-  Graph.request().get( "/node/123/labels", function(err, result) {
-    console.log(err, result);
-  });
+  Graph
+    .disableLoading()
+    .disableSorting()
+    .query( … , cb)
 ```
+
+To work with parameters:
+
+```js
+  Graph
+    .query(cypherQueryString).
+    .addParameters({ name: 'Alice' }) // optional
+    .exec(cb);
+```
+
+Streaming (gets interesting on large results):
+
+```js
+  Graph
+    .stream(cypherQueryString, cb);
+```
+
+To work with parameters on streaming:
+
+```js
+  Graph
+    .query(cypherQueryString)
+    .addParameters({ name: 'Alice' }) // optional
+    .stream(cb);
+```
+
+The only "processing" will be to detect object type (Node, Relationship, Path).
+
+### Native (restful api) requests
+
+Use `Graph.request()` to send native requests and get native response:
+
+```js
+  Graph
+    .request()
+    .get('node/3', cb);
+```
+
+```js
+  Graph
+    .request()
+    .query( "START n = node(*) MATCH n-[r]-() RETURN n;", cb);
+```
+
+This will request the restful api straightforward and there won't be any processing at all.
+The following methods are available: post, get, delete, put and query.
 
 ### Modeling
 
