@@ -16,8 +16,610 @@
 </head>
 <body>
 <a href="https://github.com/pstaender/neo4jmapper"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
-<div id="main">
-# Neo4jMapper
+<div id="main"><h1>Neo4jMapper</h1>
+<h2>Object Modeler for Neo4j Graphdatabases</h2>
+<p>Written in JavaScript for browser- and serverside usage.</p>
+<p><a href="http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html">Give Neo4jMapper a try in the coffeesript-live-console</a></p>
+<h3>Why another neo4j client?</h3>
+<p>Neo4jMapper helps to get trivial neo4j-database-tasks quickly done.</p>
+<p>Features:</p>
+<ul>
+<li><strong>Querying graph, nodes and relationships</strong> via object-chaining</li>
+<li><strong>Object Modeling</strong> for labeling, indexing and other schema-like behaviour</li>
+<li><strong>processes and transforms data</strong> (flatten/unflatten, escaping, loading/populating …)</li>
+<li><strong>Transactions handling</strong> of cypher-queries</li>
+</ul>
+<h3>Warning</h3>
+<p><strong>Neo4jMapper is designed for the upcoming version 2 of Neo4j, which is currently in a pre-release-state</strong>. Until the final release of Neo4j v2 is available, some features/api might change.</p>
+<h3>Sourcecode inline Documentation</h3>
+<p><a href="docs/">Generated sourcecode documentation, quite incomplete but may give a good introduction to the neo4jmapper models.</a></p>
+<h2>How to use</h2>
+<h3>Installation</h3>
+<h4>NodeJS</h4>
+<pre><code class="lang-sh">  $ npm install neo4jmapper</code></pre>
+<h4>Browser</h4>
+<p>Include <code>examples/browser/neo4jmapper_complete.js</code> in your html-file and ensure that you have included <a href="https://github.com/jashkenas/underscore/blob/master/underscore.js">underscorejs</a> and <a href="https://github.com/visionmedia/superagent/blob/master/superagent.js">superagent</a> as well.</p>
+<h3>Connect to Database</h3>
+<pre><code class="lang-js">  var Neo4jMapper = require(&#39;neo4jmapper&#39;);
+  var neo4j = new Neo4jMapper(&#39;http://localhost:7474&#39;);</code></pre>
+<p>or in the browser:</p>
+<pre><code class="lang-js">  var neo4j = new window.Neo4jMapper(&#39;http://localhost:7474&#39;);</code></pre>
+<p>To use multiple database connections:</p>
+<pre><code class="lang-js">  var neo4j1 = new Neo4j(&#39;http://somewhere:7474&#39;);
+  var neo4j2 = new Neo4j(&#39;http://elsewhere:7070&#39;);</code></pre>
+<p>Most of the time you might work with the following interfaces:</p>
+<pre><code class="lang-js">  var Node = neo4j.Node
+    , Relationship = neo4j.Relationship
+    , Graph = neo4j.Graph
+    , Transaction = neo4j.Transaction;</code></pre>
+<h2>CRUD Nodes</h2>
+<h3>Create</h3>
+<pre><code class="lang-js">  Node.create( { name: &#39;Dave Grohl&#39;, year: 1969 }, function(err, dave) {
+    if (err)
+      console.error(err.message);
+    else
+      console.log(&#39;Node is persisted:&#39;, dave.toObject());
+  });</code></pre>
+<p>Create relations between nodes:</p>
+<pre><code class="lang-js">  Node.create( {
+    name: &#39;Foo Fighters&#39;,
+    // arrays + nested objects are possible (but they don&#39;t make much sense in a graphdb)
+    genres: [ &#39;Alternative Rock&#39;, &#39;Post-Grunge&#39; ],
+    foundation: {
+      year: 1994,
+      in: &#39;Seattle&#39;
+    }
+  }).save( function(err, fooFighters) {
+    dave.createRelationTo( fooFighters, &#39;PLAYS&#39;, function(err, relationship) {
+      console.log(&#39;Created Relationship:&#39;, relationship.toObject());
+      new Node( { name: &#39;Taylor Hawkins&#39; } ).save(function(err, taylor) {
+        dave.createRelationBetween(taylor, &#39;ROCK&#39;, cb);
+      });
+    });
+  });</code></pre>
+<p>Create relations with attributes:</p>
+<pre><code class="lang-js">  dave.createRelationTo( fooFighters, &#39;PLAYS&#39;, { instrument: &#39;guitar&#39; }, cb );
+  taylor.createRelationTo( fooFighters, &#39;PLAYS&#39;, { instrument: &#39;drums&#39; }, cb );</code></pre>
+<h3>Update</h3>
+<pre><code class="lang-js">  console.log(dave.data.name);
+  // ~&gt; &#39;Dave Grohl&#39;
+  dave.data.firstName = &#39;Dave&#39;;
+  dave.data.surname = &#39;Grohl&#39;;
+  dave.save(cb);</code></pre>
+<p>or</p>
+<pre><code class="lang-js">  Node.findById(dave.id).update( {
+    firstName: &#39;Dave&#39;,
+    surname: &#39;Grohl&#39;
+  }, cb );</code></pre>
+<h3>Find or Create</h3>
+<p>Creates a new node with this attribute if not exists, updates if one (distinct) exists:</p>
+<pre><code class="lang-js">  Node.findOrCreate( {
+    name: &#39;Dave Grohl&#39;
+  }, cb );</code></pre>
+<h3>Remove</h3>
+<p>We use <code>remove()</code> if we are on an instanced Node:</p>
+<pre><code class="lang-js">  dave.remove(cb);
+  // if you want to remove relationships as well
+  dave.removeIncludingRelations(cb);</code></pre>
+<p><code>delete()</code> if we perform a delete action on a query:</p>
+<pre><code class="lang-js">  Node.findById(dave.id).delete(cb);
+  // if you want to delete relationships as well
+  Node.findById(dave.id).deleteIncludingRelations(cb);</code></pre>
+<h3>Find Nodes</h3>
+<p>Some examples:</p>
+<pre><code class="lang-js">  Node.findOne( { name: &#39;Dave Grohl&#39; }, function(err, dave) {
+    if (err)
+      console.error(err.message);
+    else
+      console.log(&#39;Found Node:&#39;, dave.toObject());
+  });</code></pre>
+<pre><code class="lang-js">  Node
+    .find( { year: 1969 } )
+    .limit( 10, function(err, found) {
+      if (found) {
+        console.log(found.length + &#39; nodes found&#39;);
+      }
+    });</code></pre>
+<p>You can use <code>$and</code>, <code>$or</code>, <code>$not</code>, <code>$xor</code> and <code>$in</code> operators in where conditions:</p>
+<pre><code class="lang-js">  Node
+    .find() // you can put your where condition inside find() as well
+    .where( { $and: [ { year: $in : [ 1968, 1969, 1970 ] }, { name: &#39;Dave Grohl&#39;} ] } )
+    .limit(1, cb);</code></pre>
+<p>Query relationships:</p>
+<pre><code class="lang-js">  Node
+    .findOne( { name: &#39;Dave Grohl&#39; } )
+    .incomingRelations( &#39;ROCKS|PLAYS&#39;, function(err, foundRelations) {
+      console.log(&#39;Incoming relationships of Dave with &quot;ROCKS&quot; OR &quot;PLAYS&quot;:&#39;, foundRelations);
+    });</code></pre>
+<p>or query on instanced nodes:</p>
+<pre><code class="lang-js">  dave.incomingRelations(function(err, foundRelations) {
+    console.log(&#39;All incoming relationships of Dave:&#39;, foundRelations);
+  });</code></pre>
+<h2>Query Graph</h2>
+<p>There are three different ways to query the Graph:</p>
+<ul>
+<li>Graph.start()</li>
+<li>Graph.query() / Graph.stream()</li>
+<li>Graph.request().…</li>
+</ul>
+<h3>Recommend: Get everything as expected with Graph.start()</h3>
+<pre><code class="lang-js">  Graph
+    .start()
+    .match(&#39;(n)-[r]-()&#39;, cb);</code></pre>
+<p>Leave the <code>Graph.start()</code> statement empty if you don&#39;t need it.</p>
+<p>Beside you can also start with: <code>Graph.[start|create|match|where|with|return]</code></p>
+<p>You can chain your query elements and use conditional parameters in where clauses:</p>
+<pre><code class="lang-js">  Graph
+    .start()
+    .match(&#39;(game:Game)-[c:contains]-(position:Position)&#39;)
+    .where({ &#39;game.title&#39;: &#39;Wes vs Alvin&#39; }) // values will be escaped
+    .with(&#39;game, collect(position) AS positions&#39;)
+    .match(&#39;game-[c:contains]-(position:Position)&#39;)
+    .with(&#39;positions, c, position&#39;)
+    .orderBy(&#39;c.move ASC&#39;)
+    .match(&#39;position-[m:move]-next&#39;)
+    .where(&#39;next IN (positions)&#39;)
+    .return(&#39;(c.move+1)/2 as move, position.to_move as player, m.move, next.score as score&#39;)
+    .limit(20, cb);
+  /*
+    ~&gt;
+      MATCH     (game:Game)-[c:contains]-(position:Position)
+      WHERE     HAS (game.title) AND game.title = &#39;Wes vs Alvin&#39;
+      WITH      game, collect(position) AS positions
+      MATCH     game-[c:contains]-(position:Position)
+      WITH      positions, c, position
+      ORDER BY  c.move ASC
+      MATCH     position-[m:move]-next
+      WHERE     next IN (positions)
+      RETURN    (c.move+1)/2 as move, position.to_move as player, m.move, next.score as score
+      LIMIT     20;
+  */</code></pre>
+<pre><code class="lang-js">  Graph
+    .start(&#39;n = node(*)&#39;)
+    .case(&quot;n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3&quot;)
+    .parameters({ color1: &#39;blue&#39;, color2: &#39;brown&#39; })
+    .return(&#39;n AS Person&#39;)
+    .toCypherQuery();
+  /* ~&gt;
+    START          n = node(*)
+    CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
+    RETURN         n AS Person;
+  */</code></pre>
+<p>Here are most of all available methods to query the graph. <code>…</code> represents the strings containing the statements:</p>
+<pre><code class="lang-js">  Graph
+    .start(…)
+    .match(…)
+    .onMatch(…)
+    .where(&#39;n.name = {value1}&#39;)
+    .parameters( { value1: &#39;Bob&#39; } )
+    .where( { &#39;n.name&#39;: &#39;Bob&#39; } ) // would save the `where(…)` and `parameters(…)` operations above
+    .with(…)
+    .orderBy(…)
+    .skip(10)
+    .limit(20)
+    .delete(…)
+    .return(…)
+    .create(…)
+    .onCreate(…)
+    .createIndexOn(…)
+    .createUnique(…)
+    .dropIndexOn
+    .merge(…)
+    .remove(…)
+    .set(…)
+    .foreach(…)
+    .case(…)
+    .custom(…)
+    .comment(…)
+    .exec(cb) // or .stream(cb)</code></pre>
+<p>You can also use <code>Graph.enableProcessing().…</code> instead of <code>Graph.start()…</code> if you like explicitily wordings.</p>
+<p>Results will contain the relevant data column and found objects will be loaded as expected (columns definitions may redundant here, but are available on <code>graph._columns_</code> anyhow).</p>
+<h3>Query with minimal processing of the results</h3>
+<pre><code class="lang-js">  Graph
+    .query(cypherQueryString, cb);</code></pre>
+<p>Sort + loading are explicitly disabled to decrease response time (both are activated by default using <code>Graph.start()</code>).</p>
+<p>You can also choose what to switch on and off:</p>
+<pre><code class="lang-js">  Graph
+    .disableLoading()
+    .disableSorting()
+    .query( … , cb)</code></pre>
+<p>To work with parameters:</p>
+<pre><code class="lang-js">  Graph
+    .query(cypherQueryString).
+    .addParameters({ name: &#39;Alice&#39; }) // optional
+    .exec(cb);</code></pre>
+<p>Streaming (gets interesting on large results):</p>
+<pre><code class="lang-js">  Graph
+    .stream(cypherQueryString, cb);</code></pre>
+<p>To work with parameters on streaming:</p>
+<pre><code class="lang-js">  Graph
+    .query(cypherQueryString)
+    .addParameters({ name: &#39;Alice&#39; }) // optional
+    .stream(cb);</code></pre>
+<p>The only &quot;processing&quot; will be to detect object type (Node, Relationship, Path).</p>
+<h3>Native (restful api) requests</h3>
+<p>Use <code>Graph.request()</code> to send native requests and get native response:</p>
+<pre><code class="lang-js">  Graph
+    .request()
+    .get(&#39;node/3&#39;, cb);</code></pre>
+<pre><code class="lang-js">  Graph
+    .request()
+    .query( &quot;START n = node(*) MATCH n-[r]-() RETURN n;&quot;, cb);</code></pre>
+<p>This will request the restful api straightforward and there won&#39;t be any processing at all.
+The following methods are available: post, get, delete, put and query.</p>
+<h3>Modeling</h3>
+<p>We can define models based on the <code>Node</code> model (similar to models you might know from backbonejs for instance).</p>
+<p>Every extended model enjoys label support.</p>
+<pre><code class="lang-js">  Node.registerModel( &#39;Person&#39;, {
+    fields: {
+      indexes: {
+        email: true
+      },
+      defaults: {
+        created_on: function() {
+          return new Date().getTime();
+        }
+      }
+    },
+    fullname: function() {
+      var s = this.data.firstName + &quot; &quot; + this.data.surname;
+      return s.trim();
+    }
+  }, function(err, Person) {
+
+    var alice = new Person({firstName: &#39;Alice&#39;, surname: &#39;Springs&#39;});
+
+    alice.fullname();
+    ~&gt; Alice Springs
+
+    alice.save(function(err, alice) {
+      alice.toObject();
+      ~&gt; { id: 81238,
+      classification: &#39;Node&#39;,
+      data:
+       { created_on: 1374758483622,
+         surname: &#39;Springs&#39;,
+         firstName: &#39;Alice&#39; },
+      uri: &#39;http://localhost:7420/db/data/node/81238&#39;,
+      label: &#39;Person&#39;,
+      labels: [ &#39;Person&#39; ] }
+    });
+
+    // You can also use multiple inheritance
+    // here: Director extends Person
+    // Director will have the labels [ &#39;Director&#39;, &#39;Person&#39; ]
+
+    // You can skip the cb and work instantly with the registered model
+    // if you don&#39;t use index/uid fields on your schema
+    var Director = Person.registerModel(&#39;Director&#39;, {
+      fields: {
+        defaults: {
+          job: &#39;Director&#39;
+        }
+      }
+    });
+
+    new Director( {
+      name: &#39;Roman Polanski&#39;
+    } ).save(function(err, polanski) {
+      polanski.toObject();
+      ~&gt; { id: 81239,
+      classification: &#39;Node&#39;,
+      data:
+       { created_on: 1374758483625,
+         name: &#39;Roman Polanski&#39;,
+         job: &#39;Director&#39;
+       },
+      uri: &#39;http://localhost:7420/db/data/node/81239&#39;,
+      label: &#39;Director&#39;,
+      labels: [ &#39;Director&#39;, &#39;Person&#39; ] }
+    });
+  });</code></pre>
+<p>Coffeescript and it&#39;s class pattern is maybe the most convenient way to define models:</p>
+<pre><code class="lang-coffeescript">  class Person extends Node
+    fields:
+      indexes:
+        email: true
+      defaults:
+        created_on: -&gt;
+          new Date().getTime()
+    fullname: -&gt;
+      s = @data.firstName + &quot; &quot; + @data.surname
+      s.trim()
+
+  Node.registerModel Person, (err) -&gt;
+
+    alice = new Person firstName: &#39;Alice&#39;, surname: &#39;Springs&#39;
+    alice.fullname()
+    ~&gt; &#39;Alice Springs&#39;
+    alice.save -&gt;
+      alice.label
+      ~&gt; &#39;Person&#39;
+
+    class Director extends Person
+    Node.registerModel(Director)</code></pre>
+<p>To use default values on Relationships, use the setter (available on <code>Node</code> as well):</p>
+<pre><code>  Relationship.setDefaultFields({
+    created_on: function() {
+      return new Date().getTime();
+    }
+  });</code></pre>
+<h3>Iterate on large results (streaming)</h3>
+<p>Note: Sreaming is only working on NodeJS for now</p>
+<p>You can iterate results asynchronously with the <code>each</code> method, it processes the stream of the response:</p>
+<pre><code class="lang-js">  Node.findAll().each(function(node) {
+    if (node)
+      console.log(node.toObject());
+    else
+      console.log(&quot;Done&quot;);
+  });</code></pre>
+<p>Keep in mind that there is <strong>no extra loading executed on stream results</strong> to keep the response time as good as possible. If you want to load a object from a streaming result (if you need labels for instance), you have to trigger it explicitly:</p>
+<pre><code class="lang-js">  Person.findAll().each(function(person) {
+    if (person) {
+      person.load(function(err, load){
+        // person is now loaded (with labels for instance…)
+        console.log(person.toObject());
+      });
+    }
+  });</code></pre>
+<h2>Transactions</h2>
+<p>Currently you can execute transactions on any cypher queries, that&#39;s the way to go:</p>
+<pre><code class="lang-js">  Transaction.commit(
+    &#39;CREATE (n {props}) RETURN n AS NODE, id(n), as ID&#39;,
+    // parameters are optional but recommend to use
+    { props: { name: &#39;Foo Fighters&#39; } },
+    function(err, transaction) {
+      console.log(transaction.results[0]);
+    }
+  );</code></pre>
+<p>You can create open transaction and add statements to aslong they aren&#39;t committed. The api is self explaining (instead of <code>Transaction.create</code> you can use <code>Transaction.open</code> to keep the neo4j terminology):</p>
+<pre><code class="lang-js">  Transaction.create(
+    &#39;CREATE (n {props}) RETURN n AS NODE, id(n), as ID&#39;,
+    { props: { name: &#39;Dave Grohl&#39; } }
+  ).add(
+    &#39;CREATE (n {props}) RETURN n AS NODE, id(n), as ID&#39;,
+    { props: { name: &#39;Taylor Hawkins&#39; } }
+  , function(err, openTransaction) {
+    console.log({
+      statusOfTransaction: openTransaction.status,
+      transactionId: openTransaction.id,
+      results: openTransaction.results,
+      errors: openTransaction.errors
+    });
+  });</code></pre>
+<p>Commit transactions:</p>
+<pre><code class="lang-js">  Transaction.create(…, function(err, openTransaction) {
+    openTransaction.commit(function(err, committedTransaction) {
+      console.log(&#39;Transaction with ID &#39;+committedTransaction.id+&#39; is now committed: &#39;, committedTransaction.status);
+    });
+  });</code></pre>
+<p>Rollback open transactions:</p>
+<pre><code class="lang-js">  Transaction.create(…, function(err, openTransaction) {
+    openTransaction.rollback(function(err, deletedTransaction) {
+      console.log(&#39;Transaction is rolled back&#39;);
+    });
+  });</code></pre>
+<p>You can commit / rollback all open transactions with:</p>
+<pre><code class="lang-js">  Transaction.commitAll(cb);
+  Transaction.rollbackAll(cb);</code></pre>
+<p>In future releases transactions may available for <code>Node.</code> and <code>Graph.</code> objects as well. Also there is no loading of results implemented, yet.</p>
+<h2>Naming conventions</h2>
+<p>The query method names are heavily inspired by mongodb and mongoose - so most of them should sound familiar in case you have worked with them:</p>
+<ul>
+<li>find, findOne, findById, findByUniqueKeyValue</li>
+<li>where, whereNode, whereRelationship, whereStartNode, whereEndNode, whereRelationship, andWhereNode, …</li>
+<li>andHasProperty, whereNodeHasProperty, whereRelationshipHasProperty, …</li>
+<li>withRelatioships, incomingRelations, outgoingRelations, relationsBetween, incomingRelationsFrom(), outgoingRelationsTo() …</li>
+<li>match</li>
+<li>limit</li>
+<li>skip</li>
+<li>delete, deleteIncludingRelations</li>
+<li>allLabels, createLabel, createLabels, replaceLabels, removeLabels
+…</li>
+</ul>
+<p>Neo4jMapper is using the following identifiers in cypher queries:</p>
+<ul>
+<li><code>n</code> for a single [n]ode or a start node</li>
+<li><code>m</code> for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~&gt; `START n = node(32), m = node(12) MATCH (n)</li>
+</ul>
+<h2>Debugging</h2>
+<h3>Error messages</h3>
+<p>By default you should get clear and understandable error messages on wrong queries, e.g.:</p>
+<pre><code class="lang-js">  Node.find().where(&quot;wrongQuery LIKE &#39;this&#39;&quot;, function(err) {
+    err ~&gt;
+      { name: &#39;QueryError&#39;,
+        message: &#39;Unclosed parenthesis\n&quot;START n = node(*)   WHERE ( wrongQuery LIKE \&#39;this\&#39; ) RETURN # n;&quot;\n                                           ^&#39;,
+       exception: &#39;SyntaxException&#39;,
+       cypher: null,
+       stacktrace:
+        [ &#39;org.neo4j.cypher.internal.parser.v1_8.CypherParserImpl.parse(CypherParserImpl.scala:45)&#39;,
+          &#39;org.neo4j.cypher.CypherParser.parse(CypherParser.scala:42)&#39;,
+          &#39;org.neo4j.cypher.ExecutionEngine$anonfun$prepare$1.apply(ExecutionEngine.scala:67)&#39;,
+          &#39;org.neo4j.cypher.ExecutionEngine$anonfun$prepare$1.apply(ExecutionEngine.scala:67)&#39;,
+          &#39;org.neo4j.cypher.internal.LRUCache.getOrElseUpdate(LRUCache.scala:37)&#39;,
+          &#39;org.neo4j.cypher.ExecutionEngine.prepare(ExecutionEngine.scala:67)&#39;,
+          &#39;org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:59)&#39;,
+          &#39;org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:63)&#39;,
+          &#39;org.neo4j.cypher.javacompat.ExecutionEngine.execute(ExecutionEngine.java:79)&#39;,
+          &#39;org.neo4j.server.rest.web.CypherService.cypher(CypherService.java:67)&#39;,
+          &#39;java.lang.reflect.Method.invoke(Method.java:597)&#39; ],
+       statusCode: 400,
+       method: &#39;POST&#39;,
+       url: &#39;http://localhost:7474/db/data/cypher&#39;,
+       data: &#39;{&quot;query&quot;:&quot;START n = node(*)   WHERE ( wontWork LIKE \&#39;this\&#39; ) RETURN n;&quot;,&quot;params&quot;:{}}&#39;
+     }
+  });</code></pre>
+<h3>Inspect sended + received data</h3>
+<p>In case you want to inspect sended + received data and/or the process of mapping, you can set a debug flag:</p>
+<pre><code class="lang-js">  // for all instanced node(s) via prototype
+  Node.prototype.neo4jrestful.debug = true;
+  // or better for specific objects
+  var node = new Node();
+  node.neo4jrestful.debug = true;
+  node.save(function(err, result, debug) {
+    debug ~&gt;
+      { options: { type: &#39;POST&#39;, data: {}, no_processing: false, debug: true },
+        requested_url: &#39;http://localhost:7474/db/data/node&#39;,
+        type: &#39;POST&#39;,
+        data: &#39;{}&#39;,
+        header:
+         { Accept: &#39;application/json&#39;,
+           &#39;Content-Type&#39;: &#39;application/json&#39; },
+        res:
+         { extensions: {},
+           paged_traverse: &#39;http://localhost:7474/db/data/node/607/paged/traverse/{returnType}{?pageSize,leaseTime}&#39;,
+           outgoing_relationships: &#39;http://localhost:7474/db/data/node/607/relationships/out&#39;,
+           traverse: &#39;http://localhost:7474/db/data/node/607/traverse/{returnType}&#39;,
+           all_typed_relationships: &#39;http://localhost:7474/db/data/node/607/relationships/all/{-list|&amp;|types}&#39;,
+           property: &#39;http://localhost:7474/db/data/node/607/properties/{key}&#39;,
+           all_relationships: &#39;http://localhost:7474/db/data/node/607/relationships/all&#39;,
+           self: &#39;http://localhost:7474/db/data/node/607&#39;,
+           properties: &#39;http://localhost:7474/db/data/node/607/properties&#39;,
+           outgoing_typed_relationships: &#39;http://localhost:7474/db/data/node/607/relationships/out/{-list|&amp;|types}&#39;,
+           incoming_relationships: &#39;http://localhost:7474/db/data/node/607/relationships/in&#39;,
+           incoming_typed_relationships: &#39;http://localhost:7474/db/data/node/607/relationships/in/{-list|&amp;|types}&#39;,
+           create_relationship: &#39;http://localhost:7474/db/data/node/607/relationships&#39;,
+           data: {} },
+        status: &#39;success&#39;,
+        err: null,
+        responseTime: 150
+      }
+  });</code></pre>
+<p>or simply inspect <code>_reponse_</code>:</p>
+<pre><code class="lang-js">  var node = new Node();
+  node.save(function(err, result) {
+    console.log(node._response_, node._columns_);
+  });</code></pre>
+<p>The debug object is always the third passed argument in the callback.</p>
+<p>You can also log all network connections to the database by defining a logger:</p>
+<pre><code class="lang-js">  client.constructor.prototype.log = Graph.prototype.log = function() {
+    console.log(Array.prototype.slice.call(arguments).join(&#39; &#39;));
+  }</code></pre>
+<h3>Inspect generated queries</h3>
+<p>You can easiliy inspect the generated queries by invoking the <code>toCypherQuery()</code> method:</p>
+<pre><code class="lang-js">  // disable that values will be written directly into the query
+  // which is in this case better for inspecting
+  Node.prototype.cypher._useParameters = false;
+  Node.find().andWhereNode({ name: &quot;Bob&quot;}).delete().toCypherQuery();
+  ~&gt; &#39;START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \&#39;Bob\&#39; ) DELETE n;&#39;</code></pre>
+<h2>callback-less with generators</h2>
+<p>In v8-harmony you can use generators in your js to avoid callbacks, for instance via the suspend library:</p>
+<pre><code class="lang-js">  var Neo4j = require(&#39;../src&#39;)
+    , neo4j = new Neo4j(&#39;http://localhost:7474&#39;)
+    , Node  = neo4j.Node
+    , Graph = neo4j.Graph
+    , suspend = require(&#39;suspend&#39;);
+
+  suspend(function*(resume) {
+    var Band = yield Node.registerModel(&#39;Band&#39;, resume);
+    var Song = yield Node.registerModel(&#39;Song&#39;, resume);
+    var band = yield new Band({ name: &#39;Foo Fighter&#39;}).save(resume);
+    var song = yield new Song({ title: &#39;Everlong&#39; }).save(resume);
+    yield band.createRelationshipTo(song, &#39;plays&#39;, resume);
+    var relations = yield song.incomingRelationships(&#39;plays&#39;, resume);
+    console.log(relations[0].toObject());
+  })();</code></pre>
+<h2>Schema like behaviour</h2>
+<p>Neo4jMapper is not a schema-based-mapper, but it includes some features which are similar to this.</p>
+<h3>Default values, unique fields and autoindex</h3>
+<p>To let buil Neo4j the index in the background for you, you just have to define the fields in the <code>indexes</code> property as you see below. If you want to ensure that the field is unique, add the fields to the <code>unique</code> property (keep in mind that unique fields are always ”indexes“ as well). The default properties has no effect on the database, it just will populate the object with default values if they aren&#39;t set.</p>
+<pre><code class="lang-js">  Node.registerModel( &#39;Person&#39;, {
+    fields = {
+      defaults: {
+        is_new: true,
+        uid: -&gt; new Date().getTime()
+      },
+      indexes: {
+        email: true,
+        uid: &#39;my_person_index&#39;
+      },
+      unique: {
+        uid: true
+      }
+    }
+  }, function(err, Person) {
+    // work with the registered and indexed model &#39;Person&#39;
+    var polanski = new Person();
+  });</code></pre>
+<pre><code class="lang-coffeescript">
+  class Person extends Node
+
+    fields: {
+      defaults: {
+        is_new: true
+        # default values will be generated with invoking this method (e.g. generating a timestamp)
+        uid: -&gt; new Date().getTime()
+      },
+      indexes: {
+        email: true # will be autoindex
+        uid: &#39;my_person_index&#39; # will be indexed on the legacy way with &#39;my_person_index&#39; namespace
+      }
+    }
+
+  Node.registerModel Person, (err) -&gt;
+    polanski = new Person()</code></pre>
+<p>You can also use default values for Relationships:</p>
+<pre><code class="lang-js">  Node.Relationship.fields.defaults = {
+    created_on = function() {
+      return new Date().getTime();
+    }
+  }</code></pre>
+<h3>Drop indexes</h3>
+<p>Neo4jMapper won&#39;t drop indexed or unique defined fields for you, because it doesn&#39;t have any migration features. But you can drop the index on a Model by yourself via:</p>
+<pre><code class="lang-js">  Node.registerModel(&#39;Person&#39;, function(err, Person) {
+    Person.dropEntireIndex(function(err, Per) {
+      console.log(&quot;Dropped entire index for label &#39;Person&#39;&quot;);
+    });
+  });</code></pre>
+<h2>Hooks</h2>
+<h3>Nodes</h3>
+<p>All hooks can also be defined for specific ”classes“, e.g.:</p>
+<pre><code class="lang-js">  Person.prototype.onBeforeSave = fucntion(next) { next(null, null); }</code></pre>
+<h4>onBeforeSave</h4>
+<pre><code class="lang-js">  Node.prototype.onBeforeSave = function(next) {
+    // do s.th. before the node will be persisted
+    // is called before initially save and update
+    next();
+  }</code></pre>
+<h4>onBeforeRemove</h4>
+<pre><code class="lang-js">  Node.prototype.onBeforeRemove = function(next) {
+    // do s.th. before the node will be removed
+    next();
+  }</code></pre>
+<h4>onBeforeInitialize</h4>
+<p>Called once the model is being registered. For instance, to ensure autoindex on defined fields is done in this part:</p>
+<pre><code class="lang-js">  Node.prototype.onBeforeInitialize = function(next) {
+    // do s.th. before the Model gets initialized
+    next();
+  }</code></pre>
+<h4>onAfterLoad</h4>
+<p>On all <code>Node.find…()</code> queries the results run through a load process (loading the label(s) which has to be an extra request for instance). You can define your own afterLoad process this way:</p>
+<pre><code class="lang-js">  Node.prototype.onAfterLoad = function(node, done) {
+    // do s.th. here, finnaly call done()
+    if (node.id)
+      this.neo4jrestful.query(&quot;START …&quot;, function(err, result) {
+        // …
+        done(err, null);
+      });
+  }</code></pre>
+<h4>onAfterPopulate</h4>
+<p>If a node is populated with data from a response, you can process your node/data here. This method is called synchronous.</p>
+<pre><code class="lang-js">  Node.prototype.onAfterPopulate = function() {
+    if ((this.data.firstname)&amp;&amp;(this.data.surname)) {
+      this.data.name = this.data.firstname + &#39; &#39; + this.data.surname;
+    }
+  }</code></pre>
+<h3>Performance Tweaks</h3>
+<p>To reduce database requests you can switch load hooks on and off</p>
+<ul>
+<li><code>Node.prototype.disableLoading()</code> / <code>Node.prototype.enableLoading()</code></li>
+<li><code>Node.disableLoading()</code> / <code>Node.enableLoading()</code> in global context</li>
+<li><code>Graph.request()</code> or <code>Graph.disableProcessing().query()</code> to request natively</li>
+</ul>
+<h3>Benchmarks</h3>
+<p>Some basic benchmark tests are written. To get reasonable benchmark results we compare neo4jmapper with the node-neo4j library (a robust basic neo4j driver). You can execute them with <code>coffee benchmark/benchmark.coffee</code> (beware that a lot of nodes will be written and kept in your database).</p>
+</div>
+<div id="README"># Neo4jMapper
 ## Object Modeler for Neo4j Graphdatabases
 
 Written in JavaScript for browser- and serverside usage.
@@ -625,8 +1227,8 @@ By default you should get clear and understandable error messages on wrong queri
        stacktrace:
         [ 'org.neo4j.cypher.internal.parser.v1_8.CypherParserImpl.parse(CypherParserImpl.scala:45)',
           'org.neo4j.cypher.CypherParser.parse(CypherParser.scala:42)',
-          'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
-          'org.neo4j.cypher.ExecutionEngine$$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
+          'org.neo4j.cypher.ExecutionEngine$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
+          'org.neo4j.cypher.ExecutionEngine$anonfun$prepare$1.apply(ExecutionEngine.scala:67)',
           'org.neo4j.cypher.internal.LRUCache.getOrElseUpdate(LRUCache.scala:37)',
           'org.neo4j.cypher.ExecutionEngine.prepare(ExecutionEngine.scala:67)',
           'org.neo4j.cypher.ExecutionEngine.execute(ExecutionEngine.scala:59)',
@@ -884,7 +1486,6 @@ To reduce database requests you can switch load hooks on and off
 
 ### Benchmarks
 
-Some basic benchmark tests are written. To get reasonable benchmark results we compare neo4jmapper with the node-neo4j library (a robust basic neo4j driver). You can execute them with `coffee benchmark/benchmark.coffee` (beware that a lot of nodes will be written and kept in your database).
-</div>
+Some basic benchmark tests are written. To get reasonable benchmark results we compare neo4jmapper with the node-neo4j library (a robust basic neo4j driver). You can execute them with `coffee benchmark/benchmark.coffee` (beware that a lot of nodes will be written and kept in your database).</div>
 </body>
 </html>

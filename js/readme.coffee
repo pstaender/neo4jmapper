@@ -1,12 +1,12 @@
 $(document).ready ->
 
   $main = $('#main')
-  content = $('#main').html()
+  content = $('#README').html()
 
   converter = new Showdown.converter()
   $main.html converter.makeHtml(content)
 
-  $('code').each (i, e) -> 
+  $('code').each (i, e) ->
     $e = $(this)
     if $e.hasClass('js') or $e.hasClass('coffeescript') or $e.hasClass('sh')
       if $e.hasClass('js')

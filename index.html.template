@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>Neo4jMapper</title>
+  <script src="js/jquery.min.js"></script>
+  <script src="js/showdown/showdown.js"></script>
+  <script src="js/showdown/extensions/github.js"></script>
+  <script src="js/readme.js"></script>
+  <link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/tomorrow.min.css">
+  <script src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+
+  <link href="http://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600" rel="stylesheet" type="text/css" />
+  <link href="css/layout.css" media="all" rel="stylesheet" type="text/css" />
+
+</head>
+<body>
+<a href="https://github.com/pstaender/neo4jmapper"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
+<div id="main"></div>
+<div id="README"></div>
+</body>
+</html>

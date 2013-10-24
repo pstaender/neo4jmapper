@@ -2,7 +2,7 @@
 $(document).ready(function() {
   var $main, content, converter;
   $main = $('#main');
-  content = $('#main').html();
+  content = $('#README').html();
   converter = new Showdown.converter();
   $main.html(converter.makeHtml(content));
   return $('code').each(function(i, e) {
@@ -23,7 +23,3 @@ $(document).ready(function() {
     }
   });
 });
-
-/*
-//@ sourceMappingURL=readme.map
-*/
