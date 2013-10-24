@@ -7,4 +7,4 @@ src-cov/*
 coverage.lcov
 examples/browser/test_*.js
 .sass-cache/
-*.css.map
+*.map
