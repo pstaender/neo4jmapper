@@ -990,17 +990,15 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return query;
   }
 
-  Node.prototype.toCypherQuery = function() {
+  Node.prototype.toQuery = function() {
     var query = this._prepareQuery()
       , graph = Graph.start(query.start_as_string);
-
     if (query.match.length > 0)
       graph.match(query.match.join(' AND '));
     if ((query.where)&&(query.where.length > 0))
       graph.where(query.where.join(' AND '));
     if (query.set)
       graph.set(query.set);
-
     if (query.action)
       graph.custom(query.action+' '+query.actionWith);
     else if (query._distinct)
@@ -1013,8 +1011,15 @@ var __initNode__ = function(neo4jrestful, Graph) {
       graph.skip(Number(query.skip));
     if (query.limit)
       graph.limit(Number(query.limit));
+    return graph.toQuery();
+  }
 
-    return graph.toCypherQuery();
+  Node.prototype.toQueryString = function() {
+    return this.toQuery().toString();
+  }
+
+  Node.prototype.toCypherQuery = function() {
+    return this.toQuery().cypher();
   }
 
   Node.prototype._start_node_id = function(fallback) {

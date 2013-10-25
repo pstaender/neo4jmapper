@@ -507,49 +507,25 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(cb);
   }
 
-  Graph.prototype.toCypherQuery = function(options) {
-    var s = ''
-      , chopLength = 15
-      , defaultOptions = {
-          niceFormat: true
-        };
+  Graph.prototype.toQuery = function() {
     // if a query string is attached, return this and skip query building
     if (this._queryString_) {
       return this._queryString_;
     }
-    if (typeof options !== 'object')
-      options = {};
-    else
-      _.defaults(options, defaultOptions);
-    for (var i=0; i < this._query_history_.length; i++) {
-      var queryFragment = this._query_history_[i];
-      if (typeof queryFragment === 'string') {
-        // if we have just a string, we add the string to final query, no manipulation
-        s += queryFragment;
-        continue;
-      }
-      var attribute = Object.keys(this._query_history_[i])[0];
-      var forQuery = this._query_history_[i][attribute];
-      // remove underscore from attribute, e.g. ORDER_BY -> ORDER BY
-      attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');
-      if (options.niceFormat) {
-        // extend attribute-string with whitespace
-        attribute = attribute + Array(chopLength - attribute.length).join(' ');
-      }
-      if (forQuery !== null) {
-        if (typeof forQuery === 'string') {
-          // remove dupliacted statement fragment identifier, e.g. START START … -> START …
-          forQuery = forQuery.trim().replace(new RegExp('^'+attribute+'\\s+', 'i'), '');
-          // remove trailing semicolon
-          forQuery = forQuery.replace(/\;$/, '');
-        } else {
-          forQuery = String(forQuery);
-        }
-        s += '\n'+attribute+' '+forQuery+' ';
-      }
+    var query = new helpers.CypherQuery(this._query_history_);
+    if (this.cypher._useParameters) {
+      query.parameters = this.cypher.parameters;
     }
-    s = s.trim();
-    return s + ';';
+    return query;
+  }
+
+  Graph.prototype.toQueryString = function() {
+    return this.toQuery().toString();
+  }
+
+  Graph.prototype.toCypherQuery = function() {
+    this.toQueryString();
+    return this.toQuery().cypher();
   }
 
   // # Enables loading for specific types
