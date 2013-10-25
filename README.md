@@ -257,14 +257,14 @@ You can chain your query elements and use conditional parameters in where clause
 ```js
   Graph
     .start('n = node(*)')
-    .case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3")
+    .case("n.eyes WHEN {color1} THEN 1 WHEN {color2} THEN 2 ELSE 3")
     .parameters({ color1: 'blue', color2: 'brown' })
     .return('n AS Person')
     .toQueryString();
   /* ~>
-    START          n = node(*)
-    CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
-    RETURN         n AS Person;
+    START   n = node(*)
+    CASE    n.eyes WHEN 'blue' THEN 1 WHEN 'brown' THEN 2 ELSE 3 END
+    RETURN  n AS Person;
   */
 ```
 
