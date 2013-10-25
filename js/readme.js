@@ -23,3 +23,7 @@ $(document).ready(function() {
     }
   });
 });
+
+/*
+//@ sourceMappingURL=readme.map
+*/

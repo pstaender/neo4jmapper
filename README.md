@@ -481,7 +481,7 @@ To use default values on Relationships, use the setter (available on `Node` as w
 
 ### Iterate on large results (streaming)
 
-Note: Sreaming is only working on NodeJS for now
+Note: Streaming works on NodeJS only
 
 You can iterate results asynchronously with the `each` method, it processes the stream of the response:
 
@@ -494,7 +494,7 @@ You can iterate results asynchronously with the `each` method, it processes the 
   });
 ```
 
-Keep in mind that there is **no extra loading executed on stream results** to keep the response time as good as possible. If you want to load a object from a streaming result (if you need labels for instance), you have to trigger it explicitly:
+Keep in mind that there is **no extra loading executed on stream results** to pass through the result as soon as possible. If you want to load a object from a streaming result (if you need labels for instance), you have to trigger it explicitly:
 
 ```js
   Person.findAll().each(function(person) {
@@ -509,7 +509,7 @@ Keep in mind that there is **no extra loading executed on stream results** to ke
 
 ## Transactions
 
-Currently you can execute transactions on any cypher queries, that's the way to go:
+Neo4jMapper supports transactions:
 
 ```js
   Transaction.commit(
@@ -522,7 +522,7 @@ Currently you can execute transactions on any cypher queries, that's the way to 
   );
 ```
 
-You can create open transaction and add statements to aslong they aren't committed. The api is self explaining (instead of `Transaction.create` you can use `Transaction.open` to keep the neo4j terminology):
+You can create open transaction and add statements to aslong they aren't committed. The api is self explaining (instead of `Transaction.create` you can use `Transaction.open` to follow the neo4j terminology):
 
 ```js
   Transaction.create(
@@ -561,7 +561,7 @@ Rollback open transactions:
   });
 ```
 
-You can commit / rollback all open transactions with:
+Commit or rollback all open transactions with:
 
 ```js
   Transaction.commitAll(cb);
