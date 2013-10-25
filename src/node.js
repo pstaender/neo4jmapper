@@ -15,13 +15,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
     // TODO: find a solution for bson object id
     var helpers               = window.Neo4jMapper.helpers;
     var _                     = window._;
-    var Sequence              = window.Sequence;
     var ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
     var CypherQuery           = window.Neo4jMapper.CypherQuery;
   } else {
     var helpers               = require('./helpers');
     var _                     = require('underscore');
-    var Sequence              = require('./lib/sequence');
     var ConditionalParameters = require('./conditionalparameters');
     var CypherQuery           = require('./cypherquery');
   }
