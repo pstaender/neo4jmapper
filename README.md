@@ -260,7 +260,7 @@ You can chain your query elements and use conditional parameters in where clause
     .case("n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3")
     .parameters({ color1: 'blue', color2: 'brown' })
     .return('n AS Person')
-    .toCypherQuery();
+    .toQueryString();
   /* ~>
     START          n = node(*)
     CASE           n.eyes WHEN {color1} THEN 1 WHEN {color1} THEN 2 ELSE 3 END
@@ -588,7 +588,7 @@ The query method names are heavily inspired by mongodb and mongoose - so most of
 Neo4jMapper is using the following identifiers in cypher queries:
 
   * `n` for a single [n]ode or a start node
-  * `m` for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toCypherQuery() ~> `START n = node(32), m = node(12) MATCH (n)
+  * `m` for an end node ([m]atch) (e.g. Node.findById(32).incomingRelationshipsFrom(12).toQueryString() ~> `START n = node(32), m = node(12) MATCH (n)
 
 ## Debugging
 
@@ -685,13 +685,10 @@ You can also log all network connections to the database by defining a logger:
 
 ### Inspect generated queries
 
-You can easiliy inspect the generated queries by invoking the `toCypherQuery()` method:
+You can easiliy inspect the generated queries by invoking the `toQuery()` or `toQueryString()` method:
 
 ```js
-  // disable that values will be written directly into the query
-  // which is in this case better for inspecting
-  Node.prototype.cypher._useParameters = false;
-  Node.find().andWhereNode({ name: "Bob"}).delete().toCypherQuery();
+  Node.find().andWhereNode({ name: "Bob"}).delete().toQueryString();
   ~> 'START n = node(*)   WHERE ( HAS (n.name) ) AND ( n.name = \'Bob\' ) DELETE n;'
 ```
 

@@ -19,6 +19,16 @@
           <div id="jump_page">
             
               
+              <a class="source" href="conditionalparameters.html">
+                conditionalparameters.js
+              </a>
+            
+              
+              <a class="source" href="cypherquery.html">
+                cypherquery.js
+              </a>
+            
+              
               <a class="source" href="graph.html">
                 graph.js
               </a>
@@ -73,7 +83,7 @@
                 <a class="pilcrow" href="#section-1">&#182;</a>
               </div>
               <h1>Neo4jMapper</h1>
-<p><strong>(c) 2013 by Philipp Ständer <a href="&#109;&#x61;&#105;&#x6c;&#x74;&#x6f;&#x3a;&#112;&#104;&#105;&#x6c;&#x69;&#112;&#x70;&#46;&#115;&#116;&#x61;&#101;&#110;&#x64;&#101;&#114;&#64;&#103;&#109;&#x61;&#105;&#x6c;&#x2e;&#x63;&#x6f;&#x6d;">&#112;&#104;&#105;&#x6c;&#x69;&#112;&#x70;&#46;&#115;&#116;&#x61;&#101;&#110;&#x64;&#101;&#114;&#64;&#103;&#109;&#x61;&#105;&#x6c;&#x2e;&#x63;&#x6f;&#x6d;</a></strong></p>
+<p><strong>(c) 2013 by Philipp Ständer <a href="&#x6d;&#97;&#105;&#108;&#x74;&#111;&#58;&#x70;&#104;&#105;&#108;&#x69;&#112;&#112;&#46;&#115;&#x74;&#x61;&#x65;&#x6e;&#100;&#101;&#114;&#x40;&#x67;&#x6d;&#97;&#105;&#x6c;&#46;&#99;&#x6f;&#109;">&#x70;&#104;&#105;&#108;&#x69;&#112;&#112;&#46;&#115;&#x74;&#x61;&#x65;&#x6e;&#100;&#101;&#114;&#x40;&#x67;&#x6d;&#97;&#105;&#x6c;&#46;&#99;&#x6f;&#109;</a></strong></p>
 <p><em>Distributed under the GNU General Public License</em></p>
 <p>Neo4jMapper is an <strong>object mapper for neo4j databases</strong>.</p>
 
@@ -108,7 +118,9 @@
     <span class="keyword">this</span>.Relationship  = window.Neo4jMapper.initRelationship(_client_, <span class="keyword">this</span>.Graph, <span class="keyword">this</span>.Node);
     <span class="keyword">this</span>.Path          = window.Neo4jMapper.initPath(_client_, <span class="keyword">this</span>.Graph);
 
-    Neo4jMapper.prototype.helpers = window.Neo4jMapper.helpers;
+    <span class="keyword">this</span>.helpers = window.Neo4jMapper.helpers;
+    <span class="keyword">this</span>.helpers.ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
+    <span class="keyword">this</span>.helpers.CypherQuery = window.Neo4jMapper.CypherQuery;
   } <span class="keyword">else</span> {</pre></div></div>
             
         </li>
@@ -134,7 +146,9 @@
     <span class="keyword">this</span>.Relationship  = require(<span class="string">'./relationship'</span>).init(_client_, <span class="keyword">this</span>.Graph, <span class="keyword">this</span>.Node);
     <span class="keyword">this</span>.Path          = require(<span class="string">'./path'</span>).init(_client_, <span class="keyword">this</span>.Graph);
 
-    Neo4jMapper.prototype.helpers = require(<span class="string">'./helpers'</span>);
+    <span class="keyword">this</span>.helpers = require(<span class="string">'./helpers'</span>);
+    <span class="keyword">this</span>.helpers.ConditionalParameters = require(<span class="string">'./conditionalparameters'</span>);
+    <span class="keyword">this</span>.helpers.CypherQuery = require(<span class="string">'./cypherquery'</span>);
   }</pre></div></div>
             
         </li>

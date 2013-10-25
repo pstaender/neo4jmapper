@@ -19,6 +19,16 @@
           <div id="jump_page">
             
               
+              <a class="source" href="conditionalparameters.html">
+                conditionalparameters.js
+              </a>
+            
+              
+              <a class="source" href="cypherquery.html">
+                cypherquery.js
+              </a>
+            
+              
               <a class="source" href="graph.html">
                 graph.js
               </a>
@@ -81,15 +91,14 @@
               
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> _ = <span class="literal">null</span>;
-
+            <div class="content"><div class='highlight'><pre>
 <span class="keyword">if</span> (<span class="keyword">typeof</span> window === <span class="string">'object'</span>) {
-  _ = window._;
+  <span class="keyword">var</span> _ = window._;
 } <span class="keyword">else</span> {
-  _ = require(<span class="string">'underscore'</span>);
+  <span class="keyword">var</span> _ = require(<span class="string">'underscore'</span>);
 }
 
-<span class="keyword">var</span> _is_operator = <span class="regexp">/^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i</span>;
+<span class="keyword">var</span> isConditionalOperator = <span class="regexp">/^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i</span>;
 
 <span class="keyword">var</span> sortStringAndOptionsArguments = <span class="keyword">function</span>(string, options) {
   <span class="keyword">if</span> (<span class="keyword">typeof</span> string === <span class="string">'object'</span>) {
@@ -382,7 +391,7 @@
     <span class="keyword">if</span> (_.isObject(value)) {
       extractAttributesFromCondition(condition[key], attributes);
     }
-    <span class="keyword">if</span> ( (!_is_operator.test(key)) &amp;&amp; (<span class="regexp">/^[a-zA-Z\_\-\.]+$/</span>.test(key)) ) {</pre></div></div>
+    <span class="keyword">if</span> ( (!isConditionalOperator.test(key)) &amp;&amp; (<span class="regexp">/^[a-zA-Z\_\-\.]+$/</span>.test(key)) ) {</pre></div></div>
             
         </li>
         
@@ -403,34 +412,30 @@
   <span class="keyword">return</span> _.uniq(attributes);
 }
 
-<span class="comment">/*
- * Builds a string from mongodb-like-query object
- */</span>
-<span class="keyword">var</span> ConditionalParameters = <span class="function"><span class="keyword">function</span> <span class="title">ConditionalParameters</span><span class="params">(conditions, options)</span> {</span>
+<span class="keyword">var</span> CypherQuery = <span class="function"><span class="keyword">function</span> <span class="title">CypherQuery</span><span class="params">(query, parameters)</span> {</span>
+  <span class="keyword">this</span>.statements = [];
+  <span class="keyword">if</span> (<span class="keyword">typeof</span> query === <span class="string">'string'</span>)
+    <span class="keyword">this</span>.query = query;
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">typeof</span> query === <span class="string">'object'</span>)
+    <span class="keyword">this</span>.statements = query;
+  <span class="keyword">if</span> (parameters)
+    <span class="keyword">this</span>.parameters = parameters;
+}
 
-  ConditionalParameters.parameterRuleset = {
-    $IN: <span class="keyword">function</span>(value) {
-      <span class="keyword">var</span> s = <span class="string">''</span>;
-      <span class="keyword">if</span> ((<span class="keyword">typeof</span> value === <span class="string">'object'</span>) &amp;&amp; (value.length &gt; <span class="number">0</span>)) {
-        <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; value.length; i++) {
-          value[i] = (<span class="keyword">typeof</span> value[i] === <span class="string">'string'</span>) ? <span class="string">"'"</span>+escapeString(value[i])+<span class="string">"'"</span> : valueToStringForCypherQuery(value[i]);
-        }
-        s = value.join(<span class="string">', '</span>);
-      }
-      <span class="keyword">return</span> <span class="string">'IN [ '</span> + s + <span class="string">' ]'</span>;
-    },
-    $<span class="keyword">in</span>: <span class="keyword">function</span>(value) { <span class="keyword">return</span> <span class="keyword">this</span>.$IN(value); }
-
+CypherQuery.prototype.statementsToString = <span class="keyword">function</span>(options) {
+  <span class="keyword">var</span> s = <span class="string">''</span>;
+  <span class="keyword">var</span> chopLength = <span class="number">15</span>;
+  <span class="keyword">var</span> defaultOptions = {
+    niceFormat: <span class="literal">true</span>
   };
-
-  ConditionalParameters.prototype.addValue = <span class="keyword">function</span>(value) {
-    <span class="keyword">if</span> (!<span class="keyword">this</span>.parameters)
-      <span class="keyword">this</span>.parameters = [];
-    <span class="keyword">this</span>.parameters.push(value);
-    <span class="keyword">return</span> <span class="string">'{_value'</span>+(<span class="keyword">this</span>.parametersStartCountAt + <span class="keyword">this</span>.parameters.length - <span class="number">1</span>)+<span class="string">'_}'</span>;
-  }
-
-  ConditionalParameters.prototype.cypherKeyValueToString = <span class="keyword">function</span>(key, originalValue, identifier) {</pre></div></div>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.statements) {
+    <span class="keyword">if</span> (<span class="keyword">typeof</span> options !== <span class="string">'object'</span>)
+      options = {};
+    <span class="keyword">else</span>
+      _.defaults(options, defaultOptions);
+    <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; <span class="keyword">this</span>.statements.length; i++) {
+      <span class="keyword">var</span> queryFragment = <span class="keyword">this</span>.statements[i];
+      <span class="keyword">if</span> (<span class="keyword">typeof</span> queryFragment === <span class="string">'string'</span>) {</pre></div></div>
             
         </li>
         
@@ -441,21 +446,15 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
-              <p>call cypherKeyValueToString with this object context</p>
+              <p>if we have just a string, we add the string to final query, no manipulation</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">return</span> cypherKeyValueToString(key, originalValue, identifier, <span class="keyword">this</span>);
-  }
-
-  ConditionalParameters.prototype.convert = <span class="keyword">function</span>(condition, operator) {
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> condition === <span class="string">'undefined'</span>)
-      condition = <span class="keyword">this</span>.conditions;
-    <span class="keyword">var</span> options = _.extend({}, <span class="keyword">this</span>.defaultOptions, <span class="keyword">this</span>.options);
-    <span class="keyword">if</span> (options.firstLevel)
-      options.firstLevel = <span class="literal">false</span>;
-    <span class="keyword">if</span> (options.parametersStartCountAt)
-      <span class="keyword">this</span>.parametersStartCountAt = options.parametersStartCountAt;</pre></div></div>
+            <div class="content"><div class='highlight'><pre>        s += queryFragment;
+        <span class="keyword">continue</span>;
+      }
+      <span class="keyword">var</span> attribute = Object.keys(<span class="keyword">this</span>.statements[i])[<span class="number">0</span>];
+      <span class="keyword">var</span> forQuery = <span class="keyword">this</span>.statements[i][attribute];</pre></div></div>
             
         </li>
         
@@ -466,25 +465,12 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
-              <p>TODO: if $not : [ {name: &#39;a&#39;}] ~&gt; NOT (name = a)</p>
+              <p>remove underscore from attribute, e.g. ORDER_BY -&gt; ORDER BY</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">typeof</span> condition === <span class="string">'string'</span>)
-      condition = [ condition ];
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> operator === <span class="string">'undefined'</span>)
-      operator = <span class="keyword">this</span>.operator; <span class="comment">// AND</span>
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> condition === <span class="string">'object'</span>)
-      <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> condition) {
-        <span class="keyword">var</span> value = condition[key];
-        <span class="keyword">var</span> property = <span class="literal">null</span>;
-        <span class="keyword">if</span> (_.isObject(condition[key])) {
-          <span class="keyword">var</span> properties = [];
-          <span class="keyword">var</span> firstKey = (_.keys(value)) ? _.keys(value)[<span class="number">0</span>] : <span class="literal">null</span>;
-          <span class="keyword">if</span> ((firstKey)&amp;&amp;(_is_operator.test(firstKey))) {
-            properties.push(<span class="keyword">this</span>.convert(condition[key][firstKey], firstKey.replace(<span class="regexp">/\$/g</span>,<span class="string">' '</span>).trim().toUpperCase(), options));
-          } <span class="keyword">else</span> {
-            <span class="keyword">for</span> (<span class="keyword">var</span> k <span class="keyword">in</span> condition[key]) {</pre></div></div>
+            <div class="content"><div class='highlight'><pre>      attribute = attribute.replace(<span class="regexp">/([A-Z]{1})\_([A-Z]{1})/g</span>, <span class="string">'$1 $2'</span>);
+      <span class="keyword">if</span> (options.niceFormat) {</pre></div></div>
             
         </li>
         
@@ -495,12 +481,14 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
-              <p>k = key/property, remove identifier e.g. n.name</p>
+              <p>extend attribute-string with whitespace</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>              <span class="keyword">var</span> property = k.replace(<span class="regexp">/^[nmrp]\./</span>,<span class="string">''</span>);
-              value = condition[key][k];</pre></div></div>
+            <div class="content"><div class='highlight'><pre>        attribute = attribute + Array(chopLength - attribute.length).join(<span class="string">' '</span>);
+      }
+      <span class="keyword">if</span> (forQuery !== <span class="literal">null</span>) {
+        <span class="keyword">if</span> (<span class="keyword">typeof</span> forQuery === <span class="string">'string'</span>) {</pre></div></div>
             
         </li>
         
@@ -511,13 +499,11 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
-              <p>only check for attributes if not s.th. like <code>n.name? = …</code></p>
+              <p>remove dupliacted statement fragment identifier, e.g. START START … -&gt; START …</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>              <span class="keyword">var</span> identifierWithProperty = (<span class="regexp">/\?$/</span>.test(property)) ? <span class="string">''</span> : property;
-              <span class="keyword">if</span> (identifierWithProperty) {
-                <span class="keyword">if</span> (options.identifier)</pre></div></div>
+            <div class="content"><div class='highlight'><pre>          forQuery = forQuery.trim().replace(<span class="keyword">new</span> RegExp(<span class="string">'^'</span>+attribute+<span class="string">'\\s+'</span>, <span class="string">'i'</span>), <span class="string">''</span>);</pre></div></div>
             
         </li>
         
@@ -528,12 +514,37 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
-              <p>we have s.th. like options.identifier = n; property = &#39;<code>&#39;+identifierWithProperty+&#39;</code>&#39;</p>
+              <p>remove trailing semicolon</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>                  identifierWithProperty = options.identifier + <span class="string">'.`'</span> + identifierWithProperty + <span class="string">'`'</span>;
-                <span class="keyword">else</span></pre></div></div>
+            <div class="content"><div class='highlight'><pre>          forQuery = forQuery.replace(<span class="regexp">/\;$/</span>, <span class="string">''</span>);
+        } <span class="keyword">else</span> {
+          forQuery = String(forQuery);
+        }
+        s += <span class="string">'\n'</span>+attribute+<span class="string">' '</span>+forQuery+<span class="string">' '</span>;
+      }
+    }
+    s = s.trim();
+  }
+  <span class="keyword">return</span> s + <span class="string">';'</span>;
+}
+
+CypherQuery.prototype.query = <span class="string">''</span>;
+CypherQuery.prototype.parameters = <span class="literal">null</span>;
+CypherQuery.prototype.statements = <span class="literal">null</span>;
+CypherQuery.prototype.cypher = <span class="keyword">function</span>() {
+  <span class="keyword">var</span> s = <span class="string">''</span>
+  <span class="keyword">if</span> (<span class="keyword">this</span>.query)
+    s = <span class="keyword">this</span>.query;
+  <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>.statements.length &gt; <span class="number">0</span>)
+    s = <span class="keyword">this</span>.statementsToString();
+  <span class="keyword">return</span> s;
+}
+
+CypherQuery.prototype.toString = <span class="keyword">function</span>() {
+  <span class="keyword">var</span> s = <span class="keyword">this</span>.cypher();
+  <span class="keyword">if</span> ((s)&amp;&amp;(<span class="keyword">this</span>.parameters)) {</pre></div></div>
             
         </li>
         
@@ -544,15 +555,12 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
-              <p>we have no explicit identifier, so we use the complete key/property and expecting it contains identifier</p>
+              <p>replace identifiers with values to present a good equivalent</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>                  identifierWithProperty = k;
-              }
-              <span class="keyword">var</span> hasAttribute = (identifierWithProperty) ? <span class="string">'HAS ('</span>+identifierWithProperty+<span class="string">') AND '</span> : <span class="string">''</span>;
-              <span class="keyword">if</span> (value === k) {
-                properties.push(hasAttribute+value);</pre></div></div>
+            <div class="content"><div class='highlight'><pre>    <span class="keyword">for</span> (<span class="keyword">var</span> key <span class="keyword">in</span> <span class="keyword">this</span>.parameters) {
+      <span class="keyword">var</span> value = <span class="keyword">this</span>.parameters[key];</pre></div></div>
             
         </li>
         
@@ -563,135 +571,15 @@
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
-              <p>do we have s.th. like { name: { $IN: [ … ] } }</p>
+              <p>TODO: better check that we detect placeholders</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>              } <span class="keyword">else</span> <span class="keyword">if</span> ((<span class="keyword">typeof</span> value === <span class="string">'object'</span>)&amp;&amp;(value !== <span class="literal">null</span>)&amp;&amp;(Object.keys(value).length === <span class="number">1</span>)&amp;&amp;(<span class="keyword">typeof</span> ConditionalParameters.parameterRuleset[Object.keys(value)[<span class="number">0</span>]] === <span class="string">'function'</span>)) {
-                properties.push(hasAttribute+<span class="string">' '</span>+(identifierWithProperty || k)+<span class="string">' '</span>+ConditionalParameters.parameterRuleset[Object.keys(value)[<span class="number">0</span>]](value[Object.keys(value)[<span class="number">0</span>]]));
-              } <span class="keyword">else</span> {
-                properties.push(hasAttribute+<span class="keyword">this</span>.cypherKeyValueToString(k, value,</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-20">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
-              </div>
-              <p>only add an identifier if we have NOT s.th. like
-n.name = &#39;&#39;  or r.since …</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>                  (<span class="regexp">/^[a-zA-Z\_\-]+\./</span>).test(k) ? <span class="literal">null</span> : options.identifier
-                ));
-              }
-            }
-          }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-21">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
-              </div>
-              <p>merge sub conditions</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>          condition[key] = properties.join(<span class="string">' '</span>+operator+<span class="string">' '</span>);
-        }
-      }
-
-    <span class="keyword">if</span> ((condition.length === <span class="number">1</span>)&amp;&amp;(options.firstLevel === <span class="literal">false</span>)&amp;&amp;(<span class="regexp">/NOT/i</span>.test(operator)))
-      <span class="keyword">return</span> operator + <span class="string">' ( '</span>+condition.join(<span class="string">''</span>)+<span class="string">' )'</span>;
-    <span class="keyword">else</span>
-      <span class="keyword">return</span> <span class="string">'( '</span>+condition.join(<span class="string">' '</span>+operator+<span class="string">' '</span>)+<span class="string">' )'</span>;
+            <div class="content"><div class='highlight'><pre>      s = s.replace(<span class="keyword">new</span> RegExp(<span class="string">'(\\s+){'</span>+key+<span class="string">'}([\\s;]+)'</span>), <span class="string">"$1'"</span>+helpers.valueToStringForCypherQuery(value)+<span class="string">"'$2"</span>);
+    };
   }
-
-  ConditionalParameters.prototype.toString = <span class="keyword">function</span>() {
-    <span class="keyword">if</span> (<span class="keyword">this</span>.conditions)
-      <span class="keyword">this</span>._s = <span class="keyword">this</span>.convert();
-    <span class="keyword">return</span> <span class="keyword">this</span>._s;
-  }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-22">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
-              </div>
-              <p>assign parameters and option(s)</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">typeof</span> conditions === <span class="string">'object'</span>) {
-    <span class="keyword">this</span>.conditions = (conditions) ? conditions : {};
-  } <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">typeof</span> conditions === <span class="string">'string'</span>) {
-    <span class="keyword">this</span>.conditions = <span class="literal">null</span>;
-    <span class="keyword">this</span>._s = <span class="string">'( '</span> + conditions + <span class="string">' )'</span>;
-    <span class="keyword">return</span>;
-  } <span class="keyword">else</span> {
-    <span class="keyword">throw</span> Error(<span class="string">'First argument must be an object with conditional parameters or a plain string'</span>);
-  }
-  <span class="keyword">if</span> (<span class="keyword">typeof</span> options === <span class="string">'object'</span>) {
-    <span class="keyword">this</span>.options = options;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-23">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
-              </div>
-              <p>assign some options if they exists to current object</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>.options.valuesToParameters !== <span class="string">'undefined'</span>)
-      <span class="keyword">this</span>.valuesToParameters = <span class="keyword">this</span>.options.valuesToParameters;
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>.options.identifier !== <span class="string">'undefined'</span>)
-      <span class="keyword">this</span>.identifier = <span class="keyword">this</span>.options.identifier;
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> <span class="keyword">this</span>.options.operator !== <span class="string">'undefined'</span>)
-      <span class="keyword">this</span>.operator = <span class="keyword">this</span>.options.operator;
-  }
+  <span class="keyword">return</span> s;
 }
-
-ConditionalParameters.prototype.operator               = <span class="string">'AND'</span>;
-ConditionalParameters.prototype.identifier             = <span class="string">'n'</span>;
-ConditionalParameters.prototype.conditions             = <span class="literal">null</span>;</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-24">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
-              </div>
-              <p>options are used to prevent overriding object attributes on recursive calls</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>ConditionalParameters.prototype.options                = <span class="literal">null</span>;
-ConditionalParameters.prototype.defaultOptions         = { firstLevel: <span class="literal">true</span>, identifier: <span class="literal">null</span> };
-
-ConditionalParameters.prototype.parameters             = <span class="literal">null</span>;
-ConditionalParameters.prototype.valuesToParameters     = <span class="literal">true</span>;
-ConditionalParameters.prototype._s                     = <span class="string">''</span>;
-ConditionalParameters.prototype.parametersStartCountAt = <span class="number">0</span>;
 
 <span class="keyword">var</span> constructorNameOfFunction = <span class="keyword">function</span>(func) {
   <span class="keyword">var</span> name = func.constructor.toString().match(<span class="regexp">/^function\s(.+?)\(/</span>)[<span class="number">1</span>];
@@ -703,245 +591,30 @@ ConditionalParameters.prototype.parametersStartCountAt = <span class="number">0<
 
 <span class="keyword">var</span> isValidData = <span class="keyword">function</span>(data) {
   <span class="keyword">return</span> Boolean( (<span class="keyword">typeof</span> data === <span class="string">'object'</span>) &amp;&amp; (data !== <span class="literal">null</span>) );
-}</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-25">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
-              </div>
-              <p>source: <a href="https://gist.github.com/aredo/3001685">https://gist.github.com/aredo/3001685</a></p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre><span class="keyword">var</span> md5 = <span class="function"><span class="keyword">function</span> <span class="params">(string)</span> {</span>
-
-  <span class="function"><span class="keyword">function</span> <span class="title">RotateLeft</span><span class="params">(lValue, iShiftBits)</span> {</span>
-   <span class="keyword">return</span> (lValue&lt;<span class="xml"><span class="tag">&lt;<span class="title">iShiftBits)</span> | (<span class="attribute">lValue</span>&gt;</span>&gt;&gt;(32-iShiftBits));
-  }
-
-  function AddUnsigned(lX,lY) {
-    var lX4,lY4,lX8,lY8,lResult;
-    lX8 = (lX &amp; 0x80000000);
-    lY8 = (lY &amp; 0x80000000);
-    lX4 = (lX &amp; 0x40000000);
-    lY4 = (lY &amp; 0x40000000);
-    lResult = (lX &amp; 0x3FFFFFFF)+(lY &amp; 0x3FFFFFFF);
-    if (lX4 &amp; lY4) {
-      return (lResult ^ 0x80000000 ^ lX8 ^ lY8);
-    }
-    if (lX4 | lY4) {
-      if (lResult &amp; 0x40000000) {
-        return (lResult ^ 0xC0000000 ^ lX8 ^ lY8);
-      } else {
-        return (lResult ^ 0x40000000 ^ lX8 ^ lY8);
-      }
-    } else {
-      return (lResult ^ lX8 ^ lY8);
-    }
-  }
-
-  function F(x,y,z) { return (x &amp; y) | ((~x) &amp; z); }
-  function G(x,y,z) { return (x &amp; z) | (y &amp; (~z)); }
-  function H(x,y,z) { return (x ^ y ^ z); }
-  function I(x,y,z) { return (y ^ (x | (~z))); }
-
-  function FF(a,b,c,d,x,s,ac) {
-    a = AddUnsigned(a, AddUnsigned(AddUnsigned(F(b, c, d), x), ac));
-    return AddUnsigned(RotateLeft(a, s), b);
-  };
-
-  function GG(a,b,c,d,x,s,ac) {
-    a = AddUnsigned(a, AddUnsigned(AddUnsigned(G(b, c, d), x), ac));
-    return AddUnsigned(RotateLeft(a, s), b);
-  };
-
-  function HH(a,b,c,d,x,s,ac) {
-    a = AddUnsigned(a, AddUnsigned(AddUnsigned(H(b, c, d), x), ac));
-    return AddUnsigned(RotateLeft(a, s), b);
-  };
-
-  function II(a,b,c,d,x,s,ac) {
-    a = AddUnsigned(a, AddUnsigned(AddUnsigned(I(b, c, d), x), ac));
-    return AddUnsigned(RotateLeft(a, s), b);
-  };
-
-  function ConvertToWordArray(string) {
-    var lWordCount;
-    var lMessageLength = string.length;
-    var lNumberOfWords_temp1=lMessageLength + 8;
-    var lNumberOfWords_temp2=(lNumberOfWords_temp1-(lNumberOfWords_temp1 % 64))/64;
-    var lNumberOfWords = (lNumberOfWords_temp2+1)*16;
-    var lWordArray=Array(lNumberOfWords-1);
-    var lBytePosition = 0;
-    var lByteCount = 0;
-    while ( lByteCount <span class="tag">&lt; <span class="attribute">lMessageLength</span> ) {
-      <span class="attribute">lWordCount</span> = (<span class="attribute">lByteCount-</span>(<span class="attribute">lByteCount</span> % <span class="attribute">4</span>))/<span class="attribute">4</span>;
-      <span class="attribute">lBytePosition</span> = (<span class="attribute">lByteCount</span> % <span class="attribute">4</span>)*<span class="attribute">8</span>;
-      <span class="attribute">lWordArray</span>[<span class="attribute">lWordCount</span>] = (<span class="attribute">lWordArray</span>[<span class="attribute">lWordCount</span>] | (<span class="attribute">string.charCodeAt</span>(<span class="attribute">lByteCount</span>)&lt;&lt;<span class="attribute">lBytePosition</span>));
-      <span class="attribute">lByteCount</span>++;
-    }
-    <span class="attribute">lWordCount</span> = (<span class="attribute">lByteCount-</span>(<span class="attribute">lByteCount</span> % <span class="attribute">4</span>))/<span class="attribute">4</span>;
-    <span class="attribute">lBytePosition</span> = (<span class="attribute">lByteCount</span> % <span class="attribute">4</span>)*<span class="attribute">8</span>;
-    <span class="attribute">lWordArray</span>[<span class="attribute">lWordCount</span>] = <span class="attribute">lWordArray</span>[<span class="attribute">lWordCount</span>] | (<span class="attribute">0x80</span>&lt;&lt;<span class="attribute">lBytePosition</span>);
-    <span class="attribute">lWordArray</span>[<span class="attribute">lNumberOfWords-2</span>] = <span class="attribute">lMessageLength</span>&lt;&lt;<span class="attribute">3</span>;
-    <span class="attribute">lWordArray</span>[<span class="attribute">lNumberOfWords-1</span>] = <span class="attribute">lMessageLength</span>&gt;</span>&gt;&gt;29;
-    return lWordArray;
-  };
-
-  function WordToHex(lValue) {
-    var WordToHexValue="",WordToHexValue_temp="",lByte,lCount;
-    for (lCount = 0;lCount<span class="tag">&lt;<span class="title">=3;lCount++)</span> {
-      <span class="attribute">lByte</span> = (<span class="attribute">lValue</span>&gt;</span>&gt;&gt;(lCount*8)) &amp; 255;
-      WordToHexValue_temp = "0" + lByte.toString(16);
-      WordToHexValue = WordToHexValue + WordToHexValue_temp.substr(WordToHexValue_temp.length-2,2);
-    }
-    return WordToHexValue;
-  };
-
-  function Utf8Encode(string) {
-    string = string.replace(/\r\n/g,"\n");
-    var utftext = "";
-
-    for (var n = 0; n <span class="tag">&lt; <span class="attribute">string.length</span>; <span class="attribute">n</span>++) {
-
-      <span class="attribute">var</span> <span class="attribute">c</span> = <span class="attribute">string.charCodeAt</span>(<span class="attribute">n</span>);
-
-      <span class="attribute">if</span> (<span class="attribute">c</span> &lt; <span class="attribute">128</span>) {
-        <span class="attribute">utftext</span> += <span class="attribute">String.fromCharCode</span>(<span class="attribute">c</span>);
-      }
-      <span class="attribute">else</span> <span class="attribute">if</span>((<span class="attribute">c</span> &gt;</span> 127) &amp;&amp; (c <span class="tag">&lt; <span class="attribute">2048</span>)) {
-        <span class="attribute">utftext</span> += <span class="attribute">String.fromCharCode</span>((<span class="attribute">c</span> &gt;</span>&gt; 6) | 192);
-        utftext += String.fromCharCode((c &amp; 63) | 128);
-      }
-      else {
-        utftext += String.fromCharCode((c &gt;&gt; 12) | 224);
-        utftext += String.fromCharCode(((c &gt;&gt; 6) &amp; 63) | 128);
-        utftext += String.fromCharCode((c &amp; 63) | 128);
-      }
-
-    }
-
-    return utftext;
-  };
-
-  var x=Array();
-  var k,AA,BB,CC,DD,a,b,c,d;
-  var S11=7, S12=12, S13=17, S14=22;
-  var S21=5, S22=9 , S23=14, S24=20;
-  var S31=4, S32=11, S33=16, S34=23;
-  var S41=6, S42=10, S43=15, S44=21;
-
-  string = Utf8Encode(string);
-
-  x = ConvertToWordArray(string);
-
-  a = 0x67452301; b = 0xEFCDAB89; c = 0x98BADCFE; d = 0x10325476;
-
-  for (k=0;k<span class="tag">&lt;<span class="title">x.length;k+=16)</span> {
-    <span class="attribute">AA</span>=<span class="value">a;</span> <span class="attribute">BB</span>=<span class="value">b;</span> <span class="attribute">CC</span>=<span class="value">c;</span> <span class="attribute">DD</span>=<span class="value">d;</span>
-    <span class="attribute">a</span>=<span class="value">FF(a,b,c,d,x[k+0],</span> <span class="attribute">S11</span>,<span class="attribute">0xD76AA478</span>);
-    <span class="attribute">d</span>=<span class="value">FF(d,a,b,c,x[k+1],</span> <span class="attribute">S12</span>,<span class="attribute">0xE8C7B756</span>);
-    <span class="attribute">c</span>=<span class="value">FF(c,d,a,b,x[k+2],</span> <span class="attribute">S13</span>,<span class="attribute">0x242070DB</span>);
-    <span class="attribute">b</span>=<span class="value">FF(b,c,d,a,x[k+3],</span> <span class="attribute">S14</span>,<span class="attribute">0xC1BDCEEE</span>);
-    <span class="attribute">a</span>=<span class="value">FF(a,b,c,d,x[k+4],</span> <span class="attribute">S11</span>,<span class="attribute">0xF57C0FAF</span>);
-    <span class="attribute">d</span>=<span class="value">FF(d,a,b,c,x[k+5],</span> <span class="attribute">S12</span>,<span class="attribute">0x4787C62A</span>);
-    <span class="attribute">c</span>=<span class="value">FF(c,d,a,b,x[k+6],</span> <span class="attribute">S13</span>,<span class="attribute">0xA8304613</span>);
-    <span class="attribute">b</span>=<span class="value">FF(b,c,d,a,x[k+7],</span> <span class="attribute">S14</span>,<span class="attribute">0xFD469501</span>);
-    <span class="attribute">a</span>=<span class="value">FF(a,b,c,d,x[k+8],</span> <span class="attribute">S11</span>,<span class="attribute">0x698098D8</span>);
-    <span class="attribute">d</span>=<span class="value">FF(d,a,b,c,x[k+9],</span> <span class="attribute">S12</span>,<span class="attribute">0x8B44F7AF</span>);
-    <span class="attribute">c</span>=<span class="value">FF(c,d,a,b,x[k+10],S13,0xFFFF5BB1);</span>
-    <span class="attribute">b</span>=<span class="value">FF(b,c,d,a,x[k+11],S14,0x895CD7BE);</span>
-    <span class="attribute">a</span>=<span class="value">FF(a,b,c,d,x[k+12],S11,0x6B901122);</span>
-    <span class="attribute">d</span>=<span class="value">FF(d,a,b,c,x[k+13],S12,0xFD987193);</span>
-    <span class="attribute">c</span>=<span class="value">FF(c,d,a,b,x[k+14],S13,0xA679438E);</span>
-    <span class="attribute">b</span>=<span class="value">FF(b,c,d,a,x[k+15],S14,0x49B40821);</span>
-    <span class="attribute">a</span>=<span class="value">GG(a,b,c,d,x[k+1],</span> <span class="attribute">S21</span>,<span class="attribute">0xF61E2562</span>);
-    <span class="attribute">d</span>=<span class="value">GG(d,a,b,c,x[k+6],</span> <span class="attribute">S22</span>,<span class="attribute">0xC040B340</span>);
-    <span class="attribute">c</span>=<span class="value">GG(c,d,a,b,x[k+11],S23,0x265E5A51);</span>
-    <span class="attribute">b</span>=<span class="value">GG(b,c,d,a,x[k+0],</span> <span class="attribute">S24</span>,<span class="attribute">0xE9B6C7AA</span>);
-    <span class="attribute">a</span>=<span class="value">GG(a,b,c,d,x[k+5],</span> <span class="attribute">S21</span>,<span class="attribute">0xD62F105D</span>);
-    <span class="attribute">d</span>=<span class="value">GG(d,a,b,c,x[k+10],S22,0x2441453);</span>
-    <span class="attribute">c</span>=<span class="value">GG(c,d,a,b,x[k+15],S23,0xD8A1E681);</span>
-    <span class="attribute">b</span>=<span class="value">GG(b,c,d,a,x[k+4],</span> <span class="attribute">S24</span>,<span class="attribute">0xE7D3FBC8</span>);
-    <span class="attribute">a</span>=<span class="value">GG(a,b,c,d,x[k+9],</span> <span class="attribute">S21</span>,<span class="attribute">0x21E1CDE6</span>);
-    <span class="attribute">d</span>=<span class="value">GG(d,a,b,c,x[k+14],S22,0xC33707D6);</span>
-    <span class="attribute">c</span>=<span class="value">GG(c,d,a,b,x[k+3],</span> <span class="attribute">S23</span>,<span class="attribute">0xF4D50D87</span>);
-    <span class="attribute">b</span>=<span class="value">GG(b,c,d,a,x[k+8],</span> <span class="attribute">S24</span>,<span class="attribute">0x455A14ED</span>);
-    <span class="attribute">a</span>=<span class="value">GG(a,b,c,d,x[k+13],S21,0xA9E3E905);</span>
-    <span class="attribute">d</span>=<span class="value">GG(d,a,b,c,x[k+2],</span> <span class="attribute">S22</span>,<span class="attribute">0xFCEFA3F8</span>);
-    <span class="attribute">c</span>=<span class="value">GG(c,d,a,b,x[k+7],</span> <span class="attribute">S23</span>,<span class="attribute">0x676F02D9</span>);
-    <span class="attribute">b</span>=<span class="value">GG(b,c,d,a,x[k+12],S24,0x8D2A4C8A);</span>
-    <span class="attribute">a</span>=<span class="value">HH(a,b,c,d,x[k+5],</span> <span class="attribute">S31</span>,<span class="attribute">0xFFFA3942</span>);
-    <span class="attribute">d</span>=<span class="value">HH(d,a,b,c,x[k+8],</span> <span class="attribute">S32</span>,<span class="attribute">0x8771F681</span>);
-    <span class="attribute">c</span>=<span class="value">HH(c,d,a,b,x[k+11],S33,0x6D9D6122);</span>
-    <span class="attribute">b</span>=<span class="value">HH(b,c,d,a,x[k+14],S34,0xFDE5380C);</span>
-    <span class="attribute">a</span>=<span class="value">HH(a,b,c,d,x[k+1],</span> <span class="attribute">S31</span>,<span class="attribute">0xA4BEEA44</span>);
-    <span class="attribute">d</span>=<span class="value">HH(d,a,b,c,x[k+4],</span> <span class="attribute">S32</span>,<span class="attribute">0x4BDECFA9</span>);
-    <span class="attribute">c</span>=<span class="value">HH(c,d,a,b,x[k+7],</span> <span class="attribute">S33</span>,<span class="attribute">0xF6BB4B60</span>);
-    <span class="attribute">b</span>=<span class="value">HH(b,c,d,a,x[k+10],S34,0xBEBFBC70);</span>
-    <span class="attribute">a</span>=<span class="value">HH(a,b,c,d,x[k+13],S31,0x289B7EC6);</span>
-    <span class="attribute">d</span>=<span class="value">HH(d,a,b,c,x[k+0],</span> <span class="attribute">S32</span>,<span class="attribute">0xEAA127FA</span>);
-    <span class="attribute">c</span>=<span class="value">HH(c,d,a,b,x[k+3],</span> <span class="attribute">S33</span>,<span class="attribute">0xD4EF3085</span>);
-    <span class="attribute">b</span>=<span class="value">HH(b,c,d,a,x[k+6],</span> <span class="attribute">S34</span>,<span class="attribute">0x4881D05</span>);
-    <span class="attribute">a</span>=<span class="value">HH(a,b,c,d,x[k+9],</span> <span class="attribute">S31</span>,<span class="attribute">0xD9D4D039</span>);
-    <span class="attribute">d</span>=<span class="value">HH(d,a,b,c,x[k+12],S32,0xE6DB99E5);</span>
-    <span class="attribute">c</span>=<span class="value">HH(c,d,a,b,x[k+15],S33,0x1FA27CF8);</span>
-    <span class="attribute">b</span>=<span class="value">HH(b,c,d,a,x[k+2],</span> <span class="attribute">S34</span>,<span class="attribute">0xC4AC5665</span>);
-    <span class="attribute">a</span>=<span class="value">II(a,b,c,d,x[k+0],</span> <span class="attribute">S41</span>,<span class="attribute">0xF4292244</span>);
-    <span class="attribute">d</span>=<span class="value">II(d,a,b,c,x[k+7],</span> <span class="attribute">S42</span>,<span class="attribute">0x432AFF97</span>);
-    <span class="attribute">c</span>=<span class="value">II(c,d,a,b,x[k+14],S43,0xAB9423A7);</span>
-    <span class="attribute">b</span>=<span class="value">II(b,c,d,a,x[k+5],</span> <span class="attribute">S44</span>,<span class="attribute">0xFC93A039</span>);
-    <span class="attribute">a</span>=<span class="value">II(a,b,c,d,x[k+12],S41,0x655B59C3);</span>
-    <span class="attribute">d</span>=<span class="value">II(d,a,b,c,x[k+3],</span> <span class="attribute">S42</span>,<span class="attribute">0x8F0CCC92</span>);
-    <span class="attribute">c</span>=<span class="value">II(c,d,a,b,x[k+10],S43,0xFFEFF47D);</span>
-    <span class="attribute">b</span>=<span class="value">II(b,c,d,a,x[k+1],</span> <span class="attribute">S44</span>,<span class="attribute">0x85845DD1</span>);
-    <span class="attribute">a</span>=<span class="value">II(a,b,c,d,x[k+8],</span> <span class="attribute">S41</span>,<span class="attribute">0x6FA87E4F</span>);
-    <span class="attribute">d</span>=<span class="value">II(d,a,b,c,x[k+15],S42,0xFE2CE6E0);</span>
-    <span class="attribute">c</span>=<span class="value">II(c,d,a,b,x[k+6],</span> <span class="attribute">S43</span>,<span class="attribute">0xA3014314</span>);
-    <span class="attribute">b</span>=<span class="value">II(b,c,d,a,x[k+13],S44,0x4E0811A1);</span>
-    <span class="attribute">a</span>=<span class="value">II(a,b,c,d,x[k+4],</span> <span class="attribute">S41</span>,<span class="attribute">0xF7537E82</span>);
-    <span class="attribute">d</span>=<span class="value">II(d,a,b,c,x[k+11],S42,0xBD3AF235);</span>
-    <span class="attribute">c</span>=<span class="value">II(c,d,a,b,x[k+2],</span> <span class="attribute">S43</span>,<span class="attribute">0x2AD7D2BB</span>);
-    <span class="attribute">b</span>=<span class="value">II(b,c,d,a,x[k+9],</span> <span class="attribute">S44</span>,<span class="attribute">0xEB86D391</span>);
-    <span class="attribute">a</span>=<span class="value">AddUnsigned(a,AA);</span>
-    <span class="attribute">b</span>=<span class="value">AddUnsigned(b,BB);</span>
-    <span class="attribute">c</span>=<span class="value">AddUnsigned(c,CC);</span>
-    <span class="attribute">d</span>=<span class="value">AddUnsigned(d,DD);</span>
-  }
-
-  <span class="attribute">var</span> <span class="attribute">temp</span> = <span class="attribute">WordToHex</span>(<span class="attribute">a</span>)+<span class="attribute">WordToHex</span>(<span class="attribute">b</span>)+<span class="attribute">WordToHex</span>(<span class="attribute">c</span>)+<span class="attribute">WordToHex</span>(<span class="attribute">d</span>);
-
-  <span class="attribute">return</span> <span class="attribute">temp.toLowerCase</span>();
 }
 
-<span class="attribute">var</span> <span class="attribute">helpers</span> = {
-  <span class="attribute">sortStringAndOptionsArguments:</span> <span class="attribute">sortStringAndOptionsArguments</span>,
-  <span class="attribute">sortOptionsAndCallbackArguments:</span> <span class="attribute">sortOptionsAndCallbackArguments</span>,
-  <span class="attribute">sortStringAndCallbackArguments:</span> <span class="attribute">sortStringAndCallbackArguments</span>,
-  <span class="attribute">flattenObject:</span> <span class="attribute">flattenObject</span>,
-  <span class="attribute">unflattenObject:</span> <span class="attribute">unflattenObject</span>,
-  <span class="attribute">ConditionalParameters:</span> <span class="attribute">ConditionalParameters</span>,
-  <span class="attribute">extractAttributesFromCondition:</span> <span class="attribute">extractAttributesFromCondition</span>,
-  <span class="attribute">getIdFromObject:</span> <span class="attribute">getIdFromObject</span>,
-  <span class="attribute">escapeString:</span> <span class="attribute">escapeString</span>,
-  <span class="attribute">constructorNameOfFunction:</span> <span class="attribute">constructorNameOfFunction</span>,
-  <span class="attribute">cypherKeyValueToString:</span> <span class="attribute">cypherKeyValueToString</span>,
-  <span class="attribute">valueToStringForCypherQuery:</span> <span class="attribute">valueToStringForCypherQuery</span>,
-  <span class="attribute">isValidData:</span> <span class="attribute">isValidData</span>,
-  <span class="attribute">md5:</span> <span class="attribute">md5</span>
+<span class="keyword">var</span> helpers = {
+  sortStringAndOptionsArguments: sortStringAndOptionsArguments,
+  sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
+  sortStringAndCallbackArguments: sortStringAndCallbackArguments,
+  flattenObject: flattenObject,
+  unflattenObject: unflattenObject,
+  extractAttributesFromCondition: extractAttributesFromCondition,
+  getIdFromObject: getIdFromObject,
+  escapeString: escapeString,
+  constructorNameOfFunction: constructorNameOfFunction,
+  cypherKeyValueToString: cypherKeyValueToString,
+  valueToStringForCypherQuery: valueToStringForCypherQuery,
+  isValidData: isValidData,
+  md5: (<span class="keyword">typeof</span> window === <span class="string">'object'</span>) ? window.Neo4jMapper.md5 : require(<span class="string">'./lib/md5'</span>),
+  isConditionalOperator: isConditionalOperator,
 };
 
-<span class="attribute">if</span> (<span class="attribute">typeof</span> <span class="attribute">window</span> !=<span class="value">=</span> '<span class="attribute">object</span>') {
-  <span class="attribute">module.exports</span> = <span class="attribute">exports</span> = <span class="attribute">helpers</span>;
-} <span class="attribute">else</span> {
-  <span class="attribute">window.Neo4jMapper.helpers</span> = <span class="attribute">helpers</span>;
-}
-</span></pre></div></div>
+<span class="keyword">if</span> (<span class="keyword">typeof</span> window !== <span class="string">'object'</span>) {
+  module.exports = exports = helpers;
+} <span class="keyword">else</span> {
+  window.Neo4jMapper.helpers = helpers;
+}</pre></div></div>
             
         </li>
         

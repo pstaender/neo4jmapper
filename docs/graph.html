@@ -19,6 +19,16 @@
           <div id="jump_page">
             
               
+              <a class="source" href="conditionalparameters.html">
+                conditionalparameters.js
+              </a>
+            
+              
+              <a class="source" href="cypherquery.html">
+                cypherquery.js
+              </a>
+            
+              
               <a class="source" href="graph.html">
                 graph.js
               </a>
@@ -121,15 +131,16 @@ RETURN [ORDER BY] [SKIP] [LIMIT]</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  <span class="keyword">var</span> _       = <span class="literal">null</span>;
-  <span class="keyword">var</span> helpers = <span class="literal">null</span>;
-
-  <span class="keyword">if</span> (<span class="keyword">typeof</span> window === <span class="string">'object'</span>) {
-    helpers = window.Neo4jMapper.helpers;
-    _       = window._;
+            <div class="content"><div class='highlight'><pre>  <span class="keyword">if</span> (<span class="keyword">typeof</span> window === <span class="string">'object'</span>) {
+    <span class="keyword">var</span> helpers               = window.Neo4jMapper.helpers;
+    <span class="keyword">var</span> _                     = window._;
+    <span class="keyword">var</span> CypherQuery           = window.Neo4jMapper.CypherQuery;
+    <span class="keyword">var</span> ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
   } <span class="keyword">else</span> {
-    helpers = require(<span class="string">'./helpers'</span>);
-    _       = require(<span class="string">'underscore'</span>);
+    <span class="keyword">var</span> helpers               = require(<span class="string">'./helpers'</span>);
+    <span class="keyword">var</span> _                     = require(<span class="string">'underscore'</span>);
+    <span class="keyword">var</span> CypherQuery           = require(<span class="string">'./cypherquery'</span>);
+    <span class="keyword">var</span> ConditionalParameters = require(<span class="string">'./conditionalparameters'</span>)
   }</pre></div></div>
             
         </li>
@@ -185,11 +196,7 @@ RETURN [ORDER BY] [SKIP] [LIMIT]</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  Graph.prototype.cypher = {
-    query: <span class="literal">null</span>,                                                <span class="comment">// the cypher query string</span>
-    parameters: <span class="literal">null</span>,                                           <span class="comment">// object with paremeters</span>
-    _useParameters: <span class="literal">true</span>                                        <span class="comment">// better performance + rollback possible (upcoming feature)</span>
-  };
+            <div class="content"><div class='highlight'><pre>  Graph.prototype.cypher                        = <span class="literal">null</span>;
   Graph.prototype._queryString_                 = <span class="string">''</span>;           <span class="comment">// stores a query string temporarily</span>
   Graph.prototype._loadOnResult_                = <span class="string">'node|relationship|path'</span>;
   Graph.prototype._resortResults_               = <span class="literal">true</span>;         <span class="comment">// see in graph.query() -&gt; _increaseDone()</span>
@@ -224,7 +231,7 @@ RETURN [ORDER BY] [SKIP] [LIMIT]</p>
       options = {};
     }
 
-    options.params = (<span class="keyword">typeof</span> <span class="keyword">this</span>.cypher._useParameters === <span class="string">'boolean'</span>) ? <span class="keyword">this</span>.cypher.parameters : {};
+    options.params = (<span class="keyword">typeof</span> <span class="keyword">this</span>.cypher.useParameters === <span class="string">'boolean'</span>) ? <span class="keyword">this</span>.cypher.parameters : {};
     options.context = self;</pre></div></div>
             
         </li>
@@ -259,7 +266,7 @@ The result length is 1, so we remove the array</p>
             </div>
             
             <div class="content"><div class='highlight'><pre>          <span class="keyword">if</span> ((res)&amp;&amp;(res.length===<span class="number">1</span>)&amp;&amp;(options.cypher)) {
-            <span class="keyword">if</span> ((options.cypher.limit === <span class="number">1</span>) || (options.cypher._update) || (<span class="keyword">typeof</span> res[<span class="number">0</span>] !== <span class="string">'object'</span>)) {
+            <span class="keyword">if</span> ((options.cypher.limit === <span class="number">1</span>) || (options.cypher._update_) || (<span class="keyword">typeof</span> res[<span class="number">0</span>] !== <span class="string">'object'</span>)) {
               res = res[<span class="number">0</span>];
             }
           }
@@ -528,19 +535,16 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
   Graph.prototype.parameters = <span class="keyword">function</span>(parameters) {
     <span class="keyword">if</span> (<span class="keyword">typeof</span> parameters !== <span class="string">'object'</span>)
       <span class="keyword">throw</span> Error(<span class="string">'parameter(s) as argument must be an object, e.g. { key: "value" }'</span>)
-    <span class="keyword">if</span> (<span class="keyword">this</span>.cypher._useParameters === <span class="literal">null</span>)
-      <span class="keyword">this</span>.cypher._useParameters = <span class="literal">true</span>;
+    <span class="keyword">if</span> (<span class="keyword">this</span>.cypher.useParameters === <span class="literal">null</span>)
+      <span class="keyword">this</span>.cypher.useParameters = <span class="literal">true</span>;
     <span class="keyword">this</span>.cypher.parameters = parameters;
     <span class="keyword">return</span> <span class="keyword">this</span>;
   }
 
   Graph.prototype.addParameters = <span class="keyword">function</span>(parameters) {
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> parameters !== <span class="string">'object'</span>)
-      <span class="keyword">throw</span> Error(<span class="string">'parameter(s) as argument must be an object, e.g. { key: "value" }'</span>)
-    <span class="keyword">if</span> (<span class="keyword">this</span>.cypher._useParameters === <span class="literal">null</span>)
-      <span class="keyword">this</span>.cypher._useParameters = <span class="literal">true</span>;
-    <span class="keyword">if</span> (!<span class="keyword">this</span>.cypher.parameters)
-      <span class="keyword">this</span>.cypher.parameters = {};</pre></div></div>
+    <span class="keyword">this</span>.cypher.addParameters(parameters);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+  }</pre></div></div>
             
         </li>
         
@@ -548,27 +552,8 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         <li id="section-19">
             <div class="annotation">
               
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
-              </div>
-              <p>_.extend(this.cypher.parameters, parameters);</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>    <span class="keyword">for</span> (<span class="keyword">var</span> attr <span class="keyword">in</span> parameters) {
-      <span class="keyword">this</span>.cypher.parameters[attr] = parameters[attr];
-    }
-    <span class="keyword">return</span> <span class="keyword">this</span>;
-  }</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-20">
-            <div class="annotation">
-              
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <h3>Deletes <em>all</em> nodes and <em>all</em> relationships</h3>
 
@@ -582,11 +567,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-21">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <h3>Counts all objects of a specific type: (all|node|relationship|[nr]:Movie)</h3>
 
@@ -603,11 +588,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-22">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <p>count labels</p>
 
@@ -630,11 +615,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-23">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <h3>Counts all relationships</h3>
 
@@ -647,11 +632,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-24">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <p>alias for countRelationships()</p>
 
@@ -664,11 +649,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-25">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <h3>Counts all nodes</h3>
 
@@ -681,11 +666,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-25">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-25">&#182;</a>
               </div>
               <h3>Counts all relationships and nodes</h3>
 
@@ -698,11 +683,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-27">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <h3>Queries information of the database and stores it on <code>this.info</code></h3>
 
@@ -725,11 +710,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-28">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <h3>Reset the query history</h3>
 
@@ -738,22 +723,18 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
             <div class="content"><div class='highlight'><pre>  Graph.prototype.resetQuery = <span class="keyword">function</span>() {
     <span class="keyword">this</span>._query_history_ = [];
     <span class="keyword">this</span>._queryString_ = <span class="string">''</span>;
-    <span class="keyword">this</span>.cypher = {};
-    <span class="keyword">for</span> (<span class="keyword">var</span> attr <span class="keyword">in</span> Graph.prototype.cypher) {
-      <span class="keyword">this</span>.cypher[attr] = Graph.prototype.cypher[attr];
-    }
-    <span class="keyword">this</span>.cypher.parameters = {};
+    <span class="keyword">this</span>.cypher = <span class="keyword">new</span> CypherQuery();
     <span class="keyword">return</span> <span class="keyword">this</span>;
   }</pre></div></div>
             
         </li>
         
         
-        <li id="section-29">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap for-h3">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <h3>Startpoint to begin query chaining</h3>
 <p>e.g. Graph.start().where( …</p>
@@ -807,11 +788,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-30">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <p>TODO: values to parameter</p>
 
@@ -829,11 +810,11 @@ e.g. { columns: [ &#39;count&#39; ], data: [ { 1 } ] } -&gt; 1</p>
         </li>
         
         
-        <li id="section-31">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-31">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <p>will be used to send statements
 Graph.prototype.statement = null;</p>
@@ -900,15 +881,15 @@ Graph.prototype.statement = null;</p>
       <span class="keyword">this</span>._query_history_.push({ WHERE: where });
       <span class="keyword">return</span> <span class="keyword">this</span>.exec(cb);
     }
-    <span class="keyword">if</span> (<span class="keyword">this</span>.cypher._useParameters === <span class="literal">null</span>)
-      <span class="keyword">this</span>.cypher._useParameters = <span class="literal">true</span>;
+    <span class="keyword">if</span> (<span class="keyword">this</span>.cypher.useParameters === <span class="literal">null</span>)
+      <span class="keyword">this</span>.cypher.useParameters = <span class="literal">true</span>;
     <span class="keyword">if</span> (!_.isArray(where))
       where = [ where ];
-    <span class="keyword">var</span> options = { valuesToParameters: <span class="keyword">this</span>.cypher._useParameters };
-    <span class="keyword">var</span> condition = <span class="keyword">new</span> helpers.ConditionalParameters(where, options)
+    <span class="keyword">var</span> options = { valuesToParameters: <span class="keyword">this</span>.cypher.useParameters };
+    <span class="keyword">var</span> condition = <span class="keyword">new</span> ConditionalParameters(where, options)
     , whereCondition = condition.toString().replace(<span class="regexp">/^\(\s(.+)\)$/</span>, <span class="string">'$1'</span>);
     <span class="keyword">this</span>._query_history_.push({ WHERE: whereCondition });
-    <span class="keyword">if</span> (<span class="keyword">this</span>.cypher._useParameters)
+    <span class="keyword">if</span> (<span class="keyword">this</span>.cypher.useParameters)
       <span class="keyword">this</span>._addParametersToCypher(condition.parameters);
     <span class="keyword">return</span> <span class="keyword">this</span>.exec(cb);
   }
@@ -953,21 +934,16 @@ Graph.prototype.statement = null;</p>
     <span class="keyword">return</span> <span class="keyword">this</span>.exec(cb);
   }
 
-  Graph.prototype.toCypherQuery = <span class="keyword">function</span>(options) {
-    <span class="keyword">var</span> s = <span class="string">''</span>
-      , chopLength = <span class="number">15</span>
-      , defaultOptions = {
-          niceFormat: <span class="literal">true</span>
-        };</pre></div></div>
+  Graph.prototype.toQuery = <span class="keyword">function</span>() {</pre></div></div>
             
         </li>
         
         
-        <li id="section-32">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-32">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <p>if a query string is attached, return this and skip query building</p>
 
@@ -976,114 +952,27 @@ Graph.prototype.statement = null;</p>
             <div class="content"><div class='highlight'><pre>    <span class="keyword">if</span> (<span class="keyword">this</span>._queryString_) {
       <span class="keyword">return</span> <span class="keyword">this</span>._queryString_;
     }
-    <span class="keyword">if</span> (<span class="keyword">typeof</span> options !== <span class="string">'object'</span>)
-      options = {};
-    <span class="keyword">else</span>
-      _.defaults(options, defaultOptions);
-    <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; <span class="keyword">this</span>._query_history_.length; i++) {
-      <span class="keyword">var</span> queryFragment = <span class="keyword">this</span>._query_history_[i];
-      <span class="keyword">if</span> (<span class="keyword">typeof</span> queryFragment === <span class="string">'string'</span>) {</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-33">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-33">&#182;</a>
-              </div>
-              <p>if we have just a string, we add the string to final query, no manipulation</p>
+    <span class="keyword">this</span>.cypher.statements = <span class="keyword">this</span>._query_history_;
+    <span class="keyword">return</span> <span class="keyword">this</span>.cypher;
+  }
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>        s += queryFragment;
-        <span class="keyword">continue</span>;
-      }
-      <span class="keyword">var</span> attribute = Object.keys(<span class="keyword">this</span>._query_history_[i])[<span class="number">0</span>];
-      <span class="keyword">var</span> forQuery = <span class="keyword">this</span>._query_history_[i][attribute];</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-34">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-34">&#182;</a>
-              </div>
-              <p>remove underscore from attribute, e.g. ORDER_BY -&gt; ORDER BY</p>
+  Graph.prototype.toQueryString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.toQuery().toString();
+  }
 
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>      attribute = attribute.replace(<span class="regexp">/([A-Z]{1})\_([A-Z]{1})/g</span>, <span class="string">'$1 $2'</span>);
-      <span class="keyword">if</span> (options.niceFormat) {</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-35">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-35">&#182;</a>
-              </div>
-              <p>extend attribute-string with whitespace</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>        attribute = attribute + Array(chopLength - attribute.length).join(<span class="string">' '</span>);
-      }
-      <span class="keyword">if</span> (forQuery !== <span class="literal">null</span>) {
-        <span class="keyword">if</span> (<span class="keyword">typeof</span> forQuery === <span class="string">'string'</span>) {</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-36">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-36">&#182;</a>
-              </div>
-              <p>remove dupliacted statement fragment identifier, e.g. START START … -&gt; START …</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>          forQuery = forQuery.trim().replace(<span class="keyword">new</span> RegExp(<span class="string">'^'</span>+attribute+<span class="string">'\\s+'</span>, <span class="string">'i'</span>), <span class="string">''</span>);</pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-37">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-37">&#182;</a>
-              </div>
-              <p>remove trailing semicolon</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>          forQuery = forQuery.replace(<span class="regexp">/\;$/</span>, <span class="string">''</span>);
-        } <span class="keyword">else</span> {
-          forQuery = String(forQuery);
-        }
-        s += <span class="string">'\n'</span>+attribute+<span class="string">' '</span>+forQuery+<span class="string">' '</span>;
-      }
-    }
-    s = s.trim();
-    <span class="keyword">return</span> s + <span class="string">';'</span>;
+  Graph.prototype.toCypherQuery = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.toQueryString();
+    <span class="keyword">return</span> <span class="keyword">this</span>.toQuery().toCypher();
   }</pre></div></div>
             
         </li>
         
         
-        <li id="section-38">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-38">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <h1>Enables loading for specific types</h1>
 <p>Define type(s) simply in a string
@@ -1104,11 +993,11 @@ e.g.:
         </li>
         
         
-        <li id="section-39">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-39">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <h1>Disables loading on results (speeds up queries but less convenient)</h1>
 
@@ -1122,11 +1011,11 @@ e.g.:
         </li>
         
         
-        <li id="section-40">
+        <li id="section-34">
             <div class="annotation">
               
               <div class="pilwrap for-h1">
-                <a class="pilcrow" href="#section-40">&#182;</a>
+                <a class="pilcrow" href="#section-34">&#182;</a>
               </div>
               <h1>Sort Results</h1>
 <p>By default we get results like:
@@ -1169,11 +1058,11 @@ If you want to have access to the columns anyway, you can get them on <code>grap
         </li>
         
         
-        <li id="section-41">
+        <li id="section-35">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-41">&#182;</a>
+                <a class="pilcrow" href="#section-35">&#182;</a>
               </div>
               <p>Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]</p>
 
@@ -1181,7 +1070,7 @@ If you want to have access to the columns anyway, you can get them on <code>grap
             
             <div class="content"><div class='highlight'><pre>  Graph.prototype._addParametersToCypher = <span class="keyword">function</span>(parameters) {
     <span class="keyword">if</span> ( (<span class="keyword">typeof</span> parameters === <span class="string">'object'</span>) &amp;&amp; (parameters) &amp;&amp; (parameters.constructor === Array) ) {
-      <span class="keyword">if</span> (!<span class="keyword">this</span>.cypher.parameters)
+      <span class="keyword">if</span> (!<span class="keyword">this</span>.cypher.hasParameters())
         <span class="keyword">this</span>.cypher.parameters = {};
       <span class="keyword">for</span> (<span class="keyword">var</span> i=<span class="number">0</span>; i &lt; parameters.length; i++) {
         <span class="keyword">this</span>._addParameterToCypher(parameters[i]);
@@ -1193,7 +1082,7 @@ If you want to have access to the columns anyway, you can get them on <code>grap
   }
 
   Graph.prototype._addParameterToCypher = <span class="keyword">function</span>(parameter) {
-    <span class="keyword">if</span> (!<span class="keyword">this</span>.cypher.parameters)
+    <span class="keyword">if</span> (!<span class="keyword">this</span>.cypher.hasParameters())
       <span class="keyword">this</span>.cypher.parameters = {};
     <span class="keyword">if</span> (<span class="keyword">typeof</span> parameter === <span class="string">'object'</span>) {
       _.extend(<span class="keyword">this</span>.cypher.parameters, parameter);
@@ -1202,11 +1091,11 @@ If you want to have access to the columns anyway, you can get them on <code>grap
         </li>
         
         
-        <li id="section-42">
+        <li id="section-36">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-42">&#182;</a>
+                <a class="pilcrow" href="#section-36">&#182;</a>
               </div>
               <p>we name the parameter with <code>_value#_</code></p>
 
@@ -1259,7 +1148,7 @@ If you want to have access to the columns anyway, you can get them on <code>grap
   }
 
   Graph.start = <span class="keyword">function</span>(start, cb) {
-    <span class="keyword">return</span> Graph.enableProcessing().start(start, cb);
+    <span class="keyword">return</span> <span class="keyword">new</span> Graph().enableProcessing().start(start, cb);
   }
 
   Graph.custom = <span class="keyword">function</span>(statement, cb) {
@@ -1279,33 +1168,27 @@ If you want to have access to the columns anyway, you can get them on <code>grap
   }
 
   Graph.enableLoading = <span class="keyword">function</span>(classifications) {
-    Graph.prototype.enableLoading(classifications);
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph().enableLoading(classifications);
+    <span class="keyword">return</span> Graph.start().enableLoading(classifications);
   }
 
   Graph.disableLoading = <span class="keyword">function</span>() {
-    Graph.prototype.disableLoading();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph().disableLoading();
+    <span class="keyword">return</span> Graph.start().disableLoading();
   }
 
   Graph.disableProcessing = <span class="keyword">function</span>() {
-    Graph.prototype.disableProcessing();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph().disableProcessing();
+    <span class="keyword">return</span> Graph.start().disableProcessing();
   }
 
   Graph.enableProcessing = <span class="keyword">function</span>() {
-    Graph.prototype.enableProcessing();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph().enableProcessing();
+    <span class="keyword">return</span> Graph.start().enableProcessing();
   }
 
   Graph.enableSorting = <span class="keyword">function</span>() {
-    Graph.prototype.enableSorting();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph().enableSorting();
+    <span class="keyword">return</span> Graph.start().enableSorting();
   }
 
   Graph.disableSorting = <span class="keyword">function</span>() {
-    Graph.prototype.disableSorting();
-    <span class="keyword">return</span> <span class="keyword">new</span> Graph().disableSorting();
+    <span class="keyword">return</span> Graph.start().disableSorting();
   }
 
   Graph.request = <span class="keyword">function</span>() {</pre></div></div>
@@ -1313,11 +1196,11 @@ If you want to have access to the columns anyway, you can get them on <code>grap
         </li>
         
         
-        <li id="section-43">
+        <li id="section-37">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-43">&#182;</a>
+                <a class="pilcrow" href="#section-37">&#182;</a>
               </div>
               <p>creates a new neo4jrestful client</p>
 
