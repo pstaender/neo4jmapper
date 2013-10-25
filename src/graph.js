@@ -33,15 +33,15 @@ var __initGraph__ = function(neo4jrestful) {
   // Requirements (for browser and nodejs):
   //   * neo4jmapper helpers
   //   * underscorejs
-  var _       = null;
-  var helpers = null;
 
   if (typeof window === 'object') {
-    helpers = window.Neo4jMapper.helpers;
-    _       = window._;
+    var helpers     = window.Neo4jMapper.helpers;
+    var _           = window._;
+    var CypherQuery = window.Neo4jMapper.CypherQuery;
   } else {
-    helpers = require('./helpers');
-    _       = require('underscore');
+    var helpers     = require('./helpers');
+    var _           = require('underscore');
+    var CypherQuery = require('./cypherquery');
   }
 
   // Ensure that we have a Neo4jRestful client we can work with
@@ -459,7 +459,7 @@ var __initGraph__ = function(neo4jrestful) {
     if (!_.isArray(where))
       where = [ where ];
     var options = { valuesToParameters: this.cypher._useParameters };
-    var condition = new helpers.ConditionalParameters(where, options)
+    var condition = new ConditionalParameters(where, options)
     , whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
     this._query_history_.push({ WHERE: whereCondition });
     if (this.cypher._useParameters)
@@ -512,7 +512,7 @@ var __initGraph__ = function(neo4jrestful) {
     if (this._queryString_) {
       return this._queryString_;
     }
-    var query = new helpers.CypherQuery(this._query_history_);
+    var query = new CypherQuery(this._query_history_);
     if (this.cypher._useParameters) {
       query.parameters = this.cypher.parameters;
     }

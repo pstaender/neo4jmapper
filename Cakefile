@@ -13,7 +13,10 @@ task 'clientsidejs:build', ->
     src/browser/browser_header.js
     src/index.js
     src/lib/sequence.js
+    src/lib/md5.js
     src/helpers.js
+    src/conditionalparameters.js
+    src/cypherquery.js
     src/neo4jrestful.js
     src/node.js
     src/path.js

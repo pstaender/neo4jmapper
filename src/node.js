@@ -17,13 +17,15 @@ var __initNode__ = function(neo4jrestful, Graph) {
   if (typeof window === 'object') {
     // browser
     // TODO: find a solution for bson object id
-    helpers      = window.Neo4jMapper.helpers;
-    _            = window._;
-    Sequence     = window.Sequence;
+    helpers               = window.Neo4jMapper.helpers;
+    _                     = window._;
+    Sequence              = window.Sequence;
+    ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
   } else {
-    helpers      = require('./helpers');
-    _            = require('underscore');
-    Sequence     = require('./lib/sequence');
+    helpers               = require('./helpers');
+    _                     = require('underscore');
+    Sequence              = require('./lib/sequence');
+    ConditionalParameters = require('./conditionalparameters');
   }
 
   // ### Constructor of Node
@@ -1415,8 +1417,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     // if already parameters are added, starting with {_value#i_} instead of {_value0_}
     if ((this.cypher.parameters)&&(this.cypher.parameters.length > 0))
       options.parametersStartCountAt = this.cypher.parameters.length;
-    var condition = new helpers.ConditionalParameters(_.extend(where), options)
-      , whereCondition = condition.toString();
+    var condition = new ConditionalParameters(_.extend(where), options);
+    var whereCondition = condition.toString();
     this.cypher.where.push(whereCondition);
     if ((options.valuesToParameters) && (condition.parameters))
       this._addParametersToCypher(condition.parameters);

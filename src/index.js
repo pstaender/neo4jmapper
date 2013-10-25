@@ -21,7 +21,9 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
     this.Relationship  = window.Neo4jMapper.initRelationship(_client_, this.Graph, this.Node);
     this.Path          = window.Neo4jMapper.initPath(_client_, this.Graph);
 
-    Neo4jMapper.prototype.helpers = window.Neo4jMapper.helpers;
+    this.helpers = window.Neo4jMapper.helpers;
+    this.helpers.ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
+    this.helpers.CypherQuery = window.Neo4jMapper.CypherQuery;
   } else {
     // NodeJS
     var Neo4jRestful  = this.Neo4jRestful  = require('./neo4jrestful').init(urlOrOptions);
@@ -34,7 +36,9 @@ var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
     this.Relationship  = require('./relationship').init(_client_, this.Graph, this.Node);
     this.Path          = require('./path').init(_client_, this.Graph);
 
-    Neo4jMapper.prototype.helpers = require('./helpers');
+    this.helpers = require('./helpers');
+    this.helpers.ConditionalParameters = require('./conditionalparameters');
+    this.helpers.CypherQuery = require('./cypherquery');
   }
 
   // create references among the constructors themeselves
