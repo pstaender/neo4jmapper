@@ -15,6 +15,7 @@ var CypherQuery = function CypherQuery(query, parameters) {
     this.statements = query;
   if (parameters)
     this.parameters = parameters;
+  this.cypher = _.extend(CypherQuery.prototype.cypher);
 }
 
 CypherQuery.prototype.statementsToString = function(options) {
@@ -60,11 +61,18 @@ CypherQuery.prototype.statementsToString = function(options) {
   return s + ';';
 }
 
-CypherQuery.prototype.query = '';
+CypherQuery.prototype.query = '';         // the cypher query string
 CypherQuery.prototype.parameters = null;
 CypherQuery.prototype.statements = null;
-CypherQuery.prototype.cypher = function() {
-  var s = ''
+CypherQuery.prototype.cypher = {};
+CypherQuery.prototype.useParameters = true;
+
+CypherQuery.prototype.hasParameters = function() {
+  return ((this.parameters) && (typeof this.parameters === 'object') && (Object.keys(this.parameters).length > 0));
+}
+
+CypherQuery.prototype.toCypher = function() {
+  var s = '';
   if (this.query)
     s = this.query;
   else if (this.statements.length > 0)
@@ -73,8 +81,8 @@ CypherQuery.prototype.cypher = function() {
 }
 
 CypherQuery.prototype.toString = function() {
-  var s = this.cypher();
-  if ((s)&&(this.parameters)) {
+  var s = this.toCypher();
+  if ((s)&&(this.hasParameters())) {
     // replace identifiers with values to present a good equivalent
     for (var key in this.parameters) {
       var value = this.parameters[key];
@@ -83,6 +91,19 @@ CypherQuery.prototype.toString = function() {
     };
   }
   return s;
+}
+
+CypherQuery.prototype.addParameters = function(parameters) {
+  if (typeof parameters !== 'object')
+    throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
+  if (this.useParameters === null)
+    this.useParameters = true;
+  if (!this.hasParameters())
+    this.parameters = {};
+  for (var attr in parameters) {
+    this.parameters[attr] = parameters[attr];
+  }
+  return this;
 }
 
 if (typeof window === 'object') {

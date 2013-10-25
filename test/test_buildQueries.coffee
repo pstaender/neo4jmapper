@@ -54,7 +54,7 @@ describe 'Neo4jMapper (cypher queries)', ->
 
       # we will deactivate temporarily parameter seperating for testing the query building
       # http://docs.neo4j.org/chunked/stable/rest-api-cypher.html#rest-api-send-queries-with-parameters
-      expect(Node::cypher._useParameters).to.be true
+      expect(helpers.CypherQuery::useParameters).to.be true
 
 
       class Actor extends Node
@@ -428,8 +428,7 @@ describe 'Neo4jMapper (cypher queries)', ->
           ]
 
       # Build queries without parameters
-      Node::cypher._useParameters = false
-      Graph::cypher._useParameters = false
+      helpers.CypherQuery::useParameters = false
       map = testQueries()
 
       # check all other queries
@@ -446,8 +445,7 @@ describe 'Neo4jMapper (cypher queries)', ->
           console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())
 
       # Build queries with parameters
-      Node::cypher._useParameters = true
-      Graph::cypher._useParameters = true
+      helpers.CypherQuery::useParameters = true
       map = testQueries()
       for functionCall of map
         todo = map[functionCall]
@@ -474,4 +472,4 @@ describe 'Neo4jMapper (cypher queries)', ->
           console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())
 
       # set the parameter flag to the value it had before this test
-      Node::cypher._useParameters = true
+      helpers.CypherQuery::cypher.useParameters = true

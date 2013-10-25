@@ -10,22 +10,20 @@
 
 var __initNode__ = function(neo4jrestful, Graph) {
 
-  var helpers = null;
-  var _ = null;
-  var Sequence = null;
-
   if (typeof window === 'object') {
     // browser
     // TODO: find a solution for bson object id
-    helpers               = window.Neo4jMapper.helpers;
-    _                     = window._;
-    Sequence              = window.Sequence;
-    ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
+    var helpers               = window.Neo4jMapper.helpers;
+    var _                     = window._;
+    var Sequence              = window.Sequence;
+    var ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
+    var CypherQuery           = window.Neo4jMapper.CypherQuery;
   } else {
-    helpers               = require('./helpers');
-    _                     = require('underscore');
-    Sequence              = require('./lib/sequence');
-    ConditionalParameters = require('./conditionalparameters');
+    var helpers               = require('./helpers');
+    var _                     = require('underscore');
+    var Sequence              = require('./lib/sequence');
+    var ConditionalParameters = require('./conditionalparameters');
+    var CypherQuery           = require('./cypherquery');
   }
 
   // ### Constructor of Node
@@ -65,7 +63,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     this._is_instanced_ = true;
     // we will use a label by default if we have defined an inherited class of node
     if ((this._constructor_name_ !== 'Node')&&(this._constructor_name_ !== 'Relationship')&&(this._constructor_name_ !== 'Path')) {
-      this.label = this.cypher.label = this._constructor_name_;
+      this.label = this.cypher.segments.label = this._constructor_name_;
     }
     if (!this.label)
       this.label = null;
@@ -125,8 +123,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype._hashedData_     = null;           // contains md5 hash of a persisted object
   Node.prototype.Relationship     = null;           // constructor object for Relationship()
 
-  // cypher property will be **copied** on each new objects node.cypher in resetQuery()
-  Node.prototype.cypher = {
+  // cypher properties will be **copied** on each new object on cypher.segments in resetQuery()
+  Node.cypherStatementSegments = {
     limit: '',              // Number
     skip: '',               // Number
     filter: '',             // `FILTER`   statement
@@ -151,10 +149,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     parameters: null,       // object that contains all parameters for query
     count: '',              // count(n) (DISTINCT)
     // Boolean flags
-    _useParameters: true,
     _count: null,
     _distinct: null,
-    _update: null,          // flag when an update is performed
     by_id: null
   };
 
@@ -265,16 +261,17 @@ var __initNode__ = function(neo4jrestful, Graph) {
   // n.resetQuery().findOne(otherCb)
   Node.prototype.resetQuery = function() {
     // we have to copy the cypher values on each object
-    this.cypher = {};
-    _.extend(this.cypher, this.constructor.prototype.cypher);
-    this.cypher.where = [];
-    this.cypher.hasProperty = [];
-    this.cypher.match = [];
-    this.cypher.return_properties = [];
-    this.cypher.start = {};
+    this.cypher = new CypherQuery();
+    this.cypher.segments = {};
+    _.extend(this.cypher.segments, this.constructor.cypherStatementSegments);
+    this.cypher.segments.where = [];
+    this.cypher.segments.hasProperty = [];
+    this.cypher.segments.match = [];
+    this.cypher.segments.return_properties = [];
+    this.cypher.segments.start = {};
     this._query_history_ = [];
     if (this.id)
-      this.cypher.from = this.id;
+      this.cypher.segments.from = this.id;
     return this; // return self for chaining
   }
 
@@ -569,55 +566,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
   }
 
-
-
-  // is used for Nodes + Relationships
-  // TODO: maybe one function for node and for relationship would be a better solution (and outsource of __prepareData)
-  // Node.prototype.onSave = function(cb) {
-  //   var self = this;
-  //   if (this._is_singleton_)
-  //     return cb(Error('Singleton instances can not be persisted'), null);
-  //   if (!this.hasValidData())
-  //     return cb(Error('Node does not contain valid data. `n.data` must be an object.'));
-  //   this.resetQuery();
-  //   this.applyDefaultValues();
-
-  //   this.id = this._id_;
-
-  //   var data = this.flattenData();
-
-  //   var url = null;
-
-  //   if (this.id > 0) {
-  //     // method: PUT/UPDATE
-  //     url = '/node/properties';
-  //     Graph.request().put(url, { data: data }, function(err, res, debug) {
-  //       if (err) {
-  //         return cb(err, res, debug);
-  //       } else {
-  //         self.isPersisted(true);
-  //         return cb(err, self, debug);
-  //       }
-  //     });
-  //   } else {
-  //     // method: POST/CREATE
-  //     url = this.__TYPE__;
-  //     Graph.request().post(url, { data: data }, function(err, node, debug) {
-  //       if ((err) || (!node))
-  //         return cb(err, node, debug);
-  //       else {
-  //         // copy persisted data of response object `node` on source node
-  //         node.copyTo(self);
-  //         self._is_singleton_ = false;
-  //         self._is_instanced_ = true;
-  //         if (!err)
-  //           self.isPersisted(true);
-  //         return cb(null, self, debug);
-  //       }
-  //     });
-  //   }
-  // }
-
   Node.prototype.onAfterSave = function(err, node, next, debug) {
     // we use labelsAsArray to avoid duplicate labels
     var labels = node.labels = node.labelsAsArray();
@@ -652,31 +600,31 @@ var __initNode__ = function(neo4jrestful, Graph) {
       return this;
     } else {
       data = helpers.flattenObject(data);
-      this.cypher.set = [];
+      this.cypher.segments.set = [];
       for (var attribute in data) {
         this.addSetDefinition(attribute, data[attribute]);
       }
     }
-    this.cypher.start[this.__TYPE_IDENTIFIER__] =  this.__TYPE__ + '(' + this.cypher.by_id + ')';
-    this.cypher._update = true;
+    this.cypher.segments._update_ = true; // update flag is used in graph._processResults
+    this.cypher.segments.start[this.__TYPE_IDENTIFIER__] =  this.__TYPE__ + '(' + this.cypher.segments.by_id + ')';
     return this.exec(cb);
   }
 
   Node.prototype.addSetDefinition = function(attribute, value) {
-    if (this.cypher._useParameters) {
-      if (!this.cypher.parameters)
+    if (this.cypher.useParameters) {
+      if (!this.cypher.hasParameters())
         this.cypher.parameters = {};
       // if already parameters are added, starting with {_value#i_} instead of {_value0_}
       var parametersStartCountAt = (this.cypher.parameters) ? Object.keys(this.cypher.parameters).length : 0;
       var key = '_value'+parametersStartCountAt+'_';
       var parameter = {};
       parameter[key] = value;
-      this.cypher.set.push(
+      this.cypher.segments.set.push(
         helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__TYPE_IDENTIFIER__, { valuesToParameters: true })
       );
       this._addParameterToCypher(value);
     } else {
-      this.cypher.set.push(helpers.cypherKeyValueToString(attribute, value, this.__TYPE_IDENTIFIER__));
+      this.cypher.segments.set.push(helpers.cypherKeyValueToString(attribute, value, this.__TYPE_IDENTIFIER__));
     }
   }
 
@@ -782,7 +730,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if ( (self.hasId()) || (typeof label !== 'string') )
       return self; // return self for chaining
     self._query_history_.push({ withLabel: label });
-    self.cypher.label = label;
+    self.cypher.segments.label = label;
     return self.exec(cb);
   }
 
@@ -829,14 +777,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // MATCH p = allShortestPaths(martin-[*]-michael)
       // RETURN p
       var type = (options.relationships.type) ? ':'+options.relationships.type : options.relationships.type;
-      // this.cypher.start = {};
-      this.cypher.start.a = 'node('+start+')';
-      this.cypher.start.b = 'node('+end+')';
+      // this.cypher.segments.start = {};
+      this.cypher.segments.start.a = 'node('+start+')';
+      this.cypher.segments.start.b = 'node('+end+')';
 
       var matchString = 'p = '+options.algorithm+'((a)-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-(b))';
 
-      this.cypher.match.push(matchString.replace(/\[\:\*+/, '[*'));
-      this.cypher.return_properties = ['p'];
+      this.cypher.segments.match.push(matchString.replace(/\[\:\*+/, '[*'));
+      this.cypher.segments.return_properties = ['p'];
     }
 
     return this.exec(cb);
@@ -845,7 +793,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   // Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) { }
 
   Node.prototype.count = function(identifier, cb) {
-    this.cypher._count = true;
+    this.cypher.segments._count = true;
     if (typeof identifier === 'function') {
       cb = identifier;
       identifier = '*';
@@ -853,13 +801,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
     else if (typeof identifier !== 'string')
       identifier = '*';
 
-    if (Object.keys(this.cypher.start).length < 1) {
-      // this.cypher.start = {};
-      this.cypher.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)'; // all nodes by default
+    if (Object.keys(this.cypher.segments.start).length < 1) {
+      // this.cypher.segments.start = {};
+      this.cypher.segments.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)'; // all nodes by default
     }
-    this.cypher.count = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
-    if (this.cypher._distinct)
-      // set `this.cypher._distinct` to false
+    this.cypher.segments.count = 'COUNT('+((this.cypher.segments._distinct) ? 'DISTINCT ' : '')+identifier+')';
+    if (this.cypher.segments._distinct)
+      // set `this.cypher.segments._distinct` to false
       this.distinct(undefined, false);
     // we only need the count column to return in this case
     if (typeof cb === 'function')
@@ -870,7 +818,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
         }
         cb(err, result, debug);
       });
-    this._query_history_.push({ count: { distinct: this.cypher._distinct, identifier: identifier } });
+    this._query_history_.push({ count: { distinct: this.cypher.segments._distinct, identifier: identifier } });
     return this; // return self for chaining
   }
 
@@ -879,10 +827,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
    */
 
   Node.prototype._prepareQuery = function() {
-    var query = _.extend(this.cypher);
+    var query = _.extend(this.cypher.segments);
     var label = (query.label) ? ':'+query.label : '';
 
-    if ((this.cypher.start) && (Object.keys(this.cypher.start).length < 1)) {
+    if ((this.cypher.segments.start) && (Object.keys(this.cypher.segments.start).length < 1)) {
       if (query.from > 0) {
         query.start = {};
         query.start.n = 'node('+query.from+')';
@@ -927,7 +875,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
           y = '->';
         }
       }
-      query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'm' : '' )+')');
+      query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.segments.to > 0) ? 'm' : '' )+')');
     }
 
     var __startObjectToString = function(start) {
@@ -939,7 +887,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
     // guess return objects from start string if it's not set
     // e.g. START n = node(*), a = node(2) WHERE … RETURN (~>) n, a;
-    if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(this.cypher.start)&&(Object.keys(this.cypher.start).length > 0))) {
+    if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(this.cypher.segments.start)&&(Object.keys(this.cypher.segments.start).length > 0))) {
       query.start_as_string = ' '+__startObjectToString(query.start)
       if (/ [a-zA-Z]+ \= /.test(query.start_as_string)) {
         var matches = query.start_as_string;
@@ -957,7 +905,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
 
     // Set a fallback to START n = node(*) if it's not null
-    if ((this.cypher.start) && (Object.keys(this.cypher.start).length < 1)&&(!(query.match.length > 0))) {
+    if ((this.cypher.segments.start) && (Object.keys(this.cypher.segments.start).length < 1)&&(!(query.match.length > 0))) {
       // query.start = 'n = node(*)';
       query.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)';
     }
@@ -973,7 +921,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (query.by_id > 0) {
       var identifier = query.node_identifier || this.__TYPE_IDENTIFIER__;
       // put in where clause if `START n = node(*)` or no START statement exists
-      if ( (Object.keys(this.cypher.start).length < 1) || (this.cypher.start.n === 'node(*)') ) {
+      if ( (Object.keys(this.cypher.segments.start).length < 1) || (this.cypher.segments.start.n === 'node(*)') ) {
         // we have to use the id method for the special key `id`
         query.where.push("id("+identifier+") = "+query.by_id);
       }
@@ -993,8 +941,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.toQuery = function() {
-    var query = this._prepareQuery()
-      , graph = Graph.start(query.start_as_string);
+    var query = this._prepareQuery();
+    var graph = Graph.start(query.start_as_string);
     if (query.match.length > 0)
       graph.match(query.match.join(' AND '));
     if ((query.where)&&(query.where.length > 0))
@@ -1013,6 +961,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       graph.skip(Number(query.skip));
     if (query.limit)
       graph.limit(Number(query.limit));
+    graph.cypher.parameters = this.cypher.parameters;
     return graph.toQuery();
   }
 
@@ -1021,16 +970,16 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.toCypherQuery = function() {
-    return this.toQuery().cypher();
+    return this.toQuery().toCypher();
   }
 
   Node.prototype._start_node_id = function(fallback) {
     if (typeof fallback === 'undefined')
       fallback = '*'
-    if (this.cypher.from > 0)
-      return this.cypher.from;
-    if (this.cypher.by_id)
-      return this.cypher.by_id;
+    if (this.cypher.segments.from > 0)
+      return this.cypher.segments.from;
+    if (this.cypher.segments.by_id)
+      return this.cypher.segments.by_id;
     else
       return (this.hasId()) ? this.id : fallback;
   }
@@ -1038,7 +987,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype._end_node_id = function(fallback) {
     if (typeof fallback === 'undefined')
       fallback = '*'
-    return (this.cypher.to > 0) ? this.cypher.to : fallback;
+    return (this.cypher.segments.to > 0) ? this.cypher.segments.to : fallback;
   }
 
   Node.prototype.singletonForQuery = function(cypher) {
@@ -1048,8 +997,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.exec = function(cb, cypher_or_request) {
-    var request = null
-      , cypherQuery = null;
+    var request = null;
+    var cypherQuery = null;
     // you can alternatively use an url
     if (typeof cypher_or_request === 'string')
       cypherQuery = cypher_or_request;
@@ -1060,7 +1009,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       var cypher = this.toCypherQuery();
       // reset node, because it might be called from prototype
       // if we have only one return property, we resort this
-      if ( (this.cypher.return_properties)&&(this.cypher.return_properties.length === 1) ) {
+      if ( (this.cypher.segments.return_properties)&&(this.cypher.segments.return_properties.length === 1) ) {
         if (cypherQuery)
           this.query(cypherQuery, cb);
         else if (request)
@@ -1084,7 +1033,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       options = {};
     }
 
-    options.cypher = this.cypher;
+    options.cypher = _.extend(this.cypher.segments, { parameters: this.cypher.parameters });
 
     var graph = Graph.start();
 
@@ -1094,7 +1043,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
     options.recommendConstructor = this.recommendConstructor();
 
-    if ((this.cypher._useParameters) && (this.cypher.parameters) && (Object.keys(this.cypher.parameters).length > 0)) {
+    if ((this.cypher.useParameters) && (this.cypher.hasParameters()) && (Object.keys(this.cypher.parameters).length > 0)) {
       graph.parameters(this.cypher.parameters);
     }
 
@@ -1134,9 +1083,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var self = this.singletonForQuery();
     self._query_history_.push({ withRelation: true });
     // we expect a string or an array
-    self.cypher.relationship = (typeof relation === 'string') ? relation : relation.join('|');
-    self.cypher.incoming = true;
-    self.cypher.outgoing = true;
+    self.cypher.segments.relationship = (typeof relation === 'string') ? relation : relation.join('|');
+    self.cypher.segments.incoming = true;
+    self.cypher.segments.outgoing = true;
     self.exec(cb);
     return self;
   }
@@ -1145,18 +1094,18 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var self = this.singletonForQuery();
     self._query_history_.push({ incomingRelationships: true }); // only as a ”flag”
     if (typeof relation !== 'function') {
-      self.cypher.relationship = relation;
+      self.cypher.segments.relationship = relation;
     } else {
       cb = relation;
     }
-    self.cypher.node_identifier = 'n';
-    // self.cypher.start = {};
-    self.cypher.start.n = 'node('+self._start_node_id('*')+')';
-    if (self.cypher.to > 0)
-      self.cypher.start.m = 'node('+self._end_node_id('*')+')';
-    self.cypher.incoming = true;
-    self.cypher.outgoing = false;
-    self.cypher.return_properties = ['r'];
+    self.cypher.segments.node_identifier = 'n';
+    // self.cypher.segments.start = {};
+    self.cypher.segments.start.n = 'node('+self._start_node_id('*')+')';
+    if (self.cypher.segments.to > 0)
+      self.cypher.segments.start.m = 'node('+self._end_node_id('*')+')';
+    self.cypher.segments.incoming = true;
+    self.cypher.segments.outgoing = false;
+    self.cypher.segments.return_properties = ['r'];
     self.exec(cb);
     return self; // return self for chaining
   }
@@ -1165,18 +1114,18 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var self = this.singletonForQuery();
     self._query_history_.push({ outgoingRelationships: true }); // only as a ”flag”
     if (typeof relation !== 'function') {
-      self.cypher.relationship = relation;
+      self.cypher.segments.relationship = relation;
     } else {
       cb = relation;
     }
-    self.cypher.node_identifier = 'n';
-    // self.cypher.start = {};
-    self.cypher.start.n = 'node('+self._start_node_id('*')+')';
-    if (self.cypher.to > 0)
-      self.cypher.start.m = 'node('+self._end_node_id('*')+')';
-    self.cypher.incoming = false;
-    self.cypher.outgoing = true;
-    self.cypher.return_properties = ['r'];
+    self.cypher.segments.node_identifier = 'n';
+    // self.cypher.segments.start = {};
+    self.cypher.segments.start.n = 'node('+self._start_node_id('*')+')';
+    if (self.cypher.segments.to > 0)
+      self.cypher.segments.start.m = 'node('+self._end_node_id('*')+')';
+    self.cypher.segments.incoming = false;
+    self.cypher.segments.outgoing = true;
+    self.cypher.segments.return_properties = ['r'];
     self.exec(cb);
     return self; // return self for chaining
   }
@@ -1184,21 +1133,21 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.incomingRelationsFrom = function(node, relation, cb) {
     var self = this.singletonForQuery();
     self._query_history_.push({ incomingRelationshipsFrom: true }); // only as a ”flag”
-    self.cypher.from = self.id || null;
-    self.cypher.to = helpers.getIdFromObject(node);
+    self.cypher.segments.from = self.id || null;
+    self.cypher.segments.to = helpers.getIdFromObject(node);
     if (typeof relation !== 'function')
-      self.cypher.relationship = relation;
-    self.cypher.return_properties = ['r'];
+      self.cypher.segments.relationship = relation;
+    self.cypher.segments.return_properties = ['r'];
     return self.incomingRelations(relation, cb);
   }
 
   Node.prototype.outgoingRelationsTo = function(node, relation, cb) {
     var self = this.singletonForQuery();
     self._query_history_.push({ outgoingRelationshipsTo: true }); // only as a ”flag”
-    self.cypher.to = helpers.getIdFromObject(node);
+    self.cypher.segments.to = helpers.getIdFromObject(node);
     if (typeof relation !== 'function')
-      self.cypher.relationship = relation;
-    self.cypher.return_properties = ['r'];
+      self.cypher.segments.relationship = relation;
+    self.cypher.segments.return_properties = ['r'];
     return self.outgoingRelations(relation, cb);
   }
 
@@ -1206,14 +1155,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var self = this.singletonForQuery();
     self._query_history_.push({ allDirections: true });
     if (typeof relation !== 'function')
-      self.cypher.relationship = relation;
-    self.cypher.node_identifier = 'n';
-    // self.cypher.start = {};
-    self.cypher.start.n = 'node('+self._start_node_id('*')+')';
-    self.cypher.start.m = 'node('+self._end_node_id('*')+')';
-    self.cypher.incoming = true;
-    self.cypher.outgoing = true;
-    self.cypher.return_properties = ['n', 'm', 'r'];
+      self.cypher.segments.relationship = relation;
+    self.cypher.segments.node_identifier = 'n';
+    // self.cypher.segments.start = {};
+    self.cypher.segments.start.n = 'node('+self._start_node_id('*')+')';
+    self.cypher.segments.start.m = 'node('+self._end_node_id('*')+')';
+    self.cypher.segments.incoming = true;
+    self.cypher.segments.outgoing = true;
+    self.cypher.segments.return_properties = ['n', 'm', 'r'];
     self.exec(cb);
     return self; // return self for chaining
   }
@@ -1221,17 +1170,17 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.relationsBetween = function(node, relation, cb) {
     var self = this.singletonForQuery();
     self._query_history_.push({ relationshipsBetween: true });
-    self.cypher.to = helpers.getIdFromObject(node);
+    self.cypher.segments.to = helpers.getIdFromObject(node);
     if (typeof relation !== 'function')
-      self.cypher.relationship = relation;
-    self.cypher.return_properties = ['r'];
+      self.cypher.segments.relationship = relation;
+    self.cypher.segments.return_properties = ['r'];
     self.exec(cb);
     return self.allDirections(relation, cb);
   }
 
   Node.prototype.allRelations = function(relation, cb) {
     var self = this.singletonForQuery();
-    var label = (this.cypher.label) ? ':'+this.cypher.label : '';
+    var label = (this.cypher.segments.label) ? ':'+this.cypher.segments.label : '';
     if (typeof relation === 'string') {
       relation = ':'+relation;
     } else {
@@ -1239,28 +1188,28 @@ var __initNode__ = function(neo4jrestful, Graph) {
       relation = '';
     }
     self._query_history_.push({ allRelationships: true });
-    self.cypher.match.push('(n)'+label+'-[r'+relation+']-()');
-    self.cypher.return_properties = ['r'];
+    self.cypher.segments.match.push('(n)'+label+'-[r'+relation+']-()');
+    self.cypher.segments.return_properties = ['r'];
     self.exec(cb);
     return self; // return self for chaining
   }
 
   Node.prototype.limit = function(limit, cb) {
     this._query_history_.push({ LIMIT: limit });
-    this.cypher.limit = parseInt(limit);
+    this.cypher.segments.limit = parseInt(limit);
     if (limit === NaN)
       throw Error('LIMIT must be an integer number');
-    if (this.cypher.action === 'DELETE')
+    if (this.cypher.segments.action === 'DELETE')
       throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
     this.exec(cb);
     return this; // return self for chaining
   }
 
   Node.prototype.skip = function(skip, cb) {
-    this.cypher.skip = parseInt(skip);
+    this.cypher.segments.skip = parseInt(skip);
     if (skip === NaN)
       throw Error('SKIP must be an integer number');
-    this._query_history_.push({ SKIP: this.cypher.skip });
+    this._query_history_.push({ SKIP: this.cypher.segments.skip });
     this.exec(cb);
     return this; // return self for chaining
   }
@@ -1268,7 +1217,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.distinct = function(cb, value) {
     if (typeof value !== 'boolean')
       value = true;
-    this.cypher._distinct = value;
+    this.cypher.segments._distinct = value;
     this._query_history_.push({ dictinct: value });
     this.exec(cb);
     return this; // return self for chaining
@@ -1282,12 +1231,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
       direction = property[key];
       property = key;
       if ( (typeof direction === 'string') && ((/^(ASC|DESC)$/).test(direction)) ) {
-        this.cypher.order_direction = direction;
+        this.cypher.segments.order_direction = direction;
       }
     } else if (typeof property === 'string') {
       // custom statement, no process at all
       // we use 1:1 the string
-      this.cypher.order_by = property;
+      this.cypher.segments.order_by = property;
     } else if (typeof cb === 'string') {
       identifier = cb;
       cb = null;
@@ -1305,12 +1254,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (identifier) {
       // s.th. like ORDER BY n.`name` ASC
       // escape property
-      this.cypher.order_by = identifier + ".`"+property+"`";
+      this.cypher.segments.order_by = identifier + ".`"+property+"`";
     } else {
       // s.th. like ORDER BY n.name ASC
-      this.cypher.order_by = property;
+      this.cypher.segments.order_by = property;
     }
-    this._query_history_.push({ ORDER_BY: this.cypher.order_by });
+    this._query_history_.push({ ORDER_BY: this.cypher.segments.order_by });
     this.exec(cb);
     return this; // return self for chaining
   }
@@ -1338,7 +1287,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (/^n(\:[a-zA-Z]+)*$/.test(string))
       string = '('+string+')';
     this._query_history_.push({ MATCH: string });
-    this.cypher.match.push(string);
+    this.cypher.segments.match.push(string);
     this.exec(cb);
     return this; // return self for chaining
   }
@@ -1351,12 +1300,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (typeof options === 'undefined')
       options = { add: false };
     if (!options.add)
-      this.cypher.return_properties = [];
+      this.cypher.segments.return_properties = [];
     if (returnStatement) {
-      this.cypher.return_properties = this.cypher.return_properties.concat(
+      this.cypher.segments.return_properties = this.cypher.segments.return_properties.concat(
         (returnStatement.constructor === Array) ? returnStatement : returnStatement.split(', ')
       );
-      this._query_history_.push({ RETURN: this.cypher.return_properties });
+      this._query_history_.push({ RETURN: this.cypher.segments.return_properties });
     }
     this.exec(cb);
     return this; // return self for chaining
@@ -1370,16 +1319,16 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (self.label) self.withLabel(self.label);
     //self.resetQuery();
     if (typeof start !== 'string')
-      self.cypher.start = null;
+      self.cypher.segments.start = null;
     else
-      self.cypher.start = start;
+      self.cypher.segments.start = start;
     self._query_history_.push({ START: self.cypher.start });
     self.exec(cb);
     return self; // return self for chaining
   }
 
   Node.prototype.where = function(where, cb, options) {
-    this.cypher.where = [];
+    this.cypher.segments.where = [];
     if (_.isObject(where)) {
       if (Object.keys(where).length === 0) {
         // return here
@@ -1397,29 +1346,29 @@ var __initNode__ = function(neo4jrestful, Graph) {
       options.identifier = 'n';
 
     // add identifier to return properties if not exists already
-    if (_.indexOf(this.cypher.return_properties, options.identifier) === -1)
-      this.cypher.return_properties.push(options.identifier);
+    if (_.indexOf(this.cypher.segments.return_properties, options.identifier) === -1)
+      this.cypher.segments.return_properties.push(options.identifier);
 
 
-    if (this.cypher.start) {
-      if (!this.cypher.start.n)
-        this.cypher.start.n = 'node(*)';
-      if (this.cypher.start.m)
-        this.cypher.start.m = 'node(*)';
+    if (this.cypher.segments.start) {
+      if (!this.cypher.segments.start.n)
+        this.cypher.segments.start.n = 'node(*)';
+      if (this.cypher.segments.start.m)
+        this.cypher.segments.start.m = 'node(*)';
       if (options.identifier === 'r')
-        this.cypher.start.r = 'relationship(*)';
+        this.cypher.segments.start.r = 'relationship(*)';
     }
 
     // use parameters for query or send an ordinary string?
     // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
     if (typeof options.valuesToParameters === 'undefined')
-      options.valuesToParameters = Boolean(this.cypher._useParameters);
+      options.valuesToParameters = Boolean(this.cypher.useParameters);
     // if already parameters are added, starting with {_value#i_} instead of {_value0_}
     if ((this.cypher.parameters)&&(this.cypher.parameters.length > 0))
       options.parametersStartCountAt = this.cypher.parameters.length;
     var condition = new ConditionalParameters(_.extend(where), options);
     var whereCondition = condition.toString();
-    this.cypher.where.push(whereCondition);
+    this.cypher.segments.where.push(whereCondition);
     if ((options.valuesToParameters) && (condition.parameters))
       this._addParametersToCypher(condition.parameters);
 
@@ -1467,13 +1416,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
       property = property.replace(/^[nmr]\./,'')
     // if NOT default to true/false, no property condition is needed
     if (!/[\!\?]$/.test(property)) {
-      if (this.cypher.return_properties.length === 0) {
+      if (this.cypher.segments.return_properties.length === 0) {
         this.findAll();
       }
       // no identifier found, guessing from return properties
       if (typeof identifier !== 'string')
-        identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
-      this.cypher.hasProperty.push(identifier+'.`'+property+'`');
+        identifier = this.cypher.segments.return_properties[this.cypher.segments.return_properties.length-1];
+      this.cypher.segments.hasProperty.push(identifier+'.`'+property+'`');
       this._query_history_.push({ HAS: { identifier: identifier, property: property }});
     }
     this.exec(cb);
@@ -1500,20 +1449,20 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (this.hasId())
       return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
     this._query_history_.push({ DELETE: true });
-    this.cypher.action = 'DELETE';
-    if (this.cypher.limit)
+    this.cypher.segments.action = 'DELETE';
+    if (this.cypher.segments.limit)
       throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
     return this.exec(cb);
   }
 
   Node.prototype.deleteIncludingRelations = function(cb) {
     var label = (this.label) ? ":"+this.label : "";
-    if (Object.keys(this.cypher.start).length < 1) {
-      // this.cypher.start = {};
-      this.cypher.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+"(*)";
+    if (Object.keys(this.cypher.segments.start).length < 1) {
+      // this.cypher.segments.start = {};
+      this.cypher.segments.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+"(*)";
     }
-    this.cypher.match.push([ '('+this.__TYPE_IDENTIFIER__+label+")-[r?]-()" ]);
-    this.cypher.return_properties = [ "n", "r" ];
+    this.cypher.segments.match.push([ '('+this.__TYPE_IDENTIFIER__+label+")-[r?]-()" ]);
+    this.cypher.segments.return_properties = [ "n", "r" ];
     return this.delete(cb);
   }
 
@@ -1894,7 +1843,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       where = undefined;
     }
     self = this.find(where);
-    self.cypher.limit = 1;
+    self.cypher.segments.limit = 1;
     return self.exec(cb);
   }
 
@@ -1930,7 +1879,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
         });
       return this;
     } else {
-      self.cypher.by_id = Number(id);
+      self.cypher.segments.by_id = Number(id);
       return self.findByKeyValue({ id: id }, cb);
     }
   }
@@ -1954,14 +1903,15 @@ var __initNode__ = function(neo4jrestful, Graph) {
       key = 'id';
     if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
       self._query_history_.push({ findByKeyValue: true });
-      var identifier = self.cypher.node_identifier || self.__TYPE_IDENTIFIER__;
-      if (self.cypher.return_properties.length === 0)
-        self.cypher.return_properties = [ identifier ];
+      var identifier = self.cypher.segments.node_identifier || self.__TYPE_IDENTIFIER__;
+      if (self.cypher.segments.return_properties.length === 0)
+        self.cypher.segments.return_properties = [ identifier ];
       if (key !== 'id') {
         var query = {};
         query[key] = value;
         self.where(query);
-        if (self.label) self.withLabel(self.label);
+        if (self.label)
+          self.withLabel(self.label);
         // if we have an id: value, we will build the query in prepareQuery
       }
       if (typeof cb === 'function') {
@@ -1997,8 +1947,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     self._query_history_.push({ findAll: true });
-    self.cypher.limit = null;
-    self.cypher.return_properties = ['n'];
+    self.cypher.segments.limit = null;
+    self.cypher.segments.return_properties = ['n'];
     if (self.label) self.withLabel(self.label);
     return self.exec(cb);
   }

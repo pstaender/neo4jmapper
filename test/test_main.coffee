@@ -451,7 +451,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to use parameters for queries by default and expect to add parameters to cypher query', ->
       node = new Node title: new Date().toString()
-      expect(node.cypher._useParameters).to.be true # this is an option flag which is expected to be true!
+      expect(node.cypher.useParameters).to.be true # this is an option flag which is expected to be true!
       expect(node.cypher.parameters).to.be null
       node._addParametersToCypher [ 'a', 'b' ]
       node._addParametersToCypher [ 'c', 'd' ]
@@ -1197,7 +1197,7 @@ describe 'Neo4jMapper', ->
                 }
               ]
             }
-            Node::cypher._useParameters = false
+            helpers.CypherQuery::useParameters = false
             # excpetion here, check query string
             expect(Model.find(where).toCypherQuery().replace(/\n+/g, ' ').replace(/\s+/g, ' ')).to.be.equal """
               START n = node(*) MATCH (n:#{labelName}) WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n;
@@ -1206,7 +1206,7 @@ describe 'Neo4jMapper', ->
               expect(err).to.be null
               expect(found).to.have.length 2
               # test also with parameters
-              Node::cypher._useParameters = true
+              helpers.CypherQuery::useParameters = true
               Model.find where, (err, found) ->
                 expect(err).to.be null
                 expect(found).to.have.length 2

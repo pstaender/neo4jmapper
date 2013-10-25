@@ -35,13 +35,15 @@ var __initGraph__ = function(neo4jrestful) {
   //   * underscorejs
 
   if (typeof window === 'object') {
-    var helpers     = window.Neo4jMapper.helpers;
-    var _           = window._;
-    var CypherQuery = window.Neo4jMapper.CypherQuery;
+    var helpers               = window.Neo4jMapper.helpers;
+    var _                     = window._;
+    var CypherQuery           = window.Neo4jMapper.CypherQuery;
+    var ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
   } else {
-    var helpers     = require('./helpers');
-    var _           = require('underscore');
-    var CypherQuery = require('./cypherquery');
+    var helpers               = require('./helpers');
+    var _                     = require('underscore');
+    var CypherQuery           = require('./cypherquery');
+    var ConditionalParameters = require('./conditionalparameters')
   }
 
   // Ensure that we have a Neo4jRestful client we can work with
@@ -60,11 +62,7 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.neo4jrestful                  = neo4jrestful;
   Graph.prototype._query_history_               = null;
   // see graph.resetQuery() for initialization
-  Graph.prototype.cypher = {
-    query: null,                                                // the cypher query string
-    parameters: null,                                           // object with paremeters
-    _useParameters: true                                        // better performance + rollback possible (upcoming feature)
-  };
+  Graph.prototype.cypher                        = null;
   Graph.prototype._queryString_                 = '';           // stores a query string temporarily
   Graph.prototype._loadOnResult_                = 'node|relationship|path';
   Graph.prototype._resortResults_               = true;         // see in graph.query() -> _increaseDone()
@@ -99,7 +97,7 @@ var __initGraph__ = function(neo4jrestful) {
       options = {};
     }
 
-    options.params = (typeof this.cypher._useParameters === 'boolean') ? this.cypher.parameters : {};
+    options.params = (typeof this.cypher.useParameters === 'boolean') ? this.cypher.parameters : {};
     options.context = self;
 
     // we expect a cb in most cases and perfom the query immediately
@@ -109,7 +107,7 @@ var __initGraph__ = function(neo4jrestful) {
           // Is used by Node on performing an "update" via a cypher query
           // The result length is 1, so we remove the array
           if ((res)&&(res.length===1)&&(options.cypher)) {
-            if ((options.cypher.limit === 1) || (options.cypher._update) || (typeof res[0] !== 'object')) {
+            if ((options.cypher.limit === 1) || (options.cypher._update_) || (typeof res[0] !== 'object')) {
               res = res[0];
             }
           }
@@ -240,23 +238,14 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.parameters = function(parameters) {
     if (typeof parameters !== 'object')
       throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
-    if (this.cypher._useParameters === null)
-      this.cypher._useParameters = true;
+    if (this.cypher.useParameters === null)
+      this.cypher.useParameters = true;
     this.cypher.parameters = parameters;
     return this;
   }
 
   Graph.prototype.addParameters = function(parameters) {
-    if (typeof parameters !== 'object')
-      throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
-    if (this.cypher._useParameters === null)
-      this.cypher._useParameters = true;
-    if (!this.cypher.parameters)
-      this.cypher.parameters = {};
-    // _.extend(this.cypher.parameters, parameters);
-    for (var attr in parameters) {
-      this.cypher.parameters[attr] = parameters[attr];
-    }
+    this.cypher.addParameters(parameters);
     return this;
   }
 
@@ -328,11 +317,7 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.resetQuery = function() {
     this._query_history_ = [];
     this._queryString_ = '';
-    this.cypher = {};
-    for (var attr in Graph.prototype.cypher) {
-      this.cypher[attr] = Graph.prototype.cypher[attr];
-    }
-    this.cypher.parameters = {};
+    this.cypher = new CypherQuery();
     return this;
   }
 
@@ -454,15 +439,15 @@ var __initGraph__ = function(neo4jrestful) {
       this._query_history_.push({ WHERE: where });
       return this.exec(cb);
     }
-    if (this.cypher._useParameters === null)
-      this.cypher._useParameters = true;
+    if (this.cypher.useParameters === null)
+      this.cypher.useParameters = true;
     if (!_.isArray(where))
       where = [ where ];
-    var options = { valuesToParameters: this.cypher._useParameters };
+    var options = { valuesToParameters: this.cypher.useParameters };
     var condition = new ConditionalParameters(where, options)
     , whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
     this._query_history_.push({ WHERE: whereCondition });
-    if (this.cypher._useParameters)
+    if (this.cypher.useParameters)
       this._addParametersToCypher(condition.parameters);
     return this.exec(cb);
   }
@@ -512,11 +497,8 @@ var __initGraph__ = function(neo4jrestful) {
     if (this._queryString_) {
       return this._queryString_;
     }
-    var query = new CypherQuery(this._query_history_);
-    if (this.cypher._useParameters) {
-      query.parameters = this.cypher.parameters;
-    }
-    return query;
+    this.cypher.statements = this._query_history_;
+    return this.cypher;
   }
 
   Graph.prototype.toQueryString = function() {
@@ -525,7 +507,7 @@ var __initGraph__ = function(neo4jrestful) {
 
   Graph.prototype.toCypherQuery = function() {
     this.toQueryString();
-    return this.toQuery().cypher();
+    return this.toQuery().toCypher();
   }
 
   // # Enables loading for specific types
@@ -585,7 +567,7 @@ var __initGraph__ = function(neo4jrestful) {
   // Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]
   Graph.prototype._addParametersToCypher = function(parameters) {
     if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
-      if (!this.cypher.parameters)
+      if (!this.cypher.hasParameters())
         this.cypher.parameters = {};
       for (var i=0; i < parameters.length; i++) {
         this._addParameterToCypher(parameters[i]);
@@ -597,7 +579,7 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.prototype._addParameterToCypher = function(parameter) {
-    if (!this.cypher.parameters)
+    if (!this.cypher.hasParameters())
       this.cypher.parameters = {};
     if (typeof parameter === 'object') {
       _.extend(this.cypher.parameters, parameter);
