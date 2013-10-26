@@ -918,10 +918,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
     // rule(s) for findById
     if (query.by_id > 0) {
       var identifier = query.node_identifier || this.__TYPE_IDENTIFIER__;
-      // put in where clause if `START n = node(*)` or no START statement exists
-      if ( (Object.keys(this.cypher.segments.start).length < 1) || (this.cypher.segments.start.n === 'node(*)') ) {
-        // we have to use the id method for the special key `id`
-        query.where.push("id("+identifier+") = "+query.by_id);
+      // put in where clause if one or no START statement exists
+      if (Object.keys(this.cypher.segments.start).length <= 1) {
+        this.cypher.segments.start.n = 'node('+query.by_id+')'
       }
     }
     // add all `HAS (property)` statements to where
@@ -939,6 +938,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.toQuery = function() {
+    if (this.hasId() && (!(Object.keys(this.cypher.segments.start).length > 1))) {
+      return Node.findById(this._id_).toQuery();
+    }
     var query = this._prepareQuery();
     var graph = Graph.start(query.start_as_string);
     if (query.match.length > 0)

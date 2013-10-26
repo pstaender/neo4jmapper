@@ -50,6 +50,11 @@ describe 'Neo4jMapper (cypher queries)', ->
         err = e
       expect(err).not.to.be null
 
+    it 'expect to get a query on node + relationship instances', (done) ->
+      Node.create { name: 'whatever' }, (err, node) ->
+        expect(_trim(node.toQueryString())).to.match /^START n = node\(\d+\) RETURN n;/
+        done()
+
     it 'expect to build various kind of queries', ->
 
       # we will deactivate temporarily parameter seperating for testing the query building
@@ -72,7 +77,7 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findById(123)":
           [
             Node.findById(123)
-            "START n = node(*) WHERE id(n) = 123 RETURN n;"
+            "START n = node(123) RETURN n;"
           ]
 
         'Node.findOne()':
@@ -262,7 +267,7 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findById(123).allRelations().delete()":
           [
              Node.findById(123).allRelations().delete()
-            "MATCH (n)-[r]-() WHERE id(n) = 123 DELETE r;"
+            "START n = node(123) MATCH (n)-[r]-() DELETE r;"
           ]
 
         "Actor.deleteAllIncludingRelations()":

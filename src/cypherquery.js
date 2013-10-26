@@ -71,17 +71,17 @@ CypherQuery.prototype.hasParameters = function() {
   return ((this.parameters) && (typeof this.parameters === 'object') && (Object.keys(this.parameters).length > 0));
 }
 
-CypherQuery.prototype.toCypher = function() {
+CypherQuery.prototype.toCypher = function(options) {
   var s = '';
   if (this.query)
     s = this.query;
   else if (this.statements.length > 0)
-    s = this.statementsToString();
+    s = this.statementsToString(options);
   return s;
 }
 
-CypherQuery.prototype.toString = function() {
-  var s = this.toCypher();
+CypherQuery.prototype.toString = function(options) {
+  var s = this.toCypher(options);
   if ((s)&&(this.hasParameters())) {
     // replace identifiers with values to present a good equivalent
     for (var key in this.parameters) {

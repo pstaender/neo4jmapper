@@ -7,15 +7,13 @@
 
 var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
-  var helpers  = null;
-  var _        = null;
 
   if (typeof window === 'object') {
-    helpers = window.Neo4jMapper.helpers;
-    _       = window._;
+    var helpers = window.Neo4jMapper.helpers;
+    var _       = window._;
   } else {
-    helpers  = require('./helpers');
-    _        = require('underscore');
+    var helpers  = require('./helpers');
+    var _        = require('underscore');
   }
 
   // Constructor of Relationship
@@ -69,7 +67,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   Relationship.prototype._response_       = null;
   Relationship.prototype._is_singleton_   = false;
   Relationship.prototype._is_persisted_   = false;
-  Relationship.prototype.cypher           = {};
+  Relationship.prototype.cypher           = null;
   Relationship.prototype._is_instanced_   = null;
   Relationship.prototype.fields = {
     defaults: {},
