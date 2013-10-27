@@ -321,6 +321,19 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     return next(null, relationship);
   }
 
+  Relationship.prototype.toQuery = function() {
+    if (this.hasId()) {
+      return Graph
+        .start('r = relationship('+this.id+')')
+        .return('r').toQuery();
+    }
+    return new helpers.CypherQuery().toQuery();
+  }
+
+  Relationship.prototype.toQueryString = Node.prototype.toQueryString;
+
+  Relationship.prototype.toCypherQuery = Node.prototype.toCypherQuery;
+
   Relationship.prototype.toObject = function() {
     var o = {
       id: this.id,
@@ -355,7 +368,10 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     return next(null, node, debug);
   }
 
-  Relationship.prototype.resetQuery = function() { return this; }
+  Relationship.prototype.resetQuery = function() {
+    this.cypher = new helpers.CypherQuery();
+    return this;
+  }
 
   Relationship.prototype._load_hook_reference_  = null;
 

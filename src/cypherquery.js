@@ -37,7 +37,14 @@ CypherQuery.prototype.statementsToString = function(options) {
         continue;
       }
       var attribute = Object.keys(this.statements[i])[0];
+      if ((typeof queryFragment === 'object') && (typeof queryFragment.toQueryString === 'function')) {
+        queryFragment = queryFragment.toString();
+        s += queryFragment;
+        continue;
+      }
       var forQuery = this.statements[i][attribute];
+      // do we have an object with a .toQueryString() method?
+
       // remove underscore from attribute, e.g. ORDER_BY -> ORDER BY
       attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');
       if (options.niceFormat) {
@@ -56,7 +63,7 @@ CypherQuery.prototype.statementsToString = function(options) {
         s += '\n'+attribute+' '+forQuery+' ';
       }
     }
-    s = s.trim();
+    s = s.trim().replace(/;+$/,'');
   }
   return s + ';';
 }
@@ -87,7 +94,7 @@ CypherQuery.prototype.toString = function(options) {
     for (var key in this.parameters) {
       var value = this.parameters[key];
       // TODO: better check that we detect placeholders
-      s = s.replace(new RegExp('(\\s+){'+key+'}([\\s;]+)'), "$1'"+helpers.valueToStringForCypherQuery(value)+"'$2");
+      s = s.replace('{'+key+'}', helpers.valueToStringForCypherQuery(value, "'"));
     };
   }
   return s;
@@ -105,6 +112,8 @@ CypherQuery.prototype.addParameters = function(parameters) {
   }
   return this;
 }
+
+CypherQuery.prototype.addParameter = CypherQuery.prototype.addParameters;
 
 if (typeof window === 'object') {
   window.Neo4jMapper.CypherQuery = CypherQuery;

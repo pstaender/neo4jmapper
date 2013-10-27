@@ -781,7 +781,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
       var matchString = 'p = '+options.algorithm+'((a)-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-(b))';
 
-      this.cypher.segments.match.push(matchString.replace(/\[\:\*+/, '[*'));
+      this.cypher.segments.match = [ matchString.replace(/\[\:\*+/, '[*') ];
       this.cypher.segments.return_properties = ['p'];
     }
 
@@ -828,7 +828,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var query = _.extend(this.cypher.segments);
     var label = (query.label) ? ':'+query.label : '';
 
-    if ((this.cypher.segments.start) && (Object.keys(this.cypher.segments.start).length < 1)) {
+    if ((this.cypher.segments.start) && (this.cypher.segments) && (Object.keys(this.cypher.segments.start).length < 1)) {
       if (query.from > 0) {
         query.start = {};
         query.start.n = 'node('+query.from+')';
@@ -873,7 +873,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
           y = '->';
         }
       }
-      query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.segments.to > 0) ? 'm' : '' )+')');
+      if (query.match.length === 0)
+        query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.segments.to > 0) ? 'm' : '' )+')');
     }
 
     var __startObjectToString = function(start) {
@@ -910,9 +911,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if ((!(query.match.length>0))&&(this.label)) {
       // e.g. ~> MATCH (n:Person)
       if (this.__TYPE_IDENTIFIER__ === 'n')
-        query.match.push('(n:'+this.label+')');
+        query.match = [ '(n:'+this.label+')' ];
       else if (this.__TYPE_IDENTIFIER__ === 'r')
-        query.match.push('[r:'+this.label+']');
+        query.match = [ '[r:'+this.label+']' ];
     }
 
     // rule(s) for findById
@@ -920,16 +921,23 @@ var __initNode__ = function(neo4jrestful, Graph) {
       var identifier = query.node_identifier || this.__TYPE_IDENTIFIER__;
       // put in where clause if one or no START statement exists
       if (Object.keys(this.cypher.segments.start).length <= 1) {
-        this.cypher.segments.start.n = 'node('+query.by_id+')'
+        if (this.cypher.useParameters) {
+          this.cypher.segments.start.n = 'node({_node_id_})';//'node('+query.by_id+')'
+          this.cypher.addParameter( { _node_id_: query.by_id } );
+        } else {
+          this.cypher.segments.start.n = 'node('+query.by_id+')';
+        }
+
       }
     }
     // add all `HAS (property)` statements to where
     if (query.hasProperty.length > 0) {
       // remove duplicate properties, not necessary but looks nicer
-      var whereHasProperties = _.uniq(query.hasProperty);
-      for (var i = whereHasProperties.length-1; i>=0; i--) {
-        query.where.unshift('HAS ('+whereHasProperties[i]+')');
-      }
+      _.uniq(query.hasProperty).forEach(function(property) {
+        query.where.unshift('HAS ('+property+')');
+      });
+      // remove all duplicate-AND-conditions
+      query.where = _.unique(query.where);
     }
 
     query.start_as_string = __startObjectToString(query.start);
@@ -1188,7 +1196,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       relation = '';
     }
     self._query_history_.push({ allRelationships: true });
-    self.cypher.segments.match.push('(n)'+label+'-[r'+relation+']-()');
+    self.cypher.segments.match = [ '(n)'+label+'-[r'+relation+']-()' ];
     self.cypher.segments.return_properties = ['r'];
     self.exec(cb);
     return self; // return self for chaining
@@ -1461,7 +1469,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // this.cypher.segments.start = {};
       this.cypher.segments.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+"(*)";
     }
-    this.cypher.segments.match.push([ '('+this.__TYPE_IDENTIFIER__+label+")-[r?]-()" ]);
+    this.cypher.segments.match = [ '('+this.__TYPE_IDENTIFIER__+label+")-[r?]-()" ];
     this.cypher.segments.return_properties = [ "n", "r" ];
     return this.delete(cb);
   }

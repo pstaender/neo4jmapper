@@ -325,7 +325,7 @@ var __initGraph__ = function(neo4jrestful) {
   // e.g. Graph.start().where( …
   Graph.prototype.start = function(start, cb) {
     this.resetQuery();
-    if (typeof start !== 'string') {
+    if (typeof start === 'function') {
       cb = start;
       start = null;
     }

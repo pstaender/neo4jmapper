@@ -50,10 +50,18 @@ describe 'Neo4jMapper (cypher queries)', ->
         err = e
       expect(err).not.to.be null
 
-    it 'expect to get a query on node + relationship instances', (done) ->
+    it.skip 'expect to get a query on node + relationship instances', (done) ->
       Node.create { name: 'whatever' }, (err, node) ->
-        expect(_trim(node.toQueryString())).to.match /^START n = node\(\d+\) RETURN n;/
-        done()
+        id = node.id
+        console.log(node.toQuery(), node.toQuery().toString())
+        expect(_trim(node.toQuery().toCypher())).to.match /^START n = node\(\d+\) RETURN n;/
+        Graph.custom node, (err, found) ->
+          expect(err).to.be null
+          expect(found[0].id).to.be node.id
+          Node.create { name: 'whatever' }, (err, node2) ->
+            node2.createRelationTo node, 'connected', (err, rel) ->
+              expect(_trim(rel.toQueryString())).to.match /START r = relationship\(\d+\) RETURN r;/
+              done()
 
     it 'expect to build various kind of queries', ->
 
@@ -292,8 +300,8 @@ describe 'Neo4jMapper (cypher queries)', ->
           [
              Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })
             "START n = node(123) SET n.`name` = 'Alice', n.`email` = 'alice@home.com' RETURN n;"
-            "START n = node(123) SET n.`name` = {_value0_}, n.`email` = {_value1_} RETURN n;"
-            { _value0_: 'Alice', _value1_: 'alice@home.com' }
+            "START n = node({_node_id_}) SET n.`name` = {_value0_}, n.`email` = {_value1_} RETURN n;"
+            { _value0_: 'Alice', _value1_: 'alice@home.com', _node_id_: 123 }
           ]
 
         "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":
@@ -459,10 +467,10 @@ describe 'Neo4jMapper (cypher queries)', ->
         else if _.isArray(todo)
           if todo[2] and todo[3]
             query = todo[0]
-            # check paramers macthing
+            # check paramers matching
             # do we have same parameters count?
-            if Object.keys(query.cypher.parameters).length isnt Object.keys(todo[3]).length
-              throw Error("Expected #{Object.keys(todo[3]).length} parameter(s) on '#{functionCall}': "+JSON.stringify(todo[3])+"\nGot "+JSON.stringify(query.cypher.parameters))
+            if Object.keys(query.toQuery().parameters).length isnt Object.keys(todo[3]).length
+              throw Error("Expected #{Object.keys(todo[3]).length} parameter(s) on '#{functionCall}': "+JSON.stringify(todo[3])+"\nGot "+JSON.stringify(query.toQuery().parameters))
             # expect(query.cypher.parameters.length).to.be.equal Object.keys(todo[3]).length
             i = 0
             for key, value of todo[3]
@@ -470,9 +478,10 @@ describe 'Neo4jMapper (cypher queries)', ->
               if query.cypher.parameters[Object.keys(query.cypher.parameters)[i]] isnt value
                 throw Error([ "Expected", query.cypher.parameters[Object.keys(query.cypher.parameters)[i]], "to be equal", value ].join(' '))
               i++
-            query = query.toCypherQuery()
-            query = _trim(query);
-            throw Error("Error building query with parameters #{functionCall}\nExpected: #{_trim(todo[2])}\nGot:      #{query}") if query isnt _trim(todo[2])
+            queryString = query.toQuery().toCypher()
+            queryString = _trim(queryString);
+            if queryString isnt _trim(todo[2])
+              throw Error("Error building query with parameters #{functionCall}\nExpected: #{_trim(todo[2])}\nGot:      #{queryString}")
         else
           console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())
 
