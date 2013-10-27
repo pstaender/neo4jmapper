@@ -154,7 +154,7 @@ var __initGraph__ = function(neo4jrestful) {
         if (self._resortResults_) {
           var cleanResult = result.data;
           // remove array, if we have only one column
-          if (result.columns.length === 1) {
+          if (self._columns_.length === 1) {
             for (var row=0; row < cleanResult.length; row++) {
               cleanResult[row] = cleanResult[row][0];
             }
@@ -172,17 +172,46 @@ var __initGraph__ = function(neo4jrestful) {
       return cb(err, result[0], debug);
     }
 
+    // check for node labels column (is attached by query builder) 
+    // copy to a new array and remove column from result to the results cleaner
+    var nodeLabels = null;
+    var nodeLabelsColumn = _.indexOf(result.columns, 'labels(n)');
+    if (nodeLabelsColumn >= 0) {
+      // we have a 'labels(n)' column
+      nodeLabels = [];
+      result.data.forEach(function(row){
+        nodeLabels.push(row[nodeLabelsColumn]);
+      });
+      result.data.forEach(function(row, i){
+        result.data[i] = result.data[i].slice(nodeLabelsColumn-1, 1);
+      });
+      // remove labels column from result
+      self._columns_ = self._columns_.slice(nodeLabelsColumn-1, 1);
+    }
+
+    var recommendConstructor = options.recommendConstructor;
+
     for (var row=0; row < result.data.length; row++) {
       for (var column=0; column < result.data[row].length; column++) {
         var data = result.data[row][column];
         // try to create an instance if we have an object here
-        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, options.recommendConstructor) : data;
+        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, recommendConstructor) : data;
         result.data[row][column] = object;
 
         (function(object, isLastObject) {
 
           if (object) {
             if ((object.classification === 'Node') && (loadNode)) {
+              // if we have labels in columns result, we will apply them on each node
+              // if we have a distinct label, we will create a model from of it
+              if (nodeLabels) {
+                object.labels = nodeLabels[column];
+                if (object.labels.length === 1) {
+                  object.label = object.labels[0];
+                  object = neo4jrestful.Node.convertNodeToModel(object, object.label, recommendConstructor);
+                }
+                object._skipLoadingLabels_ = true;
+              }
               todo++;
               object.load(__increaseDone);
             }
@@ -209,7 +238,7 @@ var __initGraph__ = function(neo4jrestful) {
     }
   }
 
-  // ### Shortcut for neo4jrestul.stream
+  // Stream query
   Graph.prototype.stream = function(cypherQuery, options, cb) {
     var self = this;
     var Node = Graph.Node;
@@ -233,6 +262,7 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  // Shortcut for .stream
   Graph.prototype.each = Graph.prototype.stream;
 
   Graph.prototype.parameters = function(parameters) {

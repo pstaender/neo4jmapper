@@ -26,8 +26,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   // ### Constructor of Node
   // calls this.init(data,id) to set all values to default
-  var Node = function Node(data, id) {
-    var cb = null;
+  var Node = function Node(data, id, cb) {
     // id can be a callback as well
     if (typeof id === 'function') {
       cb = id;
@@ -838,12 +837,23 @@ var __initNode__ = function(neo4jrestful, Graph) {
         query.start.m = 'node('+query.to+')';
         query.return_properties.push('m');
       }
-    }
+    }    
 
     var relationships = '';
 
-    if ((query.return_properties)&&(query.return_properties.constructor === Array))
+    if ((query.return_properties)&&(query.return_properties.constructor === Array)) {
+      var returnLabels = null;
+      query.return_properties.forEach(function(returnProperty){
+        if ((returnLabels === null) && (/^n(\s+.*)*$/.test(returnProperty)))
+          returnLabels = true;
+      });
+
+      // but we don't return labels if we have an action like DELETE
+      if ((returnLabels) && (!query.action))
+        query.return_properties.push('labels(n)');
+
       query.return_properties = _.uniq(query.return_properties).join(', ')
+    }
 
     if (query.relationship) {
       if (query.relationship.constructor === Array) {
@@ -895,10 +905,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
         for (var i = 0; i < matches.length; i++) {
           query.return_properties.push(matches[i].replace(/^[\s\,]*([a-z]+).*$/i,'$1'));
         }
-        if ((Graph.request().version >= 2)&&(query.return_properties.length === 1)&&(query.return_properties[0] === 'n')) {
-          // try adding labels if we have only n[node] as return propert
-          query.return_properties.push('labels(n)');
-        }
+        // if ((Graph.request().version >= 2)&&(query.return_properties.length === 1)&&(query.return_properties[0] === 'n')) {
+        //   // try adding labels if we have only n[node] as return propert
+        //   query.return_properties.push('labels(n)');
+        // }
         query.return_properties = query.return_properties.join(', ');
       }
     }
@@ -2173,6 +2183,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var node = new this(data, id);
     if (typeof cb === 'function')
       return node.save(cb);
+    else
+      return node;
   }
 
   Node.new = function(data, id, cb) {

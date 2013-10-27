@@ -287,7 +287,7 @@ describe 'Neo4jMapper', ->
             expect(result.data[0][0].id).to.be.equal id
             done()
 
-  describe 'stream', ->
+  describe.skip 'stream', ->
 
     it 'expect to make a stream request on nodes and models', (SkipInBrowser) (done) ->
       class Person extends Node
@@ -498,6 +498,7 @@ describe 'Neo4jMapper', ->
           expect(bob.label).to.be 'Developer'
           expect(bob.labels[0]).to.be 'Developer'
           Node.find { group_id: groupid }, (err, nodes) ->
+            console.log nodes
             expect(err).to.be null
             expect(nodes).to.have.length 2
             expect(nodes[0]._constructor_name_).to.be.equal 'Node'
@@ -1200,7 +1201,7 @@ describe 'Neo4jMapper', ->
             helpers.CypherQuery::useParameters = false
             # excpetion here, check query string
             expect(Model.find(where).toCypherQuery().replace(/\n+/g, ' ').replace(/\s+/g, ' ')).to.be.equal """
-              START n = node(*) MATCH (n:#{labelName}) WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n;
+              START n = node(*) MATCH (n:#{labelName}) WHERE ( ( HAS (n.`job`) AND n.`job` = 'Actor' AND ( HAS (n.`email`) AND n.`email` =~ '^jackblack@tenacio\\\\.us$' OR HAS (n.`name`) AND n.`name` = 'Jack Black' ) ) ) RETURN n, labels(n);
             """
             Model.find where, (err, found) ->
               expect(err).to.be null
