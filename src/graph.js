@@ -456,14 +456,27 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(cb);
   }
 
-  Graph.prototype.return = function(returnStatement, cb) {
-    this._query_history_.push({ RETURN: returnStatement });
+  Graph.prototype.return = function(returnStatement, cb, distinct) {
+    var parts = [];
+    if (returnStatement) {
+      if (returnStatement.constructor === Array)
+        parts = returnStatement;
+      if ((typeof returnStatement === 'Object') && (Object.keys(returnStatement).length > 0))
+        Object.keys(returnStatement).forEach(function(key) {
+          parts.push(key+' AS ' + returnStatement[key]);
+        });
+    }
+    if (parts.length > 0)
+      returnStatement = pats.join(', ');
+    if (distinct === true)
+      this._query_history_.push({ RETURN_DISTINCT: returnStatement });
+    else
+      this._query_history_.push({ RETURN: returnStatement });
     return this.exec(cb);
   }
 
   Graph.prototype.returnDistinct = function(returnStatement, cb) {
-    this._query_history_.push({ RETURN_DISTINCT: returnStatement });
-    return this.exec(cb);
+    return this.return(returnStatement, cb, true);
   }
 
   Graph.prototype.delete = function(deleteStatement, cb) {
