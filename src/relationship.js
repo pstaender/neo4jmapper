@@ -18,7 +18,6 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
   // Constructor of Relationship
   var Relationship = function Relationship(type, data, start, end, id, cb) {
-    this.data = data || {};
     this.type = this._type_ = type || null;
     this.from = {
       id: null,
@@ -28,19 +27,42 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       id: null,
       uri: null
     };
-    if (Number(start))
-      this.setPointUriById('from', start);
-    else if (start)
-      this.setPointIdByUri('from', start);
-    if (Number(end))
-      this.setPointUriById('to', end);
-    else if (end)
-      this.setPointIdByUri('to', end);
+    this.data = data || {};
+    
+    var startID = null;
+    var endID = null;
+    
+    if (start)
+      if (Number(start.id))
+        startID = Number(start.id);
+      else if (Number(start))
+        startID = Number(start);
+      else if (start)
+        // we assume we have a url here
+        this.setPointIdByUri('from', start);
+
+    if (startID)
+      this.setPointUriById('from', startID);
+    
+    if (end)
+      if (Number(end.id))
+        endID = Number(end.id);
+      else if (Number(end))
+        endID = Number(end);
+      else if (end)
+        // we assume we have a url here
+        this.setPointIdByUri('to', end);
+
+    if (endID)
+      this.setPointUriById('to', endID);
+
     this.fields = _.extend({},{
       defaults: _.extend({}, this.fields.defaults),
       indexes: _.extend({}, this.fields.indexes) // TODO: implement
     });
+
     this._is_instanced_ = true;
+    
     if (typeof id === 'number') {
       this.setUriById(id);
       this.id = this._id_ = id;
