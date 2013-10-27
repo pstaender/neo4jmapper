@@ -322,13 +322,13 @@ describe 'Neo4jMapper', ->
         expect(count).to.be.above 1
         iterationsCount = 0;
         count = 10 if count > 10
-        graph = new Graph() # alternate: client.stream
-        graph.stream "START n=node(*) RETURN n LIMIT #{count};", (node) ->
-          unless node
+        Graph.stream "START n=node(*) RETURN n, labels(n) LIMIT #{count};", (row) ->
+          unless row
             expect(count).to.be.equal count
             done()
           else
-            expect(node.id).to.be.a 'number'
+            expect(row[0].id).to.be.a 'number'
+            expect(row[1].constructor).to.be.equal Array
             count++
 
   describe 'node', ->
