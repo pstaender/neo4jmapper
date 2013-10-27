@@ -372,7 +372,11 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.prototype.custom = function(statement, cb) {
-    this._query_history_.push(statement);
+    if ((typeof statement === 'object') && (typeof statement.toQuery === 'function')) {
+      this._query_history_.push(statement.toQuery().toString());
+    } else {
+      this._query_history_.push(statement);
+    }
     return this.exec(cb);
   }
 

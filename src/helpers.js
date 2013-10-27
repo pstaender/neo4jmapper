@@ -127,11 +127,14 @@ var valueToStringForCypherQuery = function(value, delimiter) {
     // replace `\` with `\\` to keep compatibility with Java regex
     value = value.replace(/([^\\]{1})\\([^\\]{1})/g, '$1\\\\$2');
   } else {
-    if ((typeof value === 'boolean') && (typeof value === 'number'))
+    if ((typeof value === 'undefined') || (value === null) || (value === NaN))
+      value = 'null';
+    else if ((typeof value === 'boolean') || (typeof value === 'number'))
       value = String(value);
     else
       value = delimiter + escapeString(value) + delimiter;
   }
+
   return value;
 }
 

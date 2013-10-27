@@ -50,11 +50,10 @@ describe 'Neo4jMapper (cypher queries)', ->
         err = e
       expect(err).not.to.be null
 
-    it.skip 'expect to get a query on node + relationship instances', (done) ->
+    it 'expect to get a query on node + relationship instances', (done) ->
       Node.create { name: 'whatever' }, (err, node) ->
         id = node.id
-        console.log(node.toQuery(), node.toQuery().toString())
-        expect(_trim(node.toQuery().toCypher())).to.match /^START n = node\(\d+\) RETURN n;/
+        expect(_trim(node.toQuery().toString())).to.match /^START n = node\(\d+\) RETURN n;/
         Graph.custom node, (err, found) ->
           expect(err).to.be null
           expect(found[0].id).to.be node.id

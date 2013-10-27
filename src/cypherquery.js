@@ -38,7 +38,7 @@ CypherQuery.prototype.statementsToString = function(options) {
       }
       var attribute = Object.keys(this.statements[i])[0];
       if ((typeof queryFragment === 'object') && (typeof queryFragment.toQueryString === 'function')) {
-        queryFragment = queryFragment.toString();
+        queryFragment = queryFragment.toQueryString();
         s += queryFragment;
         continue;
       }
