@@ -195,6 +195,7 @@ var __initGraph__ = function(neo4jrestful) {
       for (var column=0; column < result.data[row].length; column++) {
         var data = result.data[row][column];
         // try to create an instance if we have an object here
+        // console.log(result.data)
         var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, recommendConstructor) : data;
         result.data[row][column] = object;
 

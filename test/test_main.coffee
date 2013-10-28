@@ -498,7 +498,6 @@ describe 'Neo4jMapper', ->
           expect(bob.label).to.be 'Developer'
           expect(bob.labels[0]).to.be 'Developer'
           Node.find { group_id: groupid }, (err, nodes) ->
-            console.log nodes
             expect(err).to.be null
             expect(nodes).to.have.length 2
             expect(nodes[0]._constructor_name_).to.be.equal 'Node'

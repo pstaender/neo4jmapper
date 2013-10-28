@@ -431,10 +431,22 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   }
 
   Neo4jRestful.prototype.onProcess = function(res, cb, debug) {
-    if (_.isArray(res)) {
+    if (!res) {
+      // return here if no response is present
+      return cb(null, res, debug);
+    } else if (_.isArray(res)) {
       for (var i=0; i < res.length; i++) {
         res[i] = this.createObjectFromResponseData(res[i]);
       }
+    } else if ( (res.data) && (_.isArray(res.data)) ) {
+      // iterate throught res.data rows + columns
+      // an try to detect Node, Reltationships + Path objects
+      for (var row=0; row < res.data.length; row++) {
+        for (var column=0; column < res.data[row].length; column++) {
+          res.data[row][column] = this.createObjectFromResponseData(res.data[row][column]);
+        }
+      }
+
     } else if (_.isObject(res)) {
       res = this.createObjectFromResponseData(res);
     }
