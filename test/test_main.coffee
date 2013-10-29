@@ -36,7 +36,7 @@ version = client.version
 
 SkipInNode = (a) -> unless window? then null else a
 SkipInBrowser = (a) -> if window? then null else a
-SkipStreaming = -> null
+SkipStreaming = (a) -> SkipInBrowser(a)
 
 generateUID = -> String(new Date().getTime())+String(Math.round(Math.random()*10000000))
 
@@ -255,8 +255,9 @@ describe 'Neo4jMapper', ->
 
     it 'expect to stream graph query results', (SkipStreaming) (done) ->
       i = 0
-      Graph.start('n=node(*)').return('n').limit(1).stream (node) ->
+      Graph.start('n=node(*)').return('n').limit(1).stream (node, context) ->
         if node
+          expect(context._columns_.constructor).to.be.equal Array
           i++
         else
           expect(i).to.be 1

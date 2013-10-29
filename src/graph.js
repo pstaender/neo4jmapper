@@ -257,25 +257,19 @@ var __initGraph__ = function(neo4jrestful) {
       cb = options;
       options = undefined;
     }
-    this.neo4jrestful.stream(cypherQuery, options, function(rowsColumns, response) {
+    this.neo4jrestful.stream(cypherQuery, options, function(data, response) {
       // neo4jrestful alerady created an object, but not with a recommend constructor
       self._columns_ = response._columns_;
-      // console.log(response._response_.body)
-      for (var row = 0; row < rowsColumns.length; row++) {
-        var data = rowsColumns[row];
-        if ((data) && (data.constructor === Array)) {
-          for (var column = 0; column < rowsColumns[row].length; column++) {
-            data = rowsColumns[row][column];
-            if ((data) && (typeof data === 'object') && (data._response_)) {
-              rowsColumns[row][column] = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
-            }
+      if ((data) && (typeof data === 'object')) {
+        if (data.constructor === Array) {
+          for (var column = 0; column < data.length; column++) {
+            data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
           }
         } else {
-          rowsColumns[row] = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+          data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
         }
       }
-      
-      cb(rowsColumns, self);
+      cb(data, self);
     });
     return this;
   }
