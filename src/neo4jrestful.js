@@ -357,7 +357,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
       stream.on('root', function(root, count) {
         self._response_on_ = new Date().getTime();
         // remove x-stream from header
-        // delete self.header['X-Stream'];
+        delete self.header['X-Stream'];
         if (!count) {
           cb(null, Error('No matches in stream found ('+ root +')'));
         }
