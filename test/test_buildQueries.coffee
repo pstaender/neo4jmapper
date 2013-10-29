@@ -51,9 +51,9 @@ describe 'Neo4jMapper (cypher queries)', ->
       expect(err).not.to.be null
 
     it 'expect to get a query on node + relationship instances', (done) ->
-      Node.create { name: 'whatever' }, (err, node1) ->
+      Node.create({ name: 'whatever' }).setLabels(['Person']).save (err, node1) ->
         id = node1.id
-        expect(_trim(node1.toQuery().toString())).to.match /^START n = node\(\d+\) RETURN n;/
+        expect(_trim(node1.toQuery().toString())).to.match /^START n = node\(\d+\) RETURN n, labels\(n\);/
         Graph.custom node1, (err, found) ->
           expect(err).to.be null
           expect(found[0].id).to.be node1.id
@@ -81,43 +81,43 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findAll()":
           [
              Node.findAll()
-            'START n = node(*) RETURN n;'
+            'START n = node(*) RETURN n, labels(n);'
           ]
 
         "Node.findById(123)":
           [
             Node.findById(123)
-            "START n = node(123) RETURN n;"
+            "START n = node(123) RETURN n, labels(n);"
           ]
 
         'Node.findOne()':
           [
              Node.findOne()
-            'START n = node(*) RETURN n LIMIT 1;'
+            'START n = node(*) RETURN n, labels(n) LIMIT 1;'
           ]
 
         "Node.findAll().limit(10)":
           [
              Node.findAll().limit(10)
-            'START n = node(*) RETURN n LIMIT 10;'
+            'START n = node(*) RETURN n, labels(n) LIMIT 10;'
           ]
 
         "Node.findAll().match('n:Person')":
           [
              Node.findAll().match('n:Person')
-            "MATCH (n:Person) RETURN n;"
+            "MATCH (n:Person) RETURN n, labels(n);"
           ]
 
         "Actor.findAll()":
           [
              Actor.findAll()
-            "START n = node(*) MATCH (n:Actor) RETURN n;"
+            "START n = node(*) MATCH (n:Actor) RETURN n, labels(n);"
           ]
 
         "Node.findAll().skip(5)":
           [
              Node.findAll().skip(5)
-            'START n = node(*) RETURN n SKIP 5;'
+            'START n = node(*) RETURN n, labels(n) SKIP 5;'
           ]
 
         "Node.start().match('(p:PERSON)-[:KNOWS]->(a:Actor)-[:ACTS]->(m:Movie)').return('p AS Person')":
@@ -130,13 +130,13 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findAll().orderBy( { 'name': 'DESC' } )":
           [
              Node.findAll().orderBy( { 'name': 'DESC' })
-            'START n = node(*) WHERE HAS (n.`name`) RETURN n ORDER BY n.`name` DESC;'
+            'START n = node(*) WHERE HAS (n.`name`) RETURN n, labels(n) ORDER BY n.`name` DESC;'
           ]
 
         "Node.findAll().orderNodeBy({'name': 'ASC'})":
           [
              Node.findAll().orderNodeBy({'name': 'ASC'})
-            'START n = node(*) WHERE HAS (n.`name`) RETURN n ORDER BY n.`name` ASC;'
+            'START n = node(*) WHERE HAS (n.`name`) RETURN n, labels(n) ORDER BY n.`name` ASC;'
           ]
 
         'Node.findAll().incomingRelations()':
@@ -166,7 +166,7 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findOne().withRelations('know')":
           [
              Node.findOne().withRelations('know')
-            "MATCH (n)-[r:know]-() RETURN n LIMIT 1;"
+            "MATCH (n)-[r:know]-() RETURN n, labels(n) LIMIT 1;"
           ]
 
         "Node.findOne().outgoingRelations(['know','like'])":
@@ -191,8 +191,8 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findOne().where({ 'name?': 'Alice'})":
           [
              Node.findOne().where({ 'name?': 'Alice' })
-            "START n = node(*) WHERE ( n.`name`? = 'Alice' ) RETURN n LIMIT 1;"
-            "START n = node(*) WHERE ( n.`name`? = {_value0_} ) RETURN n LIMIT 1;"
+            "START n = node(*) WHERE ( n.`name`? = 'Alice' ) RETURN n, labels(n) LIMIT 1;"
+            "START n = node(*) WHERE ( n.`name`? = {_value0_} ) RETURN n, labels(n) LIMIT 1;"
             { _value0_: 'Alice'}
           ]
 
@@ -213,8 +213,8 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.singleton(1).incomingRelationsFrom(2, 'like').where({ 'since': 'years' })":
           [
              Node.singleton(1).incomingRelationsFrom(2, 'like').where({ 'since': 'years' })
-            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = 'years' ) RETURN r, n;"
-            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = {_value0_} ) RETURN r, n;"
+            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = 'years' ) RETURN r, n, labels(n);"
+            "START n = node(1), m = node(*) MATCH (n)<-[r:like]-(m) WHERE ( HAS (n.`since`) AND n.`since` = {_value0_} ) RETURN r, n, labels(n);"
             { _value0_: 'years' }
           ]
 
@@ -229,40 +229,40 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })":
           [
              Node.find().whereNode({ 'boolean_a': true, 'boolean_b': false, 'string_a': 'true', 'number_a': 123.2, 'number_b': 123, 'string_b': '123', 'regex': /[a-z]/ })
-            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = true AND HAS (n.`boolean_b`) AND n.`boolean_b` = false AND HAS (n.`string_a`) AND n.`string_a` = 'true' AND HAS (n.`number_a`) AND n.`number_a` = 123.2 AND HAS (n.`number_b`) AND n.`number_b` = 123 AND HAS (n.`string_b`) AND n.`string_b` = '123' AND HAS (n.`regex`) AND n.`regex` =~ '[a-z]' ) RETURN n;"
-            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = {_value0_} AND HAS (n.`boolean_b`) AND n.`boolean_b` = {_value1_} AND HAS (n.`string_a`) AND n.`string_a` = {_value2_} AND HAS (n.`number_a`) AND n.`number_a` = {_value3_} AND HAS (n.`number_b`) AND n.`number_b` = {_value4_} AND HAS (n.`string_b`) AND n.`string_b` = {_value5_} AND HAS (n.`regex`) AND n.`regex` =~ {_value6_} ) RETURN n;"
+            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = true AND HAS (n.`boolean_b`) AND n.`boolean_b` = false AND HAS (n.`string_a`) AND n.`string_a` = 'true' AND HAS (n.`number_a`) AND n.`number_a` = 123.2 AND HAS (n.`number_b`) AND n.`number_b` = 123 AND HAS (n.`string_b`) AND n.`string_b` = '123' AND HAS (n.`regex`) AND n.`regex` =~ '[a-z]' ) RETURN n, labels(n);"
+            "START n = node(*) WHERE ( HAS (n.`boolean_a`) AND n.`boolean_a` = {_value0_} AND HAS (n.`boolean_b`) AND n.`boolean_b` = {_value1_} AND HAS (n.`string_a`) AND n.`string_a` = {_value2_} AND HAS (n.`number_a`) AND n.`number_a` = {_value3_} AND HAS (n.`number_b`) AND n.`number_b` = {_value4_} AND HAS (n.`string_b`) AND n.`string_b` = {_value5_} AND HAS (n.`regex`) AND n.`regex` =~ {_value6_} ) RETURN n, labels(n);"
             { _value0_: true, _value1_: false, _value2_: 'true', _value3_: 123.2, _value4_: 123, _value5_: '123', _value6_: '[a-z]' }
           ]
 
         "Node.find({ $and : [ { a: 1 }, { b: 2} ] })":
           [
              Node.find({ $and : [ { a: 1 }, { b: 2} ] })
-            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = 1 AND HAS (n.`b`) AND n.`b` = 2 ) ) RETURN n;"
-            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = {_value0_} AND HAS (n.`b`) AND n.`b` = {_value1_} ) ) RETURN n;"
+            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = 1 AND HAS (n.`b`) AND n.`b` = 2 ) ) RETURN n, labels(n);"
+            "START n = node(*) WHERE ( ( HAS (n.`a`) AND n.`a` = {_value0_} AND HAS (n.`b`) AND n.`b` = {_value1_} ) ) RETURN n, labels(n);"
             { _value0_: 1, _value1_: 2 }
           ]
 
         "Node.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
              Node.find().where( { $or : [ { 'n.firstname': /alice/i } , { 'n.surname': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
-            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ '(?i)alice' OR HAS (n.`surname`) AND n.surname =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
-            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ {_value0_} OR HAS (n.`surname`) AND n.surname =~ {_value1_} ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ '(?i)alice' OR HAS (n.`surname`) AND n.surname =~ '(?i)bob' ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ {_value0_} OR HAS (n.`surname`) AND n.surname =~ {_value1_} ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
             { _value0_: '(?i)alice', _value1_: '(?i)bob' }
           ]
 
         "Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
              Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
-            "START n = node(*) MATCH (n:Actor) WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            "START n = node(*) MATCH (n:Actor) WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
 
         "Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')":
           [
             Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')
-            "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.city = 'berlin' ) RETURN n AS Person LIMIT 1;"
+            "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.city = 'berlin' ) RETURN n AS Person, labels(n) LIMIT 1;"
           ]
 
-        "Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).returnOnly('n.name AS Name')":
+        "Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).return('n.name AS Name')":
           [
              Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).return('n.name AS Name')
             "START n = node(*) WHERE ( HAS (n.`city`) AND n.city = 'berlin' AND ( HAS (n.`name`) AND n.name = 'peter' AND NOT ( HAS (n.`name`) AND n.name = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
@@ -301,27 +301,27 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })":
           [
              Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })
-            "START n = node(123) SET n.`name` = 'Alice', n.`email` = 'alice@home.com' RETURN n;"
-            "START n = node({_node_id_}) SET n.`name` = {_value0_}, n.`email` = {_value1_} RETURN n;"
+            "START n = node(123) SET n.`name` = 'Alice', n.`email` = 'alice@home.com' RETURN n, labels(n);"
+            "START n = node({_node_id_}) SET n.`name` = {_value0_}, n.`email` = {_value1_} RETURN n, labels(n);"
             { _value0_: 'Alice', _value1_: 'alice@home.com', _node_id_: 123 }
           ]
 
         "Node.findById(123).update({ 'name': 'Alice', 'age': 20 })":
           [
              Node.findById(123).update({ 'name': 'Alice', 'age': 20 })
-            "START n = node(123) SET n.`name` = 'Alice', n.`age` = 20 RETURN n;"
+            "START n = node(123) SET n.`name` = 'Alice', n.`age` = 20 RETURN n, labels(n);"
           ]
 
         "Node.findOne().whereRelationship({ length: 20 })":
           [
              Node.findOne().whereRelationship({ length: 20 })
-            "START n = node(*), r = relationship(*) WHERE ( HAS (r.`length`) AND r.`length` = 20 ) RETURN n, r LIMIT 1;"
+            "START n = node(*), r = relationship(*) WHERE ( HAS (r.`length`) AND r.`length` = 20 ) RETURN n, r, labels(n) LIMIT 1;"
           ]
 
         "Node.findAll().where( { $and : [ { name: { $in: [ 'a', 'b', 1, 2 ] } }, mail: { $in: 1 } ] } )":
           [
              Node.findAll().where( { $and : [ { name: { $in: [ 'a', 'b', 1, 2 ] } }, mail: { $in: 1 } ] } )
-            "START n = node(*) WHERE ( ( HAS (n.`name`) AND n.`name` IN [ 'a', 'b', 1, 2 ] AND HAS (n.`mail`) AND n.`mail` IN [ ] ) ) RETURN n;"
+            "START n = node(*) WHERE ( ( HAS (n.`name`) AND n.`name` IN [ 'a', 'b', 1, 2 ] AND HAS (n.`mail`) AND n.`mail` IN [ ] ) ) RETURN n, labels(n);"
           ]
 
         #

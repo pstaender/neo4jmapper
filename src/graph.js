@@ -122,6 +122,37 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  Graph.prototype.__indexOfLabelColumn = function(columns) {
+    if (typeof columns === 'undefined')
+      columns = self._columns_;
+    return _.indexOf(columns, 'labels(n)');
+  }
+
+  Graph.prototype.__removeLabelColumnFromArray = function(array, columnIndexOfLabel) {
+    if (typeof columnIndexOfLabel !== 'number')
+      columnIndexOfLabel = this.__indexOfLabelColumn();
+    return array.slice(columnIndexOfLabel-1, 1);
+  }
+
+  Graph.prototype.__sortOutLabelColumn = function(result) {
+    var nodeLabels = null;
+    var nodeLabelsColumn = this.__indexOfLabelColumn(result.columns);
+    var self = this;
+    if (nodeLabelsColumn >= 0) {
+      // we have a 'labels(n)' column
+      nodeLabels = [];
+      result.data.forEach(function(row){
+        nodeLabels.push(row[nodeLabelsColumn]);
+      });
+      result.data.forEach(function(row, i){
+        result.data[i] = self.__removeLabelColumnFromArray(result.data[i], nodeLabelsColumn);
+      });
+      // remove labels column from result
+      this._columns_ = self.__removeLabelColumnFromArray(this._columns_, nodeLabelsColumn);
+    }
+    return nodeLabels;
+  }
+
   Graph.prototype._processResult = function(err, result, debug, options, cb) {
     var self = options.context;
     self._response_ = self.neo4jrestful._response_;
@@ -154,7 +185,7 @@ var __initGraph__ = function(neo4jrestful) {
         if (self._resortResults_) {
           var cleanResult = result.data;
           // remove array, if we have only one column
-          if (result.columns.length === 1) {
+          if (self._columns_.length === 1) {
             for (var row=0; row < cleanResult.length; row++) {
               cleanResult[row] = cleanResult[row][0];
             }
@@ -172,17 +203,34 @@ var __initGraph__ = function(neo4jrestful) {
       return cb(err, result[0], debug);
     }
 
+    // check for node labels column (is attached by query builder) 
+    // copy to a new array and remove column from result to the results cleaner
+    var nodeLabels = (this._resortResults_) ? this.__sortOutLabelColumn(result) : null;
+
+    var recommendConstructor = options.recommendConstructor;
+
     for (var row=0; row < result.data.length; row++) {
       for (var column=0; column < result.data[row].length; column++) {
         var data = result.data[row][column];
         // try to create an instance if we have an object here
-        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, options.recommendConstructor) : data;
+        // console.log(result.data)
+        var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, recommendConstructor) : data;
         result.data[row][column] = object;
 
         (function(object, isLastObject) {
 
           if (object) {
             if ((object.classification === 'Node') && (loadNode)) {
+              // if we have labels in columns result, we will apply them on each node
+              // if we have a distinct label, we will create a model from of it
+              if (nodeLabels) {
+                object.labels = nodeLabels[column];
+                if (object.labels.length === 1) {
+                  object.label = object.labels[0];
+                  object = neo4jrestful.Node.convertNodeToModel(object, object.label, recommendConstructor);
+                }
+                object._skipLoadingLabels_ = true;
+              }
               todo++;
               object.load(__increaseDone);
             }
@@ -209,7 +257,7 @@ var __initGraph__ = function(neo4jrestful) {
     }
   }
 
-  // ### Shortcut for neo4jrestul.stream
+  // Stream query
   Graph.prototype.stream = function(cypherQuery, options, cb) {
     var self = this;
     var Node = Graph.Node;
@@ -225,14 +273,37 @@ var __initGraph__ = function(neo4jrestful) {
     this.neo4jrestful.stream(cypherQuery, options, function(data, response) {
       // neo4jrestful alerady created an object, but not with a recommend constructor
       self._columns_ = response._columns_;
-      if ((data) && (typeof data === 'object') && (data._response_)) {
-        data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+      if (self._resortResults_) {
+        // remove [ 'n', 'labels(n)' ] labels(n) column
+        var indexOfLabelColumn = self.__indexOfLabelColumn(self._columns_);
+        if (indexOfLabelColumn >= 0)
+          self._columns_ = self.__removeLabelColumnFromArray(self._columns_, indexOfLabelColumn);
+      }
+      if ((data) && (typeof data === 'object')) {
+        if (data.constructor === Array) {
+          var labels = null;
+          if ((self._resortResults_) && (indexOfLabelColumn >= 0)) {
+            labels = data[indexOfLabelColumn];
+            data = self.__removeLabelColumnFromArray(data, indexOfLabelColumn);
+            if (data.length === 1)
+              data = data[0];
+          }
+          for (var column = 0; column < data.length; column++) {
+            if ((data[column]) && (data[column]._response_))
+              data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
+          }
+        } else {
+          if ((data) && (data._response_))
+            data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+        }
+        data.setLabels(labels);
       }
       cb(data, self);
     });
     return this;
   }
 
+  // Shortcut for .stream
   Graph.prototype.each = Graph.prototype.stream;
 
   Graph.prototype.parameters = function(parameters) {
