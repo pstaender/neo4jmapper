@@ -328,9 +328,27 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     // stream
     if (this.header['X-Stream'] === 'true') {
 
-      var stream = JSONStream.parse(['data', true]);
-
-      stream.on('data', cb);
+      var stream = JSONStream.parse([/^columns|data$/, true]);
+      
+      var isDataColumn = false;
+      self._columns_ = [];
+      
+      stream.on('data', function(data) {
+        // detect column and data array
+        // { columns: [ '1', … , 'n' ], data: [ [ … ] ] }
+        if (isDataColumn) {
+          return cb(data);
+        } else if (data) {
+          if (data.constructor === Array) {
+            isDataColumn = true;
+            return cb(data);
+          } else {
+            self._columns_.push(data);
+            return;
+          }
+        }
+      });
+      
       stream.on('end', function() {
         // prevent to pass undefined, but maybe an undefined is more clear
         cb(null, null);
@@ -339,12 +357,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
       stream.on('root', function(root, count) {
         self._response_on_ = new Date().getTime();
         // remove x-stream from header
-        delete self.header['X-Stream'];
+        // delete self.header['X-Stream'];
         if (!count) {
           cb(null, Error('No matches in stream found ('+ root +')'));
-        } else if ((root) && (root.columns)) {
-          // attach columns
-          self._columns_ = root.columns;
         }
       });
 
@@ -453,6 +468,15 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     cb(null, res, debug);
   }
 
+  Neo4jRestful.prototype.onProcessStream = function(res, cb, debug) {
+    if (res) {
+      for (var column=0; column < res.length; column++) {
+        res[column] = this.createObjectFromResponseData(res[column]);
+      }
+    }
+    cb(null, res, debug);
+  }
+
   Neo4jRestful.prototype.onSuccess = function(cb, res, status, options) {
     if (options.debug) {
       options._debug.res = res;
@@ -540,9 +564,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
     return this.query(cypher, options, function(data) {
       if (data) {
-        if (typeof self.onProcess === 'function') {
+        if (typeof self.onProcessStream === 'function') {
           todo++;
-          self.onProcess(data, function(err, data) {
+          self.onProcessStream(data, function(err, data) {
             if ( (data) && (data.length === 1) )
               data = data[0];
             if (done >= todo) {

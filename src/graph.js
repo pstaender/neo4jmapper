@@ -122,6 +122,24 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  Graph.prototype.__sortOutLabelColumn = function(result) {
+    var nodeLabels = null;
+    var nodeLabelsColumn = _.indexOf(result.columns, 'labels(n)');
+    if (nodeLabelsColumn >= 0) {
+      // we have a 'labels(n)' column
+      nodeLabels = [];
+      result.data.forEach(function(row){
+        nodeLabels.push(row[nodeLabelsColumn]);
+      });
+      result.data.forEach(function(row, i){
+        result.data[i] = result.data[i].slice(nodeLabelsColumn-1, 1);
+      });
+      // remove labels column from result
+      this._columns_ = this._columns_.slice(nodeLabelsColumn-1, 1);
+    }
+    return nodeLabels;
+  }
+
   Graph.prototype._processResult = function(err, result, debug, options, cb) {
     var self = options.context;
     self._response_ = self.neo4jrestful._response_;
@@ -174,20 +192,7 @@ var __initGraph__ = function(neo4jrestful) {
 
     // check for node labels column (is attached by query builder) 
     // copy to a new array and remove column from result to the results cleaner
-    var nodeLabels = null;
-    var nodeLabelsColumn = _.indexOf(result.columns, 'labels(n)');
-    if (nodeLabelsColumn >= 0) {
-      // we have a 'labels(n)' column
-      nodeLabels = [];
-      result.data.forEach(function(row){
-        nodeLabels.push(row[nodeLabelsColumn]);
-      });
-      result.data.forEach(function(row, i){
-        result.data[i] = result.data[i].slice(nodeLabelsColumn-1, 1);
-      });
-      // remove labels column from result
-      self._columns_ = self._columns_.slice(nodeLabelsColumn-1, 1);
-    }
+    var nodeLabels = (this._resortResults_) ? this.__sortOutLabelColumn(result) : null;
 
     var recommendConstructor = options.recommendConstructor;
 
@@ -252,13 +257,25 @@ var __initGraph__ = function(neo4jrestful) {
       cb = options;
       options = undefined;
     }
-    this.neo4jrestful.stream(cypherQuery, options, function(data, response) {
+    this.neo4jrestful.stream(cypherQuery, options, function(rowsColumns, response) {
       // neo4jrestful alerady created an object, but not with a recommend constructor
       self._columns_ = response._columns_;
-      if ((data) && (typeof data === 'object') && (data._response_)) {
-        data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+      // console.log(response._response_.body)
+      for (var row = 0; row < rowsColumns.length; row++) {
+        var data = rowsColumns[row];
+        if ((data) && (data.constructor === Array)) {
+          for (var column = 0; column < rowsColumns[row].length; column++) {
+            data = rowsColumns[row][column];
+            if ((data) && (typeof data === 'object') && (data._response_)) {
+              rowsColumns[row][column] = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+            }
+          }
+        } else {
+          rowsColumns[row] = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+        }
       }
-      cb(data, self);
+      
+      cb(rowsColumns, self);
     });
     return this;
   }
