@@ -467,7 +467,7 @@ var __initGraph__ = function(neo4jrestful) {
         });
     }
     if (parts.length > 0)
-      returnStatement = pats.join(', ');
+      returnStatement = parts.join(', ');
     if (distinct === true)
       this._query_history_.push({ RETURN_DISTINCT: returnStatement });
     else
