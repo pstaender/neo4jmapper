@@ -301,10 +301,7 @@ describe 'Neo4jMapper', ->
             expect(count).to.be.above 0
             iterationsCount = 0;
             count = 10 if count > 10
-            # console.log Person.findAll().limit(count-1).toQueryString()
             Person.findAll().limit(count-1).each (data, res, debug) ->
-              # console.log data
-              return
               if data
                 expect(data._response_.self).to.be.a 'string'
                 expect(data.labels.constructor).to.be.equal Array

@@ -122,9 +122,22 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  Graph.prototype.__indexOfLabelColumn = function(columns) {
+    if (typeof columns === 'undefined')
+      columns = self._columns_;
+    return _.indexOf(columns, 'labels(n)');
+  }
+
+  Graph.prototype.__removeLabelColumnFromArray = function(array, columnIndexOfLabel) {
+    if (typeof columnIndexOfLabel !== 'number')
+      columnIndexOfLabel = this.__indexOfLabelColumn();
+    return array.slice(columnIndexOfLabel-1, 1);
+  }
+
   Graph.prototype.__sortOutLabelColumn = function(result) {
     var nodeLabels = null;
-    var nodeLabelsColumn = _.indexOf(result.columns, 'labels(n)');
+    var nodeLabelsColumn = this.__indexOfLabelColumn(result.columns);
+    var self = this;
     if (nodeLabelsColumn >= 0) {
       // we have a 'labels(n)' column
       nodeLabels = [];
@@ -132,10 +145,10 @@ var __initGraph__ = function(neo4jrestful) {
         nodeLabels.push(row[nodeLabelsColumn]);
       });
       result.data.forEach(function(row, i){
-        result.data[i] = result.data[i].slice(nodeLabelsColumn-1, 1);
+        result.data[i] = self.__removeLabelColumnFromArray(result.data[i], nodeLabelsColumn);
       });
       // remove labels column from result
-      this._columns_ = this._columns_.slice(nodeLabelsColumn-1, 1);
+      this._columns_ = self.__removeLabelColumnFromArray(this._columns_, nodeLabelsColumn);
     }
     return nodeLabels;
   }
@@ -260,14 +273,30 @@ var __initGraph__ = function(neo4jrestful) {
     this.neo4jrestful.stream(cypherQuery, options, function(data, response) {
       // neo4jrestful alerady created an object, but not with a recommend constructor
       self._columns_ = response._columns_;
+      if (self._resortResults_) {
+        // remove [ 'n', 'labels(n)' ] labels(n) column
+        var indexOfLabelColumn = self.__indexOfLabelColumn(self._columns_);
+        if (indexOfLabelColumn >= 0)
+          self._columns_ = self.__removeLabelColumnFromArray(self._columns_, indexOfLabelColumn);
+      }
       if ((data) && (typeof data === 'object')) {
         if (data.constructor === Array) {
+          var labels = null;
+          if ((self._resortResults_) && (indexOfLabelColumn >= 0)) {
+            labels = data[indexOfLabelColumn];
+            data = self.__removeLabelColumnFromArray(data, indexOfLabelColumn);
+            if (data.length === 1)
+              data = data[0];
+          }
           for (var column = 0; column < data.length; column++) {
-            data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
+            if ((data[column]) && (data[column]._response_))
+              data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
           }
         } else {
-          data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+          if ((data) && (data._response_))
+            data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
         }
+        data.setLabels(labels);
       }
       cb(data, self);
     });
