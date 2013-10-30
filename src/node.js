@@ -518,7 +518,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.save = function(cb) {
     var self = this;
     var labels = (self.labels.length > 0) ? self.labels : null;
-    return self.onBeforeSave(self, function(err) {
+    return self._onBeforeSave(self, function(err) {
       // don't execute if an error is passed through
       if ((typeof err !== 'undefined')&&(err !== null))
         cb(err, null);
@@ -527,13 +527,20 @@ var __initNode__ = function(neo4jrestful, Graph) {
           // assign labels back
           if (labels)
             self.labels = labels;
-          self.onAfterSave(err, self, cb, debug);
+          self._onAfterSave(err, self, cb, debug);
         });
     });
   }
 
-  Node.prototype.onBeforeSave = function(node, next) { next(null, null); }
-
+  Node.prototype._onBeforeSave = function(node, next) {
+    this.onBeforeSave(node, function(err) {
+      next(err);
+    });
+  }
+  
+  Node.prototype.onBeforeSave = function(node, next) {
+    next(null, null);
+  }
 
   Node.prototype.onSave = function(cb) {
     var self = this;
@@ -575,27 +582,33 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
   }
 
-  Node.prototype.onAfterSave = function(err, node, next, debug) {
-    // we use labelsAsArray to avoid duplicate labels
-    var labels = node.labels = node.labelsAsArray();
-    // cancel if we have an error here
-    if (err)
-      return next(err, node, debug);
-    if (labels.length > 0) {
-      // we need to post the label in an extra request
-      // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
-      node.addLabels(labels, function(labelError, notUseableData, debugLabel) {
-        // add label err if we have one
-        if (labelError)
-          err = labelError;
-        // add debug label if we have one
-        if (debug)
-          debug = (debugLabel) ? [ debug, debugLabel ] : debug;
+  Node.prototype._onAfterSave = function(err, node, next, debug) {
+    this.onAfterSave(err, node, function(err, node, debug) {
+      // we use labelsAsArray to avoid duplicate labels
+      var labels = node.labels = node.labelsAsArray();
+      // cancel if we have an error here
+      if (err)
         return next(err, node, debug);
-      });
-    } else {
-      return next(err, node, debug);
-    }
+      if (labels.length > 0) {
+        // we need to post the label in an extra request
+        // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
+        node.addLabels(labels, function(labelError, notUseableData, debugLabel) {
+          // add label err if we have one
+          if (labelError)
+            err = labelError;
+          // add debug label if we have one
+          if (debug)
+            debug = (debugLabel) ? [ debug, debugLabel ] : debug;
+          return next(err, node, debug);
+        });
+      } else {
+        return next(err, node, debug);
+      }
+    }, debug);
+  }
+
+  Node.prototype.onAfterSave = function(err, node, next, debug) {
+    return next(err, node, debug);
   }
 
   Node.prototype.update = function(data, cb) {
@@ -639,45 +652,58 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.load = function(cb, debug) {
     var self = this;
-    return this.onBeforeLoad(self, function(err, node) {
+    return this._onBeforeLoad(self, function(err, node) {
       if (err)
         cb(err, node, debug);
       else
-        self.onAfterLoad(node, cb, debug);
+        self._onAfterLoad(node, cb, debug);
     })
   }
 
-  Node.prototype.onBeforeLoad = function(node, next, debug) {
-    if (node.hasId()) {
-      var DefaultConstructor = this.recommendConstructor();
-      // To check that it's invoked by Noder::find() or Person::find()
-      var constructorNameOfStaticMethod = this.label || helpers.constructorNameOfFunction(DefaultConstructor);
+  Node.prototype._onBeforeLoad = function(node, next, debug) {
+    var self = this;
+    this.onBeforeLoad(node, function(node) {
+      if (node.hasId()) {
+        var DefaultConstructor = self.recommendConstructor();
+        // To check that it's invoked by Noder::find() or Person::find()
+        var constructorNameOfStaticMethod = self.label || helpers.constructorNameOfFunction(DefaultConstructor);
 
-      var _createNodeFromLabel = function(node, debug) {
-        // convert node to it's model if it has a distinct label and differs from constructor
-        if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {
-          node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
+        var _createNodeFromLabel = function(node, debug) {
+          // convert node to it's model if it has a distinct label and differs from constructor
+          if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {
+            node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
+          }
+          next(null, node, debug);
         }
-        next(null, node, debug);
-      }
 
-      if (node._skipLoadingLabels_) {
-        return _createNodeFromLabel(node, debug);
+        if (node._skipLoadingLabels_) {
+          return _createNodeFromLabel(node, debug);
+        } else {
+          node.allLabels(function(err, labels, debug) {
+            if (err)
+              return next(err, labels);
+            node.setLabels(labels);
+            _createNodeFromLabel(node, debug);
+          });
+        }
       } else {
-        node.allLabels(function(err, labels, debug) {
-          if (err)
-            return next(err, labels);
-          node.setLabels(labels);
-          _createNodeFromLabel(node, debug);
-        });
+        next(null, node);
       }
-    } else {
-      next(null, node);
-    }
+    });
+  }
+
+  Node.prototype.onBeforeLoad = function(node, next) {
+    return next(node);
+  }
+
+  Node.prototype._onAfterLoad = function(node, next) {
+    node._is_loaded_ = true;
+    this.onAfterLoad(node, function(err, node) {
+      next(err, node);
+    }); 
   }
 
   Node.prototype.onAfterLoad = function(node, next) {
-    node._is_loaded_ = true;
     next(null, node);
   }
 
