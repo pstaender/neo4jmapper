@@ -99,6 +99,18 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return null;
   }
 
+  Node.instantiateNodeAsModel = function(node, labels, options) {
+    if (typeof labels === 'string')
+      labels = [ labels ];
+    if ((labels) && (labels.length === 1)) {
+      var model = labels[0];
+      node = Node.convertNodeToModel(node, model);
+      node.setLabels(labels);
+      node.isPersisted(true);
+    }
+    return node;
+  }
+
   Node.__models__ = {};                             // contains all globally registered models
 
   Node.prototype.classification   = 'Node';         // only needed for toObject(), just for better identification of the object for the user

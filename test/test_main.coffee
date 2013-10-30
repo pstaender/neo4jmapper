@@ -303,8 +303,9 @@ describe 'Neo4jMapper', ->
             count = 10 if count > 10
             Person.findAll().limit(count-1).each (data, res, debug) ->
               if data
+                expect(data._constructor_name_).to.be.equal 'Person'
                 expect(data._response_.self).to.be.a 'string'
-                expect(data.labels.constructor).to.be.equal Array
+                expect(data.labels).to.be.eql [ 'Person' ]
                 expect(data.label).to.be.equal 'Person'
                 iterationsCount++
               else
@@ -315,6 +316,7 @@ describe 'Neo4jMapper', ->
                   iteration++
                   if node
                     expect(node.label).to.be null
+                    expect(node.labels).to.be.eql []
                   else
                     expect(iteration).to.be.equal 2
                     done()
@@ -1099,7 +1101,6 @@ describe 'Neo4jMapper', ->
             expect(err).to.be null
             expect(relationships).to.have.length 2
             for relationship, i in relationships
-              # console.log relationship.toObject()
               expect(relationship.id).to.be.above 0
               expect(relationship.data.since).to.be.equal 'years'
               expect(relationship.data.nested.values).to.be.equal true

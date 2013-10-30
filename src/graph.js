@@ -213,7 +213,6 @@ var __initGraph__ = function(neo4jrestful) {
       for (var column=0; column < result.data[row].length; column++) {
         var data = result.data[row][column];
         // try to create an instance if we have an object here
-        // console.log(result.data)
         var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, recommendConstructor) : data;
         result.data[row][column] = object;
 
@@ -288,15 +287,19 @@ var __initGraph__ = function(neo4jrestful) {
             if (data.length === 1)
               data = data[0];
           }
+          // console.log(data);
           for (var column = 0; column < data.length; column++) {
-            if ((data[column]) && (data[column]._response_))
+            if ((data[column]) && (data[column]._response_)) {
               data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
+              data[column] = self.neo4jrestful.Node.instantiateNodeAsModel(data[column], labels);
+            }
+              
           }
-        } else {
-          if ((data) && (data._response_))
-            data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
         }
-        data.setLabels(labels);
+      }
+      if ((data) && (data._response_)) {
+        data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+        data = self.neo4jrestful.Node.instantiateNodeAsModel(data, labels);
       }
       cb(data, self);
     });
