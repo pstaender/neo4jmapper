@@ -151,7 +151,7 @@ describe 'Neo4jMapper', ->
         expect(graph.neo4jrestful.responseTimeAsString()).to.match /^\d+(\.\d+)*\[s\]$/
         done()
 
-    it.only 'expect to query via Graph, with and without loading', (done) ->
+    it 'expect to query via Graph, with and without loading', (done) ->
       Node.registerModel 'Person', (err, Person) ->
         name = String(Date())
         new Person(name: name).save (err, alice) ->
@@ -173,7 +173,6 @@ describe 'Neo4jMapper', ->
                   relationship = result[0][1]
                   expect(person.label).to.be.equal 'Person'
                   # TODO: try native (no sorting of the result, no loading)
-                  # console.log(result)
                   expect(relationship.from.label).to.be.equal 'Person'
                   Graph
                     .start('n = node(*)')
@@ -274,7 +273,7 @@ describe 'Neo4jMapper', ->
           expect(i).to.be 1
           done()
 
-    it 'expect to query graph native and not native (not native by default)', (done) ->
+    it.skip 'expect to query graph native and not native (not native by default)', (done) ->
       name = String(Date())
       new Node({ name: name }).setLabel('Person').save (err, person) ->
         Graph.start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, found) ->
@@ -291,7 +290,7 @@ describe 'Neo4jMapper', ->
             expect(result.data[0][0].id).to.be.equal id
             done()
 
-  describe 'stream', ->
+  describe.skip 'stream', ->
 
     it 'expect to make a stream request on nodes and models', (SkipStreaming) (done) ->
       class Person extends Node

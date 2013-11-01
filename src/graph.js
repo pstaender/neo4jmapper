@@ -160,7 +160,7 @@ var __initGraph__ = function(neo4jrestful) {
     var loadRelationship = /relation/i.test(self._loadOnResult_);
     var loadPath = /path/i.test(self._loadOnResult_);
     var todo = 0;
-    var isLastObject = false;
+    var iterationDone = false;
 
     // if we have the native mode, return results instantly at this point
     // TODO: to be implemented
@@ -171,10 +171,17 @@ var __initGraph__ = function(neo4jrestful) {
     // increase the number of done jobs
     // resort the results if options is activated
     // and finally invoke the cb if we are done
-    var __increaseDone = function() {
-      if (todo >= 0) {
-        if (!isLastObject)
-          return false;
+    var __oneMoreJobDone = function() {
+      // console.log('2', todo)
+      if ((todo === 0)&&(iterationDone)) {
+
+        if (result.data.length === 0) {
+          // empty result
+          return cb(err, null, debug);
+        }
+
+        // if (!isLastObject)
+        //   return false;
         // all jobs are done
 
         // if is set to true, sort result:
@@ -210,45 +217,56 @@ var __initGraph__ = function(neo4jrestful) {
 
     for (var row=0; row < result.data.length; row++) {
       for (var column=0; column < result.data[row].length; column++) {
-        if ((row === result.data.length-1) && (column === result.data[row].length-1))
-          isLastObject = true;
         var data = result.data[row][column];
         // try to create an instance if we have an object here
         if ((typeof data === 'object') && (data !== null))
           self.neo4jrestful.createObjectFromResponseData(result.data[row][column], recommendConstructor);
         // result.data[row][column] = object;
+        var object = result.data[row][column];
 
 
-        (function(object, isLastObject) {
-          if (object) {
-            if ((object.classification === 'Node') && (loadNode)) {
-              var labels = nodeLabels.shift()
-              self.neo4jrestful.Node.instantiateNodeAsModel(object, labels);
-              todo++;
-              object.__skip_loading_labels__ = true;              
-              object.load(__increaseDone);
-            }
-            else if ((object.classification === 'Relationship') && (loadRelationship)) {
-              todo++;
-              object.load(__increaseDone);
-            }
-            else if ((object.classification === 'Path') && (loadPath)) {
-              todo++;
-              object.load(__increaseDone);
-            }
+        if (object) {
+          if ((object.classification === 'Node') && (loadNode)) {
+            var labels = nodeLabels.shift()
+            self.neo4jrestful.Node.instantiateNodeAsModel(object, labels);
+            todo++;
+            object.__skip_loading_labels__ = true;
+            object.load(__oneMoreJobDone);
           }
+          else if ((object.classification === 'Relationship') && (loadRelationship)) {
+            todo++;
+            object.load(__oneMoreJobDone);
+          }
+          else if ((object.classification === 'Path') && (loadPath)) {
+            todo++;
+            object.load(__oneMoreJobDone);
+          } else {
 
-          // if no loading is activated and at the last row+column, execute cb
-          if ((isLastObject) && (todo === 0))
-            __increaseDone();
+          }
+        }
 
-        })(result.data[row][column], isLastObject);
+        // if ((row === result.data.length-1) && (column === result.data[row].length-1))
+        //   isLastObject = true;
+
+        // // if no loading is activated and at the last row+column, execute cb
+        // if ((isLastObject) && (todo === 0))
+        //   __oneMoreJobDone();
+
+
       }
     }
-    if ((todo === 0) && (result.data.length === 0)) {
-      // empty result
-      return cb(err, null, debug);
-    }
+
+    iterationDone = true;
+    __oneMoreJobDone();
+
+    // console.log('1', todo)
+
+    // if ((todo === 0) && (result.data.length === 0)) {
+    //   // empty result
+    //   return cb(err, null, debug);
+    // } else if (todo === 0) {
+    //   __oneMoreJobDone();
+    // }
   }
 
   // Stream query
@@ -430,6 +448,7 @@ var __initGraph__ = function(neo4jrestful) {
     if (limit === NaN)
       throw Error('LIMIT must be an integer');
     this._query_history_.push({ LIMIT: limit });
+    this.cypher.limit = limit; // TODO: implement: if limit 1 only return { r } or null instead if [ { r } ]
     return this.exec(cb);
   }
 
