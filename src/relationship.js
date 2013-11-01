@@ -321,22 +321,35 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
   Relationship.prototype.load = function(cb) {
     var self = this;
-    this.onBeforeLoad(self, function(err, relationship){
+    this._onBeforeLoad(self, function(err, relationship){
       if (err)
         cb(err, relationship);
       else
-        self.onAfterLoad(relationship, cb);
+        self._onAfterLoad(relationship, cb);
     })
   }
 
+  Relationship.prototype._onBeforeLoad = function(relationship, next) {
+    var self = this;
+    return this.onBeforeLoad(relationship, function(err, relationship) {
+      if (relationship.hasId()) {
+        relationship.loadFromAndToNodes(function(err, relationship){
+          next(err, relationship);
+        });
+      } else {
+        next(null, relationship);
+      }
+    });
+  }
+
   Relationship.prototype.onBeforeLoad = function(relationship, next) {
-    if (relationship.hasId()) {
-      relationship.loadFromAndToNodes(function(err, relationship){
-        next(err, relationship);
-      });
-    } else {
-      next(null, relationship);
-    }
+    return next(null, relationship);
+  }
+
+  Relationship.prototype._onAfterLoad = function(relationship, next) {
+    return this.onAfterLoad(relationship, function(err, relationship) {
+      return next(null, relationship);
+    })
   }
 
   Relationship.prototype.onAfterLoad = function(relationship, next) {

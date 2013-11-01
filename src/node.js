@@ -99,12 +99,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return null;
   }
 
+  // if we have a distinct label, we will create a model from of it
   Node.instantiateNodeAsModel = function(node, labels, options) {
     if (typeof labels === 'string')
       labels = [ labels ];
     if ((labels) && (labels.length === 1)) {
       var model = labels[0];
-      node = Node.convertNodeToModel(node, model);
+      Node.convertNodeToModel(node, model);
       node.setLabels(labels);
       node.isPersisted(true);
     }
@@ -174,6 +175,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype._load_hook_reference_    = null;   // a reference to acticate or deactivate the load hook
 
   Node.prototype.__already_initialized__  = false;  // flag to avoid many initializations of a model
+
+  Node.prototype.__skip_loading_labels__  = null;   // is used in _onBeforeLoad() to prevent loading labels in an extra request
 
   // should **never** be changed
   // it's used to dictinct nodes and relationships
@@ -671,25 +674,32 @@ var __initNode__ = function(neo4jrestful, Graph) {
         var _createNodeFromLabel = function(node, debug) {
           // convert node to it's model if it has a distinct label and differs from constructor
           if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {
-            node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
+            Node.convertNodeToModel(node, node.label, DefaultConstructor);
           }
+          node.isPersisted(true);
           next(null, node, debug);
         }
-
-        if (node._skipLoadingLabels_) {
+        if (node.__skip_loading_labels__) {
           return _createNodeFromLabel(node, debug);
         } else {
-          node.allLabels(function(err, labels, debug) {
+          // only load labels if it's set to not loaded
+          return node.allLabels(function(err, labels, debug) {            
             if (err)
               return next(err, labels);
             node.setLabels(labels);
-            _createNodeFromLabel(node, debug);
+
+            return _createNodeFromLabel(node, debug);
           });
         }
-      } else {
-        next(null, node);
+      } else {        
+        return next(null, node);
       }
     });
+  }
+
+  Node.prototype.reload = function (cb) {
+    this._is_loaded_ = false;
+    this.load(cb);
   }
 
   Node.prototype.onBeforeLoad = function(node, next) {
@@ -2258,11 +2268,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.unregister_model   = Node.unregisterModel;
   Node.register_model     = Node.registerModel;
 
-  // only once
-  if ((typeof Graph.prototype === 'object') && (!Node.prototype._addParametersToCypher)) {
-    Node.prototype._addParametersToCypher         = Graph.prototype._addParametersToCypher;
-    Node.prototype._addParameterToCypher          = Graph.prototype._addParameterToCypher;
-  }
+  Node.prototype._addParametersToCypher = Graph.prototype._addParametersToCypher;
+  Node.prototype._addParameterToCypher  = Graph.prototype._addParameterToCypher;
 
   return neo4jrestful.Node = Node;
 }
