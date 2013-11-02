@@ -151,7 +151,7 @@ describe 'Neo4jMapper', ->
         expect(graph.neo4jrestful.responseTimeAsString()).to.match /^\d+(\.\d+)*\[s\]$/
         done()
 
-    it 'expect to query via Graph, with and without loading', (done) ->
+    it.skip 'expect to query via Graph, with and without loading', (done) ->
       Node.registerModel 'Person', (err, Person) ->
         name = String(Date())
         new Person(name: name).save (err, alice) ->
@@ -238,8 +238,7 @@ describe 'Neo4jMapper', ->
           alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
             graph = Graph.start('n = node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, found) ->
               expect(err).to.be null
-              expect(found).to.have.length 1
-              expect(found[0].data.name).to.be.equal name
+              expect(found.data.name).to.be.equal name
               done()
 
     it 'expect to get many columns of graph queries', (done) ->
@@ -273,19 +272,17 @@ describe 'Neo4jMapper', ->
           expect(i).to.be 1
           done()
 
-    it.skip 'expect to query graph native and not native (not native by default)', (done) ->
+    it 'expect to query graph native and not native (not native by default)', (done) ->
       name = String(Date())
       new Node({ name: name }).setLabel('Person').save (err, person) ->
         Graph.start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, found) ->
           expect(err).to.be null
-          expect(found).to.have.length 1
-          expect(found[0].label).to.be.equal 'Person'
-          id = found[0].id
+          expect(found.label).to.be.equal 'Person'
+          id = found.id
           expect(id).to.be.a 'number'
           Graph.disableProcessing().start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, result, debug) ->
             expect(err).to.be null
             expect(result.columns).to.have.length 1
-            expect(result.data).to.have.length 1
             expect(result.data[0]).to.have.length 1
             expect(result.data[0][0].id).to.be.equal id
             done()
@@ -465,12 +462,17 @@ describe 'Neo4jMapper', ->
         expect(value).to.be.equal shouldBe[i]
 
     it 'expect to find one specific node by id', (done) ->
-      node = new Node title: new Date().toString()
+      Person = Node.registerModel 'Person'
+      node = new Person title: new Date().toString()
+
       node.save ->
         Node.findById node.id, (err, found) ->
           expect(err).to.be null
           expect(found.data.title).to.be.equal node.data.title
           expect(found.id).to.be.equal node.id
+          expect(found.label).to.be.equal 'Person'
+          expect(found.labels).to.be.eql [ 'Person' ]
+          expect(found._constructor_name_).to.be.equal 'Person'
           node.remove ->
             done()
 
@@ -901,11 +903,55 @@ describe 'Neo4jMapper', ->
         expect(savedPerson.label).to.be.equal 'Person'
         done()
 
+    it 'expect to instantiateNodeAsModel() via convertNodeToModel()', ->
+      class Person extends Node
+        fullname: -> @data.name + " " + @data.surname
+      Node.registerModel(Person)
+      n = new Node({ name: 'Philipp', surname: 'Staender' })
+      n.id = n._id_ = 123
+      expect(n.toObject()).to.be.eql {
+        id: 123,
+        classification: 'Node',
+        data: { name: 'Philipp', surname: 'Staender' },
+        uri: null,
+        label: null,
+        labels: []
+      }
+      n = Node.convertNodeToModel(n, 'Person')
+      n.setLabels('Person');
+      expect(n.toObject()).to.be.eql {
+        id: 123,
+        classification: 'Node',
+        data: { name: 'Philipp', surname: 'Staender' },
+        uri: null,
+        label: 'Person',
+        labels: [ 'Person' ]
+      }
+      expect(n._constructor_name_).to.be.equal 'Person'
+      expect(n.fullname()).to.be.equal 'Philipp Staender'
+      n = new Node({ name: 'Philipp', surname: 'Staender' })
+      n.id = n._id_ = 123
+      n = Node.instantiateNodeAsModel(n, 'Person')
+      expect(n.toObject()).to.be.eql {
+        id: 123,
+        classification: 'Node',
+        data: { name: 'Philipp', surname: 'Staender' },
+        uri: null,
+        label: 'Person',
+        labels: [ 'Person' ]
+      }
+      expect(n._constructor_name_).to.be.equal 'Person'
+      expect(n.fullname()).to.be.equal 'Philipp Staender'
+
+
     it 'expect to find node including labels', (done) ->
       class Person extends Node
+        fullname: -> @data.name
       Node.registerModel(Person)
       new Person({ name: 'Alice' }).save (err, alice) ->
         Person.findById alice.id, (err, alice) ->
+          
+          # expect(alice.fullname).to.be.a 'function'
           expect(alice._constructor_name_).to.be.equal 'Person'
           expect(alice.label).to.be.equal 'Person'
           done()
@@ -916,7 +962,7 @@ describe 'Neo4jMapper', ->
       new Person({ name: 'Alice' }).save (err, a) ->
         Person::findById a.id, (err, alice) ->
           expect(err).to.be null
-          expect(alice.label).to.be.equal 'Person'
+          expect(alice.label).to.be null
           expect(alice._is_loaded_).to.be null
           Person::enableLoading()
           Person::findById alice.id, (err, alice) ->

@@ -172,17 +172,12 @@ var __initGraph__ = function(neo4jrestful) {
     // resort the results if options is activated
     // and finally invoke the cb if we are done
     var __oneMoreJobDone = function() {
-      // console.log('2', todo)
       if ((todo === 0)&&(iterationDone)) {
 
         if (result.data.length === 0) {
           // empty result
           return cb(err, null, debug);
         }
-
-        // if (!isLastObject)
-        //   return false;
-        // all jobs are done
 
         // if is set to true, sort result:
         // * return only the data (columns are attached to graph._columns_)
@@ -196,6 +191,10 @@ var __initGraph__ = function(neo4jrestful) {
               cleanResult[row] = cleanResult[row][0];
             }
           }
+          if ((self.cypher.limit === 1)) {
+            // if we have a limit of 1 we can only get data[0] or null
+            cleanResult = (cleanResult.length === 1) ? cleanResult[0] : null;
+          }
           cb(err, cleanResult, debug);
         } else {
           cb(err, result, debug);
@@ -205,12 +204,15 @@ var __initGraph__ = function(neo4jrestful) {
       }
     }
 
+
+
     if ((!result.data)&&(result.length === 1)) {
       return cb(err, result[0], debug);
     }
 
     // check for node labels column (is attached by query builder) 
     // copy to a new array and remove column from result to the results cleaner
+    var nodeLabelsColumn = this.__indexOfLabelColumn(result.columns);
     var nodeLabels = (this._resortResults_) ? this.__sortOutLabelColumn(result) : null;
 
     var recommendConstructor = options.recommendConstructor;
@@ -224,13 +226,15 @@ var __initGraph__ = function(neo4jrestful) {
         // result.data[row][column] = object;
         var object = result.data[row][column];
 
-
         if (object) {
           if ((object.classification === 'Node') && (loadNode)) {
-            var labels = nodeLabels.shift()
-            self.neo4jrestful.Node.instantiateNodeAsModel(object, labels);
-            todo++;
-            object.__skip_loading_labels__ = true;
+            if (nodeLabelsColumn >= 0) {
+              // if we have labels(n) column
+              object.__skip_loading_labels__ = true;
+              var labels = nodeLabels.shift()
+              object = self.neo4jrestful.Node.instantiateNodeAsModel(object, labels);
+            }
+            todo++;            
             object.load(__oneMoreJobDone);
           }
           else if ((object.classification === 'Relationship') && (loadRelationship)) {
@@ -240,18 +244,10 @@ var __initGraph__ = function(neo4jrestful) {
           else if ((object.classification === 'Path') && (loadPath)) {
             todo++;
             object.load(__oneMoreJobDone);
-          } else {
-
           }
+
+          result.data[row][column] = object;
         }
-
-        // if ((row === result.data.length-1) && (column === result.data[row].length-1))
-        //   isLastObject = true;
-
-        // // if no loading is activated and at the last row+column, execute cb
-        // if ((isLastObject) && (todo === 0))
-        //   __oneMoreJobDone();
-
 
       }
     }
@@ -259,14 +255,6 @@ var __initGraph__ = function(neo4jrestful) {
     iterationDone = true;
     __oneMoreJobDone();
 
-    // console.log('1', todo)
-
-    // if ((todo === 0) && (result.data.length === 0)) {
-    //   // empty result
-    //   return cb(err, null, debug);
-    // } else if (todo === 0) {
-    //   __oneMoreJobDone();
-    // }
   }
 
   // Stream query
@@ -303,7 +291,7 @@ var __initGraph__ = function(neo4jrestful) {
           for (var column = 0; column < data.length; column++) {
             if ((data[column]) && (data[column]._response_)) {
               data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
-              self.neo4jrestful.Node.instantiateNodeAsModel(data[column], labels);
+              data[column] = self.neo4jrestful.Node.instantiateNodeAsModel(data[column], labels);
             }
               
           }
@@ -311,7 +299,7 @@ var __initGraph__ = function(neo4jrestful) {
       }
       if ((data) && (data._response_)) {
         data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
-        self.neo4jrestful.Node.instantiateNodeAsModel(data, labels);
+        // data = self.neo4jrestful.Node.instantiateNodeAsModel(data, labels);
       }
       cb(data, self);
     });

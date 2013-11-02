@@ -42,7 +42,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   // ### Initialize all values on node object
   Node.prototype.init = function(data, id) {
-    this.id = id || null;
+    this.setId(id || null);
     this.data = _.extend({}, data);
     this.resetQuery();
     if (id) {
@@ -94,7 +94,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
       }
       var Class = Node.registered_model(model) || fallbackModel;
       var singleton = new Class();
-      return node.copyTo(singleton);
+      node.copyTo(singleton);
+      return singleton;
     }
     return null;
   }
@@ -105,10 +106,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
       labels = [ labels ];
     if ((labels) && (labels.length === 1)) {
       var model = labels[0];
-      Node.convertNodeToModel(node, model);
-      node.setLabels(labels);
-      node.isPersisted(true);
+      node = Node.convertNodeToModel(node, model);
     }
+    node.setLabels(labels);
+    node.isPersisted(true);
     return node;
   }
 
@@ -263,7 +264,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       n.label  = this.label;
     n.uri = this.uri;
     n._response_ = _.extend(this._response_);
-    return n;
+    return null;
   }
 
   // Resets the query **but** should not be used since you should start from Node.… instead
@@ -979,11 +980,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
       var identifier = query.node_identifier || this.__TYPE_IDENTIFIER__;
       // put in where clause if one or no START statement exists
       if (Object.keys(this.cypher.segments.start).length <= 1) {
+        var id = query.by_id;
         if (this.cypher.useParameters) {
           this.cypher.segments.start.n = 'node({_node_id_})';//'node('+query.by_id+')'
-          this.cypher.addParameter( { _node_id_: query.by_id } );
+          this.cypher.addParameter( { _node_id_: id } );
         } else {
-          this.cypher.segments.start.n = 'node('+query.by_id+')';
+          this.cypher.segments.start.n = 'node('+id+')';
         }
 
       }
@@ -1072,20 +1074,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
       request = _.extend({ type: 'get', data: {}, url: null }, cypher_or_request);
 
     if (typeof cb === 'function') {
-      var cypher = this.toCypherQuery();
-      // reset node, because it might be called from prototype
-      // if we have only one return property, we resort this
-      if ( (this.cypher.segments.return_properties)&&(this.cypher.segments.return_properties.length === 1) ) {
-        if (cypherQuery)
-          this.query(cypherQuery, cb);
-        else if (request)
-          this.query(request, cb);
-        else
-          // default, use the build cypher query
-          this.query(cypher, cb);
-      } else {
-        this.query(cypher, cb);
-      }
+      this.cypher.parameters = this.toQuery().parameters;
+      return this.query(this.toCypherQuery(), cb);
     }
     return this;
   }
@@ -1102,6 +1092,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
     options.cypher = _.extend(this.cypher.segments, { parameters: this.cypher.parameters });
 
     var graph = Graph.start();
+
+    // of loading is deactivated on Node, disable on Graph here as well
+    if (!this.load)
+      graph.disableLoading();
 
     // apply option values from Node to request
     if (this.label)
@@ -1732,6 +1726,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return (label) ? Node.registered_model(label) || Fallback : Fallback;
   }
 
+  Node.prototype.setId = function(id) {
+    this.id = this._id_ = id;
+    return this;
+  }
+
   /*
    * Label methods
    */
@@ -1748,6 +1747,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.setLabels = function(labels) {
+    if (typeof labels === 'string') {
+      labels = [ labels ];
+    }
     if (_.isArray(labels)) {
       this.labels = labels;
     }
@@ -1922,27 +1924,17 @@ var __initNode__ = function(neo4jrestful, Graph) {
       throw Error('You have to give a number like argument as id');
     self._query_history_.push({ findById: id });
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
-      // to reduce calls we'll make a specific restful request for one node
-      Graph
-        .start('n = node('+id+')')
-        .return('n as node, labels(n) AS labels')
-        .disableLoading()
-        .exec(function(err, result, debug) {
-          if (err) {
-            // we ignore entity not found exception and return a null instead
-            if (err.exception === 'EntityNotFoundException')
-              return cb(null, null, debug);
-            else
-              return cb(err, result, debug);
-          }
-          var node = result[0][0];
-          var labels = result[0][1];
-          node.setLabels(labels);
-          if ((typeof self.load === 'function') && (typeof node.load === 'function'))
-            node.load(cb, debug);
-          else
-            cb(null, node, debug);
-        });
+      var nodeSingleton = this.constructor.create().setId(id);
+      if (!this.load)
+        nodeSingleton.disableLoading();
+      nodeSingleton.exec(function(err, found, debug) {
+        if ((err)&&(err.exception === 'EntityNotFoundException')) {
+          return cb(null, null, debug);
+        } else if (found) {
+          found = found[0];
+        }
+        cb(err, found, debug);
+      });
       return this;
     } else {
       self.cypher.segments.by_id = Number(id);
@@ -2196,6 +2188,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.convertNodeToModel = function(node, model, fallbackModel) {
+    if (typeof fallbackModel === 'undefined')
+      fallbackModel = this;
     return this.prototype.convertNodeToModel(node, model, fallbackModel);
   }
 
