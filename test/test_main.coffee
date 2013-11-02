@@ -1137,6 +1137,17 @@ describe 'Neo4jMapper', ->
                           expect(result).to.have.length 3
                           done()
 
+    it 'expect to get relations to labels', (done) ->
+      Person = Node.registerModel 'Person'
+      Person.create { name: generateUID() }, (err, p1) ->
+        Person.create name: generateUID(), (err, p2) ->
+          Node.create name: generateUID(), (err, node) ->
+            node.createRelationTo p1, 'know', -> node.createRelationTo p2, 'know', ->
+              node.outgoingRelationsTo 'Person', (err, relationships) ->
+                expect(err).to.be null
+                expect(relationships).to.have.length 2
+                done()
+
     it 'expect to create and update relationships with default values', (done) ->
       Relationship.setDefaultFields
         created_on: -> new Date().getTime()

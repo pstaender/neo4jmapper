@@ -145,6 +145,12 @@ describe 'Neo4jMapper (cypher queries)', ->
             'START n = node(*) MATCH (n)<-[r]-() RETURN r;'
           ]
 
+        'Node.findById(123).incomingRelations("Person")':
+          [
+             Node.findById(123).incomingRelationsFrom("Person")
+            'START n = node(123) MATCH (n)<-[r]-(:Person) RETURN r;'
+          ]
+
         'Actor.findAll().incomingRelations()':
           [
              Actor.findAll().incomingRelations()
