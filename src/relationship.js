@@ -330,7 +330,6 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   }
 
   Relationship.prototype._onBeforeLoad = function(relationship, next) {
-    var self = this;
     return this.onBeforeLoad(relationship, function(err, relationship) {
       if (relationship.hasId()) {
         relationship.loadFromAndToNodes(function(err, relationship){

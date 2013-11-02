@@ -285,7 +285,7 @@ describe 'Neo4jMapper', ->
             expect(result.data[0][0].id).to.be.equal id
             done()
 
-  describe.skip 'stream', ->
+  describe 'stream', ->
 
     it 'expect to make a stream request on nodes and models', (SkipStreaming) (done) ->
       class Person extends Node
@@ -298,7 +298,6 @@ describe 'Neo4jMapper', ->
             iterationsCount = 0;
             count = 10 if count > 10
             Person.findAll().limit(count-1).each (data, res, debug) ->
-              console.log(data.toObject())
               if data
                 expect(data._constructor_name_).to.be.equal 'Person'
                 expect(data._response_.self).to.be.a 'string'

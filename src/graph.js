@@ -270,14 +270,17 @@ var __initGraph__ = function(neo4jrestful) {
       cb = options;
       options = undefined;
     }
+    var i = 0; // counter is used to prevent changing _columns_ more than once
+    var indexOfLabelColumn = null;
     this.neo4jrestful.stream(cypherQuery, options, function(data, response) {
       // neo4jrestful alerady created an object, but not with a recommend constructor
       self._columns_ = response._columns_;
-      if (self._resortResults_) {
-        // remove [ 'n', 'labels(n)' ] labels(n) column
-        var indexOfLabelColumn = self.__indexOfLabelColumn(self._columns_);
-        if (indexOfLabelColumn >= 0)
+      if ((self._resortResults_)&&(i === 0)) {
+        indexOfLabelColumn = self.__indexOfLabelColumn(self._columns_);
+        if (indexOfLabelColumn >= 0) {
+          // remove [ 'n', 'labels(n)' ] labels(n) column        
           self._columns_ = self.__removeLabelColumnFromArray(self._columns_, indexOfLabelColumn);
+        }
       }
       if ((data) && (typeof data === 'object')) {
         if (data.constructor === Array) {
@@ -301,6 +304,7 @@ var __initGraph__ = function(neo4jrestful) {
         data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
         // data = self.neo4jrestful.Node.instantiateNodeAsModel(data, labels);
       }
+      i++;
       cb(data, self);
     });
     return this;

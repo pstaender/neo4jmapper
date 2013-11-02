@@ -101,7 +101,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   // if we have a distinct label, we will create a model from of it
-  Node.instantiateNodeAsModel = function(node, labels, options) {
+  Node.instantiateNodeAsModel = function(node, labels) {
     if (typeof labels === 'string')
       labels = [ labels ];
     if ((labels) && (labels.length === 1)) {
@@ -954,10 +954,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
         for (var i = 0; i < matches.length; i++) {
           query.return_properties.push(matches[i].replace(/^[\s\,]*([a-z]+).*$/i,'$1'));
         }
-        // if ((Graph.request().version >= 2)&&(query.return_properties.length === 1)&&(query.return_properties[0] === 'n')) {
-        //   // try adding labels if we have only n[node] as return propert
-        //   query.return_properties.push('labels(n)');
-        // }
         query.return_properties = query.return_properties.join(', ');
       }
     }
@@ -977,7 +973,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
     // rule(s) for findById
     if (query.by_id > 0) {
-      var identifier = query.node_identifier || this.__TYPE_IDENTIFIER__;
       // put in where clause if one or no START statement exists
       if (Object.keys(this.cypher.segments.start).length <= 1) {
         var id = query.by_id;
