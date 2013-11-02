@@ -678,8 +678,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
             Node.convertNodeToModel(node, node.label, DefaultConstructor);
           }
           node.isPersisted(true);
+          node.__skip_loading_labels__ = null;
           next(null, node, debug);
         }
+
         if (node.__skip_loading_labels__) {
           return _createNodeFromLabel(node, debug);
         } else {

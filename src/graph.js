@@ -123,9 +123,20 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.prototype.__indexOfLabelColumn = function(columns) {
+    var labelColumns = this.__indexOfLabelColumns(columns);
+    var keys = Object.keys(labelColumns);
+    return (keys.length === 1) ? keys[0] : -1;
+  }
+
+  Graph.prototype.__indexOfLabelColumns = function(columns) {
+    var labelColumns = {};
     if (typeof columns === 'undefined')
-      columns = self._columns_;
-    return _.indexOf(columns, 'labels(n)');
+      columns = this._columns_;
+    for (var i=0; i < columns.length; i++) {
+      if (/^labels\([a-zA-Z]+\)$/.test(columns[i]))
+        labelColumns[i] = columns[i];
+    }
+    return labelColumns;
   }
 
   Graph.prototype.__removeLabelColumnFromArray = function(array, columnIndexOfLabel) {
