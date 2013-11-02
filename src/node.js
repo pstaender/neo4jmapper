@@ -1769,9 +1769,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.allLabels = function(cb) {
-    if ( (this.hasId()) && (_.isFunction(cb)) ) {
-      return Graph.request().get('node/'+this.id+'/labels', cb);
-    }
+    return this.requestLabels(cb);
   }
 
   Node.prototype.createLabel = function(label, cb) {
