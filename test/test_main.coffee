@@ -151,7 +151,7 @@ describe 'Neo4jMapper', ->
         expect(graph.neo4jrestful.responseTimeAsString()).to.match /^\d+(\.\d+)*\[s\]$/
         done()
 
-    it.skip 'expect to query via Graph, with and without loading', (done) ->
+    it 'expect to query via Graph, with and without loading', (done) ->
       Node.registerModel 'Person', (err, Person) ->
         name = String(Date())
         new Person(name: name).save (err, alice) ->
@@ -165,12 +165,10 @@ describe 'Neo4jMapper', ->
                 .enableLoading('node|relationship')
                 .limit(1)
                 .exec (err, result) ->
-
                   expect(err).to.be null
-                  expect(result).to.have.length 1
-                  expect(result[0]).to.have.length 2
-                  person = result[0][0]
-                  relationship = result[0][1]
+                  expect(result).to.have.length 2
+                  person = result[0]
+                  relationship = result[1]
                   expect(person.label).to.be.equal 'Person'
                   # TODO: try native (no sorting of the result, no loading)
                   expect(relationship.from.label).to.be.equal 'Person'
@@ -300,6 +298,7 @@ describe 'Neo4jMapper', ->
             iterationsCount = 0;
             count = 10 if count > 10
             Person.findAll().limit(count-1).each (data, res, debug) ->
+              console.log(data.toObject())
               if data
                 expect(data._constructor_name_).to.be.equal 'Person'
                 expect(data._response_.self).to.be.a 'string'

@@ -191,7 +191,7 @@ var __initGraph__ = function(neo4jrestful) {
               cleanResult[row] = cleanResult[row][0];
             }
           }
-          if ((self.cypher.limit === 1)) {
+          if ((self.cypher.limit === 1) && (cleanResult.length === 1)) {
             // if we have a limit of 1 we can only get data[0] or null
             cleanResult = (cleanResult.length === 1) ? cleanResult[0] : null;
           }
