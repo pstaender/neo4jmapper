@@ -39,11 +39,12 @@ var sortStringAndCallbackArguments = function(string, callback) {
 }
 
 var getIdFromObject = function(o) {
-  if ((typeof o === 'object') && (o.id))
-    return o.id;
+  if ((typeof o === 'object') && (!isNaN(o._id_)))
+    return o._id_;
   if (!isNaN(parseInt(o)))
     return parseInt(o);
-  return null;
+  // else
+  return o.id || null;
 }
 
 // source: https://gist.github.com/penguinboy/762197

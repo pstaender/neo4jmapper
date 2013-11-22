@@ -157,8 +157,11 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       if ((typeof err !== 'undefined')&&(err !== null))
         cb(err, null);
       else
-        self.onSave(function(err, node, debug) {
-          self.onAfterSave(self, cb, debug);
+        self.onSave(function(err, relationship, debug) {
+          if (err)
+            return cb(err, relationship, debug);
+          else
+            return self.onAfterSave(self, cb, debug);
         });
     });
   }
@@ -179,9 +182,9 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
     if (!this.type)
       throw Error("Type for a relationship is mandatory, e.g. `relationship.type = 'KNOW'`");
-    if ((!this.from)||(!this.from.id))
+    if ((!(this.from))||(isNaN(this.from.id)))
       throw Error('Relationship requires a `relationship.from` startnode');
-    if ((!this.to)||(!this.to.id))
+    if ((!(this.to))||(isNaN(this.to.id)))
       throw Error('Relationship requires a `relationship.to` endnode');
 
     var url = null;
@@ -361,7 +364,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
         .start('r = relationship('+this.id+')')
         .return('r').toQuery();
     }
-    return new helpers.CypherQuery().toQuery();
+    return Graph.start('r = relationship(*)').toQuery();
   }
 
   Relationship.prototype.toQueryString = Node.prototype.toQueryString;
@@ -398,8 +401,8 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     next(null, null);
   }
 
-  Relationship.prototype.onAfterSave = function(node, next, debug) {
-    return next(null, node, debug);
+  Relationship.prototype.onAfterSave = function(relationship, next, debug) {
+    return next(null, relationship, debug);
   }
 
   Relationship.prototype.resetQuery = function() {

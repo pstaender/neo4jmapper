@@ -40,7 +40,7 @@ SkipStreaming = (a) -> SkipInBrowser(a)
 
 generateUID = -> String(new Date().getTime())+String(Math.round(Math.random()*10000000))
 
-
+_trim = (s) -> s.trim().replace(/\s+/g, ' ')
 
 describe 'Neo4jMapper', ->
 
@@ -49,7 +49,30 @@ describe 'Neo4jMapper', ->
       expect(err).to.be null
       expect(exact_version).to.be.a 'string'
       expect(client.version >= 2).to.be true
-      done()
+      Node.create { name: 'dummy to avoid id=0 ' }, (err, node) ->
+        # since v2RC1, first node created has is=0, turns into problem if you create a relationship on it (nullpointer exception)
+        done()
+
+  describe 'generated cypher queries', ->
+
+    it 'expect to get a query on node + relationship instances', (done) ->
+      # strictly, it should be in buildQueries; but buildQueries should have no integration tests (this is one)
+      Node.create({ name: 'whatever' }).setLabels(['Person']).save (err, node1) ->
+        id = node1.id
+        # console.log id, node1.toQuery().toString()
+        expect(id).to.be.a 'number'
+        expect(_trim(node1.toQuery().toString())).to.match /^START n = node\(\d+\) RETURN n, labels\(n\);/
+        Graph.custom node1, (err, found) ->
+          expect(err).to.be null
+          expect(found[0].id).to.be node1.id
+          Node.create { name: 'whatever' }, (err, node2) ->
+            node2.createRelationTo node1, 'connected', (err, rel) ->
+              expect(err).to.be null
+              expect(_trim(rel.toQueryString())).to.match /START r = relationship\(\d+\) RETURN r;/
+              Relationship.create 'know', { since: 'years' }, node1, node2, (err, relationship) ->
+                expect(err).to.be null
+                expect(_trim(relationship.toQueryString())).to.match /START r = relationship\(\d+\) RETURN r;/
+                done()
 
   describe 'client', ->
 

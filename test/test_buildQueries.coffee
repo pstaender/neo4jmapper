@@ -50,21 +50,6 @@ describe 'Neo4jMapper (cypher queries)', ->
         err = e
       expect(err).not.to.be null
 
-    it 'expect to get a query on node + relationship instances', (done) ->
-      Node.create({ name: 'whatever' }).setLabels(['Person']).save (err, node1) ->
-        id = node1.id
-        expect(_trim(node1.toQuery().toString())).to.match /^START n = node\(\d+\) RETURN n, labels\(n\);/
-        Graph.custom node1, (err, found) ->
-          expect(err).to.be null
-          expect(found[0].id).to.be node1.id
-          Node.create { name: 'whatever' }, (err, node2) ->
-            node2.createRelationTo node1, 'connected', (err, rel) ->
-              expect(_trim(rel.toQueryString())).to.match /START r = relationship\(\d+\) RETURN r;/
-              Relationship.create 'know', { since: 'years' }, node1, node2, (err, relationship) ->
-                expect(err).to.be null
-                expect(_trim(relationship.toQueryString())).to.match /START r = relationship\(\d+\) RETURN r;/
-                done()
-
     it 'expect to build various kind of queries', ->
 
       # we will deactivate temporarily parameter seperating for testing the query building

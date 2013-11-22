@@ -879,16 +879,16 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var label = (query.label) ? ':'+query.label : '';
 
     if ((this.cypher.segments.start) && (this.cypher.segments) && (Object.keys(this.cypher.segments.start).length < 1)) {
-      if (query.from > 0) {
+      if (_.isNumber(query.from)) {
         query.start = {};
         query.start.n = 'node('+query.from+')';
         query.return_properties.push('n');
       }
-      if (query.to > 0) {
+      if (_.isNumber(query.to)) {
         query.start.m = 'node('+query.to+')';
         query.return_properties.push('m');
       }
-    }    
+    }
 
     var relationships = '';
 
@@ -976,12 +976,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
 
     // rule(s) for findById
-    if (query.by_id > 0) {
+    if (_.isNumber(query.by_id)) {
       // put in where clause if one or no START statement exists
       if (Object.keys(this.cypher.segments.start).length <= 1) {
         var id = query.by_id;
         if (this.cypher.useParameters) {
-          this.cypher.segments.start.n = 'node({_node_id_})';//'node('+query.by_id+')'
+          this.cypher.segments.start.n = 'node({_node_id_})';
           this.cypher.addParameter( { _node_id_: id } );
         } else {
           this.cypher.segments.start.n = 'node('+id+')';
@@ -1592,7 +1592,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.createRelation = function(options, cb) {
     var self = this;
     options = _.extend({
-      from_id: this.id,
+      from_id: this._id_,
       to_id: null,
       type: null,
       // unique: false ,// TODO: implement!
@@ -1603,8 +1603,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
       throw Error("You have to give the type of relationship, e.g. 'knows|follows'");
     if (options.properties)
       options.properties = helpers.flattenObject(options.properties);
-
-
     if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
       if (options.distinct) {
         Node.findById(options.from_id).outgoingRelationsTo(options.to_id, options.type, function(err, result) {
@@ -1918,10 +1916,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     var id = Number(id);
-    if (!id)
-      throw Error('You have to give a number like argument as id');
+    if (isNaN(id))
+      throw Error('You have to use a number as id argument');
     self._query_history_.push({ findById: id });
-    if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
+    if (typeof cb === 'function') {
       var nodeSingleton = this.constructor.create().setId(id);
       if (!this.load)
         nodeSingleton.disableLoading();
