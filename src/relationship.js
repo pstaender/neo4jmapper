@@ -213,23 +213,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
       // UPDATE properties
       url = 'relationship/'+this._id_+'/properties';
-      Graph.request().put(url, { data: relationshipPropertiesFlatten }, function(err, res, debug) {
-        if (err) {
-          return cb(err, res, debug);
-        } else {
-          var relationType = self.type;
-          // update `type` and `to`
-          Graph.request().put('relationship/'+self.id, { data: { to: self.to.uri, type: relationType } }, function(err, res, debugUpdate) {
-            if (err) {
-              return cb(err, res, debugUpdate);
-            } else {
-              self.type = self._type_ = relationType;
-              self.data = _.extend(relationshipProperties);
-              return cb(err, self, [ debug, debugUpdate ]);
-            }
-          })
-        }
-      });
+      return Graph.request().put(url, { data: relationshipPropertiesFlatten }, cb);
     } else {
       // CREATE
       url = 'node/'+this.from.id+'/relationships';
