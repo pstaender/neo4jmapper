@@ -355,7 +355,7 @@ var __initGraph__ = function(neo4jrestful) {
       // count labels
       query = "MATCH "+type+" RETURN "+type[0]+";";
     else
-      query = "START n=node(*) MATCH n-[r?]-() RETURN count(n), count(r);";
+      query = "START n=node(*) OPTIONAL MATCH n-[r]-() RETURN count(n), count(r);";
     return Graph.query(query, function(err,data){
       if ((data)&&(data.data)) {
         var count = data.data[0][0];
@@ -430,6 +430,11 @@ var __initGraph__ = function(neo4jrestful) {
 
   Graph.prototype.onMatch = function(onMatch, cb) {
     this._query_history_.push({ ON_MATCH: onMatch });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.optionalMatch = function(optionalMatch, cb) {
+    this._query_history_.push({ OPTIONAL_MATCH: optionalMatch });
     return this.exec(cb);
   }
 

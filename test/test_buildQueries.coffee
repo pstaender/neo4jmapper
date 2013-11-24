@@ -274,19 +274,19 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Actor.deleteAllIncludingRelations()":
           [
              Actor.deleteAllIncludingRelations()
-            "START n = node(*) MATCH (n:Actor)-[r?]-() DELETE n, r;"
+            "START n = node(*) OPTIONAL MATCH (n:Actor)-[r]-() DELETE n, r;"
           ]
 
         "Node.find().deleteIncludingRelations()":
           [
              Node.find().deleteIncludingRelations()
-            "START n = node(*) MATCH (n)-[r?]-() DELETE n, r;"
+            "START n = node(*) OPTIONAL MATCH (n)-[r]-() DELETE n, r;"
           ]
 
         "Actor.find().deleteIncludingRelations()":
           [
              Actor.find().deleteIncludingRelations()
-            "START n = node(*) MATCH (n:Actor)-[r?]-() DELETE n, r;"
+            "START n = node(*) OPTIONAL MATCH (n:Actor)-[r]-() DELETE n, r;"
           ]
 
         "Node.findById(123).update({ name: 'Alice', email: 'alice@home.com' })":

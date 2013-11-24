@@ -35,12 +35,13 @@ Neo4jMapper is available in modern Browsers (except the streaming feature), but 
 
   * implement: index relationship
   * implement: stream feature for browser-side-usage
+  * move from restful api to cypher queries if possible (to reduce api dependencies)
   * complete documentation
   * cleanup redundant tests
 
 ### Tested against:
 
-* Neo4j v2 Milestone 6
+* Neo4j v2 RC 1 (not working with previous milestones!)
 * Node 0.8 - 0.11 [see Travis CI](https://travis-ci.org/pstaender/neo4jmapper)
 * Chrome (v22+) and Safari (v7+)
 

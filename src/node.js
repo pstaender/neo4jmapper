@@ -160,6 +160,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     parameters: null,       // object that contains all parameters for query
     count: '',              // count(n) (DISTINCT)
     // Boolean flags
+    _optionalMatch: null,
     _count: null,
     _distinct: null,
     by_id: null
@@ -425,17 +426,23 @@ var __initNode__ = function(neo4jrestful, Graph) {
         var query = queryHead + "n.`" + key + "`" + ( (isUnique) ? " IS UNIQUE" : "")+";";
         var after = function(err, res) {
           done++;
-          if ((typeof err === 'object') && (err !== null)) {
-            if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException'))
-              // we ignore this "error"
-              results.push(res);
-            else
-              errors.push(err);
+          if ((err === 'object') && (err !== null)) {
+            // we transform the given error(s) to an array to iterate through it
+            var errAsArray = (err.length > 0) ? err : [ err ];
+            errAsArray.forEach(function(err) {
+              if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException')) {
+                // we ignore this "error"
+                results.push(res);
+              } else {
+                errors.push(err);
+              }
+            });
           } else {
             results.push(res);
           }
-          if (done === todo)
+          if (done === todo) {
             cb((errors.length > 0) ? errors : null, results);
+          }
         };
         if (isUnique)
           self.query(query, after);
@@ -486,16 +493,16 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (!label)
       return cb(Error("You need to set a label on `node.label` to work with autoindex"), null);
     var url = 'schema/index/'+this.label;
-    return Graph.request().get(url, function(err, res){
+    return Graph.request().get(url, function(err, res, debug){
       if ((typeof res === 'object') && (res !== null)) {
         var keys = [];
         _.each(res, function(data){
           if (data.label === label)
-            keys.push(data['property-keys']);
+            keys.push(data['property_keys']);
         });
-        return cb(null, _.flatten(keys));
+        return cb(null, _.flatten(keys), debug);
       } else {
-        return cb(err, res);
+        return cb(err, res, debug);
       }
     });
   }
@@ -1010,8 +1017,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
     var query = this._prepareQuery();
     var graph = Graph.start(query.start_as_string);
-    if (query.match.length > 0)
-      graph.match(query.match.join(' AND '));
+    if (query.match.length > 0) {
+      if (this.cypher._optionalMatch)
+        graph.optionalMatch(query.match.join(' AND '));
+      else
+        graph.match(query.match.join(' AND '));
+    }
     if ((query.where)&&(query.where.length > 0))
       graph.where(query.where.join(' AND '));
     if (query.set)
@@ -1521,7 +1532,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // this.cypher.segments.start = {};
       this.cypher.segments.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+"(*)";
     }
-    this.cypher.segments.match = [ '('+this.__TYPE_IDENTIFIER__+label+")-[r?]-()" ];
+    this.cypher._optionalMatch = true;
+    this.cypher.segments.match = [ '('+this.__TYPE_IDENTIFIER__+label+")-[r]-()" ];
     this.cypher.segments.return_properties = [ "n", "r" ];
     return this.delete(cb);
   }

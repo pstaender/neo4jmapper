@@ -612,6 +612,8 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   Neo4jRestful.prototype.log = function(){ /* > /dev/null */ };
 
   Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
+    if ((responseData === null) || (responseData === ''))
+      return null;
     var uri = (responseData) ? responseData.self : null;
     var Node = Neo4jRestful.Node;
     var Relationship = Neo4jRestful.Relationship;
@@ -631,13 +633,14 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
         return r;
       }
     }
-    else
+    else {
       if ((_.isNumber(responseData.length))&&(_.isString(responseData.start))) {
         // we have a path
         var p = new Path();
         p = p.populateWithDataFromResponse(responseData);
         return p;
       }
+    }
     return responseData;
   }
 

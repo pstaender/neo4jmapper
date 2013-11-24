@@ -49,9 +49,11 @@ describe 'Neo4jMapper', ->
       expect(err).to.be null
       expect(exact_version).to.be.a 'string'
       expect(client.version >= 2).to.be true
+      # we workaround the Node with id = 0 situation
       Node.create { name: 'dummy to avoid id=0 ' }, (err, node) ->
         # since v2RC1, first node created has is=0, turns into problem if you create a relationship on it (nullpointer exception)
-        done()
+        Node.findById(0).delete ->
+          done()
 
   describe 'generated cypher queries', ->
 
@@ -59,7 +61,6 @@ describe 'Neo4jMapper', ->
       # strictly, it should be in buildQueries; but buildQueries should have no integration tests (this is one)
       Node.create({ name: 'whatever' }).setLabels(['Person']).save (err, node1) ->
         id = node1.id
-        # console.log id, node1.toQuery().toString()
         expect(id).to.be.a 'number'
         expect(_trim(node1.toQuery().toString())).to.match /^START n = node\(\d+\) RETURN n, labels\(n\);/
         Graph.custom node1, (err, found) ->
@@ -182,12 +183,12 @@ describe 'Neo4jMapper', ->
             alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
               Graph
                 .start('n = node(*)')
-                .match('(n:Person)-[r?]-()')
+                .match('(n:Person)-[r]-()')
                 .where({'n.name': name})
                 .return('n AS Node, r AS Relationship, labels(n)')
                 .enableLoading('node|relationship')
                 .limit(1)
-                .exec (err, result) ->
+                .exec (err, result, debug) ->
                   expect(err).to.be null
                   expect(result).to.have.length 2
                   person = result[0]
@@ -197,12 +198,12 @@ describe 'Neo4jMapper', ->
                   expect(relationship.from.label).to.be.equal 'Person'
                   Graph
                     .start('n = node(*)')
-                    .match('(n:Person)-[r?]-()')
+                    .match('(n:Person)-[r]-()')
                     .where({'n.name': name})
                     .return('n AS Node, r AS Relationship')
                     .limit(1)
                     .disableProcessing()
-                    .exec (err, result) ->
+                    .exec (err, result, debug) ->
                       expect(err).to.be null
                       expect(result.data).to.have.length 1
                       expect(result.data[0]).to.have.length 2
@@ -268,7 +269,7 @@ describe 'Neo4jMapper', ->
       new Person(name: name).save (err, alice) ->
         new Person(name: name).save (err, bob) ->
           alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
-            Graph.start('n = node(*)').match('(n:Person)-[r?]-()').where({ 'n.name': name }).return('n, r').limit(2).exec (err, found) ->
+            Graph.start('n = node(*)').match('(n:Person)-[r]-()').where({ 'n.name': name }).return('n, r').limit(2).exec (err, found) ->
               expect(err).to.be null
               expect(found).to.have.length 2
               expect(found[0]).to.have.length 2
@@ -541,8 +542,9 @@ describe 'Neo4jMapper', ->
                   expect(err).to.be null
                   expect(nodes).to.have.length 1
                   expect(nodes[0].data.name).to.be.equal 'Bob'
-                  Developer.getIndex (err, found) ->
+                  Developer.getIndex (err, found, debug) ->
                     expect(found).to.have.length 1
+                    # console.log(found, debug)
                     expect(found[0]).to.be.equal 'email'
                     done()
 
@@ -1092,7 +1094,7 @@ describe 'Neo4jMapper', ->
                     expect(relationship).to.be.an 'object'
                     new Graph().countRelations (err, countedRelationshipsFinally) ->
                       expect(countedRelationshipsBefore+4).to.be.equal countedRelationshipsFinally
-                      bob.createOrUpdateRelationFrom alice, 'follows', { since: 'years' }, (err, relationship) ->
+                      bob.createOrUpdateRelationFrom alice, 'follows', { since: 'years' }, (err, relationship, debug) ->
                         expect(err).to.be null
                         expect(relationship).to.be.an 'object'
                         expect(relationship.type).to.be.equal 'follows'
