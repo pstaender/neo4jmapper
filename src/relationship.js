@@ -177,7 +177,6 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
     this.id = this._id_;
 
-    var relationshipProperties = this.data;
     var relationshipPropertiesFlatten = this.flattenData();
 
     if (!this.type)
