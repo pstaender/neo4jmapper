@@ -171,7 +171,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     if (this._is_singleton_)
       return cb(Error('Singleton instances can not be persisted'), null);
     if (!this.hasValidData())
-      return cb(Error(this.__TYPE__+' does not contain valid data. `'+this.__TYPE__+'.data` must be an object.'));
+      return cb(Error('relationship does not contain valid data. `'+this.__TYPE__+'.data` must be an object.'));
     this.resetQuery();
     this.applyDefaultValues();
 
@@ -233,7 +233,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   }
 
   Relationship.prototype.update = function(data, cb) {
-    if (helpers.isValidData(data)) {
+    if (helpers.isObjectLiteral(data)) {
       this.data = _.extend(this.data, data);
       data = this.flattenData();
     } else {

@@ -544,7 +544,6 @@ describe 'Neo4jMapper', ->
                   expect(nodes[0].data.name).to.be.equal 'Bob'
                   Developer.getIndex (err, found, debug) ->
                     expect(found).to.have.length 1
-                    # console.log(found, debug)
                     expect(found[0]).to.be.equal 'email'
                     done()
 

@@ -76,6 +76,16 @@ describe 'Neo4jMapper (helpers)', ->
     expect(callback).to.be.a 'function'
     expect(Object.keys(options)).to.have.length 0
 
+  it 'isObjectLiteral', ->
+    expect(helpers.isObjectLiteral({})).to.be true
+    expect(helpers.isObjectLiteral({ a: '1' })).to.be true
+    expect(helpers.isObjectLiteral(null)).to.be false
+    expect(helpers.isObjectLiteral()).to.be false
+
+  it 'serializeObjectForCypher', ->
+    o = { name1: 'Philipp', name2: 123, "home`s": { europe: true } }
+    expect(helpers.serializeObjectForCypher(o)).to.be.equal '{ `name1`: "Philipp", `name2`: 123, `homes.europe`: null }'
+
   describe 'constructorNameOfFunction', ->
 
     it 'expect to get the correct constructor name', ->

@@ -323,7 +323,7 @@ describe 'Neo4jMapper (cypher queries)', ->
           [
             Graph.start('_start_')
               .match('_match_')
-              .onMatch('_on match_')
+              .onMatch([ '(on)-[r:RELTYPE ', { key1: 'value1', key2: 'value2' }, ']-(match)' ])
               .where('n.name = {value1} OR n.name = {value2}')
               .parameters({value1: 'Bob'})
               .addParameters({value2: 'bob'})
@@ -346,7 +346,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             """
               START _start_
               MATCH _match_
-              ON MATCH _on match_
+              ON MATCH (on)-[r:RELTYPE { `key1`: "value1", `key2`: "value2" }]-(match)
               WHERE n.name = {value1} OR n.name = {value2}
               WITH _with_
               ORDER BY _order by_
@@ -368,7 +368,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             """
               START _start_
               MATCH _match_
-              ON MATCH _on match_
+              ON MATCH (on)-[r:RELTYPE { key1 : {_value0_}, key2 : {_value1_} }]-(match)
               WHERE n.name = {value1} OR n.name = {value2}
               WITH _with_
               ORDER BY _order by_
@@ -472,8 +472,8 @@ describe 'Neo4jMapper (cypher queries)', ->
                 throw Error([ "Expected", query.cypher.parameters[Object.keys(query.cypher.parameters)[i]], "to be equal", value ].join(' '))
               i++
             queryString = query.toQuery().toCypher()
-            queryString = _trim(queryString);
-            if queryString isnt _trim(todo[2])
+            trimQueryString = _trim(queryString);
+            if trimQueryString isnt _trim(todo[2])
               throw Error("Error building query with parameters #{functionCall}\nExpected: #{_trim(todo[2])}\nGot:      #{queryString}")
         else
           console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())

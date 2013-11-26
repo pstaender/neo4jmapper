@@ -325,7 +325,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.hasValidData = function() {
-    return helpers.isValidData(this.data);
+    return helpers.isObjectLiteral(this.data);
   }
 
   Node.prototype.applyDefaultValues = function() {
@@ -623,7 +623,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.update = function(data, cb) {
-    if (!helpers.isValidData(data)) {
+    if (!helpers.isObjectLiteral(data)) {
       cb(Error('To perform an update you need to pass valid data for updating as first argument'), null);
     }
     else if (this.hasId()) {

@@ -423,19 +423,41 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(cb);
   }
 
-  Graph.prototype.match = function(match, cb) {
-    this._query_history_.push({ MATCH: match });
+  Graph.prototype.match = function(match, cb, options) {
+    var self = this;
+    if (typeof options !== 'object')
+      options = {};
+    var matchString = '';
+    if ((typeof match === 'object')&&(match.length)) {
+      match.forEach(function(item){
+        if (typeof item === 'object') {
+          if (self.cypher.useParameters)
+            matchString += self._addObjectLiteralToParameters(item);
+          else
+            matchString += helpers.serializeObjectForCypher(item);
+        } else {
+          matchString += String(item);
+        }
+      });
+    } else {
+      matchString = match;
+    }
+    // do we have "ON MATCH", "OPTIONAL MATCH" or "MATCH" ?
+    if (!options.switch)
+      this._query_history_.push({ MATCH: matchString });
+    else if (options.switch === 'ON MATCH')
+      this._query_history_.push({ ON_MATCH: matchString });
+    else if (options.switch === 'OPTIONAL MATCH')
+      this._query_history_.push({ OPTIONAL_MATCH: matchString });
     return this.exec(cb);
   }
 
   Graph.prototype.onMatch = function(onMatch, cb) {
-    this._query_history_.push({ ON_MATCH: onMatch });
-    return this.exec(cb);
+    return this.match(onMatch, cb, { switch: 'ON MATCH' });
   }
 
   Graph.prototype.optionalMatch = function(optionalMatch, cb) {
-    this._query_history_.push({ OPTIONAL_MATCH: optionalMatch });
-    return this.exec(cb);
+    return this.match(optionalMatch, cb, { switch: 'OPTIONAL MATCH' });
   }
 
   Graph.prototype.with = function(withStatement, cb) {
@@ -690,6 +712,7 @@ var __initGraph__ = function(neo4jrestful) {
     return this.cypher.parameters;
   }
 
+  // Expect s.th. like 'value' or { parameterkey: 'value' }
   Graph.prototype._addParameterToCypher = function(parameter) {
     if (!this.cypher.hasParameters())
       this.cypher.parameters = {};
@@ -699,8 +722,20 @@ var __initGraph__ = function(neo4jrestful) {
       // we name the parameter with `_value#_`
       var count = Object.keys(this.cypher.parameters).length;
       this.cypher.parameters['_value'+count+'_'] = parameter;
+      // return the placeholder
+      return '{_value'+count+'_}';
     }
     return this.cypher.parameters;
+  }
+
+  Graph.prototype._addObjectLiteralToParameters = function(o) {
+    o = helpers.flattenObject(o);
+    var values = [];
+    var key = '';
+    for (var attr in o) {
+      values.push(attr+' : '+this._addParameterToCypher(o[attr])); 
+    }
+    return '{ '+values.join(', ')+' }';
   }
 
   /*

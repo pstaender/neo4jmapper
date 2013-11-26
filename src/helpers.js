@@ -197,9 +197,29 @@ var constructorNameOfFunction = function(func) {
   return name;
 }
 
-var isValidData = function(data) {
-  return Boolean( (typeof data === 'object') && (data !== null) );
+var isObjectLiteral = function(data) {
+  return Boolean((typeof data === 'object') && (data !== null) && (typeof Object.keys(data).length === 'number'));
 }
+
+var serializeObjectForCypher = function(o, options) {
+  o = this.flattenObject(o);
+  var result = [];
+  if (typeof options !== 'object') {
+    options = {
+      identifierDelimiter: '`',
+      valueDelimiter: '"',
+    };
+  }
+  for (var attr in o) {
+    attr = attr.replace(/\`/g,'');
+    result.push( options.identifierDelimiter+attr+options.identifierDelimiter+': '+this.valueToStringForCypherQuery(o[attr], options.valueDelimiter));
+  }
+  return '{ '+result.join(', ')+' }';
+}
+
+// var objectToObjectLiteralString = function(o) {
+//   return JSON.stringify(o).replace(/\"([^(\")"]+)\":/g, " $1: ").replace(/\}$/,' }');
+// }
 
 var helpers = {
   sortStringAndOptionsArguments: sortStringAndOptionsArguments,
@@ -213,9 +233,10 @@ var helpers = {
   constructorNameOfFunction: constructorNameOfFunction,
   cypherKeyValueToString: cypherKeyValueToString,
   valueToStringForCypherQuery: valueToStringForCypherQuery,
-  isValidData: isValidData,
   md5: (typeof window === 'object') ? window.Neo4jMapper.md5 : require('./lib/md5'),
   isConditionalOperator: isConditionalOperator,
+  isObjectLiteral: isObjectLiteral,
+  serializeObjectForCypher: serializeObjectForCypher,
 };
 
 if (typeof window !== 'object') {
