@@ -224,7 +224,7 @@ var serializeObjectForCypher = function(o, options) {
   });
   for (var attr in o) {
     attr = attr.replace(/\`/g,'');
-    result.push( options.identifierDelimiter+attr+options.identifierDelimiter+': '+this.valueToStringForCypherQuery(o[attr], options.valueDelimiter));
+    result.push( options.identifierDelimiter+attr+options.identifierDelimiter+' : '+this.valueToStringForCypherQuery(o[attr], options.valueDelimiter));
   }
   return '{ '+result.join(', ')+' }';
 }

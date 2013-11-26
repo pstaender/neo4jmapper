@@ -84,7 +84,7 @@ describe 'Neo4jMapper (helpers)', ->
 
   it 'serializeObjectForCypher', ->
     o = { name1: 'Philipp', name2: 123, "home`s": { europe: true } }
-    expect(helpers.serializeObjectForCypher(o)).to.be.equal '{ `name1`: "Philipp", `name2`: 123, `homes.europe`: null }'
+    expect(helpers.serializeObjectForCypher(o)).to.be.equal '{ `name1` : "Philipp", `name2` : 123, `homes.europe` : null }'
 
   it 'escapeIdentifier', ->
     expect(helpers.escapeIdentifier('n.name')).to.be.equal 'n.`name`'

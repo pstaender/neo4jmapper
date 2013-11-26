@@ -324,6 +324,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             Graph.start('_start_')
               .match('_match_')
               .onMatch([ '(on)-[r:RELTYPE ', { key1: 'value1', key2: 'value2' }, ']-(match)' ])
+              .optionalMatch({ key3: 'value3' })
               .where('n.name = {value1} OR n.name = {value2}')
               .parameters({value1: 'Bob'})
               .addParameters({value2: 'bob'})
@@ -346,7 +347,8 @@ describe 'Neo4jMapper (cypher queries)', ->
             """
               START _start_
               MATCH _match_
-              ON MATCH (on)-[r:RELTYPE { `key1`: "value1", `key2`: "value2" }]-(match)
+              ON MATCH (on)-[r:RELTYPE { `key1` : "value1", `key2` : "value2" }]-(match)
+              OPTIONAL MATCH { `key3` : "value3" }
               WHERE n.name = {value1} OR n.name = {value2}
               WITH _with_
               ORDER BY _order by_
@@ -369,6 +371,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               START _start_
               MATCH _match_
               ON MATCH (on)-[r:RELTYPE { `key1` : {_value0_}, `key2` : {_value1_} }]-(match)
+              OPTIONAL MATCH { `key3` : {_value2_} }
               WHERE n.name = {value1} OR n.name = {value2}
               WITH _with_
               ORDER BY _order by_

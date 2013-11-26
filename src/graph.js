@@ -428,14 +428,18 @@ var __initGraph__ = function(neo4jrestful) {
     if (typeof options !== 'object')
       options = {};
     var matchString = '';
-    if ((typeof match === 'object')&&(match.length)) {
-      match.forEach(function(item){
-        if (typeof item === 'object') {
-          matchString += self._addObjectLiteralForStatement(item);
-        } else {
-          matchString += String(item);
-        }
-      });
+    if (typeof match === 'object') {
+      if (match.length) {
+        match.forEach(function(item){
+          if (typeof item === 'object') {
+            matchString += self._addObjectLiteralForStatement(item);
+          } else {
+            matchString += String(item);
+          }
+        });
+      } else {
+        matchString = self._addObjectLiteralForStatement(match);
+      }
     } else {
       matchString = match;
     }
