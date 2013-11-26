@@ -510,7 +510,26 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   Graph.prototype.create = function(create, cb) {
-    this._query_history_.push({ CREATE: create });
+    var self = this;
+    var creates = [];
+    if (typeof create === 'object') {
+      creates.push('(');
+      if (create.length) {
+        create.forEach(function(item){
+          if (typeof item === 'object') {
+            creates.push(self._addObjectLiteralForStatement(item));
+          } else {
+            creates.push(String(item));
+          }
+        });
+      } else {
+        cretes.push(self._addObjectLiteralForStatement(create));
+      }
+      creates.push(')');
+    } else {
+      creates = [ create ];
+    }
+    this._query_history_.push({ CREATE: creates.join(' ') });
     return this.exec(cb);
   }
 

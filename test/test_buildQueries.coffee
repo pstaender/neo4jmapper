@@ -319,6 +319,21 @@ describe 'Neo4jMapper (cypher queries)', ->
         # Custom Graph Queries
         #
 
+        "Graph.create(…)":
+          [
+            Graph.create(['n:Person', {
+              name: 'Andres',
+              title: 'Developer'
+            }]),
+            """
+              CREATE ( n:Person { `name` : "Andres", `title` : "Developer" } );
+            """,
+            """
+              CREATE ( n:Person { `name` : {_value0_}, `title` : {_value1_} } );
+            """,
+            { value0: 'Andres', value1: 'Developer' }
+          ]
+
         "Graph.start()…":
           [
             Graph.start('_start_')

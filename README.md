@@ -37,6 +37,7 @@ Neo4jMapper is available in modern Browsers (except the streaming feature), but 
   * implement: stream feature for browser-side-usage
   * move from restful api to cypher queries if possible (to reduce api dependencies)
   * complete documentation
+  * consistently naming for value placeholders, currently `_value$_` and `value$` are in use
   * cleanup redundant tests
 
 ### Tested against:
