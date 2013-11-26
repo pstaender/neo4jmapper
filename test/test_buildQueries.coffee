@@ -319,19 +319,32 @@ describe 'Neo4jMapper (cypher queries)', ->
         # Custom Graph Queries
         #
 
-        "Graph.create(…)":
+        "Graph.create()":
           [
             Graph.create(['n:Person', {
               name: 'Andres',
               title: 'Developer'
             }]),
             """
-              CREATE ( n:Person { `name` : "Andres", `title` : "Developer" } );
+              CREATE ( n:Person { `name` : 'Andres', `title` : 'Developer' } );
             """,
             """
               CREATE ( n:Person { `name` : {_value0_}, `title` : {_value1_} } );
             """,
             { value0: 'Andres', value1: 'Developer' }
+          ]
+
+        "Graph.set()":
+          [
+            Graph.start('n = node(123)')
+              .set({"n.name": 'Philipp', "n.year": 1982, "n.surname": null }),
+            """
+              START n = node(123) SET n.`name` = 'Philipp', n.`year` = 1982, n.`surname` = NULL;
+            """,
+            """
+              START n = node(123) SET n.`name` = {_value0_}, n.`year` = {_value1_}, n.`surname` = {_value2_};
+            """,
+            { value0: 'Philipp', value1: 1982, value2: null }
           ]
 
         "Graph.start()…":
@@ -362,8 +375,8 @@ describe 'Neo4jMapper (cypher queries)', ->
             """
               START _start_
               MATCH _match_
-              ON MATCH (on)-[r:RELTYPE { `key1` : "value1", `key2` : "value2" }]-(match)
-              OPTIONAL MATCH { `key3` : "value3" }
+              ON MATCH (on)-[r:RELTYPE { `key1` : 'value1', `key2` : 'value2' }]-(match)
+              OPTIONAL MATCH { `key3` : 'value3' }
               WHERE n.name = {value1} OR n.name = {value2}
               WITH _with_
               ORDER BY _order by_
@@ -480,6 +493,8 @@ describe 'Neo4jMapper (cypher queries)', ->
             query = todo[0]
             # check paramers matching
             # do we have same parameters count?
+            unless query.toQuery().parameters
+              throw Error("Expected parameter values for '" + todo[2] + "' instead of `"+query.toQuery().parameters+"`")
             if Object.keys(query.toQuery().parameters).length isnt Object.keys(todo[3]).length
               throw Error("Expected #{Object.keys(todo[3]).length} parameter(s) on '#{functionCall}': "+JSON.stringify(todo[3])+"\nGot "+JSON.stringify(query.toQuery().parameters))
             # expect(query.cypher.parameters.length).to.be.equal Object.keys(todo[3]).length
@@ -487,7 +502,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             for key, value of todo[3]
               # check that value of parameter in query is same as expected (sequence of parameters has relevance)
               if query.cypher.parameters[Object.keys(query.cypher.parameters)[i]] isnt value
-                throw Error([ "Expected", query.cypher.parameters[Object.keys(query.cypher.parameters)[i]], "to be equal", value ].join(' '))
+                throw Error([ "Expected", "`"+query.cypher.parameters[Object.keys(query.cypher.parameters)[i]]+"`", "to be equal", "`#{value}`", " for `#{todo[2]}" ].join(' '))
               i++
             queryString = query.toQuery().toCypher()
             trimQueryString = _trim(queryString);

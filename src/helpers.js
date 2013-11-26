@@ -48,13 +48,16 @@ var getIdFromObject = function(o) {
 }
 
 // source: https://gist.github.com/penguinboy/762197
-var flattenObject = function(ob) {
+var flattenObject = function(ob, keepNullValues) {
   var toReturn = {};
-
+  if (typeof keepNullValues !== 'boolean')
+    keepNullValues = true;
   for (var i in ob) {
-    if (!ob.hasOwnProperty(i)) continue;
-
-    if ((typeof ob[i]) === 'object') {
+    if (!ob.hasOwnProperty(i))
+      continue;
+    if ((keepNullValues) && (ob[i] === null)) {
+      toReturn[i] = ob[i];
+    } else if ((typeof ob[i]) === 'object') {
       var flatObject = flattenObject(ob[i]);
       for (var x in flatObject) {
         if (!flatObject.hasOwnProperty(x)) continue;
@@ -150,8 +153,11 @@ var valueToStringForCypherQuery = function(value, delimiter) {
     // replace `\` with `\\` to keep compatibility with Java regex
     value = value.replace(/([^\\]{1})\\([^\\]{1})/g, '$1\\\\$2');
   } else {
-    if ((typeof value === 'undefined') || (value === null) || (value === NaN))
-      value = 'null';
+    if ((typeof value === 'undefined') || (value === null))
+      value = 'NULL';
+    else if (value === NaN)
+      // what would be a good representation of NaN?
+      value = delimiter+'NaN'+delimiter;
     else if ((typeof value === 'boolean') || (typeof value === 'number'))
       value = String(value);
     else
@@ -230,7 +236,7 @@ var serializeObjectForCypher = function(o, options) {
     options = {};
   options = _.defaults(options, {
     identifierDelimiter: '`',
-    valueDelimiter: '"',
+    valueDelimiter: "'",
   });
   for (var attr in o) {
     var value = o[attr];

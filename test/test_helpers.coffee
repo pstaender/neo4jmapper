@@ -76,6 +76,12 @@ describe 'Neo4jMapper (helpers)', ->
     expect(callback).to.be.a 'function'
     expect(Object.keys(options)).to.have.length 0
 
+  it 'flattenObject', ->
+    expect(helpers.flattenObject({ a: { b: true } })).to.be.eql { 'a.b': true }
+    expect(helpers.flattenObject({ a: { b: null } })).to.be.eql { 'a.b': null }
+    expect(helpers.flattenObject({ a: true })).to.be.eql { 'a': true }
+    expect(helpers.flattenObject({ a: null })).to.be.eql { 'a': null }
+
   it 'isObjectLiteral', ->
     expect(helpers.isObjectLiteral({})).to.be true
     expect(helpers.isObjectLiteral({ a: '1' })).to.be true
@@ -85,12 +91,12 @@ describe 'Neo4jMapper (helpers)', ->
   it 'valueToStringForCypherQuery', ->
     expect(helpers.valueToStringForCypherQuery(true)).to.be.equal 'true'
     expect(helpers.valueToStringForCypherQuery(false)).to.be.equal 'false'
-    expect(helpers.valueToStringForCypherQuery(null)).to.be.equal 'null'
+    expect(helpers.valueToStringForCypherQuery(null)).to.be.equal 'NULL'
     expect(helpers.valueToStringForCypherQuery(/^test$/i)).to.be.equal '^(?i)test$'
     expect(helpers.valueToStringForCypherQuery(0)).to.be.equal '0'
     expect(helpers.valueToStringForCypherQuery(123.45)).to.be.equal '123.45'
     expect(helpers.valueToStringForCypherQuery('string')).to.be.equal 'string'
-    expect(helpers.valueToStringForCypherQuery()).to.be.equal 'null'
+    expect(helpers.valueToStringForCypherQuery()).to.be.equal 'NULL'
     expect(helpers.valueToStringForCypherQuery("unescaped\" value")).to.be.equal 'unescaped\\" value'
     expect(helpers.valueToStringForCypherQuery("unescaped\' value")).to.be.equal "unescaped\\' value"
     expect(helpers.valueToStringForCypherQuery('"string"')).to.be.equal 'string'
@@ -105,7 +111,7 @@ describe 'Neo4jMapper (helpers)', ->
 
   it 'serializeObjectForCypher', ->
     o = { name1: 'Philipp', name2: 123, "home`s": { europe: true }, 'node.`property`': 'whatever' }
-    expect(helpers.serializeObjectForCypher(o)).to.be.equal '{ `name1` : "Philipp", `name2` : 123, homes.`europe` : true, node.`property` : "whatever" }'
+    expect(helpers.serializeObjectForCypher(o)).to.be.equal "{ `name1` : 'Philipp', `name2` : 123, homes.`europe` : true, node.`property` : 'whatever' }"
 
   describe 'constructorNameOfFunction', ->
 

@@ -502,10 +502,26 @@ var __initGraph__ = function(neo4jrestful) {
   // Graph.prototype.statement = null;
 
   Graph.prototype.set = function(set, cb) {
-    if ((typeof set === 'object')&&(set.constructor === Array)) {
-      set = set.join(', ');
+    var self = this;
+    var setString = '';
+    if ((typeof set === 'object')&&(set !== null)) {
+      if (set.constructor !== Array) {
+        var data = set;
+        set = [];
+        if (this.cypher.useParameters) {
+          set = this._addKeyValuesToParameters(data, ' = ');
+        } else {
+          for (var key in data) {
+            var value = data[key];
+            set.push(helpers.escapeProperty(key)+' = '+helpers.valueToStringForCypherQuery(value, "'"));
+          }
+        }
+      }
+      setString = set.join(', ');
+    } else {
+      setString = set;
     }
-    this._query_history_.push({ SET: set });
+    this._query_history_.push({ SET: setString });
     return this.exec(cb);
   }
 
@@ -513,7 +529,6 @@ var __initGraph__ = function(neo4jrestful) {
     var self = this;
     var creates = [];
     if (typeof create === 'object') {
-      creates.push('(');
       if (create.length) {
         create.forEach(function(item){
           if (typeof item === 'object') {
@@ -525,7 +540,12 @@ var __initGraph__ = function(neo4jrestful) {
       } else {
         cretes.push(self._addObjectLiteralForStatement(create));
       }
-      creates.push(')');
+      if (typeof creates[0] === 'string') {
+        if (!/\s*\(\s*$/.test(creates[0]))
+          creates.unshift('(');
+        if (!/\s*\)\s*$/.test(creates[creates.length-1]))
+          creates.push(')');
+      }
     } else {
       creates = [ create ];
     }
@@ -736,7 +756,7 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._addParameterToCypher = function(parameter) {
     if (!this.cypher.hasParameters())
       this.cypher.parameters = {};
-    if (typeof parameter === 'object') {
+    if ((typeof parameter === 'object')&&(parameter !== null)) {
       _.extend(this.cypher.parameters, parameter);
     } else {
       // we name the parameter with `_value#_`
@@ -748,15 +768,21 @@ var __initGraph__ = function(neo4jrestful) {
     return this.cypher.parameters;
   }
 
-  Graph.prototype._addObjectLiteralToParameters = function(o) {
+  Graph.prototype._addKeyValuesToParameters = function(o, assignOperator) {
     o = helpers.flattenObject(o);
     var values = [];
     var key = '';
     var identifierDelimiter = '`';
+    if (typeof assignOperator !== 'string')
+      assignOperator = ' = ';
     for (var attr in o) {
-      values.push(helpers.escapeProperty(attr, identifierDelimiter) + ' : '+this._addParameterToCypher(o[attr])); 
+      values.push(helpers.escapeProperty(attr, identifierDelimiter) + assignOperator + this._addParameterToCypher(o[attr])); 
     }
-    return '{ '+values.join(', ')+' }';
+    return values;
+  }
+
+  Graph.prototype._addObjectLiteralToParameters = function(o) {
+    return '{ '+this._addKeyValuesToParameters(o, ' : ').join(', ')+' }';
   }
 
   Graph.prototype._addObjectLiteralForStatement = function(o) {
