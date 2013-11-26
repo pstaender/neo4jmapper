@@ -120,16 +120,26 @@ var escapeString = function(s) {
   return s.replace(/^(['"]{1})/, '\\$1').replace(/([^\\]){1}(['"]{1})/g,'$1\\$2');
 }
 
-var escapeIdentifier = function(identifier, delimiter) {
+var escapeProperty = function(identifier, delimiter) {
   if (typeof delimiter !== 'string')
     delimiter = '`';
+  // do we have s.th. like ?! appending
+  var appending = identifier.match(/^(.*)([\?\!]{1})$/) || '';
+  // console.log(appending)
+  if ((appending)&&(appending[2])) {
+    identifier = appending[1];
+    appending = appending[2];
+  }
+  // no escaping if last char is a delimiter or ?, because we expect that the identifier is already escaped somehow
+  if (new RegExp(''+delimiter+'{1}$').test(identifier))
+    return identifier;
   // remove all delimiters `
   identifier = identifier.replace(new RegExp(delimiter, 'g'), '');
-  if (/^[a-z]{1}\..+$/.test(identifier))
-    identifier = identifier.replace(/^([a-z]{1})\.(.+)$/, '$1.'+delimiter+'$2'+delimiter);
+  if (/^(.+?)\..+$/.test(identifier))
+    identifier = identifier.replace(/^(.+?)\.(.+)$/, '$1.'+delimiter+'$2'+delimiter);
   else
     identifier = delimiter+identifier+delimiter;
-  return identifier;
+  return identifier + appending;
 }
 
 var valueToStringForCypherQuery = function(value, delimiter) {
@@ -162,11 +172,11 @@ var cypherKeyValueToString = function(key, originalValue, identifier, conditiona
       key = key;
     else if (/[\?\!]$/.test(key))
       // we have a default statement, escape without ! or ?
-      key = identifier+'.`'+key.replace(/[\?\!]$/,'')+'`'+key.substring(key.length-1)
+      key = identifier+'.'+key;
     else
-      key = identifier+'.`'+key+'`';
+      key = identifier+'.'+key;
   }
-  // this.valuesToParameters
+  key = escapeProperty(key)
   if (_.isRegExp(value)) {
     value = valueToStringForCypherQuery(value);
     value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+value+"'";
@@ -223,8 +233,8 @@ var serializeObjectForCypher = function(o, options) {
     valueDelimiter: '"',
   });
   for (var attr in o) {
-    attr = attr.replace(/\`/g,'');
-    result.push( options.identifierDelimiter+attr+options.identifierDelimiter+' : '+this.valueToStringForCypherQuery(o[attr], options.valueDelimiter));
+    var value = o[attr];
+    result.push(escapeProperty(attr)+' : '+valueToStringForCypherQuery(value, options.valueDelimiter));
   }
   return '{ '+result.join(', ')+' }';
 }
@@ -238,7 +248,7 @@ var helpers = {
   extractAttributesFromCondition: extractAttributesFromCondition,
   getIdFromObject: getIdFromObject,
   escapeString: escapeString,
-  escapeIdentifier: escapeIdentifier,
+  escapeProperty: escapeProperty,
   constructorNameOfFunction: constructorNameOfFunction,
   cypherKeyValueToString: cypherKeyValueToString,
   valueToStringForCypherQuery: valueToStringForCypherQuery,

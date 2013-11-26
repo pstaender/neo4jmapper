@@ -236,27 +236,27 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Node.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
              Node.find().where( { $or : [ { 'n.firstname': /alice/i } , { 'n.surname': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
-            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ '(?i)alice' OR HAS (n.`surname`) AND n.surname =~ '(?i)bob' ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
-            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.firstname =~ {_value0_} OR HAS (n.`surname`) AND n.surname =~ {_value1_} ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.`firstname` =~ '(?i)alice' OR HAS (n.`surname`) AND n.`surname` =~ '(?i)bob' ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            "START n = node(*) WHERE HAS (n.`name`) AND ( ( HAS (n.`firstname`) AND n.`firstname` =~ {_value0_} OR HAS (n.`surname`) AND n.`surname` =~ {_value1_} ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
             { _value0_: '(?i)alice', _value1_: '(?i)bob' }
           ]
 
         "Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})":
           [
              Actor.find().where( { $or : [ { 'n.name': /alice/i } , { 'n.name': /bob/i } ] }).skip(2).limit(10).orderBy({ name: 'DESC'})
-            "START n = node(*) MATCH (n:Actor) WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.name =~ '(?i)alice' OR HAS (n.`name`) AND n.name =~ '(?i)bob' ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
+            "START n = node(*) MATCH (n:Actor) WHERE HAS (n.`name`) AND ( ( HAS (n.`name`) AND n.`name` =~ '(?i)alice' OR HAS (n.`name`) AND n.`name` =~ '(?i)bob' ) ) RETURN n, labels(n) ORDER BY n.`name` DESC SKIP 2 LIMIT 10;"
           ]
 
         "Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')":
           [
             Node.findOne().where({ 'n.city': 'berlin' }).andHasProperty('name').return('n AS Person')
-            "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.city = 'berlin' ) RETURN n AS Person, labels(n) LIMIT 1;"
+            "START n = node(*) WHERE HAS (n.`name`) AND ( HAS (n.`city`) AND n.`city` = 'berlin' ) RETURN n AS Person, labels(n) LIMIT 1;"
           ]
 
         "Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).return('n.name AS Name')":
           [
              Node.findOne([ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]).return('n.name AS Name')
-            "START n = node(*) WHERE ( HAS (n.`city`) AND n.city = 'berlin' AND ( HAS (n.`name`) AND n.name = 'peter' AND NOT ( HAS (n.`name`) AND n.name = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
+            "START n = node(*) WHERE ( HAS (n.`city`) AND n.`city` = 'berlin' AND ( HAS (n.`name`) AND n.`name` = 'peter' AND NOT ( HAS (n.`name`) AND n.`name` = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
           ]
 
         "Node.findById(123).incomingRelations().delete()":
@@ -412,7 +412,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             """
               MATCH (game:Game)-[c:contains]->(position:Position)
               /* Select games with title "Wes vs Alvin" */
-              WHERE HAS (game.title) AND game.title = 'Wes vs Alvin'
+              WHERE HAS (game.`title`) AND game.`title` = 'Wes vs Alvin'
               WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position)
               WITH positions, c, position
               ORDER BY c.move ASC
@@ -424,7 +424,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             """
               MATCH (game:Game)-[c:contains]->(position:Position)
               /* Select games with title "Wes vs Alvin" */
-              WHERE HAS (game.title) AND game.title = {_value0_}
+              WHERE HAS (game.`title`) AND game.`title` = {_value0_}
               WITH game, collect(position) AS positions MATCH game-[c:contains]->(position:Position)
               WITH positions, c, position
               ORDER BY c.move ASC
@@ -477,7 +477,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             queryString = query.toQuery().toCypher()
             trimQueryString = _trim(queryString);
             if trimQueryString isnt _trim(todo[2])
-              throw Error("Error building query with parameters #{functionCall}\nExpected: #{_trim(todo[2])}\nGot:      #{queryString}")
+              throw Error("Error building query with parameters #{functionCall}\nExpected: #{_trim(todo[2])}\nGot:      #{trimQueryString}")
         else
           console.log 'skipping '+functionCall+' ~> '+_trim(todo.toCypherQuery())
 

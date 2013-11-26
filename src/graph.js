@@ -735,7 +735,7 @@ var __initGraph__ = function(neo4jrestful) {
     var key = '';
     var identifierDelimiter = '`';
     for (var attr in o) {
-      values.push(helpers.escapeIdentifier(attr, identifierDelimiter) + ' : '+this._addParameterToCypher(o[attr])); 
+      values.push(helpers.escapeProperty(attr, identifierDelimiter) + ' : '+this._addParameterToCypher(o[attr])); 
     }
     return '{ '+values.join(', ')+' }';
   }

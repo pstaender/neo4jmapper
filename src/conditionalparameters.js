@@ -72,10 +72,11 @@ var ConditionalParameters = function ConditionalParameters(conditions, options) 
               if (identifierWithProperty) {
                 if (options.identifier)
                   // we have s.th. like options.identifier = n; property = '`'+identifierWithProperty+'`'
-                  identifierWithProperty = options.identifier + '.`' + identifierWithProperty + '`';
+                  identifierWithProperty = options.identifier + '.' + identifierWithProperty;
                 else
                   // we have no explicit identifier, so we use the complete key/property and expecting it contains identifier
                   identifierWithProperty = k;
+                identifierWithProperty = helpers.escapeProperty(identifierWithProperty);
               }
               var hasAttribute = (identifierWithProperty) ? 'HAS ('+identifierWithProperty+') AND ' : '';
               if (value === k) {

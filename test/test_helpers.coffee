@@ -82,13 +82,30 @@ describe 'Neo4jMapper (helpers)', ->
     expect(helpers.isObjectLiteral(null)).to.be false
     expect(helpers.isObjectLiteral()).to.be false
 
-  it 'serializeObjectForCypher', ->
-    o = { name1: 'Philipp', name2: 123, "home`s": { europe: true } }
-    expect(helpers.serializeObjectForCypher(o)).to.be.equal '{ `name1` : "Philipp", `name2` : 123, `homes.europe` : null }'
+  it 'valueToStringForCypherQuery', ->
+    expect(helpers.valueToStringForCypherQuery(true)).to.be.equal 'true'
+    expect(helpers.valueToStringForCypherQuery(false)).to.be.equal 'false'
+    expect(helpers.valueToStringForCypherQuery(null)).to.be.equal 'null'
+    expect(helpers.valueToStringForCypherQuery(/^test$/i)).to.be.equal '^(?i)test$'
+    expect(helpers.valueToStringForCypherQuery(0)).to.be.equal '0'
+    expect(helpers.valueToStringForCypherQuery(123.45)).to.be.equal '123.45'
+    expect(helpers.valueToStringForCypherQuery('string')).to.be.equal 'string'
+    expect(helpers.valueToStringForCypherQuery()).to.be.equal 'null'
+    expect(helpers.valueToStringForCypherQuery("unescaped\" value")).to.be.equal 'unescaped\\" value'
+    expect(helpers.valueToStringForCypherQuery("unescaped\' value")).to.be.equal "unescaped\\' value"
+    expect(helpers.valueToStringForCypherQuery('"string"')).to.be.equal 'string'
+    expect(helpers.valueToStringForCypherQuery("'string'")).to.be.equal 'string'
 
-  it 'escapeIdentifier', ->
-    expect(helpers.escapeIdentifier('n.name')).to.be.equal 'n.`name`'
-    expect(helpers.escapeIdentifier('city.name')).to.be.equal '`city.name`'
+  it 'escapeProperty', ->
+    expect(helpers.escapeProperty('n.name')).to.be.equal 'n.`name`'
+    expect(helpers.escapeProperty('node.name')).to.be.equal 'node.`name`'
+    expect(helpers.escapeProperty('`city.name`')).to.be.equal '`city.name`'
+    expect(helpers.escapeProperty('node.`name`')).to.be.equal 'node.`name`'
+    expect(helpers.escapeProperty('node.name?')).to.be.equal 'node.`name`?'
+
+  it 'serializeObjectForCypher', ->
+    o = { name1: 'Philipp', name2: 123, "home`s": { europe: true }, 'node.`property`': 'whatever' }
+    expect(helpers.serializeObjectForCypher(o)).to.be.equal '{ `name1` : "Philipp", `name2` : 123, homes.`europe` : true, node.`property` : "whatever" }'
 
   describe 'constructorNameOfFunction', ->
 
@@ -154,12 +171,12 @@ describe 'Neo4jMapper (helpers)', ->
         { "n.name": "Alice's" },
         "HAS(n.email))"
       ]
-      resultShouldBe = "( HAS (n.`name`) AND n.name = 'Alice\\'s' AND HAS(n.email)) )"
+      resultShouldBe = "( HAS (n.`name`) AND n.`name` = 'Alice\\'s' AND HAS(n.email)) )"
       expect(new helpers.ConditionalParameters(condition, { valuesToParameters: false, identifier: 'n' }).toString()).to.be.equal resultShouldBe
 
     it 'expect to transform an key-value-object to with $OR and $AND operators', ->
       resultShouldBe = """
-        ( ( HAS (n.name) AND n.name =~ '(?i)Alice' AND ( HAS (n.email) AND n.email =~ '^alice@home\\\\.com$' OR ( HAS (n.email) AND n.email = 'alice@home.de' AND HAS (n.country) AND n.country = 'de_DE' ) ) ) )
+        ( ( HAS (n.`name`) AND n.`name` =~ '(?i)Alice' AND ( HAS (n.`email`) AND n.`email` =~ '^alice@home\\\\.com$' OR ( HAS (n.`email`) AND n.`email` = 'alice@home.de' AND HAS (n.`country`) AND n.`country` = 'de_DE' ) ) ) )
         """
       condition = [
         { $and: [
@@ -177,7 +194,7 @@ describe 'Neo4jMapper (helpers)', ->
 
     it 'expect to transform an key-value-object with identifier', ->
       resultShouldBe = """
-      ( ( HAS (n.`name`) AND n.name =~ \'(?i)Alice\' AND HAS (n.`since`) AND r.since = \'years\' AND ( HAS (n.`email`) AND n.email = \'alice@home.com\' OR ( HAS (n.`email`) AND n.`email` = \'alice@home.de\' AND HAS (n.`country`) AND n.`country` = \'de_DE\' ) ) ) )
+      ( ( HAS (n.`name`) AND n.`name` =~ \'(?i)Alice\' AND HAS (n.`since`) AND r.`since` = \'years\' AND ( HAS (n.`email`) AND n.`email` = \'alice@home.com\' OR ( HAS (n.`email`) AND n.`email` = \'alice@home.de\' AND HAS (n.`country`) AND n.`country` = \'de_DE\' ) ) ) )
       """;
       condition = [
         { $and: [
@@ -196,7 +213,7 @@ describe 'Neo4jMapper (helpers)', ->
 
     it 'expect to use mathematical operators', ->
       resultShouldBe = """
-      ( ( HAS (n.`name`) AND n.name =~ \'(?i)Alice\' AND HAS (n.`since`) AND r.since = \'years\' AND ( HAS (n.`email`) AND n.email = \'alice@home.com\' OR ( HAS (n.`email`) AND n.`email` = \'alice@home.de\' AND HAS (n.`country`) AND n.`country` = \'de_DE\' ) ) ) )
+      ( ( HAS (n.`name`) AND n.`name` =~ \'(?i)Alice\' AND HAS (n.`since`) AND r.`since` = \'years\' AND ( HAS (n.`email`) AND n.`email` = \'alice@home.com\' OR ( HAS (n.`email`) AND n.`email` = \'alice@home.de\' AND HAS (n.`country`) AND n.`country` = \'de_DE\' ) ) ) )
       """;
       condition = [
         { $and: [
@@ -229,7 +246,7 @@ describe 'Neo4jMapper (helpers)', ->
       ]
       con = new helpers.ConditionalParameters(condition, { identifier: 'n' })
       expect(con.toString()).to.be.equal """
-        ( ( HAS (n.`name`) AND n.name =~ {_value0_} AND HAS (n.`since`) AND r.since = {_value1_} AND ( HAS (n.`email`) AND n.email = {_value2_} OR ( HAS (n.`email`) AND n.`email` = {_value3_} AND HAS (n.`country`) AND n.`country` = {_value4_} ) ) ) )
+        ( ( HAS (n.`name`) AND n.`name` =~ {_value0_} AND HAS (n.`since`) AND r.`since` = {_value1_} AND ( HAS (n.`email`) AND n.`email` = {_value2_} OR ( HAS (n.`email`) AND n.`email` = {_value3_} AND HAS (n.`country`) AND n.`country` = {_value4_} ) ) ) )
       """
       expect(con.parameters).to.have.length 5
       expect(con.parameters[0]).to.be.equal '(?i)Alice'
