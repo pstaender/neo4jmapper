@@ -120,6 +120,18 @@ var escapeString = function(s) {
   return s.replace(/^(['"]{1})/, '\\$1').replace(/([^\\]){1}(['"]{1})/g,'$1\\$2');
 }
 
+var escapeIdentifier = function(identifier, delimiter) {
+  if (typeof delimiter !== 'string')
+    delimiter = '`';
+  // remove all delimiters `
+  identifier = identifier.replace(new RegExp(delimiter, 'g'), '');
+  if (/^[a-z]{1}\..+$/.test(identifier))
+    identifier = identifier.replace(/^([a-z]{1})\.(.+)$/, '$1.'+delimiter+'$2'+delimiter);
+  else
+    identifier = delimiter+identifier+delimiter;
+  return identifier;
+}
+
 var valueToStringForCypherQuery = function(value, delimiter) {
   if (typeof delimiter !== 'string')
     delimiter = '';
@@ -204,22 +216,18 @@ var isObjectLiteral = function(data) {
 var serializeObjectForCypher = function(o, options) {
   o = this.flattenObject(o);
   var result = [];
-  if (typeof options !== 'object') {
-    options = {
-      identifierDelimiter: '`',
-      valueDelimiter: '"',
-    };
-  }
+  if (typeof options !== 'object')
+    options = {};
+  options = _.defaults(options, {
+    identifierDelimiter: '`',
+    valueDelimiter: '"',
+  });
   for (var attr in o) {
     attr = attr.replace(/\`/g,'');
     result.push( options.identifierDelimiter+attr+options.identifierDelimiter+': '+this.valueToStringForCypherQuery(o[attr], options.valueDelimiter));
   }
   return '{ '+result.join(', ')+' }';
 }
-
-// var objectToObjectLiteralString = function(o) {
-//   return JSON.stringify(o).replace(/\"([^(\")"]+)\":/g, " $1: ").replace(/\}$/,' }');
-// }
 
 var helpers = {
   sortStringAndOptionsArguments: sortStringAndOptionsArguments,
@@ -230,6 +238,7 @@ var helpers = {
   extractAttributesFromCondition: extractAttributesFromCondition,
   getIdFromObject: getIdFromObject,
   escapeString: escapeString,
+  escapeIdentifier: escapeIdentifier,
   constructorNameOfFunction: constructorNameOfFunction,
   cypherKeyValueToString: cypherKeyValueToString,
   valueToStringForCypherQuery: valueToStringForCypherQuery,

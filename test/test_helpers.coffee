@@ -86,6 +86,10 @@ describe 'Neo4jMapper (helpers)', ->
     o = { name1: 'Philipp', name2: 123, "home`s": { europe: true } }
     expect(helpers.serializeObjectForCypher(o)).to.be.equal '{ `name1`: "Philipp", `name2`: 123, `homes.europe`: null }'
 
+  it 'escapeIdentifier', ->
+    expect(helpers.escapeIdentifier('n.name')).to.be.equal 'n.`name`'
+    expect(helpers.escapeIdentifier('city.name')).to.be.equal '`city.name`'
+
   describe 'constructorNameOfFunction', ->
 
     it 'expect to get the correct constructor name', ->

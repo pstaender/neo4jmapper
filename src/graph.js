@@ -431,10 +431,7 @@ var __initGraph__ = function(neo4jrestful) {
     if ((typeof match === 'object')&&(match.length)) {
       match.forEach(function(item){
         if (typeof item === 'object') {
-          if (self.cypher.useParameters)
-            matchString += self._addObjectLiteralToParameters(item);
-          else
-            matchString += helpers.serializeObjectForCypher(item);
+          matchString += self._addObjectLiteralForStatement(item);
         } else {
           matchString += String(item);
         }
@@ -732,10 +729,20 @@ var __initGraph__ = function(neo4jrestful) {
     o = helpers.flattenObject(o);
     var values = [];
     var key = '';
+    var identifierDelimiter = '`';
     for (var attr in o) {
-      values.push(attr+' : '+this._addParameterToCypher(o[attr])); 
+      values.push(helpers.escapeIdentifier(attr, identifierDelimiter) + ' : '+this._addParameterToCypher(o[attr])); 
     }
     return '{ '+values.join(', ')+' }';
+  }
+
+  Graph.prototype._addObjectLiteralForStatement = function(o) {
+    var s = '';
+    if (this.cypher.useParameters)
+      s = this._addObjectLiteralToParameters(o);
+    else
+      s = helpers.serializeObjectForCypher(o);
+    return s;
   }
 
   /*

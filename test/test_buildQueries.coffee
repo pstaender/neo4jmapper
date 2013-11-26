@@ -368,7 +368,7 @@ describe 'Neo4jMapper (cypher queries)', ->
             """
               START _start_
               MATCH _match_
-              ON MATCH (on)-[r:RELTYPE { key1 : {_value0_}, key2 : {_value1_} }]-(match)
+              ON MATCH (on)-[r:RELTYPE { `key1` : {_value0_}, `key2` : {_value1_} }]-(match)
               WHERE n.name = {value1} OR n.name = {value2}
               WITH _with_
               ORDER BY _order by_
