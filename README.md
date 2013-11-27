@@ -53,8 +53,8 @@ or in the browser:
 To use multiple database connections:
 
 ```js
-  var neo4j1 = new Neo4j('http://somewhere:7474');
-  var neo4j2 = new Neo4j('http://elsewhere:7070');
+  var neo4j1 = new Neo4jMapper('http://somewhere:7474');
+  var neo4j2 = new Neo4jMapper('http://elsewhere:7070');
 ```
 
 Most of the time you might work with the following interfaces:
@@ -819,8 +819,8 @@ Neo4jMapper won't drop indexed or unique defined fields for you, because it does
 * onBeforeSave(node, next)
 * onAfterSave(node, next)
 * onBeforeRemove(node, next)
-* onBeforeInitialize(next) (will be called before a model will initialized)
-* onAfterPopulate() (will be calles after data is applied on the node)
+* onBeforeInitialize(next) (will be called before a model will be initialized)
+* onAfterPopulate() (will be called after data is applied on the node)
 
 ### Relationships hooks
 

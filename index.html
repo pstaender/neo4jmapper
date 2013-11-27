@@ -45,8 +45,8 @@
 <p>or in the browser:</p>
 <pre><code class="lang-js">  var neo4j = new window.Neo4jMapper(&#39;http://localhost:7474&#39;);</code></pre>
 <p>To use multiple database connections:</p>
-<pre><code class="lang-js">  var neo4j1 = new Neo4j(&#39;http://somewhere:7474&#39;);
-  var neo4j2 = new Neo4j(&#39;http://elsewhere:7070&#39;);</code></pre>
+<pre><code class="lang-js">  var neo4j1 = new Neo4jMapper(&#39;http://somewhere:7474&#39;);
+  var neo4j2 = new Neo4jMapper(&#39;http://elsewhere:7070&#39;);</code></pre>
 <p>Most of the time you might work with the following interfaces:</p>
 <pre><code class="lang-js">  var Node = neo4j.Node
     , Relationship = neo4j.Relationship
@@ -587,8 +587,8 @@ The following methods are available: post, get, delete, put and query.</p>
 <li>onBeforeSave(node, next)</li>
 <li>onAfterSave(node, next)</li>
 <li>onBeforeRemove(node, next)</li>
-<li>onBeforeInitialize(next) (will be called before a model will initialized)</li>
-<li>onAfterPopulate() (will be calles after data is applied on the node)</li>
+<li>onBeforeInitialize(next) (will be called before a model will be initialized)</li>
+<li>onAfterPopulate() (will be called after data is applied on the node)</li>
 </ul>
 <h3>Relationships hooks</h3>
 <ul>
@@ -662,8 +662,8 @@ or in the browser:
 To use multiple database connections:
 
 ```js
-  var neo4j1 = new Neo4j('http://somewhere:7474');
-  var neo4j2 = new Neo4j('http://elsewhere:7070');
+  var neo4j1 = new Neo4jMapper('http://somewhere:7474');
+  var neo4j2 = new Neo4jMapper('http://elsewhere:7070');
 ```
 
 Most of the time you might work with the following interfaces:
@@ -1428,8 +1428,8 @@ Neo4jMapper won't drop indexed or unique defined fields for you, because it does
 * onBeforeSave(node, next)
 * onAfterSave(node, next)
 * onBeforeRemove(node, next)
-* onBeforeInitialize(next) (will be called before a model will initialized)
-* onAfterPopulate() (will be calles after data is applied on the node)
+* onBeforeInitialize(next) (will be called before a model will be initialized)
+* onAfterPopulate() (will be called after data is applied on the node)
 
 ### Relationships hooks
 
