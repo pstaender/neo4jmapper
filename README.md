@@ -303,6 +303,33 @@ You can also use `Graph.enableProcessing().…` instead of `Graph.start()…` if
 
 Results will contain the relevant data column and found objects will be loaded as expected (columns definitions may redundant here, but are available on `graph._columns_` anyhow).
 
+For specific statement segments can handle object literals (besides oridnary strings) to enforce value processing (i.e. using query parameters / escaping).
+
+Some examples:
+
+#### Create a Node
+
+```js
+  Graph.create({ 'n:Person': { name : 'Dave', surname : 'Grohl' } });
+  // ~> CREATE (n:Person { name : 'Dave', surname : 'Grohl' })
+```
+
+#### Update a Node
+
+```js
+  Graph.start('n = node(123)')
+    .set({ "n.name" : 'Dave', "n.surname" : 'Grohl', "n.year": null }),
+    // ~> START n = node(123) SET n.`name` = 'Dave', n.`surname` = 'Grohl', n.`year` = NULL;
+```
+
+#### Match condition
+
+```js
+  Graph.start()
+    .match([ '(on)-[r:RELTYPE ', { since : 1982 }, ']-(match)' ]);
+    // ~> MATCH (on)-[r:RELTYPE { `since` : 1982 }]-(match)
+```
+
 ### Query with minimal processing of the results
 
 ```js
@@ -787,70 +814,20 @@ Neo4jMapper won't drop indexed or unique defined fields for you, because it does
 
 ## Hooks
 
-### Nodes
+### Node hooks
 
-All hooks can also be defined for specific ”classes“, e.g.:
+* onBeforeSave(node, next)
+* onAfterSave(node, next)
+* onBeforeRemove(node, next)
+* onBeforeInitialize(next) (will be called before a model will initialized)
+* onAfterPopulate() (will be calles after data is applied on the node)
 
-```js
-  Person.prototype.onBeforeSave = fucntion(next) { next(null, null); }
-```
+### Relationships hooks
 
-#### onBeforeSave
-
-```js
-  Node.prototype.onBeforeSave = function(next) {
-    // do s.th. before the node will be persisted
-    // is called before initially save and update
-    next();
-  }
-```
-
-#### onBeforeRemove
-
-```js
-  Node.prototype.onBeforeRemove = function(next) {
-    // do s.th. before the node will be removed
-    next();
-  }
-```
-
-#### onBeforeInitialize
-
-Called once the model is being registered. For instance, to ensure autoindex on defined fields is done in this part:
-
-```js
-  Node.prototype.onBeforeInitialize = function(next) {
-    // do s.th. before the Model gets initialized
-    next();
-  }
-```
-
-#### onAfterLoad
-
-On all `Node.find…()` queries the results run through a load process (loading the label(s) which has to be an extra request for instance). You can define your own afterLoad process this way:
-
-```js
-  Node.prototype.onAfterLoad = function(node, done) {
-    // do s.th. here, finnaly call done()
-    if (node.id)
-      this.neo4jrestful.query("START …", function(err, result) {
-        // …
-        done(err, null);
-      });
-  }
-```
-
-#### onAfterPopulate
-
-If a node is populated with data from a response, you can process your node/data here. This method is called synchronous.
-
-```js
-  Node.prototype.onAfterPopulate = function() {
-    if ((this.data.firstname)&&(this.data.surname)) {
-      this.data.name = this.data.firstname + ' ' + this.data.surname;
-    }
-  }
-```
+* onBeforeLoad(relationship, next)
+* onAfterLoad(relationship, next)
+* onBeforeSave(relationship, next)
+* onAfterSave(relationship, next)
 
 ### Performance Tweaks
 
