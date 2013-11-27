@@ -354,7 +354,8 @@ describe 'Neo4jMapper (cypher queries)', ->
               .onMatch([ '(on)-[r:RELTYPE ', { key1: 'value1', key2: 'value2' }, ']-(match)' ])
               .optionalMatch({ key3: 'value3' })
               .where('n.name = {value1} OR n.name = {value2}')
-              .parameters({value1: 'Bob'})
+              .where({ $OR: [ { 'n.name': 'Bob' }, { 'n.name': 'bob' } ] })
+              .addParameters({value1: 'Bob'})
               .addParameters({value2: 'bob'})
               .with('_with_')
               .orderBy('_order by_')
@@ -378,6 +379,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               ON MATCH (on)-[r:RELTYPE { `key1` : 'value1', `key2` : 'value2' }]-(match)
               OPTIONAL MATCH { `key3` : 'value3' }
               WHERE n.name = {value1} OR n.name = {value2}
+              WHERE ( HAS (n.`name`) AND n.`name` = 'Bob' OR HAS (n.`name`) AND n.`name` = 'bob' )
               WITH _with_
               ORDER BY _order by_
               SKIP 0
@@ -401,6 +403,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               ON MATCH (on)-[r:RELTYPE { `key1` : {_value0_}, `key2` : {_value1_} }]-(match)
               OPTIONAL MATCH { `key3` : {_value2_} }
               WHERE n.name = {value1} OR n.name = {value2}
+              WHERE ( HAS (n.`name`) AND n.`name` = {_value3_} OR HAS (n.`name`) AND n.`name` = {_value4_} )
               WITH _with_
               ORDER BY _order by_
               SKIP 0
@@ -418,7 +421,7 @@ describe 'Neo4jMapper (cypher queries)', ->
               custom statement
               /* comment */;
             """,
-            { value1: 'Bob', value2: 'bob' }
+            { _value0_:"value1", _value1_: "value2", _value2_: "value3", _value3_: "Bob", _value4_: "bob", value1: "Bob", value2: "bob" }
           ]
 
         # http://gist.neo4j.org/?6506717

@@ -29,9 +29,29 @@ var ConditionalParameters = function ConditionalParameters(conditions, options) 
 
   ConditionalParameters.prototype.addValue = function(value) {
     if (!this.parameters)
-      this.parameters = [];
-    this.parameters.push(value);
-    return '{_value'+(this.parametersStartCountAt + this.parameters.length - 1)+'_}';
+      this.parameters = {};
+    var property = '_value'+(this.parametersStartCountAt + this.parametersCount())+'_';
+    this.parameters[property] = value;
+    return '{'+property+'}';
+  }
+
+  ConditionalParameters.prototype.values = function() {
+    var values = [];
+    for (var prop in this.parameters) {
+      values.push(this.parameters[prop]);
+    }
+    return values;
+  }
+
+  ConditionalParameters.prototype.parametersCount = function() {
+    if ((typeof this.parameters !== 'object')||(this.parameters === null))
+      return 0;
+    else
+      return Object.keys(this.parameters).length;
+  }
+
+  ConditionalParameters.prototype.hasParameters = function() {
+    return (this.parametersCount() > 0);
   }
 
   ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {

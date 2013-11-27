@@ -1440,9 +1440,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var condition = new ConditionalParameters(_.extend(where), options);
     var whereCondition = condition.toString();
     this.cypher.segments.where.push(whereCondition);
-    if ((options.valuesToParameters) && (condition.parameters))
-      this._addParametersToCypher(condition.parameters);
-
+    if ((options.valuesToParameters) && (condition.hasParameters()))
+      this._addParametersToCypher(condition.values());
     this._query_history_.push({ WHERE: whereCondition });
 
     this.exec(cb);

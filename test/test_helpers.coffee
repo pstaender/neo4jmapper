@@ -254,11 +254,11 @@ describe 'Neo4jMapper (helpers)', ->
       expect(con.toString()).to.be.equal """
         ( ( HAS (n.`name`) AND n.`name` =~ {_value0_} AND HAS (n.`since`) AND r.`since` = {_value1_} AND ( HAS (n.`email`) AND n.`email` = {_value2_} OR ( HAS (n.`email`) AND n.`email` = {_value3_} AND HAS (n.`country`) AND n.`country` = {_value4_} ) ) ) )
       """
-      expect(con.parameters).to.have.length 5
-      expect(con.parameters[0]).to.be.equal '(?i)Alice'
-      expect(con.parameters[1]).to.be.equal 'years'
-      expect(con.parameters[2]).to.be.equal 'alice@home.com'
-      expect(con.parameters[3]).to.be.equal 'alice@home.de'
-      expect(con.parameters[4]).to.be.equal 'de_DE'
+      expect(con.parametersCount()).to.be.equal 5
+      expect(con.values()[0]).to.be.equal '(?i)Alice'
+      expect(con.values()[1]).to.be.equal 'years'
+      expect(con.values()[2]).to.be.equal 'alice@home.com'
+      expect(con.values()[3]).to.be.equal 'alice@home.de'
+      expect(con.values()[4]).to.be.equal 'de_DE'
 
     # Implement feature + test for mathematical operators: =, <>, <, >, <=, >=

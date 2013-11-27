@@ -610,12 +610,13 @@ var __initGraph__ = function(neo4jrestful) {
       this.cypher.useParameters = true;
     if (!_.isArray(where))
       where = [ where ];
-    var options = { valuesToParameters: this.cypher.useParameters };
-    var condition = new ConditionalParameters(where, options)
-    , whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
+    var options = { valuesToParameters: this.cypher.useParameters, parametersStartCountAt: Object.keys(this.cypher.parameters || {}).length };
+    var condition = new ConditionalParameters(where, options);
+    var whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
+    
     this._query_history_.push({ WHERE: whereCondition });
     if (this.cypher.useParameters)
-      this._addParametersToCypher(condition.parameters);
+      this.addParameters(condition.parameters);
     return this.exec(cb);
   }
 
