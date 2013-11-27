@@ -338,6 +338,10 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  Graph.prototype.addParameter = function(parameter) {
+    return this.addParameters(parameter);
+  }
+
   // ### Deletes *all* nodes and *all* relationships
   Graph.prototype.wipeDatabase = function(cb) {
     var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";

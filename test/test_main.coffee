@@ -50,10 +50,14 @@ describe 'Neo4jMapper', ->
       expect(exact_version).to.be.a 'string'
       expect(client.version >= 2).to.be true
       # we workaround the Node with id = 0 situation
-      Node.create { name: 'dummy to avoid id=0 ' }, (err, node) ->
-        # since v2RC1, first node created has is=0, turns into problem if you create a relationship on it (nullpointer exception)
-        Node.findById(0).delete ->
+      Node.findAll().count (err, count) ->
+        if count > 0
           done()
+        else
+          Node.create { name: 'dummy to avoid id=0 ' }, (err, node) ->
+            # since v2RC1, first node created has is=0, turns into problem if you create a relationship on it (nullpointer exception)
+            Node.findById(0).delete ->
+              done()
 
   describe 'generated cypher queries', ->
 

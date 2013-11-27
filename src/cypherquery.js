@@ -105,7 +105,8 @@ CypherQuery.prototype.addParameters = function(parameters) {
     throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
   if (this.useParameters === null)
     this.useParameters = true;
-  if (!this.hasParameters())
+  // reset parameters
+  if ((!this.hasParameters()) || ((parameters !== null) && (Object.keys(parameters).length === 0)))
     this.parameters = {};
   for (var attr in parameters) {
     this.parameters[attr] = parameters[attr];

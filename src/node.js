@@ -316,6 +316,15 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this.data;
   }
 
+  Node.prototype.dataForCypher = function() {
+    var data = this.flattenData();
+    for (var attr in data) {
+      data['`'+attr+'`'] = data[attr];
+      delete data[attr];
+    }
+    return data;
+  }
+
   Node.prototype.unflattenData = function(useReference) {
     // strongly recommend not to mutate attached node's data
     if (typeof useReference !== 'boolean')
@@ -565,31 +574,45 @@ var __initNode__ = function(neo4jrestful, Graph) {
     this.id = this._id_;
 
     if (this.id > 0) {
-      // PUT / update
-      Graph.request().put(this.__TYPE__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
-        if (err) {
-          return cb(err, res, debug);
-        } else {
-          self.isPersisted(true);
-          cb(err, self, debug);
-        }
-      });
+      // we generate: { n: { data } } -> n.`prop` = '' , … ,
+      var data = {};
+      data[this.__TYPE_IDENTIFIER__] = this.dataForCypher();
+      // update node
+      Graph
+        .start('n = node({id})')
+        .addParameter({ id: Number(this.id) })
+        .set(data)
+        .exec(function(err, res, debug) {
+          if (err) {
+            return cb(err, res, debug);
+          } else {
+            self.isPersisted(true);
+            cb(err, self, debug);
+          }
+        });
     } else {
-      // POST / create
-      Graph.request().post(this.__TYPE__, { data: this.flattenData() }, function(err, node, debug) {
-        if ((err) || (!node)) {
-          return cb(err, node);
-        } else {
-          // copy persisted data on initially instanced node
-          node.copyTo(self);
-          node = self;
-          node._is_singleton_ = false;
-          node._is_instanced_ = true;
-          if (!err)
-            node.isPersisted(true);
-          return cb(null, node, debug);
-        }
-      });
+      // create node
+      var labels = (this.labels.length > 0) ? ':'+this.labels.join(':') : '';
+      var data = {};
+      data['n'+labels] = this.dataForCypher();
+      Graph
+        .start()
+        .create(data)
+        .return('n')
+        .exec(function(err, res, debug) {          
+          if ((err)||(!res)) {
+            return cb(err, res, debug);
+          } else {
+            var node = res[0];
+            // copy persisted data on initially instanced node
+            node.copyTo(self);
+            node = self;
+            node._is_singleton_ = false;
+            node._is_instanced_ = true;
+            self.isPersisted(true);
+            return cb(null, node, debug);
+          }
+        });
     }
   }
 
