@@ -525,9 +525,14 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(cb);
   }
 
-  Graph.prototype.create = function(create, cb) {
+  Graph.prototype.create = function(create, cb, options) {
     var self = this;
     var creates = [];
+    if (typeof options !== 'object')
+      options = {};
+    options = _.defaults(options, {
+      action: 'CREATE'
+    });
     if (typeof create === 'object') {
       creates.push('( ');
       if (create.length) {
@@ -550,23 +555,23 @@ var __initGraph__ = function(neo4jrestful) {
     } else {
       creates = [ create ];
     }
-    this._query_history_.push({ CREATE: creates.join(' ') });
+    var statementSegment = {};
+    // { CREATE:  creates.join(' ') } for instance
+    statementSegment[options.action] = creates.join(' ');
+    this._query_history_.push(statementSegment);
     return this.exec(cb);
   }
 
   Graph.prototype.onCreate = function(onCreate, cb) {
-    this._query_history_.push({ ON_CREATE: onCreate });
-    return this.exec(cb);
+    return this.create(onCreate, cb, { action: 'ON_CREATE' });
   }
 
-  Graph.prototype.createUnique = function(create, cb) {
-    this._query_history_.push({ CREATE_UNIQUE: create });
-    return this.exec(cb);
+  Graph.prototype.createUnique = function(createUnique, cb) {
+    return this.create(createUnique, cb, { action: 'CREATE_UNIQUE' });
   }
 
   Graph.prototype.createIndexOn = function(createIndexOn, cb) {
-    this._query_history_.push({ CREATE_INDEX_ON: createIndexOn });
-    return this.exec(cb);
+    return this.create(createIndexOn, cb, { action: 'CREATE_INDEX_ON' });
   }
 
   Graph.prototype.case = function(caseStatement, cb) {
