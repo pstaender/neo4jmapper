@@ -529,6 +529,7 @@ var __initGraph__ = function(neo4jrestful) {
     var self = this;
     var creates = [];
     if (typeof create === 'object') {
+      creates.push('( ');
       if (create.length) {
         create.forEach(function(item){
           if (typeof item === 'object') {
@@ -538,14 +539,14 @@ var __initGraph__ = function(neo4jrestful) {
           }
         });
       } else {
-        cretes.push(self._addObjectLiteralForStatement(create));
+        // we have a object literal        
+        var parts = [];
+        for (var part in create) {
+          parts.push(part + ' ' + self._addObjectLiteralForStatement(create[part]));
+        }
+        creates.push(parts.join(', '));
       }
-      if (typeof creates[0] === 'string') {
-        if (!/\s*\(\s*$/.test(creates[0]))
-          creates.unshift('(');
-        if (!/\s*\)\s*$/.test(creates[creates.length-1]))
-          creates.push(')');
-      }
+      creates.push(' )');
     } else {
       creates = [ create ];
     }

@@ -321,10 +321,10 @@ describe 'Neo4jMapper (cypher queries)', ->
 
         "Graph.create()":
           [
-            Graph.create(['n:Person', {
+            Graph.create({ 'n:Person' : {
               name: 'Andres',
               title: 'Developer'
-            }]),
+            }}),
             """
               CREATE ( n:Person { `name` : 'Andres', `title` : 'Developer' } );
             """,
