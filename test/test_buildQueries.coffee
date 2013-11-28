@@ -337,14 +337,19 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Graph.set()":
           [
             Graph.start('n = node(123)')
-              .set({"n.name": 'Philipp', "n.year": 1982, "n.surname": null }),
+              .set({"n.name": 'Philipp', "n.year": 1982, "n.surname": null })
+              .setWith({ n : { "name": 'Philipp', "year": 1982, "surname": null } }),
             """
-              START n = node(123) SET n.`name` = 'Philipp', n.`year` = 1982, n.`surname` = NULL;
+              START n = node(123)
+              SET n.`name` = 'Philipp', n.`year` = 1982, n.`surname` = NULL
+              SET n = { `name` : 'Philipp', `year` : 1982, `surname` : NULL };
             """,
             """
-              START n = node(123) SET n.`name` = {_value0_}, n.`year` = {_value1_}, n.`surname` = {_value2_};
+              START n = node(123)
+              SET n.`name` = {_value0_}, n.`year` = {_value1_}, n.`surname` = {_value2_}
+              SET n = { `name` : {_value3_}, `year` : {_value4_}, `surname` : {_value5_} };
             """,
-            { value0: 'Philipp', value1: 1982, value2: null }
+            { _value0_: 'Philipp', _value1_: 1982, _value2_: null, _value3_: 'Philipp', _value4_: 1982, _value5_: null }
           ]
 
         "Graph.start()…":

@@ -211,24 +211,34 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       }
 
       // UPDATE properties
-      url = 'relationship/'+this._id_+'/properties';
-      return Graph.request().put(url, { data: relationshipPropertiesFlatten }, cb);
+      // url = 'relationship/'+this._id_+'/properties';
+      // return Graph.request().put(url, { data: relationshipPropertiesFlatten }, cb);
+      Graph
+        .start('r = relationship({id})')
+        .addParameters({
+          id: Number(this.id),
+        })
+        .setWith( { r: this.dataForCypher() } )
+        .return('r')
+        .exec(cb); 
     } else {
-      // CREATE
-      url = 'node/'+this.from.id+'/relationships';
-      var data = {
-        to: this.to.uri,
-        type: this.type,
-        data: relationshipPropertiesFlatten,
-      };
-      Graph.request().post(url, { data: data }, function(err, relationship, debug) {
-        if ((err) || (!relationship))
-          return cb(err, relationship, debug);
-        else {
-          relationship.copyTo(self);
-          return cb(null, self, debug);
-        }
-      });
+      Graph
+        .start('n = node({from}), m = node({to})')
+        .addParameters({
+          from: Number(this.from.id),
+          to: Number(this.to.id),
+        })
+        .create([ '(n)-[r: '+helpers.escapeProperty(this.type), this.dataForCypher(), ']->(m)'])
+        .return('r')
+        .limit(1)
+        .exec(function(err, relationship, debug) { 
+          if ((err) || (!relationship))
+            return cb(err, relationship, debug);
+          else {
+            relationship.copyTo(self);
+            return cb(null, self, debug);
+          }
+        });
     }
   }
 
@@ -425,17 +435,17 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     return r;
   }
 
-  Relationship.prototype.hasValidData             = Node.prototype.hasValidData;
-  Relationship.prototype.flattenData              = Node.prototype.flattenData;
-  Relationship.prototype.setUriById               = Node.prototype.setUriById;
-  Relationship.prototype.isPersisted              = Node.prototype.isPersisted;
-  Relationship.prototype.hasId                    = Node.prototype.hasId;
-  Relationship.prototype.dataForCypherStatement   = Node.prototype.dataForCypherStatement;
+  Relationship.prototype.hasValidData     = Node.prototype.hasValidData;
+  Relationship.prototype.flattenData      = Node.prototype.flattenData;
+  Relationship.prototype.setUriById       = Node.prototype.setUriById;
+  Relationship.prototype.isPersisted      = Node.prototype.isPersisted;
+  Relationship.prototype.hasId            = Node.prototype.hasId;
+  Relationship.prototype.dataForCypher    = Node.prototype.dataForCypher;
 
-  Relationship.setDefaultFields                   = Node.setDefaultFields;
-  Relationship.setIndexFields                     = Node.setIndexFields;
-  Relationship.setUniqueFields                    = Node.setUniqueFields;
-  Relationship._setModelFields                    = Node._setModelFields;
+  Relationship.setDefaultFields            = Node.setDefaultFields;
+  Relationship.setIndexFields              = Node.setIndexFields;
+  Relationship.setUniqueFields             = Node.setUniqueFields;
+  Relationship._setModelFields             = Node._setModelFields;
 
   Relationship.new = function(type, data, start, end, id, cb) {
     return new Relationship(type, data, start, end, id, cb);

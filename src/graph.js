@@ -508,9 +508,10 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.set = function(set, cb) {
     var self = this;
     var setString = '';
+    var data = null;
     if ((typeof set === 'object')&&(set !== null)) {
       if (set.constructor !== Array) {
-        var data = set;
+        data = set;
         set = [];
         if (this.cypher.useParameters) {
           set = this._addKeyValuesToParameters(data, ' = ');
@@ -521,10 +522,24 @@ var __initGraph__ = function(neo4jrestful) {
           }
         }
       }
-      setString = set.join(', ');
+      setString += set.join(', ');
     } else {
-      setString = set;
+      setString += set;
     }
+    this._query_history_.push({ SET: setString });
+    return this.exec(cb);
+  }
+
+  Graph.prototype.setWith = function(setWith, cb) {
+    var setString = '';
+    
+
+    setString += Object.keys(setWith)[0]+' = ';
+    if (this.cypher.useParameters) {
+      setString += this._addObjectLiteralToParameters(setWith[Object.keys(setWith)[0]]);
+    } else {
+      setString += helpers.serializeObjectForCypher(setWith[Object.keys(setWith)[0]]);
+    }   
     this._query_history_.push({ SET: setString });
     return this.exec(cb);
   }

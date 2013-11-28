@@ -306,11 +306,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if ((typeof this.data === 'object') && (this.data !== null)) {
       var data = (useReference) ? this.data : _.extend(this.data);
       data = helpers.flattenObject(data);
-      // remove null values since neo4j can't store them
-      for(var key in data) {
-        if ((typeof data[key] === 'undefined') || (data[key]===null))
-          delete data[key];
-      }
       return data;
     }
     return this.data;
@@ -575,13 +570,11 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
     if (this.id > 0) {
       // we generate: { n: { data } } -> n.`prop` = '' , … ,
-      var data = {};
-      data[this.__TYPE_IDENTIFIER__] = this.dataForCypher();
       // update node
       Graph
         .start('n = node({id})')
         .addParameter({ id: Number(this.id) })
-        .set(data)
+        .setWith({ n: this.dataForCypher() })
         .exec(function(err, res, debug) {
           if (err) {
             return cb(err, res, debug);
@@ -599,11 +592,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
         .start()
         .create(data)
         .return('n')
-        .exec(function(err, res, debug) {          
+        .limit(1)
+        .exec(function(err, res, debug) { 
           if ((err)||(!res)) {
             return cb(err, res, debug);
           } else {
-            var node = res[0];
+            var node = res;
             // copy persisted data on initially instanced node
             node.copyTo(self);
             node = self;
