@@ -73,7 +73,12 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._response_                    = null;         // contains the last response object
   Graph.prototype._columns_                     = null;         // contains `columns` of { columns: [ … ], data: [ … ] }
 
-  Graph.prototype.exec = function(query, cb) {
+  Graph.prototype.exec = function(query, parameters, cb) {
+    if ((typeof parameters === 'object') && (parameters !== null)) {
+      this.addParameters(parameters);
+    } else if (typeof parameters === 'function') {
+      cb = parameters;
+    }
     if (typeof query !== 'string') {
       cb = query;
       query = this.toCypherQuery();
@@ -416,7 +421,7 @@ var __initGraph__ = function(neo4jrestful) {
 
   // ### Startpoint to begin query chaining
   // e.g. Graph.start().where( …
-  Graph.prototype.start = function(start, cb) {
+  Graph.prototype.start = function(start, parameters, cb) {
     this.resetQuery();
     if (typeof start === 'function') {
       cb = start;
@@ -424,10 +429,10 @@ var __initGraph__ = function(neo4jrestful) {
     }
     if (start)
       this._query_history_.push({ START: start });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.match = function(match, cb, options) {
+  Graph.prototype.match = function(match, parameters, cb, options) {
     var self = this;
     if (typeof options !== 'object')
       options = {};
@@ -454,58 +459,58 @@ var __initGraph__ = function(neo4jrestful) {
       this._query_history_.push({ ON_MATCH: matchString });
     else if (options.switch === 'OPTIONAL MATCH')
       this._query_history_.push({ OPTIONAL_MATCH: matchString });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.onMatch = function(onMatch, cb) {
-    return this.match(onMatch, cb, { switch: 'ON MATCH' });
+  Graph.prototype.onMatch = function(onMatch, parameters, cb) {
+    return this.match(onMatch, parameters, cb, { switch: 'ON MATCH' });
   }
 
-  Graph.prototype.optionalMatch = function(optionalMatch, cb) {
-    return this.match(optionalMatch, cb, { switch: 'OPTIONAL MATCH' });
+  Graph.prototype.optionalMatch = function(optionalMatch, parameters, cb) {
+    return this.match(optionalMatch, parameters, cb, { switch: 'OPTIONAL MATCH' });
   }
 
-  Graph.prototype.with = function(withStatement, cb) {
+  Graph.prototype.with = function(withStatement, parameters, cb) {
     this._query_history_.push({ WITH: withStatement });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.skip = function(skip, cb) {
+  Graph.prototype.skip = function(skip, parameters, cb) {
     skip = parseInt(skip);
     if (skip === NaN)
       throw Error('SKIP must be an integer');
     this._query_history_.push({ SKIP: skip });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.limit = function(limit, cb) {
+  Graph.prototype.limit = function(limit, parameters, cb) {
     limit = parseInt(limit);
     if (limit === NaN)
       throw Error('LIMIT must be an integer');
     this._query_history_.push({ LIMIT: limit });
     this.cypher.limit = limit; // TODO: implement: if limit 1 only return { r } or null instead if [ { r } ]
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.merge = function(merge, cb) {
+  Graph.prototype.merge = function(merge, parameters, cb) {
     // TODO: values to parameter
     this._query_history_.push({ MERGE: merge });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.custom = function(statement, cb) {
+  Graph.prototype.custom = function(statement, parameters, cb) {
     if ((typeof statement === 'object') && (typeof statement.toQuery === 'function')) {
       this._query_history_.push(statement.toQuery().toString());
     } else {
       this._query_history_.push(statement);
     }
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
   // will be used to send statements
   // Graph.prototype.statement = null;
 
-  Graph.prototype.set = function(set, cb) {
+  Graph.prototype.set = function(set, parameters, cb) {
     var self = this;
     var setString = '';
     var data = null;
@@ -527,13 +532,11 @@ var __initGraph__ = function(neo4jrestful) {
       setString += set;
     }
     this._query_history_.push({ SET: setString });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.setWith = function(setWith, cb) {
+  Graph.prototype.setWith = function(setWith, parameters, cb) {
     var setString = '';
-    
-
     setString += Object.keys(setWith)[0]+' = ';
     if (this.cypher.useParameters) {
       setString += this._addObjectLiteralToParameters(setWith[Object.keys(setWith)[0]]);
@@ -541,10 +544,10 @@ var __initGraph__ = function(neo4jrestful) {
       setString += helpers.serializeObjectForCypher(setWith[Object.keys(setWith)[0]]);
     }   
     this._query_history_.push({ SET: setString });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.create = function(create, cb, options) {
+  Graph.prototype.create = function(create, parameters, cb, options) {
     var self = this;
     var creates = [];
     if (typeof options !== 'object')
@@ -578,32 +581,32 @@ var __initGraph__ = function(neo4jrestful) {
     // { CREATE:  creates.join(' ') } for instance
     statementSegment[options.action] = creates.join(' ');
     this._query_history_.push(statementSegment);
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.onCreate = function(onCreate, cb) {
-    return this.create(onCreate, cb, { action: 'ON_CREATE' });
+  Graph.prototype.onCreate = function(onCreate, parameters, cb) {
+    return this.create(onCreate, parameters, cb, { action: 'ON_CREATE' });
   }
 
-  Graph.prototype.createUnique = function(createUnique, cb) {
-    return this.create(createUnique, cb, { action: 'CREATE_UNIQUE' });
+  Graph.prototype.createUnique = function(createUnique, parameters, cb) {
+    return this.create(createUnique, parameters, cb, { action: 'CREATE_UNIQUE' });
   }
 
-  Graph.prototype.createIndexOn = function(createIndexOn, cb) {
-    return this.create(createIndexOn, cb, { action: 'CREATE_INDEX_ON' });
+  Graph.prototype.createIndexOn = function(createIndexOn, parameters, cb) {
+    return this.create(createIndexOn, parameters, cb, { action: 'CREATE_INDEX_ON' });
   }
 
-  Graph.prototype.case = function(caseStatement, cb) {
+  Graph.prototype.case = function(caseStatement, parameters, cb) {
     this._query_history_.push({ CASE: caseStatement.replace(/END\s*$/i,'') + ' END ' });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.dropIndexOn = function(dropIndexOn, cb) {
+  Graph.prototype.dropIndexOn = function(dropIndexOn, parameters, cb) {
     this._query_history_.push({ DROP_INDEX_ON: dropIndexOn });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.orderBy = function(property, cb) {
+  Graph.prototype.orderBy = function(property, parameters, cb) {
     var direction = ''
       , s = '';
     if (typeof property === 'object') {
@@ -617,10 +620,10 @@ var __initGraph__ = function(neo4jrestful) {
       s = property;
     }
     this._query_history_.push({ ORDER_BY: s });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.where = function(where, cb) {
+  Graph.prototype.where = function(where, parameters, cb) {
     if (typeof where === 'string') {
       this._query_history_.push({ WHERE: where });
       return this.exec(cb);
@@ -636,10 +639,10 @@ var __initGraph__ = function(neo4jrestful) {
     this._query_history_.push({ WHERE: whereCondition });
     if (this.cypher.useParameters)
       this.addParameters(condition.parameters);
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.return = function(returnStatement, cb, distinct) {
+  Graph.prototype.return = function(returnStatement, parameters, cb, distinct) {
     var parts = [];
     if (returnStatement) {
       if (returnStatement.constructor === Array)
@@ -655,41 +658,41 @@ var __initGraph__ = function(neo4jrestful) {
       this._query_history_.push({ RETURN_DISTINCT: returnStatement });
     else
       this._query_history_.push({ RETURN: returnStatement });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.returnDistinct = function(returnStatement, cb) {
-    return this.return(returnStatement, cb, true);
+  Graph.prototype.returnDistinct = function(returnStatement, parameters, cb) {
+    return this.return(returnStatement, parameters, cb, true);
   }
 
-  Graph.prototype.delete = function(deleteStatement, cb) {
+  Graph.prototype.delete = function(deleteStatement, parameters, cb) {
     this._query_history_.push({ DELETE: deleteStatement });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.remove = function(remove, cb) {
+  Graph.prototype.remove = function(remove, parameters, cb) {
     this._query_history_.push({ REMOVE: remove });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.foreach = function(foreach, cb) {
+  Graph.prototype.foreach = function(foreach, parameters, cb) {
     this._query_history_.push({ FOREACH: foreach });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.union = function(s, cb) {
+  Graph.prototype.union = function(s, parameters, cb) {
     this._query_history_.push({ UNION: s });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.using = function(s, cb) {
+  Graph.prototype.using = function(s, parameters, cb) {
     this._query_history_.push({ USING: s });
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
-  Graph.prototype.comment = function(comment, cb) {
+  Graph.prototype.comment = function(comment, parameters, cb) {
     this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
-    return this.exec(cb);
+    return this.exec(parameters, cb);
   }
 
   Graph.prototype.toQuery = function() {
@@ -860,24 +863,24 @@ var __initGraph__ = function(neo4jrestful) {
     return new Graph().about(cb);
   }
 
-  Graph.start = function(start, cb) {
-    return new Graph().enableProcessing().start(start, cb);
+  Graph.start = function(start, parameters, cb) {
+    return new Graph().enableProcessing().start(start, parameters, cb);
   }
 
-  Graph.custom = function(statement, cb) {
-    return Graph.start().custom(statement, cb);
+  Graph.custom = function(statement, parameters, cb) {
+    return Graph.start().custom(statement, parameters, cb);
   }
 
-  Graph.match = function(statement, cb) {
-    return Graph.start().match(statement, cb);
+  Graph.match = function(statement, parameters, cb) {
+    return Graph.start().match(statement, parameters, cb);
   }
 
-  Graph.where = function(statement, cb) {
-    return Graph.start().where(statement, cb);
+  Graph.where = function(statement, parameters, cb) {
+    return Graph.start().where(statement, parameters, cb);
   }
 
-  Graph.return = function(statement, cb) {
-    return Graph.start().return(statement, cb);
+  Graph.return = function(statement, parameters, cb) {
+    return Graph.start().return(statement, parameters, cb);
   }
 
   Graph.enableLoading = function(classifications) {
@@ -913,8 +916,8 @@ var __initGraph__ = function(neo4jrestful) {
     return new Graph(url);
   }
 
-  Graph.create = function(statement, cb) {
-    return Graph.start().create(statement, cb);
+  Graph.create = function(statement, parameters, cb) {
+    return Graph.start().create(statement, parameters, cb);
   }
 
   return neo4jrestful.Graph = Graph;
