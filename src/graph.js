@@ -74,6 +74,10 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._columns_                     = null;         // contains `columns` of { columns: [ … ], data: [ … ] }
 
   Graph.prototype.exec = function(query, parameters, cb) {
+    if ((typeof query === 'object') && (query !== null)) {
+      cb = parameters;
+      parameters = query;
+    }
     if ((typeof parameters === 'object') && (parameters !== null)) {
       this.addParameters(parameters);
     } else if (typeof parameters === 'function') {
@@ -626,7 +630,7 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.where = function(where, parameters, cb) {
     if (typeof where === 'string') {
       this._query_history_.push({ WHERE: where });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
     if (this.cypher.useParameters === null)
       this.cypher.useParameters = true;
