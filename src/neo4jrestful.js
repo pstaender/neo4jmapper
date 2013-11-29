@@ -148,7 +148,6 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     'Content-Type': 'application/json'
   };
   Neo4jRestful.prototype.timeout                    = 5000;
-  Neo4jRestful.prototype.debug                      = true; // can be deactivated but will not make any performance difference
   Neo4jRestful.prototype.exact_version              = null;
   Neo4jRestful.prototype.version                    = null;
   Neo4jRestful.prototype.ignore_exception_pattern   = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found
@@ -168,6 +167,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   Neo4jRestful.prototype._response_                 = null;
   Neo4jRestful.prototype._columns_                  = null;
   Neo4jRestful.prototype._detectTypesOnColumns_     = false; // n AS `(Node)`, labels(n) AS `(Node.id)`, r AS `[Relationship]`
+  Neo4jRestful.prototype._debug_                    = null;
 
   Neo4jRestful.prototype.query = function(cypher, options, cb) {
     var args;
@@ -265,21 +265,17 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     if ( (typeof data === 'object') && (data !== null) )
      data = JSON.stringify(options.data);
 
-    if (this.debug)
-      options.debug = true;
-
     // create debug object
-    if (options.debug)
-      debug = new RequestDebug({
-        options: options,
-        requested_url: requestedUrl,
-        method: options.method,
-        data: data,
-        header: this.header,
-        res: null,
-        status: null,
-        err: null
-      });
+    this._debug_ = new RequestDebug({
+      options: options,
+      requested_url: requestedUrl,
+      method: options.method,
+      data: data,
+      header: this.header,
+      res: null,
+      status: null,
+      err: null
+    });
 
     // options for makeRequest()
     var _options_ = {
@@ -310,7 +306,6 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     options.url = _options_.url;
     options.method = _options_.method;
     options.data = _options_.data;
-    options._debug = _options_.debug;
 
     this.log('**debug**', 'URI:', options.method+":"+options.url+" ("+options.absolute_url+")");
     this.log('**debug**', 'sendedData:', options.data);
@@ -361,7 +356,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
         // remove x-stream from header
         delete self.header['X-Stream'];
         if (!count) {
-          cb(null, Error('No matches in stream found ('+ root +')'));
+          cb(null, Error('No matches in stream found ('+ root +')'), self._de);
         }
       });
 
@@ -373,8 +368,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     this._sendHttpRequest(requestOptions, function(err, res) {
       self._response_ = res;
       self._response_on_ = new Date().getTime();
-      if (options._debug)
-        options._debug.responseTime = self.responseTime();
+
+      self._debug_.responseTime = self.responseTime();
+
       if (err) {
         self.onError(cb, err, 'error', options);
       } else {
@@ -480,24 +476,24 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   }
 
   Neo4jRestful.prototype.onSuccess = function(cb, res, status, options) {
-    if (options.debug) {
-      options._debug.res = res;
-      options._debug.status = status;
-    }
+
+    this._debug_.res = res;
+    this._debug_.status = status;
+
     if (status === 'success') {
       if (typeof this.onProcess === 'function')
-        return this.onProcess(res, cb, options._debug);
+        return this.onProcess(res, cb, this._debug_);
       else
-        return cb(null, res, options._debug);
+        return cb(null, res, this._debug_);
     } else {
-      cb(res, status, options._debug);
+      cb(res, status, this._debug_);
     }
   }
 
   Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
     // in some (rare) case, we get an empty {} as error
     if ( (responseError) && (typeof responseError === 'object') && (Object.keys(responseError).length === 0) ) {
-      return cb(null, res.body || null, options._debug);
+      return cb(null, res.body || null, this._debug_);
     }
     var err = responseError;
     var self = this;
@@ -508,11 +504,10 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
       var errDescription = 'Response Error ('+this._response_.status+')';
       error = new ResponseError(errDescription, this._response_.status);
     }
-    if (options.debug) {
-      options._debug.res = res;
-      options._debug.err = err;
-      options._debug.error = error;
-    }
+
+    this._debug_.res = res;
+    this._debug_.err = err;
+    this._debug_.error = error;
 
     try {
       // jquery is an optional feature since superagent
@@ -550,9 +545,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     }
     if ( (err) && (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
       // we ignore by default notfound exceptions, because they are no "syntactical" errors
-      return cb(null, null, options._debug);
+      return cb(null, null, this._debug_);
     } else {
-      return cb(err || error, null, options._debug);
+      return cb(err || error, null, this._debug_);
     }
   }
 
@@ -567,7 +562,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     if (typeof cypher !== 'string')
       throw Error('cypher argument has to be a string');
 
-    return this.query(cypher, options, function(data) {
+    return this.query(cypher, options, function(data, a, b) {
       if (data) {
         if (typeof self.onProcessStream === 'function') {
           todo++;
@@ -577,16 +572,16 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
             if (done >= todo) {
               // done
               cb(data, self);
-              cb(null, self);
+              return cb(null, self, self._debug_);
             } else {
-              cb(data, self);
+              return cb(data, self, self._debug_);
             }
           })
         } else {
-          cb(data, self);
+          return cb(data, self, self._debug_);
         }
       } else {
-        cb(null, self);
+        return cb(null, self, self._debug_);
       }
     });
   }

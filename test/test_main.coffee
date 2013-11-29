@@ -292,10 +292,22 @@ describe 'Neo4jMapper', ->
       i = 0
       Node.create name: generateUID(), (err, n) ->
         Graph.start('n=node({id})', { id: n.id }).return('n').limit(1).stream (node, context, debug) ->
-          # console.log debug
           if node
             expect(context._columns_.constructor).to.be.equal Array
             expect(node.id).to.be.equal n.id
+            i++
+          else
+            expect(i).to.be 1
+            done()
+
+    it 'expect to have response and debug object on stream cb', (SkipStreaming) (done) ->
+      i = 0
+      Node.create name: generateUID(), (err, n) ->
+        Graph.start('n=node({id})', { id: n.id }).return('n').limit(1).stream (node, context, debug) ->
+          expect(context.constructor).to.be.equal Graph
+          expect(Object.keys(context._response_).length).to.be.above 0
+          expect(Object.keys(debug).length).to.be.above 0 
+          if node
             i++
           else
             expect(i).to.be 1

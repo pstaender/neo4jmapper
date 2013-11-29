@@ -377,12 +377,13 @@ var __initGraph__ = function(neo4jrestful) {
           }
         }
       }
+      self._response_ = response;
       if ((data) && (data._response_)) {
         data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
         // data = self.neo4jrestful.Node.instantiateNodeAsModel(data, labels);
       }
       i++;
-      cb(data, self);
+      return cb(data, self, debug);
     });
     return this;
   }
