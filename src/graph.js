@@ -108,9 +108,6 @@ var __initGraph__ = function(neo4jrestful) {
     if ((typeof parameters === 'object') && (parameters !== null)) {
       this.addParameters(parameters);
     }
-    if (typeof query !== 'string') {
-      query = this.toCypherQuery();
-    }
     if (typeof cb === 'function') {
       // args: queryString, parameters (are added above), cb, options (no options are used here)
       this.query(query, {}, cb, {});
@@ -134,8 +131,11 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.query = function(cypherQuery, parameters, cb, options) {
     var self = this;
     if (typeof cypherQuery !== 'string') {
-      throw Error('First argument must be a query string');
+      cypherQuery = this.toCypherQuery();
     }
+    // if (typeof cypherQuery !== 'string') {
+    //   throw Error('First argument must be a query string');
+    // }
     if (typeof parameters === 'function') {
       cb = parameters;
       options = {};
@@ -151,7 +151,7 @@ var __initGraph__ = function(neo4jrestful) {
       this.addParameters(parameters);
     }
 
-    options.params = (typeof this.cypher.useParameters === 'boolean') ? this.cypher.parameters : {};
+    options.params = (typeof this.cypher.useParameters === 'boolean') ? this.parameters() : {};
     options.context = self;
 
     // we expect a cb in most cases and perfom the query immediately
@@ -326,7 +326,6 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype.stream = function(cypherQuery, parameters, cb, options) {
     var self = this;
     var Node = Graph.Node;
-    var recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
     // check arguments for callback
     if (typeof cypherQuery === 'function') {
       cb = cypherQuery;
@@ -335,10 +334,23 @@ var __initGraph__ = function(neo4jrestful) {
       cb = parameters;
       parameters = undefined;
     }
+    if (typeof cypherQuery !== 'string') {
+      cypherQuery = this.toCypherQuery();
+    }
+    if (parameters) {
+      this.addParameters(parameters);
+    }
+    if (!options) {
+      options = {};
+    }
+    // get and set option values
+    var recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
+    options.params = (typeof this.cypher.useParameters === 'boolean') ? this.parameters() : {};
+    parameters = this.parameters();
     var i = 0; // counter is used to prevent changing _columns_ more than once
     var indexOfLabelColumn = null;
-    this.neo4jrestful.stream(cypherQuery, options, function(data, response) {
-      // neo4jrestful alerady created an object, but not with a recommend constructor
+    this.neo4jrestful.stream(cypherQuery, options, function(data, response, debug) {
+      // neo4jrestful already created an object, but not with a recommend constructor
       self._columns_ = response._columns_;
       if ((self._resortResults_)&&(i === 0)) {
         indexOfLabelColumn = self.__indexOfLabelColumn(self._columns_);
@@ -387,15 +399,8 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
-  /**
-   * @deprecated: use **only** as getter; use setParameters() as setter instead (less ambiguous)
-   */
-  Graph.prototype.parameters = function(parameters) {
-    if (parameters) {
-      this.setParameters(parameters);
-      throw Error('use only as getter, use setParameters() as setter instead (less ambiguous)');
-    }
-    return this.cypher.parameters;
+  Graph.prototype.parameters = function() {
+    return this.cypher.parameters || {};
   }
 
   Graph.prototype.addParameters = function(parameters) {

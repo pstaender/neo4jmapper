@@ -278,20 +278,7 @@ describe 'Neo4jMapper', ->
               expect(found[0]).to.have.length 2
               done()
 
-    it.skip 'expect to stream graph query results', (SkipStreaming) (done) ->
-      i = 0
-      Node.create name: generateUID(), (err, n) ->
-        Graph.start('n=node({id})', { id: n.id }).return('n').limit(1).stream (node, context, debug) ->
-          # console.log node
-          if node
-            expect(context._columns_.constructor).to.be.equal Array
-            expect(node.id).to.be.equal n.id
-            i++
-          else
-            expect(i).to.be 1
-            done()
-
-    it.skip 'expect to stream graph query with parameters', (SkipStreaming) (done) ->
+    it 'expect to stream graph query results', (SkipStreaming) (done) ->
       i = 0
       Graph.start('n=node(*)').return('n').limit(1).stream (node, context) ->
         if node
@@ -300,6 +287,19 @@ describe 'Neo4jMapper', ->
         else
           expect(i).to.be 1
           done()
+
+    it 'expect to stream graph query with parameters', (SkipStreaming) (done) ->
+      i = 0
+      Node.create name: generateUID(), (err, n) ->
+        Graph.start('n=node({id})', { id: n.id }).return('n').limit(1).stream (node, context, debug) ->
+          # console.log debug
+          if node
+            expect(context._columns_.constructor).to.be.equal Array
+            expect(node.id).to.be.equal n.id
+            i++
+          else
+            expect(i).to.be 1
+            done()
 
     it 'expect to stream native graph query results', (SkipStreaming) (done) ->
       i = 0

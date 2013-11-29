@@ -172,7 +172,9 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   Neo4jRestful.prototype.query = function(cypher, options, cb) {
     var args;
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
-    if (typeof cypher === 'string') {
+    if (typeof cypher !== 'string') {
+      throw Error('cypher argument has to be a string');
+    } else {
       this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
       this.post('/'+this.urlOptions.endpoint+'cypher',{
         data: {
@@ -250,7 +252,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
 
     if (typeof url !== 'string') {
 
-      throw Error("First argument 'url' must be string");
+      throw Error("First argument 'url' hast to be a string");
 
     }
 
@@ -558,9 +560,12 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     var args;
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
     this.header['X-Stream'] = 'true';
-    var self = this
-      , todo = 0
-      , done = 0;
+    var self = this;
+    var todo = 0;
+    var done = 0;
+
+    if (typeof cypher !== 'string')
+      throw Error('cypher argument has to be a string');
 
     return this.query(cypher, options, function(data) {
       if (data) {
