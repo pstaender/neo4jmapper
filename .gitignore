@@ -14,3 +14,4 @@ examples/browser/test_*.js
 .sass-cache/*
 css/*
 js/*
+apidocs/*

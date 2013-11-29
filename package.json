@@ -27,6 +27,7 @@
       "pattern": "src"
     },
     "doc": "docco src/*.js",
+    "apidocs": "dox-foundation --source src --target apidocs",
     "benchmark": "coffee benchmark/benchmark.coffee",
     "compress": "cake clientsidejs:build && uglifyjs examples/browser/neo4jmapper_complete.js -c -o examples/browser/neo4jmapper_complete.min.js",
     "prepare": "npm test && npm run doc && make test-coverage && npm run compress"

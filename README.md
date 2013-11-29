@@ -38,6 +38,7 @@ Neo4jMapper is available in modern Browsers (except the streaming feature), but 
   * move from restful api to cypher queries if possible (to reduce api dependencies)
   * complete documentation
   * cleanup redundant tests
+  * dox (markdown and jsdoc flavoured) sourcecode documentation
 
 ### Tested against:
 
