@@ -1,30 +1,30 @@
-// **The Graph** respresents the database
-// You can perform basic actions and queries directly on the entire graphdatabase
-
-// ###[Query Structure](http://docs.neo4j.org/refcard/2.0/)
-
-// Read Query Structure:
-// [START]
-// [MATCH]
-// [WHERE]
-// [WITH [ORDER BY] [SKIP] [LIMIT]]
-// RETURN [ORDER BY] [SKIP] [LIMIT]
-//
-// Write-Only Query Structure:
-// (CREATE [UNIQUE] | MERGE)*
-// [SET|DELETE|FOREACH]*
-// [RETURN [ORDER BY] [SKIP] [LIMIT]]
-//
-// Read-Write Query Structure:
-// [START]
-// [MATCH]
-// [WHERE]
-// [WITH [ORDER BY] [SKIP] [LIMIT]]
-// [CREATE [UNIQUE]|MERGE]*
-// [SET|DELETE|FOREACH]*
-// [RETURN [ORDER BY] [SKIP] [LIMIT]]
-//
-// TODO: maybe check of valid query structure?!
+/**
+ * **The Graph** respresents the cypher-query-api of the neo4j database
+ * You can perform basic actions and queries directly on the entire graphdatabase
+ * ###[Query Structure](http://docs.neo4j.org/refcard/2.0/)
+ * Read Query Structure:
+ * [START]
+ * [MATCH]
+ * [WHERE]
+ * [WITH [ORDER BY] [SKIP] [LIMIT]]
+ * RETURN [ORDER BY] [SKIP] [LIMIT]
+ *
+ * Write-Only Query Structure:
+ * (CREATE [UNIQUE] | MERGE)*
+ * [SET|DELETE|FOREACH]*
+ * [RETURN [ORDER BY] [SKIP] [LIMIT]]
+ *
+ * Read-Write Query Structure:
+ * [START]
+ * [MATCH]
+ * [WHERE]
+ * [WITH [ORDER BY] [SKIP] [LIMIT]]
+ * [CREATE [UNIQUE]|MERGE]*
+ * [SET|DELETE|FOREACH]*
+ * [RETURN [ORDER BY] [SKIP] [LIMIT]]
+ *
+ * @todo: maybe check of valid query structure?!
+ */
 
 
 // Initialize the Graph object with a neo4jrestful client
@@ -73,37 +73,82 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._response_                    = null;         // contains the last response object
   Graph.prototype._columns_                     = null;         // contains `columns` of { columns: [ … ], data: [ … ] }
 
+  /** The following argument combinations are accepted:
+    * * query, parameters, cb
+    * * parameters, cb
+    * * query, cb
+    * * cb
+    *
+    * Example:
+    *
+    *     `Graph.new().exec('START n=node({id}) RETURN n;', { id: 123 }, cb);`
+    *  
+    * 
+    * @param {String|Object|Function} query (optional)
+    * @param {Object|Function} parameters (optional)
+    * @param {Function} cb (optional, but needed to trigger query execution finally)
+    */
   Graph.prototype.exec = function(query, parameters, cb) {
-    if ((typeof query === 'object') && (query !== null)) {
+    if (typeof query === 'function') {
+      cb = query;
+      query = undefined;
+      parameters = undefined;
+    } else if (typeof parameters === 'function') {
       cb = parameters;
+      if (typeof query === 'object') {
+        parameters = query;
+        query = undefined;
+      }
+    }
+    if (typeof query === 'object') {
+      // query may be parameters
       parameters = query;
+      query = undefined;
     }
     if ((typeof parameters === 'object') && (parameters !== null)) {
       this.addParameters(parameters);
-    } else if (typeof parameters === 'function') {
-      cb = parameters;
     }
     if (typeof query !== 'string') {
-      cb = query;
       query = this.toCypherQuery();
     }
     if (typeof cb === 'function') {
-      this.query(query, {}, cb);
+      // args: queryString, parameters (are added above), cb, options (no options are used here)
+      this.query(query, {}, cb, {});
     }
     return this;
   }
 
-  Graph.prototype.query = function(cypherQuery, options, cb) {
+  /**
+   * Executes a (cypher)-query-string directly in neo4j
+   *
+   * Example:
+   * 
+   *    `Graph.query('START n=node(123) RETURN n;', cb);`
+   *
+   * @param {String} cypherQuery
+   * @param {Object} parameters (optional)
+   * @param {Function} cb
+   * @param {Object} options (optional) (will be passed to `neo4jrestful.query`)
+   * @return {Object} self
+   */
+  Graph.prototype.query = function(cypherQuery, parameters, cb, options) {
     var self = this;
     if (typeof cypherQuery !== 'string') {
       throw Error('First argument must be a query string');
     }
-    if (typeof options === 'function') {
-      cb = options;
+    if (typeof parameters === 'function') {
+      cb = parameters;
+      options = {};
+      parameters = {};
+    }
+    if ((typeof options !== 'object')&&(options !== null)) {
       options = {};
     }
-    if (typeof options !== 'object') {
-      options = {};
+
+    if (!parameters)
+      parameters = {};
+    if (Object.keys(parameters).length > 0) {
+      this.addParameters(parameters);
     }
 
     options.params = (typeof this.cypher.useParameters === 'boolean') ? this.cypher.parameters : {};
@@ -278,17 +323,17 @@ var __initGraph__ = function(neo4jrestful) {
   }
 
   // Stream query
-  Graph.prototype.stream = function(cypherQuery, options, cb) {
+  Graph.prototype.stream = function(cypherQuery, parameters, cb, options) {
     var self = this;
     var Node = Graph.Node;
     var recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
-    if (typeof cypherQuery !== 'string') {
+    // check arguments for callback
+    if (typeof cypherQuery === 'function') {
       cb = cypherQuery;
-      cypherQuery = this.toCypherQuery();
-    }
-    else if (typeof options === 'function') {
-      cb = options;
-      options = undefined;
+      cypherQuery = undefined;
+    } else if (typeof parameters === 'function') {
+      cb = parameters;
+      parameters = undefined;
     }
     var i = 0; // counter is used to prevent changing _columns_ more than once
     var indexOfLabelColumn = null;
@@ -333,13 +378,24 @@ var __initGraph__ = function(neo4jrestful) {
   // Shortcut for .stream
   Graph.prototype.each = Graph.prototype.stream;
 
-  Graph.prototype.parameters = function(parameters) {
-    if (typeof parameters !== 'object')
+  Graph.prototype.setParameters = function(parameters) {
+    if ((typeof parameters !== 'object') || (parameters === null))
       throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
     if (this.cypher.useParameters === null)
       this.cypher.useParameters = true;
     this.cypher.parameters = parameters;
     return this;
+  }
+
+  /**
+   * @deprecated: use **only** as getter; use setParameters() as setter instead (less ambiguous)
+   */
+  Graph.prototype.parameters = function(parameters) {
+    if (parameters) {
+      this.setParameters(parameters);
+      throw Error('use only as getter, use setParameters() as setter instead (less ambiguous)');
+    }
+    return this.cypher.parameters;
   }
 
   Graph.prototype.addParameters = function(parameters) {
@@ -831,12 +887,12 @@ var __initGraph__ = function(neo4jrestful) {
    * Static methods
    * (are shortcuts to methods on new instanced Graph())
    */
-  Graph.query = function(cypher, options, cb) {
-    return Graph.disableProcessing().query(cypher, options, cb);
+  Graph.query = function(cypher, parameters, cb, options) {
+    return Graph.disableProcessing().query(cypher, parameters, cb, options);
   }
 
-  Graph.stream = function(cypher, options, cb) {
-    return new Graph.disableProcessing().stream(cypher, options, cb);
+  Graph.stream = function(cypher, parameters, cb, options) {
+    return new Graph.disableProcessing().stream(cypher, parameters, cb, options);
   }
 
   Graph.wipeDatabase = function(cb) {

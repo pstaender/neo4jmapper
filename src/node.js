@@ -1107,12 +1107,17 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this;
   }
 
-  Node.prototype.query = function(cypherQuery, options, cb) {
+  Node.prototype.query = function(cypherQuery, parameters, cb, options) {
     var self = this;
 
+    if (typeof parameters === 'function') {
+      cb = parameters;
+      parameters = {};
+      options = {};
+    }
+
     // sort arguments
-    if (typeof options !== 'object') {
-      cb = options;
+    if (!options) {
       options = {};
     }
 
@@ -1131,16 +1136,16 @@ var __initNode__ = function(neo4jrestful, Graph) {
     options.recommendConstructor = this.recommendConstructor();
 
     if ((this.cypher.useParameters) && (this.cypher.hasParameters()) && (Object.keys(this.cypher.parameters).length > 0)) {
-      graph.parameters(this.cypher.parameters);
+      graph.setParameters(this.cypher.parameters);
     }
 
     if (typeof cypherQuery === 'string') {
       // check for stream flag
       // in stream case we use stream() instead of query()
       if (this._stream_) {
-        return graph.stream(cypherQuery, options, cb);
+        return graph.stream(cypherQuery, parameters, cb, options);
       } else {
-        return graph.query(cypherQuery, options, cb);
+        return graph.query(cypherQuery, parameters, cb, options);
       }
     } else if (typeof cypherQuery === 'object') {
       // we expect a raw request object here
@@ -1535,17 +1540,16 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype.delete = function(cb) {
     if (this.hasId())
       return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
-    this._query_history_.push({ DELETE: true });
-    this.cypher.segments.action = 'DELETE';
     if (this.cypher.segments.limit)
       throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
+    this._query_history_.push({ DELETE: true });
+    this.cypher.segments.action = 'DELETE';
     return this.exec(cb);
   }
 
   Node.prototype.deleteIncludingRelations = function(cb) {
     var label = (this.label) ? ":"+this.label : "";
     if (Object.keys(this.cypher.segments.start).length < 1) {
-      // this.cypher.segments.start = {};
       this.cypher.segments.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+"(*)";
     }
     this.cypher._optionalMatch = true;
@@ -1560,7 +1564,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
       if (self._is_singleton_)
         return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__TYPE__),null);
       if (self.hasId()) {
-        return Graph.request().delete(self.__TYPE__+'/'+self.id, cb);
+        return Graph.start('n = node({id}) DELETE n', { id: self.id }, cb);
+        //return Graph.request().delete(self.__TYPE__+'/'+self.id, cb);
       }
     })
     return this;
@@ -2097,8 +2102,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this.prototype.start(start, cb);
   }
 
-  Node.query = function(cypherQuery, options, cb) {
-    return this.prototype.singleton().query(cypherQuery, options, cb);
+  Node.query = function(cypherQuery, parameters, cb, options) {
+    return this.prototype.singleton().query(cypherQuery, parameters, cb, options);
   }
 
   Node.registerModel = function(Class, label, prototype, cb) {

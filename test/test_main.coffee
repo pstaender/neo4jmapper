@@ -38,7 +38,7 @@ SkipInNode = (a) -> unless window? then null else a
 SkipInBrowser = (a) -> if window? then null else a
 SkipStreaming = (a) -> SkipInBrowser(a)
 
-generateUID = -> String(new Date().getTime())+String(Math.round(Math.random()*10000000))
+generateUID = -> helpers.md5 String(new Date().getTime())+String(Math.round(Math.random()*10000000))
 
 _trim = (s) -> s.trim().replace(/\s+/g, ' ')
 
@@ -181,7 +181,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to query via Graph, with and without loading', (done) ->
       Node.registerModel 'Person', (err, Person) ->
-        name = String(Date())
+        name = generateUID()
         new Person(name: name).save (err, alice) ->
           new Person(name: 'otherPerson').save (err, bob) ->
             alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
@@ -243,7 +243,6 @@ describe 'Neo4jMapper', ->
         _Graph_ = _Neo4j_.Graph
         _client_ = _Neo4j_.client
         do (_Node_, _Graph_, _client_) ->
-          # client.constructor::log = Graph::log = require('./log')#-> console.log(Array.prototype.slice.call(arguments).join(' '))
           [0...todo].forEach (i) ->
             id = generateUID()
             _Node_.create { name: id }, (err, node) ->
@@ -258,7 +257,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to query via Graph with parameters', (done) ->
       Person = Node.registerModel 'Person'
-      name = String(Date())
+      name = generateUID()
       new Person(name: name).save (err, alice) ->
         new Person(name: 'otherPerson').save (err, bob) ->
           alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
@@ -269,7 +268,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to get many columns of graph queries', (done) ->
       Person = Node.registerModel 'Person'
-      name = String(Date())
+      name = generateUID()
       new Person(name: name).save (err, alice) ->
         new Person(name: name).save (err, bob) ->
           alice.createRelationTo bob, 'KNOWS', (err, relationship) ->
@@ -279,7 +278,20 @@ describe 'Neo4jMapper', ->
               expect(found[0]).to.have.length 2
               done()
 
-    it 'expect to stream graph query results', (SkipStreaming) (done) ->
+    it.skip 'expect to stream graph query results', (SkipStreaming) (done) ->
+      i = 0
+      Node.create name: generateUID(), (err, n) ->
+        Graph.start('n=node({id})', { id: n.id }).return('n').limit(1).stream (node, context, debug) ->
+          # console.log node
+          if node
+            expect(context._columns_.constructor).to.be.equal Array
+            expect(node.id).to.be.equal n.id
+            i++
+          else
+            expect(i).to.be 1
+            done()
+
+    it.skip 'expect to stream graph query with parameters', (SkipStreaming) (done) ->
       i = 0
       Graph.start('n=node(*)').return('n').limit(1).stream (node, context) ->
         if node
@@ -299,7 +311,7 @@ describe 'Neo4jMapper', ->
           done()
 
     it 'expect to query graph native and not native (not native by default)', (done) ->
-      name = String(Date())
+      name = generateUID()
       new Node({ name: name }).setLabel('Person').save (err, person) ->
         Graph.start('n=node(*)').where({ 'n.name': name }).return('n AS Node').limit(1).exec (err, found) ->
           expect(err).to.be null
@@ -464,7 +476,7 @@ describe 'Neo4jMapper', ->
         done()
 
     it 'expect to create a node', (done) ->
-      node = new Node title: new Date().toString()
+      node = new Node title: generateUID()
       node.save (err, storedNode) ->
         id = node.id
         expect(err).to.be null
@@ -474,11 +486,17 @@ describe 'Neo4jMapper', ->
           expect(found).to.be.an 'object'
           expect(found.id).to.be.equal id
           expect(found.data.title).to.be.equal node.data.title
-          node.remove ->
-            done()
+          done()
+
+    it 'expect to remove a node', (done) ->
+      Node.create { name: 'Roman Polanski' }, (err, node) ->
+        expect(node.id).to.be.a 'number'
+        node.remove (err, res, debug) ->
+          expect(err).to.be null
+          done()
 
     it 'expect to use parameters for queries by default and expect to add parameters to cypher query', ->
-      node = new Node title: new Date().toString()
+      node = new Node title: generateUID()
       expect(node.cypher.useParameters).to.be true # this is an option flag which is expected to be true!
       expect(node.cypher.parameters).to.be null
       node._addParametersToCypher [ 'a', 'b' ]
@@ -489,7 +507,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to find one specific node by id', (done) ->
       Person = Node.registerModel 'Person'
-      node = new Person title: new Date().toString()
+      node = new Person title: generateUID()
 
       node.save ->
         Node.findById node.id, (err, found) ->
@@ -503,10 +521,9 @@ describe 'Neo4jMapper', ->
             done()
 
     it 'expect to find one specific node by key/value', (done) ->
-      node = new Node title: new Date().toString()
+      node = new Node title: generateUID()
       node.save ->
         Node.findOneByKeyValue 'title', node.data.title, (err, found) ->
-          expect(err).to.be null
           expect(found.data.title).to.be.equal node.data.title
           expect(found.id).to.be.equal node.id
           node.remove ->
@@ -1058,9 +1075,9 @@ describe 'Neo4jMapper', ->
           hasValue: true
       node = new Node()
       node.data.name = 'Steve'
-      node.save (err) ->
+      node.save (err, n) ->
         expect(err).to.be null
-        expect(node.data.uid).to.be.above 0
+        expect(node.data.uid).to.have.length 32 
         expect(node.data.nested.hasValue).to.be true
         done()
 
