@@ -279,7 +279,7 @@ Example:
 ```js
   Graph
     .custom('START n=node({id}) RETURN n LIMIT 1;', { id: 123 }, cb);
-```
+``
 
 #### Graph query methods
 
@@ -452,7 +452,7 @@ Each model extends on the base `Node` model but inheriance of other models can b
   });
 ```
 
-### Multiple inheritance
+### Model inheritance
 
 `Director` extends `Person`, so `Director` will have the labels [ 'Director', 'Person' ].
 
