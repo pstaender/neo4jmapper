@@ -1,13 +1,14 @@
-// ## Node Object
-//
-// The Node object is to create, connect and query all kind of Node(s).
-// You can register your own model
-
-// Requirements (for browser and nodejs):
-// * neo4jmapper helpers
-// * underscorejs
-// * sequence (https://github.com/coolaj86/futures)
-
+/**
+ * ## Node
+ * Represents the node object model and the neo4j-node-query-api
+ *
+ * You can register own models, including "inheritance"
+ * 
+ * Requirements (for browser and nodejs):
+ * * neo4jmapper helpers
+ * * underscorejs
+ * * sequence (https://github.com/coolaj86/futures)
+ */
 var __initNode__ = function(neo4jrestful, Graph) {
 
   if (typeof window === 'object') {
@@ -24,8 +25,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var CypherQuery           = require('./cypherquery');
   }
 
-  // ### Constructor of Node
-  // calls this.init(data,id) to set all values to default
+  /**
+   * ### Constructor of Node
+   * Calls this.init(data,id) to set all values to default
+   */
   var Node = function Node(data, id, cb) {
     // id can be a callback as well
     if (typeof id === 'function') {
@@ -40,7 +43,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
       return this.save(cb);
   }
 
-  // ### Initialize all values on node object
+  /**
+   * Initialize all values on node object
+   */
   Node.prototype.init = function(data, id) {
     this.setId(id || null);
     this.data = _.extend({}, data);
@@ -58,56 +63,39 @@ var __initNode__ = function(neo4jrestful, Graph) {
     this.labels = _.uniq(this.labels);
 
     this._is_instanced_ = true;
-    // we will use a label by default if we have defined an inherited class of node
-    if ((this._constructor_name_ !== 'Node')&&(this._constructor_name_ !== 'Relationship')&&(this._constructor_name_ !== 'Path')) {
-      this.label = this.cypher.segments.label = this._constructor_name_;
-    }
-    if (!this.label)
-      this.label = null;
     return this;
   }
 
-  // ### Instantiate a node from a specific model
-  // Model can be a constructor() or a String
-  // and must be registered in Node.registered_models()
-  Node.prototype.convertNodeToModel = function(node, model, fallbackModel) {
-    if (typeof node !== 'object') {
-      // we assume that we have ”model, fallbackmodel” as arguments
-      fallbackmodel = model;
-      model = node;
-      node = this;
+  /** Instantiate a node from a specific model
+    * Model can be a constructor() or a String
+    * and must be registered in Node.registered_models()
+    *
+    * @param {Function|String}
+    */
+  Node.prototype.convertToModel = function(model) {
+    var Class = this.recommendConstructor();
+    if (typeof model === 'function') {
+      Class = model;
+    } else if ((typeof model === 'string') && (Node.registeredModel(model))) {
+      Class = Node.registeredModel(model);
     }
-    if ((typeof node === 'object') && (node !== null)) {
-      if (typeof fallbackModel !== 'function')
-        fallbackModel = this.constructor;
-      if (typeof model === 'string') {
-        // do nothing
-        model = model;
-      } else if (typeof model === 'function') {
-        model = model._constructor_name_ || helpers.constructorNameOfFunction(model) || null;
-      } else if (node.label) {
-        model = node.label;
-      } else if (typeof fallbackModel === 'function') {
-        model = helpers.constructorNameOfFunction(fallbackModel);
-      } else {
-        throw Error('No model or label found')
-      }
-      var Class = Node.registered_model(model) || fallbackModel;
-      var singleton = new Class();
-      node.copyTo(singleton);
-      return singleton;
-    }
-    return null;
+    var node = new Class();
+    this.copyTo(node);
+    return node;
   }
 
   // if we have a distinct label, we will create a model from of it
-  Node.instantiateNodeAsModel = function(node, labels) {
-    if (typeof labels === 'string')
-      labels = [ labels ];
-    if ((labels) && (labels.length === 1)) {
-      var model = labels[0];
-      node = Node.convertNodeToModel(node, model);
+  Node.instantiateNodeAsModel = function(node, labels, label) {
+    var model = label;
+    // if we have given explicit a specific model
+    if (typeof labels === 'string') {
+      model = labels;
     }
+    // alternative: if we have only one label we instantiate from this
+    if ((labels) && (labels.length === 1))
+      model = labels[0];
+    if (model)
+      node = node.convertToModel(model);
     node.setLabels(labels);
     node.isPersisted(true);
     return node;
@@ -180,28 +168,15 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.__skip_loading_labels__  = null;   // is used in _onBeforeLoad() to prevent loading labels in an extra request
 
-  // should **never** be changed
-  // it's used to dictinct nodes and relationships
-  // many queries containg `node()` command will use this value
-  // e.g. n = node(*)
+  /** 
+   * Should **never** be changed
+   * it's used to dictinct nodes and relationships
+   * many queries containg `node()` command will use this value
+   * e.g. n = node(*)
+   */
   Node.prototype.__TYPE__                 = 'node';
   Node.prototype.__TYPE_IDENTIFIER__      = 'n';
 
-  // ### Create a singleton
-  // Here a singleton is a node object that is used as
-  // a placeholder to use all `static` methods on the node object.
-  // To avoid conflicts on async usage, each singleton is it's own instance
-  // Example Usage: `Node.singleton().findOne().where()`
-  Node.prototype.singleton = function(id, label) {
-    var Class = this.constructor;
-    var node = new Class({},id);
-    if (typeof label === 'string')
-      node.label = label;
-    node.resetQuery();
-    node._is_singleton_ = true;
-    node.resetQuery();
-    return node;
-  }
 
   // ### Initializes the model
   // Calls the onBeforeInitialize & onAfterInitialize hook
@@ -223,16 +198,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
     }
   }
 
-  // ### Hook: onBeforeInitialize
-  // Can be monkey-pacthed and be used to execute code
-  // on prototype base during registering a model
-  // HINT: call the cb() finnaly
   Node.prototype.onBeforeInitialize = function(next) {
     return next(null,null);
   }
 
-  // ### Internal Hook: onAfterInitialize
-  // Ensures autoindex on the label
   Node.prototype.onAfterInitialize = function(cb) {
     // here we return the constructor as 2nd argument in cb
     // because it is expected at `Node.register_model('Label', cb)`
@@ -268,11 +237,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return null;
   }
 
-  // Resets the query **but** should not be used since you should start from Node.… instead
-  // Anyhow, e.g.:
-  //
-  // n = Node.findOne().where(cb)
-  // n.resetQuery().findOne(otherCb)
+  /**
+   * Resets the query **but** should not be used since you should start from Node.… instead
+   * Anyhow, e.g.:
+   *
+   * Example:
+   *    n = Node.findOne().where(cb)
+   *    n.resetQuery().findOne(otherCb)
+   */
   Node.prototype.resetQuery = function() {
     // we have to copy the cypher values on each object
     this.cypher = new CypherQuery();
@@ -375,15 +347,17 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return keys;
   }
 
-  // Returns all fields that should be unique
-  // They need to be defined in your model, e.g.:
-  //
-  // Node.register_model({
-  //  fields: {
-  //    unique: {
-  //      email: true
-  //    }
-  // }});
+  /**
+   * Returns all fields that should be unique
+   * They need to be defined in your model, e.g.:
+   *
+   * Node.register_model({
+   *  fields: {
+   *    unique: {
+   *      email: true
+   *    }
+   * }});
+   */
   Node.prototype.uniqueFields = function() {
     var keys = [];
     _.each(this.fields.unique, function(isUnique, field) {
@@ -393,10 +367,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return keys;
   }
 
-  // # Autoindex
-  // Check the `schema` of the model and builds an autoindex, optional with unique option
-  // see for more details: http://docs.neo4j.org/chunked/milestone/query-constraints.html
-  // TODO: only via cypher query, to simplify process
+  /**
+   * # Autoindex
+   * Check the `schema` of the model and builds an autoindex, optional with unique option
+   * see for more details: http://docs.neo4j.org/chunked/milestone/query-constraints.html
+   * TODO: only via cypher query, to simplify process
+   */
   Node.prototype.ensureIndex = function(options, cb) {
     var args;
     ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
@@ -698,9 +674,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
         var _createNodeFromLabel = function(node, debug) {
           // convert node to it's model if it has a distinct label and differs from constructor
-          if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {
-            Node.convertNodeToModel(node, node.label, DefaultConstructor);
-          }
+          // if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {
+          //   Node.convertNodeToModel(node, node.label, DefaultConstructor);
+          // }
           node.isPersisted(true);
           node.__skip_loading_labels__ = null;
           next(null, node, debug);
@@ -861,8 +837,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
     return this.exec(cb);
   }
-
-  // Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) { }
 
   Node.prototype.count = function(identifier, cb) {
     this.cypher.segments._count = true;
@@ -1409,7 +1383,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var self = this;
     if (!self._is_singleton_)
       self = this.singleton(undefined, this);
-    if (self.label) self.withLabel(self.label);
+    if (self.label)
+      self.withLabel(self.label);
     //self.resetQuery();
     if (typeof start !== 'string')
       self.cypher.segments.start = null;
@@ -1925,7 +1900,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (!self._is_singleton_)
       self = this.singleton(undefined, this);
     self._query_history_.push({ find: true });
-    if (self.label) self.withLabel(self.label);
+    if (self.label)
+      self.withLabel(self.label);
     if ((typeof where === 'string')||(typeof where === 'object')) {
       return self.where(where,cb);
     } else {
@@ -2031,12 +2007,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.findAll = function(cb) {
     var self = this;
-    if (!self._is_singleton_)
+    if (!self._is_singleton_) {
       self = this.singleton(undefined, this);
+    }
     self._query_history_.push({ findAll: true });
     self.cypher.segments.limit = null;
     self.cypher.segments.return_properties = ['n'];
-    if (self.label) self.withLabel(self.label);
+    if (self.label)
+      self.withLabel(self.label);
     return self.exec(cb);
   }
 
@@ -2061,6 +2039,26 @@ var __initNode__ = function(neo4jrestful, Graph) {
   /*
    * Singleton methods, shorthands for their corresponding (static) prototype methods
    */
+
+  /**
+   * Create a singleton
+   * Here a singleton (name may convey a singleton object is as single instance)
+   * is a node object that is used as object to use
+   * all `static` methods of the node api.
+   *
+   * Example:
+   *    `Node.singleton().findOne().where()`
+   */
+  Node.prototype.singleton = function(id, label) {
+    var Class = this.constructor;
+    var node = new Class({},id);
+    if (typeof label === 'string')
+      node.label = label;
+    node.resetQuery();
+    node._is_singleton_ = true;
+    node.resetQuery();
+    return node;
+  }
 
   Node.singleton = function(id, label) {
     return this.prototype.singleton(id, label);
@@ -2107,8 +2105,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.registerModel = function(Class, label, prototype, cb) {
-    var name = null
-      , ParentModel = this;
+    var name = null;
+    var ParentModel = this;
 
     if (typeof Class === 'string') {
 
@@ -2126,13 +2124,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
       if (typeof prototype !== 'object')
         prototype = {};
       label = name = Class;
+
       // we define here an anonymous constructor
       Class = function() {
         this.init.apply(this, arguments);
-        if (Class.prototype.label === null)
-          this.label = this._constructor_name_ = label;
-        else
-          this.label = this._constructor_name_ = Class.prototype.label;
       }
 
       _.extend(Class, ParentModel); // 'static' methods
@@ -2153,6 +2148,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
         }
       }
 
+      Class.prototype._constructor_name_ = Class.prototype.label = label;
+
       if (!Class.prototype.labels)
         Class.prototype.labels = [];
       else
@@ -2170,6 +2167,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
         name = helpers.constructorNameOfFunction(Class);
         cb = label;
       }
+      Class.prototype.label = name;
     }
     Node.__models__[name] = Class;
     Class.prototype.initialize(cb);
@@ -2213,13 +2211,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (typeof model === 'function') {
       model = helpers.constructorNameOfFunction(model);
     }
-    return Node.registered_models()[model] || null;
-  }
-
-  Node.convertNodeToModel = function(node, model, fallbackModel) {
-    if (typeof fallbackModel === 'undefined')
-      fallbackModel = this;
-    return this.prototype.convertNodeToModel(node, model, fallbackModel);
+    return Node.registeredModels()[model] || null;
   }
 
   Node.ensureIndex = function(cb) {

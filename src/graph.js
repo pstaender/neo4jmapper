@@ -293,10 +293,11 @@ var __initGraph__ = function(neo4jrestful) {
 
         if (object) {
           if ((object.classification === 'Node') && (loadNode)) {
+
             if (nodeLabelsColumn >= 0) {
               // if we have labels(n) column
               var labels = nodeLabels.shift()
-              object = self.neo4jrestful.Node.instantiateNodeAsModel(object, labels);
+              object = self.neo4jrestful.Node.instantiateNodeAsModel(object, labels, options.recommendConstructor);
               object.__skip_loading_labels__ = true;
             }
             todo++;            

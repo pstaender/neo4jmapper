@@ -385,10 +385,11 @@ describe 'Neo4jMapper', ->
 
   describe 'node', ->
 
-    it 'expect to allow inheritance', (done) ->
+    it 'expect to apply inheritance on models', (done) ->
       Node.registerModel 'Person', {
         fields: {
           defaults: {
+            name: ''
             email: 'unknown'
             income: 50000
             job: 'Laborer'
@@ -399,13 +400,21 @@ describe 'Neo4jMapper', ->
         }
       }, (err, Person) ->
         expect(err).to.be null
-        person = new Person()
+        Person::fullname = ->
+          s = ''
+          if @data?.name
+            s += @data.name
+          if @data?.surname
+            s += ' ' + @data.surname
+          "[#{s.trim()}]"
+        person = new Person()        
         expect(person).to.be.an 'object'
         expect(person.label).to.be 'Person'
         expect(person._constructor_name_).to.be 'Person'
         expect(person.fields.defaults.income).to.be.equal 50000
         expect(person.fields.defaults.job).to.be.equal 'Laborer'
         expect(person.fields.defaults.email).to.be.equal 'unknown'
+        expect(person.fullname()).to.be.equal '[]'
         Person.registerModel 'Director', {
           fields: {
             defaults: {
@@ -427,6 +436,7 @@ describe 'Neo4jMapper', ->
           expect(director.labels[1]).to.be 'Person'
           expect(director).to.be.an 'object'
           expect(director.id).to.be null
+          expect(director.fullname()).to.be.equal '[]'
           Person.registerModel 'Actor', {
             fields: {
               defaults: {
@@ -434,15 +444,36 @@ describe 'Neo4jMapper', ->
               }
             }
           }, (err, Actor) ->
+            expect(Actor.prototype._constructor_name_).to.be.equal 'Actor'
+            expect(Actor.prototype.label).to.be.equal 'Actor'
+            expect(Actor.prototype.labels).to.be.eql [ 'Actor', 'Person' ]
+
             expect(err).to.be null
             actor = new Actor()
             expect(actor.labels).to.have.length 2
             expect(actor.labels[0]).to.be 'Actor'
             expect(actor.labels[1]).to.be 'Person'
+            expect(actor.label).to.be 'Actor'
+            expect(actor._constructor_name_).to.be 'Actor'
             expect(actor.fields.defaults.income).to.be.equal 50000
             expect(actor.fields.defaults.job).to.be.equal 'Actor'
             expect(actor.fields.defaults.email).to.be.equal 'unknown'
-            done()
+            # Test that it'll be applied on new objects
+            Actor.create { name: 'Jeff', surname: 'Bridges' }, (err, jeff) ->
+              expect(jeff.fullname()).to.be.equal '[Jeff Bridges]'
+              expect(jeff.data.income).to.be.equal 50000
+              expect(jeff.data.job).to.be.equal 'Actor'
+              expect(jeff.data.email).to.be.equal 'unknown'
+              expect(jeff.label).to.be.equal 'Actor'
+              expect(jeff._constructor_name_).to.be.equal 'Actor'
+              Actor.findById jeff.id, (err, jeff, debug) ->
+                expect(jeff.fullname()).to.be.equal '[Jeff Bridges]'
+                expect(jeff.data.income).to.be.equal 50000
+                expect(jeff.data.job).to.be.equal 'Actor'
+                expect(jeff.data.email).to.be.equal 'unknown'
+                expect(jeff.label).to.be.equal 'Actor'
+                expect(jeff._constructor_name_).to.be.equal 'Actor'
+                done()
 
     it 'inheritance on coffescript class-objects', (done) ->
       class Person extends Node
@@ -568,17 +599,23 @@ describe 'Neo4jMapper', ->
               fields:
                 indexes:
                   email: true
-            Developer.dropEntireIndex (err) ->
-              expect(err).to.be null
-              Node.registerModel Developer, ->
-                Developer.find { group_id: groupid }, (err, nodes) ->
-                  expect(err).to.be null
-                  expect(nodes).to.have.length 1
-                  expect(nodes[0].data.name).to.be.equal 'Bob'
-                  Developer.getIndex (err, found, debug) ->
-                    expect(found).to.have.length 1
-                    expect(found[0]).to.be.equal 'email'
-                    done()
+            Node.registerModel Developer, (err, Developer) ->
+              Developer.dropEntireIndex (err) ->
+                expect(err).to.be null
+                class Developer extends Node
+                  fields:
+                    indexes:
+                      email: true
+                Node.registerModel Developer, (err, Developer) ->
+                  Developer.find { group_id: groupid }, (err, nodes) ->
+                    expect(err).to.be null
+                    expect(nodes).to.have.length 1
+                    expect(nodes[0].data.name).to.be.equal 'Bob'
+                    Developer.getIndex (err, found, debug) ->
+                      expect(err).to.be null
+                      expect(found).to.have.length 1
+                      expect(found[0]).to.be.equal 'email'
+                      done()
 
 
     it 'expect to remove a node', (done) ->
@@ -778,14 +815,14 @@ describe 'Neo4jMapper', ->
 
     it 'expect to convert to specific models', (done) ->
       class Director extends Node
+      Node.registerModel(Director)
       new Director( name: 'Robert Zemeckis' ).save (err, robert) ->
         expect(err).to.be null
         expect(robert._constructor_name_).to.be 'Director'
         expect(robert.label).to.be 'Director'
         Node.findById robert.id, (err, found) ->
           expect(found.label).to.be.equal 'Director'
-          Node.registerModel(Director)
-          found = Node.convertNodeToModel(found, Director)
+          found = found.convertToModel(Director)
           expect(found._constructor_name_).to.be.equal 'Director'
           done()
 
@@ -892,6 +929,7 @@ describe 'Neo4jMapper', ->
           node.remove (err) ->
             expect(err).to.be null
             class Article extends Node
+            Node.registerModel(Article)
             article = new Article title: 'Title of the article'
             article.save ->
               article.requestLabels (err, labels) ->
@@ -952,13 +990,14 @@ describe 'Neo4jMapper', ->
 
     it 'expect to find labeled node, with and without class', (done) ->
       class Person extends Node
+      Node.registerModel(Person)
       person = new Person({name: 'Dave'})
       person.save (err, savedPerson, debug) ->
         expect(person.label).to.be.equal 'Person'
         expect(savedPerson.label).to.be.equal 'Person'
         done()
 
-    it 'expect to instantiateNodeAsModel() via convertNodeToModel()', ->
+    it 'expect to instantiateNodeAsModel() via convertToModel()', ->
       class Person extends Node
         fullname: -> @data.name + " " + @data.surname
       Node.registerModel(Person)
@@ -972,7 +1011,7 @@ describe 'Neo4jMapper', ->
         label: null,
         labels: []
       }
-      n = Node.convertNodeToModel(n, 'Person')
+      n = n.convertToModel('Person')
       n.setLabels('Person');
       expect(n.toObject()).to.be.eql {
         id: 123,
@@ -1013,6 +1052,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to enable and disable loading hook', (done) ->
       class Person extends Node
+      Node.registerModel(Person)
       Person::disableLoading()
       new Person({ name: 'Alice' }).save (err, a) ->
         Person::findById a.id, (err, alice) ->
@@ -1028,6 +1068,7 @@ describe 'Neo4jMapper', ->
 
     it 'expect to find labeled nodes', (done) ->
       class Person extends Node
+      Node.registerModel(Person)
       person = new Person({name: 'Dave'})
       Node.findAll().match('n:Person').count (err, countBefore) ->
         person.save ->
@@ -1043,6 +1084,7 @@ describe 'Neo4jMapper', ->
           indexes:
             uid: true
             name: true
+      Node.registerModel(User)
       # we have to ensureIndex
       User.ensureIndex (err) ->
         User.findOrCreate { uid: uid, name: 'Node' }, (err, found) ->
@@ -1051,7 +1093,7 @@ describe 'Neo4jMapper', ->
           expect(found.data.name).to.be.equal 'Node'
           expect(found.id).to.be.above 0
           id = found.id
-          User.findOrCreate { uid: uid }, (err, found) ->
+          User.findOrCreate { uid: uid }, (err, found, debug) ->
             expect(err).to.be null
             expect(found.id).to.be.equal id
             uid = new Date().getTime()
