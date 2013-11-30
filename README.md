@@ -257,8 +257,7 @@ You can chain your query elements and use conditional parameters in where clause
 ```js
   Graph
     .start('n = node(*)')
-    .case("n.eyes WHEN {color1} THEN 1 WHEN {color2} THEN 2 ELSE 3")
-    .parameters({ color1: 'blue', color2: 'brown' })
+    .case("n.eyes WHEN {color1} THEN 1 WHEN {color2} THEN 2 ELSE 3", { color1: 'blue', color2: 'brown' })
     .return('n AS Person')
     .toQueryString();
   /* ~>
@@ -267,6 +266,22 @@ You can chain your query elements and use conditional parameters in where clause
     RETURN  n AS Person;
   */
 ```
+
+#### Argument pattern
+
+For (almost) all query-graph-methods is:
+  1. statement: string or object, depends on method
+  2. parameters: (optional) object literal that contains the parameters
+  3. callback (optional)
+
+Example:
+
+```js
+  Graph
+    .custom('START n=node({id}) RETURN n LIMIT 1;', { id: 123 }, cb);
+```
+
+#### Graph query methods
 
 Here are most of all available methods to query the graph. `…` represents the strings containing the statements:
 
@@ -396,9 +411,8 @@ The following methods are available: post, get, delete, put and query.
 
 ### Modeling
 
-We can define models based on the `Node` model (similar to models you might know from backbonejs for instance).
-
-Every extended model enjoys label support.
+You can define models und use them after register them via `Node.registerModel()`. 
+Each model extends on the base `Node` model but inheriance of other models can be achieved as well; similar to models you might know from backbonejs for instance. All extended models/nodes are classified by labels by default.
 
 ```js
   Node.registerModel( 'Person', {
@@ -435,38 +449,39 @@ Every extended model enjoys label support.
       label: 'Person',
       labels: [ 'Person' ] }
     });
+  });
+```
 
-    // You can also use multiple inheritance
-    // here: Director extends Person
-    // Director will have the labels [ 'Director', 'Person' ]
+### Multiple inheritance
 
-    // You can skip the cb and work instantly with the registered model
-    // if you don't use index/uid fields on your schema
-    var Director = Person.registerModel('Director', {
-      fields: {
-        defaults: {
-          job: 'Director'
-        }
+`Director` extends `Person`, so `Director` will have the labels [ 'Director', 'Person' ].
+
+You can skip the cb and work instantly with the registered model if you don't use index/uid fields on your model.
+
+```js
+  var Director = Person.registerModel('Director', {
+    fields: {
+      defaults: {
+        job: 'Director'
       }
-    });
-
-    new Director( {
-      name: 'Roman Polanski'
-    } ).save(function(err, polanski) {
-      polanski.toObject();
-      ~> { id: 81239,
-      classification: 'Node',
-      data:
-       { created_on: 1374758483625,
-         name: 'Roman Polanski',
-         job: 'Director'
-       },
-      uri: 'http://localhost:7420/db/data/node/81239',
-      label: 'Director',
-      labels: [ 'Director', 'Person' ] }
-    });
+    }
   });
 
+  new Director( {
+    name: 'Roman Polanski'
+  } ).save(function(err, polanski) {
+    polanski.toObject();
+    ~> { id: 81239,
+    classification: 'Node',
+    data:
+     { created_on: 1374758483625,
+       name: 'Roman Polanski',
+       job: 'Director'
+     },
+    uri: 'http://localhost:7420/db/data/node/81239',
+    label: 'Director',
+    labels: [ 'Director', 'Person' ] }
+  });
 ```
 
 Coffeescript and it's class pattern is maybe the most convenient way to define models:
@@ -498,7 +513,7 @@ Coffeescript and it's class pattern is maybe the most convenient way to define m
 
 To use default values on Relationships, use the setter (available on `Node` as well):
 
-```
+```js
   Relationship.setDefaultFields({
     created_on: function() {
       return new Date().getTime();
