@@ -1,6 +1,6 @@
 /**
  * **The Graph** respresents the cypher-query-api of the neo4j database
- * You can perform basic actions and queries directly on the entire graphdatabase
+ * You can perform basic actions and queries directly on the graph
  * ###[Query Structure](http://docs.neo4j.org/refcard/2.0/)
  * Read Query Structure:
  * [START]
@@ -27,7 +27,12 @@
  */
 
 
-// Initialize the Graph object with a neo4jrestful client
+/**
+ * Initialize the Graph object with a neo4jrestful client
+ *
+ * @param {object} neo4jrestful object
+ * @return {object} Graph object
+ */
 var __initGraph__ = function(neo4jrestful) {
 
   // Requirements (for browser and nodejs):
@@ -50,7 +55,11 @@ var __initGraph__ = function(neo4jrestful) {
   if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
     throw Error('You have to use an Neo4jRestful object as argument')
 
-  // Constructor of Graph
+  /**
+   * Constructor of Graph
+   * @constructor
+   * @param {string} url
+   */
   var Graph = function Graph(url) {
     if (url) {
       this.neo4jrestful = new neo4jrestful.constructor(url);
@@ -73,7 +82,8 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._response_                    = null;         // contains the last response object
   Graph.prototype._columns_                     = null;         // contains `columns` of { columns: [ … ], data: [ … ] }
 
-  /** The following argument combinations are accepted:
+  /** 
+    * The following argument combinations are accepted:
     * * query, parameters, cb
     * * parameters, cb
     * * query, cb
@@ -84,9 +94,9 @@ var __initGraph__ = function(neo4jrestful) {
     *     `Graph.new().exec('START n=node({id}) RETURN n;', { id: 123 }, cb);`
     *  
     * 
-    * @param {String|Object|Function} query (optional)
-    * @param {Object|Function} parameters (optional)
-    * @param {Function} cb (optional, but needed to trigger query execution finally)
+    * @param  {string|object|function} [query]
+    * @param  {object|function} [parameters]
+    * @param  {Function} cb (optional, but needed to trigger query execution finally)
     */
   Graph.prototype.exec = function(query, parameters, cb) {
     if (typeof query === 'function') {
@@ -122,20 +132,16 @@ var __initGraph__ = function(neo4jrestful) {
    * 
    *    `Graph.query('START n=node(123) RETURN n;', cb);`
    *
-   * @param {String} cypherQuery
-   * @param {Object} parameters (optional)
-   * @param {Function} cb
-   * @param {Object} options (optional) (will be passed to `neo4jrestful.query`)
-   * @return {Object} self
+   * @param  {string} cypherQuery
+   * @param  {object} [parameters]
+   * @param  {Function} cb
+   * @param  {object} [options] will be passed to `neo4jrestful.query`
    */
   Graph.prototype.query = function(cypherQuery, parameters, cb, options) {
     var self = this;
     if (typeof cypherQuery !== 'string') {
       cypherQuery = this.toCypherQuery();
     }
-    // if (typeof cypherQuery !== 'string') {
-    //   throw Error('First argument must be a query string');
-    // }
     if (typeof parameters === 'function') {
       cb = parameters;
       options = {};
@@ -176,12 +182,24 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  /**
+   * Returns the number of column wich contains the labels
+   * @private
+   * @param  {array} columns
+   * @return {number} of column
+   */
   Graph.prototype.__indexOfLabelColumn = function(columns) {
     var labelColumns = this.__indexOfLabelColumns(columns);
     var keys = Object.keys(labelColumns);
     return (keys.length === 1) ? keys[0] : -1;
   }
 
+  /**
+   * Returns the numbers of column wich contain labels
+   * @private
+   * @param  {array} columns
+   * @return {array} indexes
+   */
   Graph.prototype.__indexOfLabelColumns = function(columns) {
     var labelColumns = {};
     if (typeof columns === 'undefined')
@@ -193,6 +211,13 @@ var __initGraph__ = function(neo4jrestful) {
     return labelColumns;
   }
 
+  /**
+   * Removes label column from array
+   * @private
+   * @param  {array} array
+   * @param  {number} columnIndexOfLabel
+   * @return {array} without label column
+   */
   Graph.prototype.__removeLabelColumnFromArray = function(array, columnIndexOfLabel) {
     if (typeof columnIndexOfLabel !== 'number')
       columnIndexOfLabel = this.__indexOfLabelColumn();
@@ -200,6 +225,12 @@ var __initGraph__ = function(neo4jrestful) {
     return array;
   }
 
+  /**
+   * Removes label column from results
+   * @private
+   * @param  {array} result
+   * @return {array} without label column
+   */
   Graph.prototype.__sortOutLabelColumn = function(result) {
     var nodeLabels = [];
     var nodeLabelsColumn = this.__indexOfLabelColumn(result.columns);
@@ -215,6 +246,17 @@ var __initGraph__ = function(neo4jrestful) {
     return nodeLabels;
   }
 
+  /**
+   * Processes results array, i.e.
+   * * sort out data result
+   * * detect objects and instantiate them
+   * * applies labels from result set on node object(s)
+   * @param  {object}   err
+   * @param  {object}   result
+   * @param  {object}   debug
+   * @param  {object}   options
+   * @param  {Function} cb
+   */
   Graph.prototype._processResult = function(err, result, debug, options, cb) {
     var self = options.context;
     self._response_ = self.neo4jrestful._response_;
@@ -321,9 +363,17 @@ var __initGraph__ = function(neo4jrestful) {
     iterationDone = true;
     __oneMoreJobDone();
 
+    return this;
+
   }
 
-  // Stream query
+  /**
+   * Stream a cypher query
+   * @param  {string}   [cypherQuery]
+   * @param  {object}   [parameters]
+   * @param  {Function} cb
+   * @param  {object}   [options]
+   */
   Graph.prototype.stream = function(cypherQuery, parameters, cb, options) {
     var self = this;
     var Node = Graph.Node;
@@ -389,9 +439,16 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
-  // Shortcut for .stream
+  /**
+   * Shortcut for `graph.stream`
+   * @see  Graph.prototype.stream
+   */
   Graph.prototype.each = Graph.prototype.stream;
 
+  /**
+   * Set cypher parameters (and removes previous ones if exists)
+   * @param  {object} parameters
+   */
   Graph.prototype.setParameters = function(parameters) {
     if ((typeof parameters !== 'object') || (parameters === null))
       throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
@@ -401,26 +458,45 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  /**
+   * Get cypher parameters
+   * @return  {object} parameters
+   */
   Graph.prototype.parameters = function() {
     return this.cypher.parameters || {};
   }
 
+  /**
+   * Add cypher Parameters
+   * @param  {object} parameters
+   */
   Graph.prototype.addParameters = function(parameters) {
     this.cypher.addParameters(parameters);
     return this;
   }
 
+  /**
+   * Add cypher Parameter
+   * @param  {object} parameter
+   */
   Graph.prototype.addParameter = function(parameter) {
     return this.addParameters(parameter);
   }
 
-  // ### Deletes *all* nodes and *all* relationships
+  /**
+   * Deletes *all* nodes and *all* relationships
+   * @param  {Function} cb
+   */
   Graph.prototype.wipeDatabase = function(cb) {
     var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";
     return this.query(query, cb);
   }
 
-  // ### Counts all objects of a specific type: (all|node|relationship|[nr]:Movie)
+  /**
+   * Counts all objects of a specific type
+   * @param  {String}   (all|node|relationship|[nr]:Movie)
+   * @param  {Function} cb
+   */
   Graph.prototype.countAllOfType = function(type, cb) {
     var query = '';
     if      (/^n(ode)*$/i.test(type))
@@ -443,27 +519,43 @@ var __initGraph__ = function(neo4jrestful) {
     });
   }
 
-  // ### Counts all relationships
+  /**
+   * Counts all relationships
+   * @param  {Function} cb
+   */
   Graph.prototype.countRelationships = function(cb) {
     return this.countAllOfType('relationship', cb);
   }
 
-  // alias for countRelationships()
+  /**
+   * Alias for countRelationships()
+   * @see Graph.countRelationships()
+   * @param  {Function} cb
+   */
   Graph.prototype.countRelations = function(cb) {
     return this.countRelationships(cb);
   }
 
-  // ### Counts all nodes
+  /**
+   * Counts all nodes
+   * @param  {Function} cb
+   */
   Graph.prototype.countNodes = function(cb) {
     return this.countAllOfType('node', cb);
   }
 
-  // ### Counts all relationships and nodes
+  /**
+   * Counts all relationships and nodes
+   * @param  {Function} cb
+   */
   Graph.prototype.countAll = function(cb) {
     return this.countAllOfType('all', cb);
   }
 
-  // ### Queries information of the database and stores it on `this.info`
+  /**
+   * Queries information of the database and stores it on `this.info`
+   * @param  {Function} cb
+   */
   Graph.prototype.about = function(cb) {
     var self = this;
     if (this.info)
@@ -478,7 +570,9 @@ var __initGraph__ = function(neo4jrestful) {
       });
   }
 
-  // ### Reset the query history
+  /**
+   * Resets the query history
+   */
   Graph.prototype.resetQuery = function() {
     this._query_history_ = [];
     this._queryString_ = '';
@@ -486,8 +580,16 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
-  // ### Startpoint to begin query chaining
-  // e.g. Graph.start().where( …
+  /**
+   *  Startpoint to begin query chaining
+   *
+   *  Example:
+   *    `Graph.start().where( …`
+   *
+   * @param  {string}   start
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.start = function(start, parameters, cb) {
     this.resetQuery();
     if (typeof start === 'function') {
@@ -499,6 +601,13 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `MATCH …`
+   * @param  {object|string|array}   match
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   * @param  {object}   [options]
+   */
   Graph.prototype.match = function(match, parameters, cb, options) {
     var self = this;
     if (typeof options !== 'object')
@@ -529,19 +638,43 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `ON MATCH …`
+   * @param  {string|object|array}   onMatch
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.onMatch = function(onMatch, parameters, cb) {
     return this.match(onMatch, parameters, cb, { switch: 'ON MATCH' });
   }
 
+  /**
+   * `OPTIONAL MATCH …`
+   * @param  {string|object|array}   onMatch
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.optionalMatch = function(optionalMatch, parameters, cb) {
     return this.match(optionalMatch, parameters, cb, { switch: 'OPTIONAL MATCH' });
   }
 
+  /**
+   * `WITH …`
+   * @param  {string}   withStatement
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.with = function(withStatement, parameters, cb) {
     this._query_history_.push({ WITH: withStatement });
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `SKIP …`
+   * @param  {number}   skip
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.skip = function(skip, parameters, cb) {
     skip = parseInt(skip);
     if (skip === NaN)
@@ -550,6 +683,12 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `LIMIT …`
+   * @param  {number}   limit
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.limit = function(limit, parameters, cb) {
     limit = parseInt(limit);
     if (limit === NaN)
@@ -559,12 +698,24 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `MERGE …`
+   * @param  {string}   merge
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.merge = function(merge, parameters, cb) {
     // TODO: values to parameter
     this._query_history_.push({ MERGE: merge });
     return this.exec(parameters, cb);
   }
 
+  /**
+   * Pure string as statement segment
+   * @param  {string}   statement
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.custom = function(statement, parameters, cb) {
     if ((typeof statement === 'object') && (typeof statement.toQuery === 'function')) {
       this._query_history_.push(statement.toQuery().toString());
@@ -574,9 +725,12 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
-  // will be used to send statements
-  // Graph.prototype.statement = null;
-
+  /**
+   * `SET …`
+   * @param  {string|object}   set
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.set = function(set, parameters, cb) {
     var self = this;
     var setString = '';
@@ -602,6 +756,17 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `SET n = …`, sets explicit to a set of values
+   *
+   * Example:
+   *  `{ n: { name: 'Steve' } }`
+   *  ~> SET n = { `name`: 'Steve' }
+   * 
+   * @param  {object}   setWith value set
+   * @param  {[type]}   parameters
+   * @param  {Function} cb
+   */
   Graph.prototype.setWith = function(setWith, parameters, cb) {
     var setString = '';
     setString += Object.keys(setWith)[0]+' = ';
@@ -614,6 +779,13 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `CREATE …`
+   * @param  {string|object}   create
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   * @param  {[type]}   [options]
+   */
   Graph.prototype.create = function(create, parameters, cb, options) {
     var self = this;
     var creates = [];
@@ -651,28 +823,58 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `ON CREATE …`
+   * @see Graph.prototype.create
+   */
   Graph.prototype.onCreate = function(onCreate, parameters, cb) {
     return this.create(onCreate, parameters, cb, { action: 'ON_CREATE' });
   }
 
+  /**
+   * `CREATE UNIQUE …`
+   * @see Graph.prototype.create
+   */
   Graph.prototype.createUnique = function(createUnique, parameters, cb) {
     return this.create(createUnique, parameters, cb, { action: 'CREATE_UNIQUE' });
   }
 
+  /**
+   * `CREATE INDEX ON …`
+   * @see Graph.prototype.create
+   */
   Graph.prototype.createIndexOn = function(createIndexOn, parameters, cb) {
     return this.create(createIndexOn, parameters, cb, { action: 'CREATE_INDEX_ON' });
   }
 
+  /**
+   * `CASE … END`
+   * @param  {string}   caseStatement
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.case = function(caseStatement, parameters, cb) {
     this._query_history_.push({ CASE: caseStatement.replace(/END\s*$/i,'') + ' END ' });
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `DROP INDEX ON …`
+   * @param  {string}   dropIndexOn
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.dropIndexOn = function(dropIndexOn, parameters, cb) {
     this._query_history_.push({ DROP_INDEX_ON: dropIndexOn });
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `ORDER BY …`
+   * @param  {string|object}   property
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.orderBy = function(property, parameters, cb) {
     var direction = ''
       , s = '';
@@ -690,6 +892,17 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `WHERE …`
+   *
+   * Examples:
+   *    Graph.start('n=node(1)').where({ $OR : [ { 'n.name?': 'Steve' }, { 'n.name?': 'Jobs' } ] })
+   *    Graph.start('n=node(1)').where("n.name? = {name1} OR n.name? = {name2}", { name1: 'Steve', name2: 'Jobs' })
+   *    
+   * @param  {object|string}   where
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.where = function(where, parameters, cb) {
     if (typeof where === 'string') {
       this._query_history_.push({ WHERE: where });
@@ -709,6 +922,12 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `RETURN …`
+   * @param  {String}   returnStatement
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.return = function(returnStatement, parameters, cb, distinct) {
     var parts = [];
     if (returnStatement) {
@@ -728,64 +947,118 @@ var __initGraph__ = function(neo4jrestful) {
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `RETURN DISTINCT …`
+   * @param  {[type]}   returnStatement
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.returnDistinct = function(returnStatement, parameters, cb) {
     return this.return(returnStatement, parameters, cb, true);
   }
 
+  /**
+   * `DELETE …`
+   * @param  {string}   deleteStatement
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.delete = function(deleteStatement, parameters, cb) {
     this._query_history_.push({ DELETE: deleteStatement });
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `REMOVE …`
+   * @param  {string}   remove
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.remove = function(remove, parameters, cb) {
     this._query_history_.push({ REMOVE: remove });
     return this.exec(parameters, cb);
   }
 
+  /**
+   * `FOR EACH …`
+   * @param  {[type]}   foreach
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.foreach = function(foreach, parameters, cb) {
     this._query_history_.push({ FOREACH: foreach });
     return this.exec(parameters, cb);
   }
 
-  Graph.prototype.union = function(s, parameters, cb) {
-    this._query_history_.push({ UNION: s });
+  /**
+   * `UNION …`
+   * @param  {[type]}   union
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
+  Graph.prototype.union = function(union, parameters, cb) {
+    this._query_history_.push({ UNION: union });
     return this.exec(parameters, cb);
   }
 
-  Graph.prototype.using = function(s, parameters, cb) {
-    this._query_history_.push({ USING: s });
+  /**
+   * `USING …`
+   * @param  {[type]}   using
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
+  Graph.prototype.using = function(using, parameters, cb) {
+    this._query_history_.push({ USING: using });
     return this.exec(parameters, cb);
   }
 
+  /**
+   * Cypher-compatible-comment
+   * @param  {string}   comment
+   * @param  {object}   [parameters]
+   * @param  {Function} [cb]
+   */
   Graph.prototype.comment = function(comment, parameters, cb) {
     this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
     return this.exec(parameters, cb);
   }
 
+  /**
+   * Returns cypher query object
+   * @return {object} Cypher query object
+   */
   Graph.prototype.toQuery = function() {
-    // if a query string is attached, return this and skip query building
-    if (this._queryString_) {
-      return this._queryString_;
-    }
     this.cypher.statements = this._query_history_;
     return this.cypher;
   }
 
+  /**
+   * Return query as String
+   * @return {string} query
+   */
   Graph.prototype.toQueryString = function() {
     return this.toQuery().toString();
   }
 
+  /**
+   * @see Graph.prototype.toQueryString
+   */
   Graph.prototype.toCypherQuery = function() {
-    this.toQueryString();
     return this.toQuery().toCypher();
   }
 
-  // # Enables loading for specific types
-  // Define type(s) simply in a string
-  // e.g.:
-  // 'node|relationship|path' or '*' to enable load for all types
-  // 'node|relationship' to enable for node + relationships
-  // '' to disable for all (you can also use `disableLoading()` instead)
+
+  /**
+   * Enables loading for specific types
+   * Define type(s) simply in a string
+   *
+   * Examples:
+   *   'node|relationship|path' or '*' to enable load for all types
+   *   'node|relationship' to enable for node + relationships
+   *   '' to disable for all (you can also use `disableLoading()` instead)
+   * 
+   * @param  {string} classifications
+   */
   Graph.prototype.enableLoading = function(classifications) {
     if (classifications === '*')
       classifications = 'node|relationship|path';
@@ -793,18 +1066,24 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
-  // # Disables loading on results (speeds up queries but less convenient)
+  /**
+   * Disables loading on results (speeds up queries but less convenient)
+   */
   Graph.prototype.disableLoading = function() {
     this._loadOnResult_ = '';
     return this;
   }
-
-  // # Sort Results
-  // By default we get results like:
-  // { columns: [ 'node' ], data: [ [ { nodeObject#1 } ], … [ { nodeObject#n} ]] }
-  // To keep it more handy, we return just the data
-  // and (if we have only 1 column) instead of [ {node} ] -> {node}
-  // If you want to have access to the columns anyway, you can get them on `graph._columns_`
+  
+  /**
+   * Sort Results
+   * By default we get results like:
+   * `{ columns: [ 'node' ], data: [ [ { nodeObject#1 } ], … [ { nodeObject#n} ]] }`
+   * To keep it more handy, we return just the data
+   * and (if we have only 1 column) instead of [ {node} ] -> {node}
+   * If you want to have access to the columns anyway, you can get them on `graph._columns_`
+   * 
+   * @param  {boolean} trueOrFalse
+   */
   Graph.prototype.sortResult = function(trueOrFalse) {
     if (typeof trueOrFalse === 'undefined')
       trueOrFalse = true;
@@ -812,29 +1091,49 @@ var __initGraph__ = function(neo4jrestful) {
     return this;
   }
 
+  /**
+   * Enables sorting of result
+   */
   Graph.prototype.enableSorting = function() {
     return this.sortResult(true);
   }
 
+  /**
+   * Disbales sorting of result
+   */
   Graph.prototype.disableSorting = function() {
     return this.sortResult(false);
   }
 
+  /**
+   * Enables processing of result
+   */
   Graph.prototype.enableProcessing = function() {
     this.sortResult(true);
     this.enableLoading('*');
     return this;
   }
 
+  /**
+   * Disbales processing of result
+   */
   Graph.prototype.disableProcessing = function() {
     this.sortResult(false);
     this.disableLoading();
     return this;
   }
 
+  /**
+   * Will be called for logging, can be overriddin with a custom function
+   */
   Graph.prototype.log = function(){ /* > /dev/null */ };
 
-  // Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]
+  /**
+   * Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]
+   * @private
+   * @param  {object|array} parameters
+   * @return {object} parameters
+   */
   Graph.prototype._addParametersToCypher = function(parameters) {
     if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
       if (!this.cypher.hasParameters())
@@ -848,7 +1147,12 @@ var __initGraph__ = function(neo4jrestful) {
     return this.cypher.parameters;
   }
 
-  // Expect s.th. like 'value' or { parameterkey: 'value' }
+  /**
+   * Expect s.th. like 'value' or { parameterkey: 'value' }
+   * @private
+   * @param  {string|object} parameter
+   * @return {object} parameters
+   */
   Graph.prototype._addParameterToCypher = function(parameter) {
     if (!this.cypher.hasParameters())
       this.cypher.parameters = {};
@@ -864,6 +1168,13 @@ var __initGraph__ = function(neo4jrestful) {
     return this.cypher.parameters;
   }
 
+  /**
+   * Add key value to parameters
+   * @private
+   * @param  {object} key/value object literal
+   * @param  {string} [assignOperator], can be ' = ' or ' : ' for instance
+   * @return {array} values
+   */
   Graph.prototype._addKeyValuesToParameters = function(o, assignOperator) {
     o = helpers.flattenObject(o);
     var values = [];
@@ -877,10 +1188,23 @@ var __initGraph__ = function(neo4jrestful) {
     return values;
   }
 
-  Graph.prototype._addObjectLiteralToParameters = function(o) {
-    return '{ '+this._addKeyValuesToParameters(o, ' : ').join(', ')+' }';
+  /**
+   * Add object literal to parameters
+   * @private
+   * @param {object} objectLiteral
+   * @return {string} map, e.g. `{ n.`name`: '…', …, n.`phone`: '…'  }`
+   */
+  Graph.prototype._addObjectLiteralToParameters = function(objectLiteral) {
+    return '{ '+this._addKeyValuesToParameters(objectLiteral, ' : ').join(', ')+' }';
   }
 
+  /**
+   * Adds object literal to query.
+   * If parameters are used (default), values will be added to parameters and replaced with `{_value%n_}`
+   * @private
+   * @param  {object} o
+   * @return {string} serialized object literal
+   */
   Graph.prototype._addObjectLiteralForStatement = function(o) {
     var s = '';
     if (this.cypher.useParameters)
@@ -890,101 +1214,174 @@ var __initGraph__ = function(neo4jrestful) {
     return s;
   }
 
-  /*
-   * Static methods
-   * (are shortcuts to methods on new instanced Graph())
+  /**
+   * # Static methods
+   * are aliases to methods on instanced Graph()
+   */
+  
+  /**
+   * @see Graph.prototype.query
    */
   Graph.query = function(cypher, parameters, cb, options) {
     return Graph.disableProcessing().query(cypher, parameters, cb, options);
   }
 
+  /**
+   * @see Graph.prototype.stream
+   */
   Graph.stream = function(cypher, parameters, cb, options) {
     return new Graph.disableProcessing().stream(cypher, parameters, cb, options);
   }
 
+  /**
+   * @see Graph.prototype.wipeDatabase
+   */
   Graph.wipeDatabase = function(cb) {
     return new Graph().wipeDatabase(cb);
   }
 
+  /**
+   * @see Graph.prototype.countAllOfType
+   */
   Graph.countAllOfType = function(type, cb) {
     return new Graph().countAllOfType(type, cb);
   }
 
+  /**
+   * @see Graph.prototype.countRelationships
+   */
   Graph.countRelationships = function(cb) {
     return new Graph().countRelationships(cb);
   }
 
+  /**
+   * @see Graph.prototype.countRelations
+   */
   Graph.countRelations = function(cb) {
     return new Graph().countRelationships(cb);
   }
 
+  /**
+   * @see Graph.prototype.countNodes
+   */
   Graph.countNodes = function(cb) {
     return new Graph().countNodes(cb);
   }
 
+  /**
+   * @see Graph.prototype.countAll
+   */
   Graph.countAll = function(cb) {
     return new Graph().countAll(cb);
   }
 
+  /**
+   * @see Graph.prototype.about
+   */
   Graph.about = function(cb) {
     return new Graph().about(cb);
   }
 
+  /**
+   * @see Graph.prototype.start
+   */
   Graph.start = function(start, parameters, cb) {
     return new Graph().enableProcessing().start(start, parameters, cb);
   }
 
+  /**
+   * @see Graph.prototype.custom
+   */
   Graph.custom = function(statement, parameters, cb) {
     return Graph.start().custom(statement, parameters, cb);
   }
 
+  /**
+   * @see Graph.prototype.match
+   */
   Graph.match = function(statement, parameters, cb) {
     return Graph.start().match(statement, parameters, cb);
   }
 
+  /**
+   * @see Graph.prototype.where
+   */
   Graph.where = function(statement, parameters, cb) {
     return Graph.start().where(statement, parameters, cb);
   }
 
+  /**
+   * @see Graph.prototype.return
+   */
   Graph.return = function(statement, parameters, cb) {
     return Graph.start().return(statement, parameters, cb);
   }
 
+  /**
+   * @see Graph.prototype.create
+   */
+  Graph.create = function(statement, parameters, cb) {
+    return Graph.start().create(statement, parameters, cb);
+  }
+
+  /**
+   * @see Graph.prototype.enableLoading
+   */
   Graph.enableLoading = function(classifications) {
     return Graph.start().enableLoading(classifications);
   }
 
+  /**
+   * @see Graph.prototype.disableLoading
+   */
   Graph.disableLoading = function() {
     return Graph.start().disableLoading();
   }
 
+  /**
+   * @see Graph.prototype.disableProcessing
+   */
   Graph.disableProcessing = function() {
     return Graph.start().disableProcessing();
   }
 
+  /**
+   * @see Graph.prototype.enableProcessing
+   */
   Graph.enableProcessing = function() {
     return Graph.start().enableProcessing();
   }
 
+  /**
+   * @see Graph.prototype.enableSorting
+   */
   Graph.enableSorting = function() {
     return Graph.start().enableSorting();
   }
 
+  /**
+   * @see Graph.prototype.disableSorting
+   */
   Graph.disableSorting = function() {
     return Graph.start().disableSorting();
   }
 
+  /**
+   * Returns a new neo4jrestful client
+   * Can be used for direct requests on neo4j for instance
+   * @return {object} neo4jrestful
+   */
   Graph.request = function() {
     // creates a new neo4jrestful client
     return neo4jrestful.singleton();
   }
 
+  /**
+   * Instanciate a new Graph object, same as `new Graph()
+   * @see Graph
+   */
   Graph.new = function(url) {
     return new Graph(url);
-  }
-
-  Graph.create = function(statement, parameters, cb) {
-    return Graph.start().create(statement, parameters, cb);
   }
 
   return neo4jrestful.Graph = Graph;
