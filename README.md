@@ -452,35 +452,42 @@ Each model extends on the base `Node` model but inheriance of other models can b
   });
 ```
 
-### Model inheritance
+### Model inheritance behaviour
 
-`Director` extends `Person`, so `Director` will have the labels [ 'Director', 'Person' ].
+If `Director` extends `Person`, `Director` will contain the labels `[ 'Director', 'Person' ]`.
 
-You can skip the cb and work instantly with the registered model if you don't use index/uid fields on your model.
+It's strongly recommend to use a callback on `Node.registerModel()` to await the (optional) indexing and setting a scope for the new model.
 
 ```js
-  var Director = Person.registerModel('Director', {
+  Node.registerModel('Person', {
     fields: {
-      defaults: {
-        job: 'Director'
-      }
+      indexes: { email: true },
+      defaults: { created_on: function() { return new Date().getTime(); } }
     }
-  });
-
-  new Director( {
-    name: 'Roman Polanski'
-  } ).save(function(err, polanski) {
-    polanski.toObject();
-    ~> { id: 81239,
-    classification: 'Node',
-    data:
-     { created_on: 1374758483625,
-       name: 'Roman Polanski',
-       job: 'Director'
-     },
-    uri: 'http://localhost:7420/db/data/node/81239',
-    label: 'Director',
-    labels: [ 'Director', 'Person' ] }
+  }, function(err, Person) {
+    
+    Person.registerModel('Director', {
+      fields: {
+        defaults: { job: 'Director' }
+      }
+    }, function(err, Director) {
+      
+      new Director( {
+        name: 'Roman Polanski'
+      } ).save(function(err, polanski) {
+        polanski.toObject();
+        ~> { id: 81239,
+        classification: 'Node',
+        data:
+         { created_on: 1374758483625,
+           name: 'Roman Polanski',
+           job: 'Director'
+         },
+        uri: 'http://localhost:7420/db/data/node/81239',
+        label: 'Director',
+        labels: [ 'Director', 'Person' ] }
+      });
+    });
   });
 ```
 

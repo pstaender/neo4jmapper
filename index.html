@@ -191,10 +191,15 @@
   3. callback (optional)</p>
 <p>Example:</p>
 <pre><code class="lang-js">  Graph
-    .custom(&#39;START n=node({id}) RETURN n LIMIT 1;&#39;, { id: 123 }, cb);</code></pre>
-<h4>Graph query methods</h4>
-<p>Here are most of all available methods to query the graph. <code>…</code> represents the strings containing the statements:</p>
-<pre><code class="lang-js">  Graph
+    .custom(&#39;START n=node({id}) RETURN n LIMIT 1;&#39;, { id: 123 }, cb);
+``
+
+#### Graph query methods
+
+Here are most of all available methods to query the graph. `…` represents the strings containing the statements:
+
+```js
+  Graph
     .start(…)
     .match(…)
     .onMatch(…)
@@ -306,31 +311,38 @@ Each model extends on the base <code>Node</code> model but inheriance of other m
       labels: [ &#39;Person&#39; ] }
     });
   });</code></pre>
-<h3>Multiple inheritance</h3>
-<p><code>Director</code> extends <code>Person</code>, so <code>Director</code> will have the labels [ &#39;Director&#39;, &#39;Person&#39; ].</p>
-<p>You can skip the cb and work instantly with the registered model if you don&#39;t use index/uid fields on your model.</p>
-<pre><code class="lang-js">  var Director = Person.registerModel(&#39;Director&#39;, {
+<h3>Model inheritance behaviour</h3>
+<p>If <code>Director</code> extends <code>Person</code>, <code>Director</code> will contain the labels <code>[ &#39;Director&#39;, &#39;Person&#39; ]</code>.</p>
+<p>It&#39;s strongly recommend to use a callback on <code>Node.registerModel()</code> to await the (optional) indexing and setting a scope for the new model.</p>
+<pre><code class="lang-js">  Node.registerModel(&#39;Person&#39;, {
     fields: {
-      defaults: {
-        job: &#39;Director&#39;
-      }
+      indexes: { email: true },
+      defaults: { created_on: function() { return new Date().getTime(); } }
     }
-  });
+  }, function(err, Person) {
 
-  new Director( {
-    name: &#39;Roman Polanski&#39;
-  } ).save(function(err, polanski) {
-    polanski.toObject();
-    ~&gt; { id: 81239,
-    classification: &#39;Node&#39;,
-    data:
-     { created_on: 1374758483625,
-       name: &#39;Roman Polanski&#39;,
-       job: &#39;Director&#39;
-     },
-    uri: &#39;http://localhost:7420/db/data/node/81239&#39;,
-    label: &#39;Director&#39;,
-    labels: [ &#39;Director&#39;, &#39;Person&#39; ] }
+    Person.registerModel(&#39;Director&#39;, {
+      fields: {
+        defaults: { job: &#39;Director&#39; }
+      }
+    }, function(err, Director) {
+
+      new Director( {
+        name: &#39;Roman Polanski&#39;
+      } ).save(function(err, polanski) {
+        polanski.toObject();
+        ~&gt; { id: 81239,
+        classification: &#39;Node&#39;,
+        data:
+         { created_on: 1374758483625,
+           name: &#39;Roman Polanski&#39;,
+           job: &#39;Director&#39;
+         },
+        uri: &#39;http://localhost:7420/db/data/node/81239&#39;,
+        label: &#39;Director&#39;,
+        labels: [ &#39;Director&#39;, &#39;Person&#39; ] }
+      });
+    });
   });</code></pre>
 <p>Coffeescript and it&#39;s class pattern is maybe the most convenient way to define models:</p>
 <pre><code class="lang-coffeescript">  class Person extends Node
@@ -892,7 +904,7 @@ Example:
 ```js
   Graph
     .custom('START n=node({id}) RETURN n LIMIT 1;', { id: 123 }, cb);
-```
+``
 
 #### Graph query methods
 
@@ -1065,35 +1077,42 @@ Each model extends on the base `Node` model but inheriance of other models can b
   });
 ```
 
-### Multiple inheritance
+### Model inheritance behaviour
 
-`Director` extends `Person`, so `Director` will have the labels [ 'Director', 'Person' ].
+If `Director` extends `Person`, `Director` will contain the labels `[ 'Director', 'Person' ]`.
 
-You can skip the cb and work instantly with the registered model if you don't use index/uid fields on your model.
+It's strongly recommend to use a callback on `Node.registerModel()` to await the (optional) indexing and setting a scope for the new model.
 
 ```js
-  var Director = Person.registerModel('Director', {
+  Node.registerModel('Person', {
     fields: {
-      defaults: {
-        job: 'Director'
-      }
+      indexes: { email: true },
+      defaults: { created_on: function() { return new Date().getTime(); } }
     }
-  });
-
-  new Director( {
-    name: 'Roman Polanski'
-  } ).save(function(err, polanski) {
-    polanski.toObject();
-    ~> { id: 81239,
-    classification: 'Node',
-    data:
-     { created_on: 1374758483625,
-       name: 'Roman Polanski',
-       job: 'Director'
-     },
-    uri: 'http://localhost:7420/db/data/node/81239',
-    label: 'Director',
-    labels: [ 'Director', 'Person' ] }
+  }, function(err, Person) {
+    
+    Person.registerModel('Director', {
+      fields: {
+        defaults: { job: 'Director' }
+      }
+    }, function(err, Director) {
+      
+      new Director( {
+        name: 'Roman Polanski'
+      } ).save(function(err, polanski) {
+        polanski.toObject();
+        ~> { id: 81239,
+        classification: 'Node',
+        data:
+         { created_on: 1374758483625,
+           name: 'Roman Polanski',
+           job: 'Director'
+         },
+        uri: 'http://localhost:7420/db/data/node/81239',
+        label: 'Director',
+        labels: [ 'Director', 'Person' ] }
+      });
+    });
   });
 ```
 
