@@ -3,7 +3,7 @@
  * Represents the node object model and the neo4j-node-query-api
  *
  * You can register own models, including "inheritance"
- * 
+ *
  * Requirements (for browser and nodejs):
  * * neo4jmapper helpers
  * * underscorejs
@@ -168,7 +168,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.__skip_loading_labels__  = null;   // is used in _onBeforeLoad() to prevent loading labels in an extra request
 
-  /** 
+  /**
    * Should **never** be changed
    * it's used to dictinct nodes and relationships
    * many queries containg `node()` command will use this value
@@ -528,7 +528,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       next(err);
     });
   }
-  
+
   Node.prototype.onBeforeSave = function(node, next) {
     next(null, null);
   }
@@ -563,7 +563,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // create node
       var labels = (this.labels.length > 0) ? ':'+this.labels.join(':') : '';
       var data = {};
-      data['n'+labels] = this.dataForCypher();      
+      data['n'+labels] = this.dataForCypher();
       Graph
         .start()
         .create(data)
@@ -686,7 +686,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
           return _createNodeFromLabel(node, debug);
         } else {
           // only load labels if it's set to not loaded
-          return node.allLabels(function(err, labels, debug) {            
+          return node.allLabels(function(err, labels, debug) {
             if (err)
               return next(err, labels);
             node.setLabels(labels);
@@ -694,7 +694,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
             return _createNodeFromLabel(node, debug);
           });
         }
-      } else {        
+      } else {
         return next(null, node);
       }
     });
@@ -713,7 +713,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     node._is_loaded_ = true;
     this.onAfterLoad(node, function(err, node) {
       next(err, node);
-    }); 
+    });
   }
 
   Node.prototype.onAfterLoad = function(node, next) {
@@ -1396,7 +1396,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.where = function(where, cb, options) {
-    this.cypher.segments.where = [];
     if (_.isObject(where)) {
       if (Object.keys(where).length === 0) {
         // return here

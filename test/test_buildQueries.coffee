@@ -259,6 +259,12 @@ describe 'Neo4jMapper (cypher queries)', ->
             "START n = node(*) WHERE ( HAS (n.`city`) AND n.`city` = 'berlin' AND ( HAS (n.`name`) AND n.`name` = 'peter' AND NOT ( HAS (n.`name`) AND n.`name` = 'pedro' ) ) ) RETURN n.name AS Name LIMIT 1;"
           ]
 
+        " Node.find({ foo: 'bar' }).where('(n)-[:KNOW]-()')":
+          [
+             Node.find({ foo: 'bar' }).where('(n)-[:KNOW]-()'),
+            "START n = node(*) WHERE ( HAS (n.`foo`) AND n.`foo` = 'bar' ) AND ( (n)-[:KNOW]-() ) RETURN n, labels(n);"
+          ]
+
         "Node.findById(123).incomingRelations().delete()":
           [
              Node.findById(123).incomingRelations().delete()
