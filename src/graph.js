@@ -82,7 +82,7 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._response_                    = null;         // contains the last response object
   Graph.prototype._columns_                     = null;         // contains `columns` of { columns: [ … ], data: [ … ] }
 
-  /** 
+  /**
     * The following argument combinations are accepted:
     * * query, parameters, cb
     * * parameters, cb
@@ -92,8 +92,8 @@ var __initGraph__ = function(neo4jrestful) {
     * Example:
     *
     *     `Graph.new().exec('START n=node({id}) RETURN n;', { id: 123 }, cb);`
-    *  
-    * 
+    *
+    *
     * @param  {string|object|function} [query]
     * @param  {object|function} [parameters]
     * @param  {Function} cb (optional, but needed to trigger query execution finally)
@@ -129,7 +129,7 @@ var __initGraph__ = function(neo4jrestful) {
    * Executes a (cypher)-query-string directly in neo4j
    *
    * Example:
-   * 
+   *
    *    `Graph.query('START n=node(123) RETURN n;', cb);`
    *
    * @param  {string} cypherQuery
@@ -317,7 +317,7 @@ var __initGraph__ = function(neo4jrestful) {
       return cb(err, result[0], debug);
     }
 
-    // check for node labels column (is attached by query builder) 
+    // check for node labels column (is attached by query builder)
     // copy to a new array and remove column from result to the results cleaner
     var nodeLabelsColumn = this.__indexOfLabelColumn(result.columns);
     var nodeLabels = (this._resortResults_) ? this.__sortOutLabelColumn(result) : null;
@@ -342,7 +342,7 @@ var __initGraph__ = function(neo4jrestful) {
               object = self.neo4jrestful.Node.instantiateNodeAsModel(object, labels, options.recommendConstructor);
               object.__skip_loading_labels__ = true;
             }
-            todo++;            
+            todo++;
             object.load(__oneMoreJobDone);
           }
           else if ((object.classification === 'Relationship') && (loadRelationship)) {
@@ -406,7 +406,7 @@ var __initGraph__ = function(neo4jrestful) {
       if ((self._resortResults_)&&(i === 0)) {
         indexOfLabelColumn = self.__indexOfLabelColumn(self._columns_);
         if (indexOfLabelColumn >= 0) {
-          // remove [ 'n', 'labels(n)' ] labels(n) column        
+          // remove [ 'n', 'labels(n)' ] labels(n) column
           self._columns_ = self.__removeLabelColumnFromArray(self._columns_, indexOfLabelColumn);
         }
       }
@@ -424,7 +424,7 @@ var __initGraph__ = function(neo4jrestful) {
               data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
               data[column] = self.neo4jrestful.Node.instantiateNodeAsModel(data[column], labels);
             }
-              
+
           }
         }
       }
@@ -762,7 +762,7 @@ var __initGraph__ = function(neo4jrestful) {
    * Example:
    *  `{ n: { name: 'Steve' } }`
    *  ~> SET n = { `name`: 'Steve' }
-   * 
+   *
    * @param  {object}   setWith value set
    * @param  {[type]}   parameters
    * @param  {Function} cb
@@ -774,7 +774,7 @@ var __initGraph__ = function(neo4jrestful) {
       setString += this._addObjectLiteralToParameters(setWith[Object.keys(setWith)[0]]);
     } else {
       setString += helpers.serializeObjectForCypher(setWith[Object.keys(setWith)[0]]);
-    }   
+    }
     this._query_history_.push({ SET: setString });
     return this.exec(parameters, cb);
   }
@@ -805,9 +805,17 @@ var __initGraph__ = function(neo4jrestful) {
           }
         });
       } else {
-        // we have a object literal        
+        // we have a object literal
         var parts = [];
+
         for (var part in create) {
+
+          for (var attr in create[part]) {
+            // on create, only add values beside `null` and `undefined`, otherwise neo4j will throw an exception
+            if ((create[part][attr] === undefined)||(create[part][attr] === null)) {
+              delete create[part][attr];
+            }
+          }
           parts.push(part + ' ' + self._addObjectLiteralForStatement(create[part]));
         }
         creates.push(parts.join(', '));
@@ -898,7 +906,7 @@ var __initGraph__ = function(neo4jrestful) {
    * Examples:
    *    Graph.start('n=node(1)').where({ $OR : [ { 'n.name?': 'Steve' }, { 'n.name?': 'Jobs' } ] })
    *    Graph.start('n=node(1)').where("n.name? = {name1} OR n.name? = {name2}", { name1: 'Steve', name2: 'Jobs' })
-   *    
+   *
    * @param  {object|string}   where
    * @param  {object}   [parameters]
    * @param  {Function} [cb]
@@ -915,7 +923,7 @@ var __initGraph__ = function(neo4jrestful) {
     var options = { valuesToParameters: this.cypher.useParameters, parametersStartCountAt: Object.keys(this.cypher.parameters || {}).length };
     var condition = new ConditionalParameters(where, options);
     var whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
-    
+
     this._query_history_.push({ WHERE: whereCondition });
     if (this.cypher.useParameters)
       this.addParameters(condition.parameters);
@@ -1056,7 +1064,7 @@ var __initGraph__ = function(neo4jrestful) {
    *   'node|relationship|path' or '*' to enable load for all types
    *   'node|relationship' to enable for node + relationships
    *   '' to disable for all (you can also use `disableLoading()` instead)
-   * 
+   *
    * @param  {string} classifications
    */
   Graph.prototype.enableLoading = function(classifications) {
@@ -1073,7 +1081,7 @@ var __initGraph__ = function(neo4jrestful) {
     this._loadOnResult_ = '';
     return this;
   }
-  
+
   /**
    * Sort Results
    * By default we get results like:
@@ -1081,7 +1089,7 @@ var __initGraph__ = function(neo4jrestful) {
    * To keep it more handy, we return just the data
    * and (if we have only 1 column) instead of [ {node} ] -> {node}
    * If you want to have access to the columns anyway, you can get them on `graph._columns_`
-   * 
+   *
    * @param  {boolean} trueOrFalse
    */
   Graph.prototype.sortResult = function(trueOrFalse) {
@@ -1161,7 +1169,8 @@ var __initGraph__ = function(neo4jrestful) {
     } else {
       // we name the parameter with `_value#_`
       var count = Object.keys(this.cypher.parameters).length;
-      this.cypher.parameters['_value'+count+'_'] = parameter;
+      // values with `undefined` will be replaced with `null` because neo4j doesn't process `undefined`
+      this.cypher.parameters['_value'+count+'_'] = (typeof parameter === 'undefined') ? null : parameter;
       // return the placeholder
       return '{_value'+count+'_}';
     }
@@ -1183,7 +1192,7 @@ var __initGraph__ = function(neo4jrestful) {
     if (typeof assignOperator !== 'string')
       assignOperator = ' = ';
     for (var attr in o) {
-      values.push(helpers.escapeProperty(attr, identifierDelimiter) + assignOperator + this._addParameterToCypher(o[attr])); 
+      values.push(helpers.escapeProperty(attr, identifierDelimiter) + assignOperator + this._addParameterToCypher(o[attr]));
     }
     return values;
   }
@@ -1218,7 +1227,7 @@ var __initGraph__ = function(neo4jrestful) {
    * # Static methods
    * are aliases to methods on instanced Graph()
    */
-  
+
   /**
    * @see Graph.prototype.query
    */

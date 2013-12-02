@@ -109,7 +109,8 @@ CypherQuery.prototype.addParameters = function(parameters) {
   if ((!this.hasParameters()) || ((parameters !== null) && (Object.keys(parameters).length === 0)))
     this.parameters = {};
   for (var attr in parameters) {
-    this.parameters[attr] = parameters[attr];
+    // replace undefined values with null because we can't work with undefined values in neo4j
+    this.parameters[attr] = (parameters[attr] === undefined) ? null : parameters[attr];
   }
   return this;
 }

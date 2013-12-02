@@ -551,8 +551,7 @@ describe 'Neo4jMapper', ->
     it 'expect to find one specific node by id', (done) ->
       Person = Node.registerModel 'Person'
       node = new Person title: generateUID()
-
-      node.save ->
+      node.save (err, a, debug) ->
         Node.findById node.id, (err, found) ->
           expect(err).to.be null
           expect(found.data.title).to.be.equal node.data.title
@@ -730,6 +729,16 @@ describe 'Neo4jMapper', ->
                 expect(err).to.be null
                 node.remove ->
                   done()
+
+    it 'expect to update a node with null values', (done) ->
+      Node.create { name: 'Alice', year: 1982, gender: 'male', nullValue: null, undefinedValue: undefined }, (err, alice) ->
+        expect(err).to.be null
+        expect(alice.id).to.be.above -1        
+        expect(alice.data).to.be.eql
+          name: 'Alice'
+          year: 1982
+          gender: 'male'
+        done()
 
     it 'expect to update data of a node by id', (done) ->
       new Node({ name: 'Dave Grohl', origin: { country: 'USA', state: '' } }).save (err, dave) ->

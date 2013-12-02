@@ -563,13 +563,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
       // create node
       var labels = (this.labels.length > 0) ? ':'+this.labels.join(':') : '';
       var data = {};
-      data['n'+labels] = this.dataForCypher();
+      data['n'+labels] = this.dataForCypher();      
       Graph
         .start()
         .create(data)
         .return('n')
         .limit(1)
-        .exec(function(err, res, debug) { 
+        .exec(function(err, res, debug) {
           if ((err)||(!res)) {
             return cb(err, res, debug);
           } else {

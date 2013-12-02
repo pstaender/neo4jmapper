@@ -79,8 +79,8 @@ describe 'Neo4jMapper (helpers)', ->
   it 'flattenObject', ->
     expect(helpers.flattenObject({ a: { b: true } })).to.be.eql { 'a.b': true }
     expect(helpers.flattenObject({ a: { b: null } })).to.be.eql { 'a.b': null }
-    expect(helpers.flattenObject({ a: true })).to.be.eql { 'a': true }
-    expect(helpers.flattenObject({ a: null })).to.be.eql { 'a': null }
+    expect(helpers.flattenObject({ a: true, b: 0, c: false })).to.be.eql { a: true, b:0, c: false }
+    expect(helpers.flattenObject({ a: null, b: undefined })).to.be.eql { a: null, b: undefined }
 
   it 'isObjectLiteral', ->
     expect(helpers.isObjectLiteral({})).to.be true
