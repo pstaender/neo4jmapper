@@ -164,8 +164,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
   Node.prototype._constructor_name_       = null;   // will be with the name of the function of the constructor
   Node.prototype._load_hook_reference_    = null;   // a reference to acticate or deactivate the load hook
 
-  Node.prototype.__already_initialized__  = false;  // flag to avoid many initializations of a model
-
   Node.prototype.__skip_loading_labels__  = null;   // is used in _onBeforeLoad() to prevent loading labels in an extra request
 
   /**
@@ -183,30 +181,22 @@ var __initNode__ = function(neo4jrestful, Graph) {
   // The callback can be used to ensure that all async processes are finished
   Node.prototype.initialize = function(cb) {
     var self = this;
-    // here a callback is optional
-    if (typeof cb !== 'function')
-      cb = function() { /* /dev/null */ };
-    if (!this.__already_initialized__) {
-      return this.onBeforeInitialize(function(err) {
-        if (err)
-          cb(err, null);
-        else
-          self.onAfterInitialize(cb);
-      });
-    } else {
-      return cb(null, this.constructor);
-    }
+    return this.onBeforeInitialize(function(err, res, debug) {
+      if (err)
+        cb(err, null, debug);
+      else
+        self.onAfterInitialize(cb);
+    });
   }
 
   Node.prototype.onBeforeInitialize = function(next) {
-    return next(null,null);
+    return next(null,null,null);
   }
 
   Node.prototype.onAfterInitialize = function(cb) {
     // here we return the constructor as 2nd argument in cb
     // because it is expected at `Node.register_model('Label', cb)`
     var self = this;
-    this.__already_initialized__ = true;
     // Index fields
     var fieldsToIndex = this.fieldsForAutoindex();
     // we create an object to get the label
@@ -214,14 +204,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
     var label = node.label;
     if (label) {
       if (fieldsToIndex.length > 0) {
-        return node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err) {
-          cb(err, self.constructor);
+        return node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err, res, debug) {
+          return cb(err, self.constructor, debug);
         });
       } else {
-        return cb(null, self.constructor);
+        return cb(null, self.constructor, null);
       }
     } else {
-      return cb(Error('No label found'), this.constructor);
+      return cb(Error('No label found'), this.constructor, null);
     }
   }
 
@@ -381,26 +371,27 @@ var __initNode__ = function(neo4jrestful, Graph) {
       fields: this.fieldsForAutoindex(),  // fields that have to be indexed
       unique: this.uniqueFields() || []   // fields that have be indexed as unique
     }, options);
-    var self    = this
-      , keys    = _.uniq(_.union(options.fields, options.unique)) // merge index + unique here
-      , todo    = keys.length
-      , done    = 0
-      , errors  = []
-      , results = [];
+    var self    = this;
+    var keys    = _.uniq(_.union(options.fields, options.unique)); // merge index + unique here
+    var todo    = keys.length;
+    var done    = 0;
+    var errors  = [];
+    var results = [];
     if (!options.label)
-      return cb(Error('Label is mandatory, you can set the label as options as well'), null);
+      throw Error('Label is mandatory, you can set the label as options as well');
     var url = 'schema/index/'+options.label;
     var queryHead = "CREATE CONSTRAINT ON (n:" + options.label + ") ASSERT ";
     // get all indexes fields
     // TODO: find a way to distinct index
-    this.getIndex(function(err, indexedFields) {
+    this.getIndex(function(err, indexedFields, debug) {
       // sort out fields that are already indexed
       for (var i=0; i < indexedFields.length; i++) {
         keys = _.without(keys, indexedFields[i]);
       }
       // return without any arguments if there are no fields to index
-      if (keys.length === 0)
-        return cb(null, null);
+      if (keys.length === 0) {
+        return cb(null, null, debug);
+      }
       _.each(keys, function(key){
         var isUnique = (_.indexOf(options.unique, key) >= 0);
         var query = queryHead + "n.`" + key + "`" + ( (isUnique) ? " IS UNIQUE" : "")+";";
@@ -421,13 +412,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
             results.push(res);
           }
           if (done === todo) {
-            cb((errors.length > 0) ? errors : null, results);
+            cb((errors.length > 0) ? errors : null, results, debug);
           }
         };
-        if (isUnique)
+        if (isUnique) {
           self.query(query, after);
-        else
+        } else {
           Graph.request().post(url, { data: { property_keys: [ key ] } }, after);
+        }
       });
     });
     return this;
@@ -2169,7 +2161,9 @@ var __initNode__ = function(neo4jrestful, Graph) {
       Class.prototype.label = name;
     }
     Node.__models__[name] = Class;
-    Class.prototype.initialize(cb);
+    if (typeof cb === 'function') {
+      Class.prototype.initialize(cb);
+    }
     return Class;
   }
 

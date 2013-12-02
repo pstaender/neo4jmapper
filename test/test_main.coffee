@@ -306,7 +306,7 @@ describe 'Neo4jMapper', ->
         Graph.start('n=node({id})', { id: n.id }).return('n').limit(1).stream (node, context, debug) ->
           expect(context.constructor).to.be.equal Graph
           expect(Object.keys(context._response_).length).to.be.above 0
-          expect(Object.keys(debug).length).to.be.above 0 
+          expect(Object.keys(debug).length).to.be.above 0
           if node
             i++
           else
@@ -407,19 +407,24 @@ describe 'Neo4jMapper', ->
           if @data?.surname
             s += ' ' + @data.surname
           "[#{s.trim()}]"
-        person = new Person()        
+        person = new Person()
         expect(person).to.be.an 'object'
         expect(person.label).to.be 'Person'
         expect(person._constructor_name_).to.be 'Person'
-        expect(person.fields.defaults.income).to.be.equal 50000
-        expect(person.fields.defaults.job).to.be.equal 'Laborer'
-        expect(person.fields.defaults.email).to.be.equal 'unknown'
+        expect(person.fields.defaults).to.be.eql
+          name: ''
+          email: 'unknown'
+          income: 50000
+          job: 'Laborer'
         expect(person.fullname()).to.be.equal '[]'
         Person.registerModel 'Director', {
           fields: {
             defaults: {
               income: 80000
               job: 'Director'
+            },
+            indexes: {
+              income: true
             }
           }
         }, (err, Director) ->
@@ -427,13 +432,13 @@ describe 'Neo4jMapper', ->
           director = new Director()
           expect(director.label).to.be.equal 'Director'
           expect(director._constructor_name_).to.be.equal 'Director'
-          expect(director.fields.defaults.income).to.be.equal 80000
-          expect(director.fields.defaults.job).to.be.equal 'Director'
-          expect(director.fields.defaults.email).to.be.equal 'unknown'
-          expect(director.fields.indexes.job).to.be true
-          expect(director.labels).to.have.length 2
-          expect(director.labels[0]).to.be 'Director'
-          expect(director.labels[1]).to.be 'Person'
+          expect(director.fields.defaults).to.be.eql
+            name: ''
+            email: 'unknown'
+            income: 80000
+            job: 'Director'
+          expect(director.fields.indexes).to.be.eql { job: true, income: true }
+          expect(Director.prototype.labels).to.be.eql [ 'Director', 'Person' ]
           expect(director).to.be.an 'object'
           expect(director.id).to.be null
           expect(director.fullname()).to.be.equal '[]'
@@ -443,21 +448,20 @@ describe 'Neo4jMapper', ->
                 job: 'Actor'
               }
             }
-          }, (err, Actor) ->
+          }, (err, Actor, debug) ->
             expect(Actor.prototype._constructor_name_).to.be.equal 'Actor'
             expect(Actor.prototype.label).to.be.equal 'Actor'
             expect(Actor.prototype.labels).to.be.eql [ 'Actor', 'Person' ]
-
             expect(err).to.be null
             actor = new Actor()
-            expect(actor.labels).to.have.length 2
-            expect(actor.labels[0]).to.be 'Actor'
-            expect(actor.labels[1]).to.be 'Person'
+            expect(actor.labels).to.be.eql [ 'Actor', 'Person' ]
             expect(actor.label).to.be 'Actor'
             expect(actor._constructor_name_).to.be 'Actor'
-            expect(actor.fields.defaults.income).to.be.equal 50000
-            expect(actor.fields.defaults.job).to.be.equal 'Actor'
-            expect(actor.fields.defaults.email).to.be.equal 'unknown'
+            expect(actor.fields.defaults).to.be.eql
+              name: ''
+              email: 'unknown'
+              income: 50000
+              job: 'Actor'
             # Test that it'll be applied on new objects
             Actor.create { name: 'Jeff', surname: 'Bridges' }, (err, jeff) ->
               expect(jeff.fullname()).to.be.equal '[Jeff Bridges]'
@@ -733,7 +737,7 @@ describe 'Neo4jMapper', ->
     it 'expect to update a node with null values', (done) ->
       Node.create { name: 'Alice', year: 1982, gender: 'male', nullValue: null, undefinedValue: undefined }, (err, alice) ->
         expect(err).to.be null
-        expect(alice.id).to.be.above -1        
+        expect(alice.id).to.be.above -1
         expect(alice.data).to.be.eql
           name: 'Alice'
           year: 1982
@@ -842,18 +846,22 @@ describe 'Neo4jMapper', ->
         expect(err).to.be null
         Person.getIndex (err, res) ->
           expect(err).to.be null
-          expect(res).to.have.length 1
+          expect(res).to.be.eql [ 'name' ]
           Person.dropEntireIndex (err) ->
             expect(err).to.be null
             Person.getIndex (err, res) ->
               expect(err).to.be null
-              expect(res).to.have.length 0
+              expect(res).to.be.eql [ ]
               Person.ensureIndex (err, res) ->
                 expect(err).to.be null
                 Person.getIndex (err, res) ->
                   expect(err).to.be null
-                  expect(res).to.have.length 1
-                  done()
+                  expect(res).to.be.eql [ 'name' ]
+                  Node.registerModel labelName, { fields: { indexes: { email: true } } }, (err, Director) ->
+                    Director.getIndex (err, res) ->
+                      expect(err).to.be null
+                      expect(res).to.be.eql [ 'email', 'name' ]
+                      done()
 
     it 'expect to autoindex models', (done) ->
       # random label name to ensure that new indexes are created on each test
@@ -1053,7 +1061,7 @@ describe 'Neo4jMapper', ->
       Node.registerModel(Person)
       new Person({ name: 'Alice' }).save (err, alice) ->
         Person.findById alice.id, (err, alice) ->
-          
+
           # expect(alice.fullname).to.be.a 'function'
           expect(alice._constructor_name_).to.be.equal 'Person'
           expect(alice.label).to.be.equal 'Person'
@@ -1140,7 +1148,7 @@ describe 'Neo4jMapper', ->
       node.data.name = 'Steve'
       node.save (err, n) ->
         expect(err).to.be null
-        expect(node.data.uid).to.have.length 32 
+        expect(node.data.uid).to.have.length 32
         expect(node.data.nested.hasValue).to.be true
         done()
 
