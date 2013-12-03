@@ -96,7 +96,7 @@ describe 'Neo4jMapper (cypher queries)', ->
         "Actor.findAll()":
           [
              Actor.findAll()
-            "START n = node(*) MATCH (n:Actor) RETURN n, labels(n);"
+            "MATCH (n:Actor) RETURN n, labels(n);"
           ]
 
         "Node.findAll().skip(5)":

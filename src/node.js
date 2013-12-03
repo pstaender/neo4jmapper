@@ -860,10 +860,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
     return this; // return self for chaining
   }
 
-  /*
+  /**
    * Query-Building methods
+   * It evaluates `this.cypher` flags (initialized from `this.cypherStatementSegments`)
+   * and prepares for query building  with `Graph.start()…`
+   * @todo split into parts for each statement segment (e.g. query.start, query.return_properties …)
+   * @return {object} prepared query statements
    */
-
   Node.prototype._prepareQuery = function() {
     var query = _.extend(this.cypher.segments);
     var label = (query.label) ? ':'+query.label : '';
@@ -952,17 +955,24 @@ var __initNode__ = function(neo4jrestful, Graph) {
       }
     }
 
-    // Set a fallback to START n = node(*) if it's not null
-    if ((this.cypher.segments.start) && (Object.keys(this.cypher.segments.start).length < 1)&&(!(query.match.length > 0))) {
-      // query.start = 'n = node(*)';
-      query.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)';
-    }
     if ((!(query.match.length>0))&&(this.label)) {
       // e.g. ~> MATCH (n:Person)
       if (this.__TYPE_IDENTIFIER__ === 'n')
         query.match = [ '(n:'+this.label+')' ];
       else if (this.__TYPE_IDENTIFIER__ === 'r')
         query.match = [ '[r:'+this.label+']' ];
+    }
+
+    // Set a fallback to START n = node(*) if it's not null
+    if ((this.cypher.segments.start) && (Object.keys(this.cypher.segments.start).length < 1)&&(!(query.match.length > 0))) {
+      // query.start = 'n = node(*)';
+      // leave out if a `MATCH` is defined (will speed up query in some cases)
+      if (query.match.length > 0) {
+        query.start = '';
+      } else {
+        query.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)';
+      }
+
     }
 
     // rule(s) for findById
