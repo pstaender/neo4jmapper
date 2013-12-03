@@ -1531,7 +1531,6 @@ var __initNode__ = function(neo4jrestful, Graph) {
         return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__TYPE__),null);
       if (self.hasId()) {
         return Graph.start('n = node({id}) DELETE n', { id: self.id }, cb);
-        //return Graph.request().delete(self.__TYPE__+'/'+self.id, cb);
       }
     })
     return this;

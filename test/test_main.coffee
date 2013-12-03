@@ -839,7 +839,7 @@ describe 'Neo4jMapper', ->
           expect(found._constructor_name_).to.be.equal 'Director'
           done()
 
-    it 'create, get and drop index', (done) ->
+    it 'expect to create, get and drop index(es)', (done) ->
       # random label name to ensure that new indexes are created on each test
       labelName = "Person#{new Date().getTime()}"
       Node.registerModel labelName, { fields: { indexes: { name: true } } }, (err, Person) ->
@@ -860,7 +860,10 @@ describe 'Neo4jMapper', ->
                   Node.registerModel labelName, { fields: { indexes: { email: true } } }, (err, Director) ->
                     Director.getIndex (err, res) ->
                       expect(err).to.be null
-                      expect(res).to.be.eql [ 'email', 'name' ]
+                      res = _.uniq(res)
+                      expect(res).to.have.length 2
+                      expect(res[0]).to.match /^(email|name)$/
+                      expect(res[1]).to.match /^(email|name)$/
                       done()
 
     it 'expect to autoindex models', (done) ->

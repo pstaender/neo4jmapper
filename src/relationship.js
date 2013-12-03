@@ -28,10 +28,10 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
       uri: null
     };
     this.data = data || {};
-    
+
     var startID = null;
     var endID = null;
-    
+
     if (start)
       if (Number(start.id))
         startID = Number(start.id);
@@ -43,7 +43,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
     if (startID)
       this.setPointUriById('from', startID);
-    
+
     if (end)
       if (Number(end.id))
         endID = Number(end.id);
@@ -62,7 +62,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
     });
 
     this._is_instanced_ = true;
-    
+
     if (typeof id === 'number') {
       this.setUriById(id);
       this.id = this._id_ = id;
@@ -212,26 +212,23 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
       // UPDATE properties
       // url = 'relationship/'+this._id_+'/properties';
-      // return Graph.request().put(url, { data: relationshipPropertiesFlatten }, cb);
       Graph
-        .start('r = relationship({id})')
-        .addParameters({
+        .start('r = relationship({id})', {
           id: Number(this.id),
         })
         .setWith( { r: this.dataForCypher() } )
         .return('r')
-        .exec(cb); 
+        .exec(cb);
     } else {
       Graph
-        .start('n = node({from}), m = node({to})')
-        .addParameters({
+        .start('n = node({from}), m = node({to})', {
           from: Number(this.from.id),
           to: Number(this.to.id),
         })
         .create([ '(n)-[r: '+helpers.escapeProperty(this.type), this.dataForCypher(), ']->(m)'])
         .return('r')
         .limit(1)
-        .exec(function(err, relationship, debug) { 
+        .exec(function(err, relationship, debug) {
           if ((err) || (!relationship))
             return cb(err, relationship, debug);
           else {
