@@ -29,8 +29,7 @@
 <li><strong>processes and transforms data</strong> (flatten/unflatten, escaping, loading/populating …)</li>
 <li><strong>Transactions handling</strong> of cypher-queries</li>
 </ul>
-<h3>Warning</h3>
-<p><strong>Neo4jMapper is designed for the upcoming version 2 of Neo4j, which is currently in a pre-release-state</strong>. Until the final release of Neo4j v2 is available, some features/api might change.</p>
+<p>Neo4jMapper is designed for <strong>Neo4j v2+</strong>.</p>
 <h3>Sourcecode inline Documentation</h3>
 <p><a href="docs/">Generated sourcecode documentation, quite incomplete but may give a good introduction to the neo4jmapper models.</a></p>
 <h2>How to use</h2>
@@ -274,7 +273,7 @@ Here are most of all available methods to query the graph. `…` represents the 
 <p>This will request the restful api straightforward and there won&#39;t be any processing at all.
 The following methods are available: post, get, delete, put and query.</p>
 <h3>Modeling</h3>
-<p>You can define models und use them after register them via <code>Node.registerModel()</code>. 
+<p>You can define models und use them after register them via <code>Node.registerModel()</code>.
 Each model extends on the base <code>Node</code> model but inheriance of other models can be achieved as well; similar to models you might know from backbonejs for instance. All extended models/nodes are classified by labels by default.</p>
 <pre><code class="lang-js">  Node.registerModel( &#39;Person&#39;, {
     fields: {
@@ -641,9 +640,7 @@ Features:
   * **processes and transforms data** (flatten/unflatten, escaping, loading/populating …)
   * **Transactions handling** of cypher-queries
 
-### Warning
-
-**Neo4jMapper is designed for the upcoming version 2 of Neo4j, which is currently in a pre-release-state**. Until the final release of Neo4j v2 is available, some features/api might change.
+Neo4jMapper is designed for **Neo4j v2+**.
 
 ### Sourcecode inline Documentation
 
@@ -1036,7 +1033,7 @@ The following methods are available: post, get, delete, put and query.
 
 ### Modeling
 
-You can define models und use them after register them via `Node.registerModel()`. 
+You can define models und use them after register them via `Node.registerModel()`.
 Each model extends on the base `Node` model but inheriance of other models can be achieved as well; similar to models you might know from backbonejs for instance. All extended models/nodes are classified by labels by default.
 
 ```js
@@ -1090,13 +1087,13 @@ It's strongly recommend to use a callback on `Node.registerModel()` to await the
       defaults: { created_on: function() { return new Date().getTime(); } }
     }
   }, function(err, Person) {
-    
+
     Person.registerModel('Director', {
       fields: {
         defaults: { job: 'Director' }
       }
     }, function(err, Director) {
-      
+
       new Director( {
         name: 'Roman Polanski'
       } ).save(function(err, polanski) {
@@ -1486,6 +1483,7 @@ To reduce database requests you can switch load hooks on and off
 
 ### Benchmarks
 
-Some basic benchmark tests are written. To get reasonable benchmark results we compare neo4jmapper with the node-neo4j library (a robust basic neo4j driver). You can execute them with `coffee benchmark/benchmark.coffee` (beware that a lot of nodes will be written and kept in your database).</div>
+Some basic benchmark tests are written. To get reasonable benchmark results we compare neo4jmapper with the node-neo4j library (a robust basic neo4j driver). You can execute them with `coffee benchmark/benchmark.coffee` (beware that a lot of nodes will be written and kept in your database).
+</div>
 </body>
 </html>

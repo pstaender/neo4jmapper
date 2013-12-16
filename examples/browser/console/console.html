@@ -1,43 +1,132 @@
 <!DOCTYPE html>
-<html>
+<html lang="en-us">
 <head>
-  <title>neo4jmapper demo</title>
-  <link href="console.css" rel="stylesheet" type="text/css" />
-  <meta charset="utf-8">
-  <script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
-  <script type="text/javascript"    src="../lib/superagent.js"></script>
-  <script type="text/javascript"    src="//underscorejs.org/underscore-min.js"></script>
-  <script type="text/javascript"    src="//coffeescript.org/extras/coffee-script.js"></script>
-  <script type="text/javascript"    src="../neo4jmapper_complete.js"></script>
-  <script type="text/javascript"    src="../lib/beautify.js"></script>
-  <script type="text/javascript"    src="../lib/stash.min.js"></script>
+  <title>coffeescript console</title>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="webfonts/css/csc.css">
+  <link rel="stylesheet" href="webfonts/css/animation.css">
+  <link rel="stylesheet" type="text/css" href="css/csc.css" />
+  <script type="text/javascript" src="javascripts/lib/jquery.min.js"></script>
+  <script type="text/javascript" src="javascripts/lib/coffee-script.js"></script>
+  <script type="text/javascript" src="//underscorejs.org/underscore-min.js"></script>
+  <script type="text/javascript" src="//pstaender.github.io/neo4jmapper/examples/browser/lib/superagent.js"></script>
+  <script type="text/javascript" src="//pstaender.github.io/neo4jmapper/examples/browser/neo4jmapper_complete.js"></script>
+  <script type="text/javascript" src="javascripts/lib/store.min.js"></script>
+  <script type="text/javascript" src="javascripts/json2html.js"></script>
+  <script type="text/javascript" src="javascripts/csc.js"></script>
+  <script type="text/javascript">
+  var usage = function() {
+    var s = '# CoffeeScriptConsole\n\n';
+    s += '  * press `shift+enter` to insert new line(s)\n';
+    s += '  * press `keyup`/`keydown` to browse through history\n';
+    s += '  * use `echo()` instead of `console.log()` to echo\n';
+    s += '  * `clearHistory()` clears console history\n';
+    s += '  * `clear()` clears screen\n';
+    s += '  * `echoEvalOutput(true|false)` echo result of executed code\n\n';
+    s += '## Keyboard Shortcuts\n';
+    s += '  * `cmd+k` clear output screen\n';
+    s += '  * `cmd+shift+k` toggle echo eval output';
+    return s;
+  }
 
-  <!-- streamline -->
-  <script type="text/javascript"    src="../lib/streamline/require-stub.js"></script>
+  $(window).ready(function(){
+    var $consoleDashboard = $('#consoleDashboard');
+    var csc = new CoffeeScriptConsole({
+      $input: $('#consoleInput'),
+      $output: $('#consoleOutput'),
+      suggestions: 'usage(),clearHistory(),clearScreen(),echoEvalOutput(true),echo,clear()'.split(',')
+    });
+    window.puts = window.echo = function(output) {
+      csc.echo(output);
+    };
+    window.clearHistory = function() {
+      csc.clearHistory();
+    }
+    window.clear = function() {
+      window.clearScreen();
+      csc.clearOutputHistory();
+    }
 
-  <script type="text/javascript"    src="../lib/streamline/jsdefs.js"></script>
-  <script type="text/javascript"    src="../lib/streamline/jslex.js"></script>
-  <script type="text/javascript"    src="../lib/streamline/jsparse.js"></script>
-  <script type="text/javascript"    src="../lib/streamline/jsdecomp.js"></script>
-  <script type="text/javascript"    src="../lib/streamline/format.js"></script>
-  <script type="text/javascript"    src="../lib/streamline/transform.js"></script>
+    window.clearScreen = function() {
+      csc.$output.html('');
+    }
 
-  <script type="text/javascript"    src="../lib/streamline/future.js"></script>
-  <script type="text/javascript"    src="../lib/streamline/runtime.js"></script>
-  <script type="text/javascript"    src="../lib/streamline/builtins.js"></script>
-  <script type="text/coffeescript"  src="./console.coffee"></script>
+    window.echoEvalOutput = function(trueOrFalse) {
+      if (typeof trueOrFalse === 'boolean') {
+        $flag = $('#consoleDashboard .echoEvalOutput i')
+        if (trueOrFalse) {
+          $flag.addClass('icon-eye');
+          $flag.removeClass('icon-eye-off');
+        } else {
+          $flag.addClass('icon-eye-off');
+          $flag.removeClass('icon-eye');
+        }
+        csc.echoEvalOutput = trueOrFalse;
+        if (store)
+          store.set('echoEvalOutput', trueOrFalse);
+      }
+    }
 
+    if (store) {
+      window.echoEvalOutput(typeof store.get('echoEvalOutput') === 'boolean' ? store.get('echoEvalOutput') : true);
+    }
 
+    window.load = function(url, cb) {
+      return $.getScript(url, cb);
+    }
+
+    var toggleEchoEvalOutput = function() {
+      window.echoEvalOutput(!csc.echoEvalOutput);
+    }
+
+    $(document).on('keydown', function(e) {
+      $('#consoleInput').focus(); // TODO: replace with less resource intensive check
+      // cmd + k, clear console
+      if ((e.keyCode === 75 && e.metaKey) || (e.keyCode === 75 && e.ctrlKey)) {
+        // cmd + k + shift, toggle echo eval output
+        if (e.shiftKey) {
+          toggleEchoEvalOutput();
+        } else {
+          window.clear();
+        }
+      }
+    });
+
+    $iconDark = $consoleDashboard.find('i.icon-ajust');
+
+    $iconDark.on('click', function() {
+      $('body').toggleClass('dark');
+      store.set('darkColorTheme', $('body').hasClass('dark'));
+    });
+
+    $consoleDashboard.find('i.icon-eye, i.icon-eye-off').on('click', function(){
+      toggleEchoEvalOutput();
+    });
+
+    if (store) {
+      window.echoEvalOutput(store.get('echoEvalOutput'));
+      if (store.get('darkColorTheme')) {
+        $iconDark.trigger('click');
+      }
+    }
+  });
+  </script>
 </head>
 <body>
-  <div id="Console">
-    <textarea id="input" autofocus="autofocus" spellcheck="false"></textarea>
-    <textarea id="output" disabled="disabled" spellcheck="false"></textarea>
-    <div id="help">
-      <ul>
-        <li><b>ctr + shift + enter</b>Execute Code</li>
-      </ul>
+  <div id="main">
+    <textarea id="consoleInput" class="consoleTypo" autofocus="autofocus">{Node,Graph,Transaction,helpers,client} = new Neo4jMapper('http://zeitpulse.com:7480/')
+new Graph().about (err, aboutGraph) -> echo aboutGraph
+usage() # provides information about the console, press `enter` to execute code
+
+</textarea>
+    <div id="consoleOutput"></div>
+    <div id="consoleDashboard">
+      <span class="echoEvalOutput">
+        <i class="icon-eye"></i>
+      </span>
+      <a href="https://github.com/pstaender/coffeescriptconsole"><i class="icon-github-circled"></i></a>
+      <i class="icon-ajust"></i>
     </div>
   </div>
 </body>
-</html>
+</head>

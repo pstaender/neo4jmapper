@@ -1,0 +1,125 @@
+html * {
+  margin: 0;
+  padding: 0;
+  list-style: none; }
+
+html, body, #main {
+  position: relative;
+  width: 100%; }
+
+body {
+  background: #f6f6f6;
+  font-family: "Lucida";
+  font-size: 14px;
+  transition: background 0.2s; }
+
+body, a {
+  color: #222222; }
+
+body.dark {
+  background: #333333;
+  color: #eeeeee; }
+  body.dark a {
+    color: #eeeeee; }
+
+.consoleTypo, .outputResult {
+  font-family: Menlo, "Courier New", Terminal, monospace;
+  color: #999999; }
+  .consoleTypo.error, .outputResult.error {
+    color: #ffadad; }
+
+.dark .outputResult {
+  color: #dddddd; }
+  .dark .outputResult.error {
+    color: #e64141; }
+
+#consoleDashboard {
+  position: fixed;
+  bottom: 1em;
+  right: 1em;
+  font-size: 22px; }
+  #consoleDashboard i:hover {
+    cursor: pointer; }
+
+#consoleInput {
+  background: white;
+  width: 95%;
+  border: 0;
+  padding: 1em;
+  margin: 0 auto;
+  resize: none;
+  min-height: 3em;
+  transition: height 0.1s;
+  margin: 0 auto;
+  display: block;
+  margin-top: 0.5em;
+  overflow: hidden;
+  outline: none; }
+
+.dark #consoleInput {
+  background: #222222;
+  color: white; }
+
+#consoleInput, .outputResult {
+  font-size: 20px; }
+
+.dark .outputResult.object, .dark .outputResult ol.array, .dark .outputResult li.string span.value {
+  color: #dddddd; }
+
+.outputResult {
+  display: block;
+  padding: 1em;
+  padding-bottom: 0;
+  position: relative;
+  opacity: 0;
+  height: 0;
+  transition: all 0.2s ease-out; }
+  .outputResult.visible {
+    padding: 1em;
+    padding-bottom: 0;
+    opacity: 1;
+    height: auto; }
+  .outputResult li.string span.value {
+    color: black; }
+  .outputResult.boolean, .outputResult li.boolean span.value {
+    color: #4eaaa7; }
+  .outputResult.number, .outputResult li.number span.value {
+    color: #f38346; }
+  .outputResult.function, .outputResult li.function span.value {
+    color: #67bf99; }
+  .outputResult.undefined, .outputResult li.undefined span.value, .outputResult .circularReference {
+    color: #d47ed1; }
+    .outputResult.undefined.evalOutput, .outputResult li.undefined span.value.evalOutput, .outputResult .circularReference.evalOutput {
+      display: none; }
+  .outputResult.array {
+    color: #429db7; }
+  .outputResult.object {
+    color: #666666; }
+  .outputResult ol.array {
+    list-style: none;
+    display: inline;
+    color: #666666; }
+    .outputResult ol.array:before {
+      content: "["; }
+    .outputResult ol.array:after {
+      content: "]"; }
+    .outputResult ol.array li {
+      display: block; }
+    .outputResult ol.array > li:after {
+      content: ","; }
+    .outputResult ol.array > li:last-child:after {
+      content: ""; }
+  .outputResult ul.object {
+    list-style: none;
+    display: inline; }
+    .outputResult ul.object:before {
+      content: "{"; }
+    .outputResult ul.object:after {
+      content: "}"; }
+  .outputResult ol.array li, .outputResult ul.object li {
+    margin-left: 1em;
+    list-style: none; }
+    .outputResult ol.array li span.attribute:after, .outputResult ul.object li span.attribute:after {
+      content: ": "; }
+
+/*# sourceMappingURL=csc.css.map */

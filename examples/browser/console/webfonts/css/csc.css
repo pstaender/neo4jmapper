@@ -1,0 +1,74 @@
+@font-face {
+  font-family: 'csc';
+  src: url('../font/csc.eot?66990229');
+  src: url('../font/csc.eot?66990229#iefix') format('embedded-opentype'),
+       url('../font/csc.woff?66990229') format('woff'),
+       url('../font/csc.ttf?66990229') format('truetype'),
+       url('../font/csc.svg?66990229#csc') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+/* Chrome hack: SVG is rendered more smooth in Windozze. 100% magic, uncomment if you need it. */
+/* Note, that will break hinting! In other OS-es font will be not as sharp as it could be */
+/*
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: 'csc';
+    src: url('../font/csc.svg?66990229#csc') format('svg');
+  }
+}
+*/
+ 
+ [class^="icon-"]:before, [class*=" icon-"]:before {
+  font-family: "csc";
+  font-style: normal;
+  font-weight: normal;
+  speak: none;
+ 
+  display: inline-block;
+  text-decoration: inherit;
+  width: 1em;
+  margin-right: .2em;
+  text-align: center;
+  /* opacity: .8; */
+ 
+  /* For safety - reset parent styles, that can break glyph codes*/
+  font-variant: normal;
+  text-transform: none;
+     
+  /* fix buttons height, for twitter bootstrap */
+  line-height: 1em;
+ 
+  /* Animation center compensation - margins should be symmetric */
+  /* remove if not needed */
+  margin-left: .2em;
+ 
+  /* you can be more comfortable with increased icons size */
+  /* font-size: 120%; */
+ 
+  /* Uncomment for 3D effect */
+  /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
+}
+ 
+.icon-spin6:before { content: '\e800'; } /* '' */
+.icon-github-circled:before { content: '\e80b'; } /* '' */
+.icon-help:before { content: '\e811'; } /* '' */
+.icon-help-circled:before { content: '\e810'; } /* '' */
+.icon-info-circled:before { content: '\e80f'; } /* '' */
+.icon-info:before { content: '\e812'; } /* '' */
+.icon-home:before { content: '\e813'; } /* '' */
+.icon-eye:before { content: '\e801'; } /* '' */
+.icon-eye-off:before { content: '\e802'; } /* '' */
+.icon-right-dir:before { content: '\e815'; } /* '' */
+.icon-right-open:before { content: '\e814'; } /* '' */
+.icon-cancel:before { content: '\e80e'; } /* '' */
+.icon-right-circled:before { content: '\e804'; } /* '' */
+.icon-play:before { content: '\e806'; } /* '' */
+.icon-play-circled:before { content: '\e807'; } /* '' */
+.icon-play-circled2:before { content: '\e808'; } /* '' */
+.icon-flash:before { content: '\e805'; } /* '' */
+.icon-ajust:before { content: '\e809'; } /* '' */
+.icon-rocket:before { content: '\e80a'; } /* '' */
+.icon-gauge:before { content: '\e80d'; } /* '' */
+.icon-terminal:before { content: '\e80c'; } /* '' */
+.icon-angle-circled-right:before { content: '\e803'; } /* '' */

@@ -16,9 +16,7 @@ Features:
   * **processes and transforms data** (flatten/unflatten, escaping, loading/populating …)
   * **Transactions handling** of cypher-queries
 
-### Warning
-
-**Neo4jMapper is designed for the upcoming version 2 of Neo4j, which is currently in a pre-release-state**. Until the final release of Neo4j v2 is available, some features/api might change.
+Neo4jMapper is designed for **Neo4j v2+**.
 
 ### Sourcecode inline Documentation
 
@@ -411,7 +409,7 @@ The following methods are available: post, get, delete, put and query.
 
 ### Modeling
 
-You can define models und use them after register them via `Node.registerModel()`. 
+You can define models und use them after register them via `Node.registerModel()`.
 Each model extends on the base `Node` model but inheriance of other models can be achieved as well; similar to models you might know from backbonejs for instance. All extended models/nodes are classified by labels by default.
 
 ```js
@@ -465,13 +463,13 @@ It's strongly recommend to use a callback on `Node.registerModel()` to await the
       defaults: { created_on: function() { return new Date().getTime(); } }
     }
   }, function(err, Person) {
-    
+
     Person.registerModel('Director', {
       fields: {
         defaults: { job: 'Director' }
       }
     }, function(err, Director) {
-      
+
       new Director( {
         name: 'Roman Polanski'
       } ).save(function(err, polanski) {

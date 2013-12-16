@@ -27,55 +27,52 @@
   // # Neo4jMapper
   // **(c) 2013 by Philipp Ständer <philipp.staender@gmail.com>**
   //
-  // **Distributed under the GNU General Public License**
+  // *Distributed under the GNU General Public License*
   //
   // Neo4jMapper is an **object mapper for neo4j databases**.
-  // It's written in JavaScript and ready for server- and clientside use.
-  // All operations are performed asynchronously since it's using neo4j's REST api.
   
   var Neo4jMapper = function Neo4jMapper(urlOrOptions) {
   
+    var _client_ = null;
+  
     if (typeof window === 'object') {
       // Browser
-      var Neo4jRestful  = this.Neo4jRestful  = Neo4jRestful = initNeo4jRestful(urlOrOptions);
-      
-      this.client = new Neo4jRestful();
+      var Neo4jRestful  = this.Neo4jRestful  = window.Neo4jMapper.initNeo4jRestful(urlOrOptions);
   
-      var Graph         = this.Graph         = window.Graph = initGraph(this.client);
-      var Transaction   = this.Transaction   = window.Transaction = initTransaction(this.client, this.Graph);
-      var Node          = this.Node          = window.Node = initNode(this.client, this.Graph);
-      var Relationship  = this.Relationship  = window.Relationship = initRelationship(this.client, this.Graph, Node);
-      var Path          = this.Path          = window.Path = initPath(this.client, this.Graph);
+      this.client = _client_ = new Neo4jRestful();
   
-      Neo4jMapper.prototype.helpers = window.Neo4jMapper.helpers;
+      this.Graph         = window.Neo4jMapper.initGraph(_client_);
+      this.Transaction   = window.Neo4jMapper.initTransaction(_client_, this.Graph);
+      this.Node          = window.Neo4jMapper.initNode(_client_, this.Graph);
+      this.Relationship  = window.Neo4jMapper.initRelationship(_client_, this.Graph, this.Node);
+      this.Path          = window.Neo4jMapper.initPath(_client_, this.Graph);
+  
+      this.helpers = window.Neo4jMapper.helpers;
+      this.helpers.ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
+      this.helpers.CypherQuery = window.Neo4jMapper.CypherQuery;
     } else {
       // NodeJS
       var Neo4jRestful  = this.Neo4jRestful  = require('./neo4jrestful').init(urlOrOptions);
-      
-      this.client = new Neo4jRestful();
-      
-      var Graph         = this.Graph         = require('./graph').init(this.client);
-      var Transaction   = this.Transaction   = require('./transaction').init(this.client);
-      var Node          = this.Node          = require('./node').init(this.client, this.Graph);
-      var Relationship  = this.Relationship  = require('./relationship').init(this.client, this.Graph, Node);
-      var Path          = this.Path          = require('./path').init(this.client, this.Graph);
-      
-      Neo4jMapper.prototype.helpers = require('./helpers');
+  
+      this.client = _client_ = new Neo4jRestful();
+  
+      this.Graph         = require('./graph').init(_client_);
+      this.Transaction   = require('./transaction').init(_client_);
+      this.Node          = require('./node').init(_client_, this.Graph);
+      this.Relationship  = require('./relationship').init(_client_, this.Graph, this.Node);
+      this.Path          = require('./path').init(_client_, this.Graph);
+  
+      this.helpers = require('./helpers');
+      this.helpers.ConditionalParameters = require('./conditionalparameters');
+      this.helpers.CypherQuery = require('./cypherquery');
     }
   
-    // this method returns instanced constructor for internal usage
-    this.client.constructorOf = function(name) {
-      if (name === 'Node')
-        return Node;
-      if (name === 'Path')
-        return Path;
-      if (name === 'Relationship')
-        return Relationship;
-      if (name === 'Graph')
-          return Graph;
-      if (name === 'Transaction')
-          return Transaction;
-    }
+    // create references among the constructors themeselves
+    this.Node.Relationship          = this.Relationship;
+    this.Relationship.Node          = this.Node;
+    this.Neo4jRestful.Node          = this.Node;
+    this.Neo4jRestful.Path          = this.Path;
+    this.Neo4jRestful.Relationship  = this.Relationship;
   
   }
   
@@ -173,338 +170,8 @@
       
   })();  
   /*
-   * include file: 'src/helpers.js'
+   * include file: 'src/lib/md5.js'
    */
-  var _ = null;
-  
-  if (typeof window === 'object') {
-    _ = window._;
-  } else {
-    _ = require('underscore');
-  }
-  
-  var _is_operator = /^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i;
-  
-  var sortStringAndOptionsArguments = function(string, options) {
-    if (typeof string === 'object') {
-      return { string: null, options: string };
-    }
-    return {
-      string: string || null,
-      options: options || {}
-    }
-  }
-  
-  var sortOptionsAndCallbackArguments = function(options, callback) {
-    if (typeof options === 'function') {
-      return { options: {}, callback: options };
-    }
-    return {
-      options: options || {},
-      callback: callback
-    }
-  }
-  
-  var sortStringAndCallbackArguments = function(string, callback) {
-    if (typeof string === 'function') {
-      callback = string;
-      string = null;
-    }
-    return {
-      callback: callback,
-      string: string
-    }
-  }
-  
-  var getIdFromObject = function(o) {
-    if ((typeof o === 'object') && (o.id))
-      return o.id;
-    if (!isNaN(parseInt(o)))
-      return parseInt(o);
-    return null;
-  }
-  
-  // source: https://gist.github.com/penguinboy/762197
-  var flattenObject = function(ob) {
-    var toReturn = {};
-    
-    for (var i in ob) {
-      if (!ob.hasOwnProperty(i)) continue;
-      
-      if ((typeof ob[i]) === 'object') {
-        var flatObject = flattenObject(ob[i]);
-        for (var x in flatObject) {
-          if (!flatObject.hasOwnProperty(x)) continue;
-          
-          toReturn[i + '.' + x] = flatObject[x];
-        }
-      } else {
-        toReturn[i] = ob[i];
-      }
-    }
-    return toReturn;
-  };
-  
-  // source: https://github.com/hughsk/flat/blob/master/index.js
-  var unflattenObject = function (target, opts) {
-    var opts = opts || {}
-      , delimiter = opts.delimiter || '.'
-      , result = {}
-  
-    if (Object.prototype.toString.call(target) !== '[object Object]') {
-        return target
-    }
-  
-    function getkey(key) {
-        var parsedKey = parseInt(key)
-        return (isNaN(parsedKey) ? key : parsedKey)
-    };
-  
-    Object.keys(target).forEach(function(key) {
-        var split = key.split(delimiter)
-          , firstNibble
-          , secondNibble
-          , recipient = result
-  
-        firstNibble = getkey(split.shift())
-        secondNibble = getkey(split[0])
-  
-        while (secondNibble !== undefined) {
-            if (recipient[firstNibble] === undefined) {
-                recipient[firstNibble] = ((typeof secondNibble === 'number') ? [] : {})
-            }
-  
-            recipient = recipient[firstNibble]
-            if (split.length > 0) {
-                firstNibble = getkey(split.shift())
-                secondNibble = getkey(split[0])
-            }
-        }
-  
-        // unflatten again for 'messy objects'
-        recipient[firstNibble] = unflattenObject(target[key])
-    });
-  
-    return result
-  };
-  
-  var escapeString = function(s) {
-    if (typeof s !== 'string')
-      return s;
-    // trim quotes if exists
-    if ( (/^".+"$/.test(s)) || (/^'.+'$/.test(s)) )
-      s = s.substr(1,s.length-2);
-    return s.replace(/^(['"]{1})/, '\\$1').replace(/([^\\]){1}(['"]{1})/g,'$1\\$2');
-  }
-  
-  var valueToStringForCypherQuery = function(value) {
-    if ((value) && (value.constructor === RegExp)) {
-      value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');
-      // replace `\` with `\\` to keep compatibility with Java regex
-      value = value.replace(/([^\\]{1})\\([^\\]{1})/g, '$1\\\\$2');
-    } else
-      value = String(value);
-    return value;
-  }
-  
-  var cypherKeyValueToString = function(key, originalValue, identifier, conditionalParametersObject) {
-    var value = originalValue;
-    var s = ''; // string that will be returned
-    if (typeof conditionalParametersObject !== 'object')
-      conditionalParametersObject = null;
-    if (typeof identifier === 'string') {
-      if (/^[nmr]\./.test(key))
-        // we have already an identifier
-        key = key;
-      else if (/[\?\!]$/.test(key))
-        // we have a default statement, escape without ! or ?
-        key = identifier+'.`'+key.replace(/[\?\!]$/,'')+'`'+key.substring(key.length-1)
-      else
-        key = identifier+'.`'+key+'`';
-    }
-    // this.valuesToParameters
-    if (_.isRegExp(value)) {
-      value = valueToStringForCypherQuery(value);
-      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+value+"'";
-      s = key + " =~ " + value;
-    }
-    else {
-      // convert to string
-      if ((_.isNumber(value)) || (_.isBoolean(value)))
-        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : valueToStringForCypherQuery(value);
-      // else escape
-      else
-        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+escapeString(value)+"'";
-      s = key + " = " + value;
-    }
-    
-    return s;
-  }
-  
-  var extractAttributesFromCondition = function(condition, attributes) {
-    if (typeof attributes === 'undefined')
-      attributes = [];
-    _.each(condition, function(value, key) {
-  
-      if (_.isObject(value)) {
-        extractAttributesFromCondition(condition[key], attributes);
-      }
-      if ( (!_is_operator.test(key)) && (/^[a-zA-Z\_\-\.]+$/.test(key)) ) {
-        // remove identifiers if exists
-        attributes.push(key.replace(/^[nmr]{1}\./,''));
-      }
-    });
-    return _.uniq(attributes);
-  }
-  
-  /*
-   * Builds a string from mongodb-like-query object
-   */
-  var ConditionalParameters = function ConditionalParameters(conditions, options) {
-  
-    ConditionalParameters.parameterRuleset = {
-      $IN: function(value) {
-        if ((typeof value === 'object') && (value.length > 0)) {
-          for (var i=0; i < value.length; i++) {
-            value[i] = (typeof value[i] === 'string') ? "'"+escapeString(value[i])+"'" : valueToStringForCypherQuery(value[i]);
-          }
-          return 'IN [ '+value.join(', ')+' ]';
-        }
-        return '';
-      },
-      $in: function(value) { return this.$IN(value); }
-  
-    };
-  
-    ConditionalParameters.prototype.addValue = function(value) {
-      if (!this.parameters)
-        this.parameters = [];
-      this.parameters.push(value);
-      return '{_value'+(this.parametersStartCountAt + this.parameters.length - 1)+'_}';
-    }
-  
-    ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {
-      // call cypherKeyValueToString with this object context
-      return cypherKeyValueToString(key, originalValue, identifier, this);
-    }
-  
-    ConditionalParameters.prototype.convert = function(condition, operator) {
-      if (typeof condition === 'undefined')
-        condition = this.conditions;
-      var options = _.extend({}, this.defaultOptions, this.options);
-      if (options.firstLevel)
-        options.firstLevel = false;
-      if (options.parametersStartCountAt)
-        this.parametersStartCountAt = options.parametersStartCountAt;
-      // TODO: if $not : [ {name: 'a'}] ~> NOT (name = a)
-      if (typeof condition === 'string')
-        condition = [ condition ];
-      if (typeof operator === 'undefined')
-        operator = this.operator; // AND
-      if (typeof condition === 'object')
-        for (var key in condition) {
-          var value = condition[key];
-          var property = null;
-          if (_.isObject(condition[key])) {
-            var properties = [];
-            var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
-            if ((firstKey)&&(_is_operator.test(firstKey))) {
-              properties.push(this.convert(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
-            } else {
-              for (var k in condition[key]) {
-                // k = key/property, remove identifier e.g. n.name
-                var property = k.replace(/^[nmrp]\./,'');
-                value = condition[key][k];
-                
-                // only check for attributes if not s.th. like `n.name? = …`
-                var identifierWithProperty = (/\?$/.test(property)) ? '' : property;
-                if (identifierWithProperty) {
-                  if (options.identifier)
-                    // we have s.th. like options.identifier = n; property = '`'+identifierWithProperty+'`'
-                    identifierWithProperty = options.identifier + '.`' + identifierWithProperty + '`';
-                  else
-                    // we have no explicit identifier, so we use the complete key/property and expecting it contains identifier
-                    identifierWithProperty = k;
-                }
-                var hasAttribute = (identifierWithProperty) ? 'HAS ('+identifierWithProperty+') AND ' : '';
-                if (value === k) {
-                  properties.push(hasAttribute+value);
-                // do we have s.th. like { name: { $IN: [ … ] } }
-                } else if ((typeof value === 'object')&&(value !== null)&&(Object.keys(value).length === 1)&&(typeof ConditionalParameters.parameterRuleset[Object.keys(value)[0]] === 'function')) {
-                  properties.push(hasAttribute+' '+(identifierWithProperty || k)+' '+ConditionalParameters.parameterRuleset[Object.keys(value)[0]](value[Object.keys(value)[0]]));
-                } else {
-                  properties.push(hasAttribute+this.cypherKeyValueToString(k, value, 
-                    // only add an identifier if we have NOT s.th. like
-                    // n.name = ''  or r.since …
-                    (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
-                  ));
-                }
-              }
-            }
-            // merge sub conditions
-            condition[key] = properties.join(' '+operator+' ');
-          }
-        }
-  
-      if ((condition.length === 1)&&(options.firstLevel === false)&&(/NOT/i.test(operator)))
-        return operator + ' ( '+condition.join('')+' )';
-      else
-        return '( '+condition.join(' '+operator+' ')+' )';
-    }
-  
-    ConditionalParameters.prototype.toString = function() {
-      if (this.conditions)
-        this._s = this.convert();
-      return this._s;
-    }
-    
-    // assign parameters and option(s)
-    if (typeof conditions === 'object') {
-      this.conditions = (conditions) ? conditions : {};
-    } else if (typeof conditions === 'string') {
-      this.conditions = null;
-      this._s = '( ' + conditions + ' )';
-      return;
-    } else {
-      throw Error('First argument must be an object with conditional parameters or a plain string');
-    }
-    if (typeof options === 'object') {
-      this.options = options;
-      // assign some options if they exists to current object
-      if (typeof this.options.valuesToParameters !== 'undefined')
-        this.valuesToParameters = this.options.valuesToParameters;
-      if (typeof this.options.identifier !== 'undefined')
-        this.identifier = this.options.identifier;
-      if (typeof this.options.operator !== 'undefined')
-        this.operator = this.options.operator;
-    }
-  }
-  
-  ConditionalParameters.prototype.operator               = 'AND';
-  ConditionalParameters.prototype.identifier             = 'n';
-  ConditionalParameters.prototype.conditions             = null;
-  
-  // options are used to prevent overriding object attributes on recursive calls
-  ConditionalParameters.prototype.options                = null;
-  ConditionalParameters.prototype.defaultOptions         = { firstLevel: true, identifier: null };
-  
-  ConditionalParameters.prototype.parameters             = null;
-  ConditionalParameters.prototype.valuesToParameters     = true;
-  ConditionalParameters.prototype._s                     = '';
-  ConditionalParameters.prototype.parametersStartCountAt = 0;
-  
-  var constructorNameOfFunction = function(func) {
-    var name = func.constructor.toString().match(/^function\s(.+?)\(/)[1];
-    if (name === 'Function') {
-      name = func.toString().match(/^function\s(.+)\(/)[1]
-    }
-    return name;
-  }
-  
-  var isValidData = function(data) {
-    return Boolean( (typeof data === 'object') && (data !== null) );
-  }
-  
   // source: https://gist.github.com/aredo/3001685
   var md5 = function (string) {
   
@@ -707,27 +374,588 @@
     return temp.toLowerCase();
   }
   
+  if (typeof window === 'object') {
+    window.Neo4jMapper.md5 = md5;
+  } else {
+    module.exports = exports = md5;
+  }  
+  /*
+   * include file: 'src/helpers.js'
+   */
+  
+  if (typeof window === 'object') {
+    var _ = window._;
+  } else {
+    var _ = require('underscore');
+  }
+  
+  var isConditionalOperator = /^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i;
+  
+  var sortStringAndOptionsArguments = function(string, options) {
+    if (typeof string === 'object') {
+      return { string: null, options: string };
+    }
+    return {
+      string: string || null,
+      options: options || {}
+    }
+  }
+  
+  var sortOptionsAndCallbackArguments = function(options, callback) {
+    if (typeof options === 'function') {
+      return { options: {}, callback: options };
+    }
+    return {
+      options: options || {},
+      callback: callback
+    }
+  }
+  
+  var sortStringAndCallbackArguments = function(string, callback) {
+    if (typeof string === 'function') {
+      callback = string;
+      string = null;
+    }
+    return {
+      callback: callback,
+      string: string
+    }
+  }
+  
+  var getIdFromObject = function(o) {
+    if ((typeof o === 'object') && (!isNaN(o._id_)))
+      return o._id_;
+    if (!isNaN(parseInt(o)))
+      return parseInt(o);
+    // else
+    return o.id || null;
+  }
+  
+  // source: https://gist.github.com/penguinboy/762197
+  var flattenObject = function(ob, keepNullValues) {
+    var toReturn = {};
+    if (typeof keepNullValues !== 'boolean')
+      keepNullValues = true;
+    for (var i in ob) {
+      if (!ob.hasOwnProperty(i))
+        continue;
+      if ((keepNullValues) && (ob[i] === null)) {
+        toReturn[i] = ob[i];
+      } else if ((typeof ob[i]) === 'object') {
+        var flatObject = flattenObject(ob[i]);
+        for (var x in flatObject) {
+          if (!flatObject.hasOwnProperty(x)) continue;
+  
+          toReturn[i + '.' + x] = flatObject[x];
+        }
+      } else {
+        toReturn[i] = ob[i];
+      }
+    }
+    return toReturn;
+  };
+  
+  // source: https://github.com/hughsk/flat/blob/master/index.js
+  var unflattenObject = function (target, opts) {
+    var opts = opts || {}
+      , delimiter = opts.delimiter || '.'
+      , result = {}
+  
+    if (Object.prototype.toString.call(target) !== '[object Object]') {
+        return target
+    }
+  
+    function getkey(key) {
+        var parsedKey = parseInt(key)
+        return (isNaN(parsedKey) ? key : parsedKey)
+    };
+  
+    Object.keys(target).forEach(function(key) {
+        var split = key.split(delimiter)
+          , firstNibble
+          , secondNibble
+          , recipient = result
+  
+        firstNibble = getkey(split.shift())
+        secondNibble = getkey(split[0])
+  
+        while (secondNibble !== undefined) {
+            if (recipient[firstNibble] === undefined) {
+                recipient[firstNibble] = ((typeof secondNibble === 'number') ? [] : {})
+            }
+  
+            recipient = recipient[firstNibble]
+            if (split.length > 0) {
+                firstNibble = getkey(split.shift())
+                secondNibble = getkey(split[0])
+            }
+        }
+  
+        // unflatten again for 'messy objects'
+        recipient[firstNibble] = unflattenObject(target[key])
+    });
+  
+    return result
+  };
+  
+  var escapeString = function(s) {
+    if (typeof s !== 'string')
+      return s;
+    // trim quotes if exists
+    if ( (/^".+"$/.test(s)) || (/^'.+'$/.test(s)) )
+      s = s.substr(1,s.length-2);
+    return s.replace(/^(['"]{1})/, '\\$1').replace(/([^\\]){1}(['"]{1})/g,'$1\\$2');
+  }
+  
+  var escapeProperty = function(identifier, delimiter) {
+    if (typeof delimiter !== 'string')
+      delimiter = '`';
+    // do we have s.th. like ?! appending
+    var appending = identifier.match(/^(.*)([\?\!]{1})$/) || '';
+    // console.log(appending)
+    if ((appending)&&(appending[2])) {
+      identifier = appending[1];
+      appending = appending[2];
+    }
+    // no escaping if last char is a delimiter or ?, because we expect that the identifier is already escaped somehow
+    if (new RegExp(''+delimiter+'{1}$').test(identifier))
+      return identifier;
+    // remove all delimiters `
+    identifier = identifier.replace(new RegExp(delimiter, 'g'), '');
+    if (/^(.+?)\..+$/.test(identifier))
+      identifier = identifier.replace(/^(.+?)\.(.+)$/, '$1.'+delimiter+'$2'+delimiter);
+    else
+      identifier = delimiter+identifier+delimiter;
+    return identifier + appending;
+  }
+  
+  var valueToStringForCypherQuery = function(value, delimiter) {
+    if (typeof delimiter !== 'string')
+      delimiter = '';
+    if ((value) && (value.constructor === RegExp)) {
+      value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');
+      // replace `\` with `\\` to keep compatibility with Java regex
+      value = value.replace(/([^\\]{1})\\([^\\]{1})/g, '$1\\\\$2');
+    } else {
+      if ((typeof value === 'undefined') || (value === null))
+        value = 'NULL';
+      else if (value === NaN)
+        // what would be a good representation of NaN?
+        value = delimiter+'NaN'+delimiter;
+      else if ((typeof value === 'boolean') || (typeof value === 'number'))
+        value = String(value);
+      else
+        value = delimiter + escapeString(value) + delimiter;
+    }
+  
+    return value;
+  }
+  
+  var cypherKeyValueToString = function(key, originalValue, identifier, conditionalParametersObject) {
+    var value = originalValue;
+    var s = ''; // string that will be returned
+    if (typeof conditionalParametersObject !== 'object')
+      conditionalParametersObject = null;
+    if (typeof identifier === 'string') {
+      if (/^[nmr]\./.test(key))
+        // we have already an identifier
+        key = key;
+      else if (/[\?\!]$/.test(key))
+        // we have a default statement, escape without ! or ?
+        key = identifier+'.'+key;
+      else
+        key = identifier+'.'+key;
+    }
+    key = escapeProperty(key)
+    if (_.isRegExp(value)) {
+      value = valueToStringForCypherQuery(value);
+      value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+value+"'";
+      s = key + " =~ " + value;
+    }
+    else {
+      // convert to string
+      if ((_.isNumber(value)) || (_.isBoolean(value)))
+        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : valueToStringForCypherQuery(value);
+      // else escape
+      else
+        value = ((conditionalParametersObject) && (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+escapeString(value)+"'";
+      s = key + " = " + value;
+    }
+  
+    return s;
+  }
+  
+  var extractAttributesFromCondition = function(condition, attributes) {
+    if (typeof attributes === 'undefined')
+      attributes = [];
+    _.each(condition, function(value, key) {
+  
+      if (_.isObject(value)) {
+        extractAttributesFromCondition(condition[key], attributes);
+      }
+      if ( (!isConditionalOperator.test(key)) && (/^[a-zA-Z\_\-\.]+$/.test(key)) ) {
+        // remove identifiers if exists
+        attributes.push(key.replace(/^[nmr]{1}\./,''));
+      }
+    });
+    return _.uniq(attributes);
+  }
+  
+  var constructorNameOfFunction = function(func) {
+    var name = func.constructor.toString().match(/^function\s(.+?)\(/)[1];
+    if (name === 'Function') {
+      name = func.toString().match(/^function\s(.+)\(/)[1]
+    }
+    return name;
+  }
+  
+  var isObjectLiteral = function(data) {
+    return Boolean((typeof data === 'object') && (data !== null) && (typeof Object.keys(data).length === 'number'));
+  }
+  
+  var serializeObjectForCypher = function(o, options) {
+    o = this.flattenObject(o);
+    var result = [];
+    if (typeof options !== 'object')
+      options = {};
+    options = _.defaults(options, {
+      identifierDelimiter: '`',
+      valueDelimiter: "'",
+    });
+    for (var attr in o) {
+      var value = o[attr];
+      result.push(escapeProperty(attr)+' : '+valueToStringForCypherQuery(value, options.valueDelimiter));
+    }
+    return '{ '+result.join(', ')+' }';
+  }
+  
   var helpers = {
     sortStringAndOptionsArguments: sortStringAndOptionsArguments,
     sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
     sortStringAndCallbackArguments: sortStringAndCallbackArguments,
     flattenObject: flattenObject,
     unflattenObject: unflattenObject,
-    ConditionalParameters: ConditionalParameters,
     extractAttributesFromCondition: extractAttributesFromCondition,
     getIdFromObject: getIdFromObject,
     escapeString: escapeString,
+    escapeProperty: escapeProperty,
     constructorNameOfFunction: constructorNameOfFunction,
     cypherKeyValueToString: cypherKeyValueToString,
     valueToStringForCypherQuery: valueToStringForCypherQuery,
-    isValidData: isValidData,
-    md5: md5
+    md5: (typeof window === 'object') ? window.Neo4jMapper.md5 : require('./lib/md5'),
+    isConditionalOperator: isConditionalOperator,
+    isObjectLiteral: isObjectLiteral,
+    serializeObjectForCypher: serializeObjectForCypher,
   };
   
   if (typeof window !== 'object') {
     module.exports = exports = helpers;
   } else {
     window.Neo4jMapper.helpers = helpers;
+  }  
+  /*
+   * include file: 'src/conditionalparameters.js'
+   */
+  /*
+   * Builds a string from mongodb-like-query object
+   */
+  
+  if (typeof window === 'object') {
+    var _ = window._;
+    var helpers = window.Neo4jMapper.helpers;
+  } else {
+    var _ = require('underscore');
+    var helpers = require('./helpers');
+  }
+  
+  var ConditionalParameters = function ConditionalParameters(conditions, options) {
+  
+    ConditionalParameters.parameterRuleset = {
+      $IN: function(value) {
+        var s = '';
+        if ((typeof value === 'object') && (value.length > 0)) {
+          for (var i=0; i < value.length; i++) {
+            value[i] = (typeof value[i] === 'string') ? "'"+helpers.escapeString(value[i])+"'" : helpers.valueToStringForCypherQuery(value[i]);
+          }
+          s = value.join(', ');
+        }
+        return 'IN [ ' + s + ' ]';
+      },
+      $in: function(value) { return this.$IN(value); }
+  
+    };
+  
+    ConditionalParameters.prototype.addValue = function(value) {
+      if (!this.parameters)
+        this.parameters = {};
+      var property = '_value'+(this.parametersStartCountAt + this.parametersCount())+'_';
+      this.parameters[property] = value;
+      return '{'+property+'}';
+    }
+  
+    ConditionalParameters.prototype.values = function() {
+      var values = [];
+      for (var prop in this.parameters) {
+        values.push(this.parameters[prop]);
+      }
+      return values;
+    }
+  
+    ConditionalParameters.prototype.parametersCount = function() {
+      if ((typeof this.parameters !== 'object')||(this.parameters === null))
+        return 0;
+      else
+        return Object.keys(this.parameters).length;
+    }
+  
+    ConditionalParameters.prototype.hasParameters = function() {
+      return (this.parametersCount() > 0);
+    }
+  
+    ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {
+      // call cypherKeyValueToString with this object context
+      return helpers.cypherKeyValueToString(key, originalValue, identifier, this);
+    }
+  
+    ConditionalParameters.prototype.convert = function(condition, operator) {
+      if (typeof condition === 'undefined')
+        condition = this.conditions;
+      var options = _.extend({}, this.defaultOptions, this.options);
+      if (options.firstLevel)
+        options.firstLevel = false;
+      if (options.parametersStartCountAt)
+        this.parametersStartCountAt = options.parametersStartCountAt;
+      // TODO: if $not : [ {name: 'a'}] ~> NOT (name = a)
+      if (typeof condition === 'string')
+        condition = [ condition ];
+      if (typeof operator === 'undefined')
+        operator = this.operator; // AND
+      if (typeof condition === 'object')
+        for (var key in condition) {
+          var value = condition[key];
+          var property = null;
+          if (_.isObject(condition[key])) {
+            var properties = [];
+            var firstKey = (_.keys(value)) ? _.keys(value)[0] : null;
+            if ((firstKey)&&(ConditionalParameters.is_operator.test(firstKey))) {
+              properties.push(this.convert(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
+            } else {
+              for (var k in condition[key]) {
+                // k = key/property, remove identifier e.g. n.name
+                var property = k.replace(/^[nmrp]\./,'');
+                value = condition[key][k];
+  
+                // only check for attributes if not s.th. like `n.name? = …`
+                var identifierWithProperty = (/\?$/.test(property)) ? '' : property;
+                if (identifierWithProperty) {
+                  if (options.identifier)
+                    // we have s.th. like options.identifier = n; property = '`'+identifierWithProperty+'`'
+                    identifierWithProperty = options.identifier + '.' + identifierWithProperty;
+                  else
+                    // we have no explicit identifier, so we use the complete key/property and expecting it contains identifier
+                    identifierWithProperty = k;
+                  identifierWithProperty = helpers.escapeProperty(identifierWithProperty);
+                }
+                var hasAttribute = (identifierWithProperty) ? 'HAS ('+identifierWithProperty+') AND ' : '';
+                if (value === k) {
+                  properties.push(hasAttribute+value);
+                // do we have s.th. like { name: { $IN: [ … ] } }
+                } else if ((typeof value === 'object')&&(value !== null)&&(Object.keys(value).length === 1)&&(typeof ConditionalParameters.parameterRuleset[Object.keys(value)[0]] === 'function')) {
+                  properties.push(hasAttribute+' '+(identifierWithProperty || k)+' '+ConditionalParameters.parameterRuleset[Object.keys(value)[0]](value[Object.keys(value)[0]]));
+                } else {
+                  properties.push(hasAttribute+this.cypherKeyValueToString(k, value,
+                    // only add an identifier if we have NOT s.th. like
+                    // n.name = ''  or r.since …
+                    (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
+                  ));
+                }
+              }
+            }
+            // merge sub conditions
+            condition[key] = properties.join(' '+operator+' ');
+          }
+        }
+  
+      if ((condition.length === 1)&&(options.firstLevel === false)&&(/NOT/i.test(operator)))
+        return operator + ' ( '+condition.join('')+' )';
+      else
+        return '( '+condition.join(' '+operator+' ')+' )';
+    }
+  
+    ConditionalParameters.prototype.toString = function() {
+      if (this.conditions)
+        this._s = this.convert();
+      return this._s;
+    }
+  
+    // assign parameters and option(s)
+    if (typeof conditions === 'object') {
+      this.conditions = (conditions) ? conditions : {};
+    } else if (typeof conditions === 'string') {
+      this.conditions = null;
+      this._s = '( ' + conditions + ' )';
+      return;
+    } else {
+      throw Error('First argument must be an object with conditional parameters or a plain string');
+    }
+    if (typeof options === 'object') {
+      this.options = options;
+      // assign some options if they exists to current object
+      if (typeof this.options.valuesToParameters !== 'undefined')
+        this.valuesToParameters = this.options.valuesToParameters;
+      if (typeof this.options.identifier !== 'undefined')
+        this.identifier = this.options.identifier;
+      if (typeof this.options.operator !== 'undefined')
+        this.operator = this.options.operator;
+    }
+  }
+  
+  ConditionalParameters.is_operator = /^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i;
+  
+  ConditionalParameters.prototype.operator               = 'AND';
+  ConditionalParameters.prototype.identifier             = 'n';
+  ConditionalParameters.prototype.conditions             = null;
+  
+  // options are used to prevent overriding object attributes on recursive calls
+  ConditionalParameters.prototype.options                = null;
+  ConditionalParameters.prototype.defaultOptions         = { firstLevel: true, identifier: null };
+  
+  ConditionalParameters.prototype.parameters             = null;
+  ConditionalParameters.prototype.valuesToParameters     = true;
+  ConditionalParameters.prototype._s                     = '';
+  ConditionalParameters.prototype.parametersStartCountAt = 0;
+  
+  if (typeof window === 'object') {
+    window.Neo4jMapper.ConditionalParameters = ConditionalParameters;
+  } else {
+    module.exports = exports = ConditionalParameters;
+  }  
+  /*
+   * include file: 'src/cypherquery.js'
+   */
+  
+  if (typeof window === 'object') {
+    var _ = window._;
+    var helpers = window.Neo4jMapper.helpers;
+  } else {
+    var _ = require('underscore');
+    var helpers = require('./helpers');
+  }
+  
+  var CypherQuery = function CypherQuery(query, parameters) {
+    this.statements = [];
+    if (typeof query === 'string')
+      this.query = query;
+    else if (typeof query === 'object')
+      this.statements = query;
+    if (parameters)
+      this.parameters = parameters;
+    this.cypher = _.extend(CypherQuery.prototype.cypher);
+  }
+  
+  CypherQuery.prototype.statementsToString = function(options) {
+    var s = '';
+    var chopLength = 15;
+    var defaultOptions = {
+      niceFormat: true
+    };
+    if (this.statements) {
+      if (typeof options !== 'object')
+        options = {};
+      else
+        _.defaults(options, defaultOptions);
+      for (var i=0; i < this.statements.length; i++) {
+        var queryFragment = this.statements[i];
+        if (typeof queryFragment === 'string') {
+          // if we have just a string, we add the string to final query, no manipulation
+          s += queryFragment;
+          continue;
+        }
+        var attribute = Object.keys(this.statements[i])[0];
+        if ((typeof queryFragment === 'object') && (typeof queryFragment.toQueryString === 'function')) {
+          queryFragment = queryFragment.toQueryString();
+          s += queryFragment;
+          continue;
+        }
+        var forQuery = this.statements[i][attribute];
+        // do we have an object with a .toQueryString() method?
+  
+        // remove underscore from attribute, e.g. ORDER_BY -> ORDER BY
+        attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');
+        if (options.niceFormat) {
+          // extend attribute-string with whitespace
+          attribute = attribute + Array(chopLength - attribute.length).join(' ');
+        }
+        if (forQuery !== null) {
+          if (typeof forQuery === 'string') {
+            // remove dupliacted statement fragment identifier, e.g. START START … -> START …
+            forQuery = forQuery.trim().replace(new RegExp('^'+attribute+'\\s+', 'i'), '');
+            // remove trailing semicolon
+            forQuery = forQuery.replace(/\;$/, '');
+          } else {
+            forQuery = String(forQuery);
+          }
+          s += '\n'+attribute+' '+forQuery+' ';
+        }
+      }
+      s = s.trim().replace(/;+$/,'');
+    }
+    return s + ';';
+  }
+  
+  CypherQuery.prototype.query = '';         // the cypher query string
+  CypherQuery.prototype.parameters = null;
+  CypherQuery.prototype.statements = null;
+  CypherQuery.prototype.cypher = {};
+  CypherQuery.prototype.useParameters = true;
+  
+  CypherQuery.prototype.hasParameters = function() {
+    return ((this.parameters) && (typeof this.parameters === 'object') && (Object.keys(this.parameters).length > 0));
+  }
+  
+  CypherQuery.prototype.toCypher = function(options) {
+    var s = '';
+    if (this.query)
+      s = this.query;
+    else if (this.statements.length > 0)
+      s = this.statementsToString(options);
+    return s;
+  }
+  
+  CypherQuery.prototype.toString = function(options) {
+    var s = this.toCypher(options);
+    if ((s)&&(this.hasParameters())) {
+      // replace identifiers with values to present a good equivalent
+      for (var key in this.parameters) {
+        var value = this.parameters[key];
+        // TODO: better check that we detect placeholders
+        s = s.replace('{'+key+'}', helpers.valueToStringForCypherQuery(value, "'"));
+      };
+    }
+    return s;
+  }
+  
+  CypherQuery.prototype.addParameters = function(parameters) {
+    if (typeof parameters !== 'object')
+      throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
+    if (this.useParameters === null)
+      this.useParameters = true;
+    // reset parameters
+    if ((!this.hasParameters()) || ((parameters !== null) && (Object.keys(parameters).length === 0)))
+      this.parameters = {};
+    for (var attr in parameters) {
+      // replace undefined values with null because we can't work with undefined values in neo4j
+      this.parameters[attr] = (parameters[attr] === undefined) ? null : parameters[attr];
+    }
+    return this;
+  }
+  
+  CypherQuery.prototype.addParameter = CypherQuery.prototype.addParameters;
+  
+  if (typeof window === 'object') {
+    window.Neo4jMapper.CypherQuery = CypherQuery;
+  } else {
+    module.exports = exports = CypherQuery;
   }  
   /*
    * include file: 'src/neo4jrestful.js'
@@ -760,6 +988,14 @@
       request      = require('request');
       JSONStream   = require('JSONStream');
     }
+  
+    var ResponseError = function ResponseError(message, code) {
+      var e = new Error(message);
+      e.code = code;
+      return e;
+    }
+  
+    ResponseError.prototype.code = 0;
   
     // Base for QueryError and CypherQueryError
     var CustomError = function CustomError(message) {
@@ -864,6 +1100,9 @@
         self.checkAvailability();
     }
   
+    Neo4jRestful.RequestDebug = RequestDebug;
+    Neo4jRestful.CustomError  = CustomError;
+  
     Neo4jRestful.prototype.options                    = null;
     // template for the header of each request to neo4j
     Neo4jRestful.prototype.header = {
@@ -871,7 +1110,6 @@
       'Content-Type': 'application/json'
     };
     Neo4jRestful.prototype.timeout                    = 5000;
-    Neo4jRestful.prototype.debug                      = true; // can be deactivated but will not make any performance difference
     Neo4jRestful.prototype.exact_version              = null;
     Neo4jRestful.prototype.version                    = null;
     Neo4jRestful.prototype.ignore_exception_pattern   = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found
@@ -890,11 +1128,15 @@
     // contains data of the response
     Neo4jRestful.prototype._response_                 = null;
     Neo4jRestful.prototype._columns_                  = null;
+    Neo4jRestful.prototype._detectTypesOnColumns_     = false; // n AS `(Node)`, labels(n) AS `(Node.id)`, r AS `[Relationship]`
+    Neo4jRestful.prototype._debug_                    = null;
   
     Neo4jRestful.prototype.query = function(cypher, options, cb) {
       var args;
       ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
-      if (typeof cypher === 'string') {
+      if (typeof cypher !== 'string') {
+        throw Error('cypher argument has to be a string');
+      } else {
         this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
         this.post('/'+this.urlOptions.endpoint+'cypher',{
           data: {
@@ -960,10 +1202,10 @@
       var debug = null; // debug object
       if (typeof options === 'undefined')
         options = {};
-      
+  
       // apply default options
       _.defaults(options, {
-        type: 'GET',
+        method: 'GET',
         data: null,
         debug: false,
         // use copy of header, not reference
@@ -971,8 +1213,8 @@
       });
   
       if (typeof url !== 'string') {
-        
-        throw Error("First argument 'url' must be string");
+  
+        throw Error("First argument 'url' hast to be a string");
   
       }
   
@@ -985,22 +1227,18 @@
       if ( (typeof data === 'object') && (data !== null) )
        data = JSON.stringify(options.data);
   
-      if (this.debug)
-        options.debug = true;
-  
       // create debug object
-      if (options.debug)
-        debug = new RequestDebug({
-          options: options,
-          requested_url: requestedUrl,
-          method: options.method,
-          data: data,
-          header: this.header,
-          res: null,
-          status: null,
-          err: null
-        });
-      
+      this._debug_ = new RequestDebug({
+        options: options,
+        requested_url: requestedUrl,
+        method: options.method,
+        data: data,
+        header: this.header,
+        res: null,
+        status: null,
+        err: null
+      });
+  
       // options for makeRequest()
       var _options_ = {
         requestedUrl: requestedUrl,
@@ -1022,7 +1260,7 @@
         timeout: this.timeout,
         loadNode: true // enables the load hooks
       });
-      
+  
       // create final options object from _options_.options
       var options = _options_.options;
   
@@ -1030,7 +1268,6 @@
       options.url = _options_.url;
       options.method = _options_.method;
       options.data = _options_.data;
-      options._debug = _options_.debug;
   
       this.log('**debug**', 'URI:', options.method+":"+options.url+" ("+options.absolute_url+")");
       this.log('**debug**', 'sendedData:', options.data);
@@ -1046,13 +1283,31 @@
   
       if (options.data)
         requestOptions.data = options.data;
-      
+  
       // stream
       if (this.header['X-Stream'] === 'true') {
   
-        var stream = JSONStream.parse(['data', true]);
+        var stream = JSONStream.parse([/^columns|data$/, true]);
   
-        stream.on('data', cb);
+        var isDataColumn = false;
+        self._columns_ = [];
+  
+        stream.on('data', function(data) {
+          // detect column and data array
+          // { columns: [ '1', … , 'n' ], data: [ [ … ] ] }
+          if (isDataColumn) {
+            return cb(data);
+          } else if (data) {
+            if (data.constructor === Array) {
+              isDataColumn = true;
+              return cb(data);
+            } else {
+              self._columns_.push(data);
+              return;
+            }
+          }
+        });
+  
         stream.on('end', function() {
           // prevent to pass undefined, but maybe an undefined is more clear
           cb(null, null);
@@ -1063,21 +1318,21 @@
           // remove x-stream from header
           delete self.header['X-Stream'];
           if (!count) {
-            cb(null, Error('No matches in stream found ('+ root +')'));
+            cb(null, Error('No matches in stream found ('+ root +')'), self._de);
           }
         });
   
         requestOptions.stream = stream;
   
       }
-      
+  
       // now finally send the request
       this._sendHttpRequest(requestOptions, function(err, res) {
-      // req.end(function(err, res) {
         self._response_ = res;
         self._response_on_ = new Date().getTime();
-        if (options._debug)
-          options._debug.responseTime = self.responseTime();
+  
+        self._debug_.responseTime = self.responseTime();
+  
         if (err) {
           self.onError(cb, err, 'error', options);
         } else {
@@ -1150,48 +1405,71 @@
       }
     }
   
-    Neo4jRestful.prototype.onProcess = function(res, next, debug) {
-      if (_.isArray(res)) {
+    Neo4jRestful.prototype.onProcess = function(res, cb, debug) {
+      if (!res) {
+        // return here if no response is present
+        return cb(null, res, debug);
+      } else if (_.isArray(res)) {
         for (var i=0; i < res.length; i++) {
           res[i] = this.createObjectFromResponseData(res[i]);
         }
+      } else if ( (res.data) && (_.isArray(res.data)) ) {
+        // iterate throught res.data rows + columns
+        // an try to detect Node, Relationships + Path objects
+        for (var row=0; row < res.data.length; row++) {
+          for (var column=0; column < res.data[row].length; column++) {
+            res.data[row][column] = this.createObjectFromResponseData(res.data[row][column]);
+          }
+        }
+  
       } else if (_.isObject(res)) {
         res = this.createObjectFromResponseData(res);
       }
-      next(null, res, debug);
+      cb(null, res, debug);
     }
   
-    Neo4jRestful.prototype.onSuccess = function(next, res, status, options) {
-      if (options.debug) {
-        options._debug.res = res;
-        options._debug.status = status;
+    Neo4jRestful.prototype.onProcessStream = function(res, cb, debug) {
+      if (res) {
+        for (var column=0; column < res.length; column++) {
+          res[column] = this.createObjectFromResponseData(res[column]);
+        }
       }
+      cb(null, res, debug);
+    }
+  
+    Neo4jRestful.prototype.onSuccess = function(cb, res, status) {
+  
+      this._debug_.res = res;
+      this._debug_.status = status;
+  
       if (status === 'success') {
         if (typeof this.onProcess === 'function')
-          return this.onProcess(res, next, options._debug);
+          return this.onProcess(res, cb, this._debug_);
         else
-          return next(null, res, options._debug);
+          return cb(null, res, this._debug_);
       } else {
-        next(res, status, options._debug);
+        cb(res, status, this._debug_);
       }
     }
   
     Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
       // in some (rare) case, we get an empty {} as error
-      // e.g. 7b5ec0f0424d676adc67a477d0500c6d6a35799d:test_main.coffee:675 on initial tests
-      // for now we ignore those errors until we how to deal with them
-      if ( (typeof responseError === 'object') && (Object.keys(responseError).length === 0) ) {
-        return cb(null, res.body || null, options._debug);
+      if ( (responseError) && (typeof responseError === 'object') && (Object.keys(responseError).length === 0) ) {
+        return cb(null, res.body || null, this._debug_);
       }
       var err = responseError;
       var self = this;
-      var statusCode = this._response_.status;
+      var statusCode = (this._response_) ? this._response_.status : null;
       var error = ( err && err.responseText ) ? Error(err.responseText) : err;
-      if (options.debug) {
-        options._debug.res = res;
-        options._debug.err = err;
-        options._debug.error = error;
+      if (!error) {
+        // TODO: code with description
+        var errDescription = 'Response Error ('+this._response_.status+')';
+        error = new ResponseError(errDescription, this._response_.status);
       }
+  
+      this._debug_.res = res;
+      this._debug_.err = err;
+      this._debug_.error = error;
   
       try {
         // jquery is an optional feature since superagent
@@ -1229,9 +1507,9 @@
       }
       if ( (err) && (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
         // we ignore by default notfound exceptions, because they are no "syntactical" errors
-        return cb(null, null, options._debug);
+        return cb(null, null, this._debug_);
       } else {
-        return cb(err, null, options._debug);
+        return cb(err || error, null, this._debug_);
       }
     }
   
@@ -1239,30 +1517,33 @@
       var args;
       ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
       this.header['X-Stream'] = 'true';
-      var self = this
-        , todo = 0
-        , done = 0;
+      var self = this;
+      var todo = 0;
+      var done = 0;
+  
+      if (typeof cypher !== 'string')
+        throw Error('cypher argument has to be a string');
   
       return this.query(cypher, options, function(data) {
         if (data) {
-          if (typeof self.onProcess === 'function') {
+          if (typeof self.onProcessStream === 'function') {
             todo++;
-            self.onProcess(data, function(err, data) {
+            self.onProcessStream(data, function(err, data) {
               if ( (data) && (data.length === 1) )
                 data = data[0];
               if (done >= todo) {
                 // done
-                cb(data);
-                cb(null);
+                cb(data, self);
+                return cb(null, self, self._debug_);
               } else {
-                cb(data);
+                return cb(data, self, self._debug_);
               }
             })
           } else {
-            cb(data);
+            return cb(data, self, self._debug_);
           }
         } else {
-          cb(null);
+          return cb(null, self, self._debug_);
         }
       });
     }
@@ -1293,10 +1574,12 @@
     Neo4jRestful.prototype.log = function(){ /* > /dev/null */ };
   
     Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
+      if ((responseData === null) || (responseData === ''))
+        return null;
       var uri = (responseData) ? responseData.self : null;
-      var Node = this.constructorOf('Node');
-      var Relationship = this.constructorOf('Relationship');
-      var Path = this.constructorOf('Path');
+      var Node = Neo4jRestful.Node;
+      var Relationship = Neo4jRestful.Relationship;
+      var Path = Neo4jRestful.Path;
       if (typeof Class !== 'function')
         Class = Node;
       if (uri) {
@@ -1312,13 +1595,14 @@
           return r;
         }
       }
-      else
+      else {
         if ((_.isNumber(responseData.length))&&(_.isString(responseData.start))) {
           // we have a path
           var p = new Path();
           p = p.populateWithDataFromResponse(responseData);
           return p;
         }
+      }
       return responseData;
     }
   
@@ -1346,10 +1630,7 @@
   
     Neo4jRestful.prototype.singleton = function() {
       // creates a new instanced copy of this client
-      var client = new Neo4jRestful(this._connectionString());
-      // thats the method we need and why we're doing this singleton() function here
-      client.constructorOf = this.constructorOf;
-      return client;
+      return new Neo4jRestful(this._connectionString());
     }
   
     Neo4jRestful.create = function(url, options) {
@@ -1368,53 +1649,62 @@
       init: __initNeo4jRestful__
     };
   } else {
-    var initNeo4jRestful = __initNeo4jRestful__;
+    window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;
   }
     
   /*
    * include file: 'src/node.js'
    */
-  // ## Node Object
-  //
-  // The Node object is to create, connect and query all kind of Node(s).
-  // You can register your own model
-  
-  // Requirements (for browser and nodejs):
-  // * neo4jmapper helpers
-  // * underscorejs
-  // * sequence (https://github.com/coolaj86/futures)
-  
+  /**
+   * ## Node
+   * Represents the node object model and the neo4j-node-query-api
+   *
+   * You can register own models, including "inheritance"
+   *
+   * Requirements (for browser and nodejs):
+   * * neo4jmapper helpers
+   * * underscorejs
+   * * sequence (https://github.com/coolaj86/futures)
+   */
   var __initNode__ = function(neo4jrestful, Graph) {
-  
-    var helpers = null;
-    var _ = null;
-    var Sequence = null;
   
     if (typeof window === 'object') {
       // browser
       // TODO: find a solution for bson object id
-      helpers      = window.Neo4jMapper.helpers;
-      _            = window._;
-      Sequence     = window.Sequence;
+      var helpers               = window.Neo4jMapper.helpers;
+      var _                     = window._;
+      var ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
+      var CypherQuery           = window.Neo4jMapper.CypherQuery;
     } else {
-      helpers      = require('./helpers');
-      _            = require('underscore');
-      Sequence     = require('./lib/sequence');
+      var helpers               = require('./helpers');
+      var _                     = require('underscore');
+      var ConditionalParameters = require('./conditionalparameters');
+      var CypherQuery           = require('./cypherquery');
     }
   
-    // ### Constructor
-    // calls this.init(data,id) to set all values to default
-    var Node = function Node(data, id) {
+    /**
+     * ### Constructor of Node
+     * Calls this.init(data,id) to set all values to default
+     */
+    var Node = function Node(data, id, cb) {
+      // id can be a callback as well
+      if (typeof id === 'function') {
+        cb = id;
+        id = undefined;
+      }
       // will be used for labels and classes
       if (!this._constructor_name_)
         this._constructor_name_ = helpers.constructorNameOfFunction(this) || 'Node';
-      // each node object has it's own restful client
       this.init(data, id);
+      if (cb)
+        return this.save(cb);
     }
   
-    // ### Initialize all values on node object
+    /**
+     * Initialize all values on node object
+     */
     Node.prototype.init = function(data, id) {
-      this.id = id || null;
+      this.setId(id || null);
       this.data = _.extend({}, data);
       this.resetQuery();
       if (id) {
@@ -1430,53 +1720,50 @@
       this.labels = _.uniq(this.labels);
   
       this._is_instanced_ = true;
-      // we will use a label by default if we have defined an inherited class of node
-      if ((this._constructor_name_ !== 'Node')&&(this._constructor_name_ !== 'Relationship')&&(this._constructor_name_ !== 'Path')) {
-        this.label = this.cypher.label = this._constructor_name_;
-      }
-      if (!this.label)
-        this.label = null;
       return this;
     }
   
-    // ### Instantiate a node from a specific model
-    // Model can be a constructor() or a String
-    // and must be registered in Node.registered_models()
-    Node.prototype.convertNodeToModel = function(node, model, fallbackModel) {
-      if (typeof node !== 'object') {
-        // we assume that we have ”model, fallbackmodel” as arguments
-        fallbackmodel = model;
-        model = node;
-        node = this;
+    /** Instantiate a node from a specific model
+      * Model can be a constructor() or a String
+      * and must be registered in Node.registered_models()
+      *
+      * @param {Function|String}
+      */
+    Node.prototype.convertToModel = function(model) {
+      var Class = this.recommendConstructor();
+      if (typeof model === 'function') {
+        Class = model;
+      } else if ((typeof model === 'string') && (Node.registeredModel(model))) {
+        Class = Node.registeredModel(model);
       }
-      if ((typeof node === 'object') && (node !== null)) {
-        if (typeof fallbackModel !== 'function')
-          fallbackModel = this.constructor;
-        if (typeof model === 'string') {
-          // do nothing
-          model = model;
-        } else if (typeof model === 'function') {
-          model = model._constructor_name_ || helpers.constructorNameOfFunction(model) || null;
-        } else if (node.label) {
-          model = node.label;
-        } else if (typeof fallbackModel === 'function') {
-          model = helpers.constructorNameOfFunction(fallbackModel);
-        } else {
-          throw Error('No model or label found')
-        }
-        var Class = Node.registered_model(model) || fallbackModel;
-        var singleton = new Class();
-        return node.copyTo(singleton);
+      var node = new Class();
+      this.copyTo(node);
+      return node;
+    }
+  
+    // if we have a distinct label, we will create a model from of it
+    Node.instantiateNodeAsModel = function(node, labels, label) {
+      var model = label;
+      // if we have given explicit a specific model
+      if (typeof labels === 'string') {
+        model = labels;
       }
-      return null;
+      // alternative: if we have only one label we instantiate from this
+      if ((labels) && (labels.length === 1))
+        model = labels[0];
+      if (model)
+        node = node.convertToModel(model);
+      node.setLabels(labels);
+      node.isPersisted(true);
+      return node;
     }
   
     Node.__models__ = {};                             // contains all globally registered models
   
-    Node.prototype.classification = 'Node';           // only needed for toObject(), just for better identification of the object for the user
-    Node.prototype.data = {};                         // will contain all data for the node
-    Node.prototype.id = null;                         // ”public“ id attribute
-    Node.prototype._id_ = null;                       // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
+    Node.prototype.classification   = 'Node';         // only needed for toObject(), just for better identification of the object for the user
+    Node.prototype.data             = {};             // will contain all data for the node
+    Node.prototype.id               = null;           // ”public“ id attribute
+    Node.prototype._id_             = null;           // ”private“ id attribute (to ensure that this.id deosn't get manipulated accidently)
     // can be used to define schema-like-behavior
     // TODO: implement unique
     Node.prototype.fields = {
@@ -1485,14 +1772,15 @@
       unique: {}
     };
   
-    Node.prototype.uri = null;                        // uri of the node
-    Node.prototype._response_ = null;                 // original response object
-    Node.prototype._query_history_ = null;            // an array that contains all query actions chronologically, is also a flag for a modified query 
-    Node.prototype._stream_ = null;                   // flag for processing result data
-    Node.prototype._hashedData_ = null;               // contains md5 hash of a persisted object
+    Node.prototype.uri              = null;           // uri of the node
+    Node.prototype._response_       = null;           // original response object
+    Node.prototype._query_history_  = null;           // an array that contains all query actions chronologically, is also a flag for a modified query
+    Node.prototype._stream_         = null;           // flag for processing result data
+    Node.prototype._hashedData_     = null;           // contains md5 hash of a persisted object
+    Node.prototype.Relationship     = null;           // constructor object for Relationship()
   
-    // cypher property will be **copied** on each new objects node.cypher in resetQuery()
-    Node.prototype.cypher = {
+    // cypher properties will be **copied** on each new object on cypher.segments in resetQuery()
+    Node.cypherStatementSegments = {
       limit: '',              // Number
       skip: '',               // Number
       filter: '',             // `FILTER`   statement
@@ -1503,7 +1791,7 @@
       distinct: null,         // `DISTINCT` option
       return_properties: [],  // [a|b|n|r|p], will be joined with `, `
       where: [],              // `WHERE`  statements, will be joined with `AND`
-      hasProperty: [],   
+      hasProperty: [],
       from: null,             // Number
       to: null,               // Number
       direction: null,        // (incoming|outgoing|all)
@@ -1517,84 +1805,55 @@
       parameters: null,       // object that contains all parameters for query
       count: '',              // count(n) (DISTINCT)
       // Boolean flags
-      _useParameters: true,
+      _optionalMatch: null,
       _count: null,
       _distinct: null,
-      _update: null,          // flag when an update is performed
       by_id: null
     };
   
-    Node.prototype._is_instanced_ = null;             // flag that this object is instanced
-    Node.prototype._is_singleton_ = false;            // flag that this object is a singleton
+    Node.prototype._is_instanced_           = null;   // flag that this object is instanced
+    Node.prototype._is_singleton_           = false;  // flag that this object is a singleton
+    Node.prototype._is_loaded_              = null;
   
-    Node.prototype.labels = null;                     // an array of all labels
-    Node.prototype.label = null;                      // will be set with a label a) if only one label exists b) if one label matches to model
-    //TODO: check that it's still needed
-    Node.prototype._constructor_name_ = null;         // will be with the name of the function of the constructor
-    Node.prototype._parent_constructors_ = null;      // an array of parent constructors (e.g. Director extends Person -> 'Director','Person')
+    Node.prototype.labels                   = null;   // an array of all labels
+    Node.prototype.label                    = null;   // will be set with a label a) if only one label exists b) if one label matches to model
   
-    Node.prototype._load_hook_reference_ = null;      // a reference to acticate or deactivate the load hook
+    Node.prototype._constructor_name_       = null;   // will be with the name of the function of the constructor
+    Node.prototype._load_hook_reference_    = null;   // a reference to acticate or deactivate the load hook
   
-    Node.prototype.__already_initialized__ = false;   // flag to avoid many initializations of a model
+    Node.prototype.__skip_loading_labels__  = null;   // is used in _onBeforeLoad() to prevent loading labels in an extra request
   
-    // you should **never** change this value
-    // it's used to dictinct nodes and relationships
-    // many queries containg `node()` command will use this value
-    // e.g. n = node(*)
-    Node.prototype.__type__ = 'node';
-    Node.prototype.__type_identifier__ = 'n';
+    /**
+     * Should **never** be changed
+     * it's used to dictinct nodes and relationships
+     * many queries containg `node()` command will use this value
+     * e.g. n = node(*)
+     */
+    Node.prototype.__TYPE__                 = 'node';
+    Node.prototype.__TYPE_IDENTIFIER__      = 'n';
   
-    // ### Create a singleton
-    // Here a singleton is a node object that is used as
-    // a placeholder to use all `static` methods on the node object.
-    // To avoid conflicts on async usage, each singleton is it's own instance
-    // Example Usage: `Node.singleton().findOne().where()`
-    Node.prototype.singleton = function(id, label) {
-      var Class = this.constructor;
-      var node = new Class({},id);
-      if (typeof label === 'string')
-        node.label = label;
-      node.resetQuery();
-      node._is_singleton_ = true;
-      node.resetQuery();
-      return node;
-    }
   
     // ### Initializes the model
     // Calls the onBeforeInitialize & onAfterInitialize hook
     // The callback can be used to ensure that all async processes are finished
     Node.prototype.initialize = function(cb) {
       var self = this;
-      // here a callback is optional
-      if (typeof cb !== 'function')
-        cb = function() { /* /dev/null */ };
-      if (!this.__already_initialized__) {
-        return this.onBeforeInitialize(function(err) {
-          if (err)
-            cb(err, null);
-          else
-            self.onAfterInitialize(cb);
-        });
-      } else {
-        return cb(null, this.constructor);
-      }
+      return this.onBeforeInitialize(function(err, res, debug) {
+        if (err)
+          cb(err, null, debug);
+        else
+          self.onAfterInitialize(cb);
+      });
     }
   
-    // ### Hook: onBeforeInitialize
-    // Can be monkey-pacthed and be used to execute code
-    // on prototype base during registering a model
-    // HINT: call the cb() finnaly  
     Node.prototype.onBeforeInitialize = function(next) {
-      return next(null,null);
+      return next(null,null,null);
     }
   
-    // ### Internal Hook: onAfterInitialize
-    // Ensures autoindex on the label
     Node.prototype.onAfterInitialize = function(cb) {
       // here we return the constructor as 2nd argument in cb
       // because it is expected at `Node.register_model('Label', cb)`
       var self = this;
-      this.__already_initialized__ = true;
       // Index fields
       var fieldsToIndex = this.fieldsForAutoindex();
       // we create an object to get the label
@@ -1602,14 +1861,14 @@
       var label = node.label;
       if (label) {
         if (fieldsToIndex.length > 0) {
-          return node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err) {
-            cb(err, self.constructor);
+          return node.ensureIndex({ label: label, fields: fieldsToIndex }, function(err, res, debug) {
+            return cb(err, self.constructor, debug);
           });
         } else {
-          return cb(null, self.constructor);
+          return cb(null, self.constructor, null);
         }
       } else {
-        return cb(Error('No label found'), this.constructor);
+        return cb(Error('No label found'), this.constructor, null);
       }
     }
   
@@ -1622,26 +1881,30 @@
         n.label  = this.label;
       n.uri = this.uri;
       n._response_ = _.extend(this._response_);
-      return n;
+      return null;
     }
   
-    // Resets the query **but** should not be used since you should start from Node.… instead
-    // Anyhow, e.g.:
-    //
-    // n = Node.findOne().where(cb)
-    // n.resetQuery().findOne(otherCb)
+    /**
+     * Resets the query **but** should not be used since you should start from Node.… instead
+     * Anyhow, e.g.:
+     *
+     * Example:
+     *    n = Node.findOne().where(cb)
+     *    n.resetQuery().findOne(otherCb)
+     */
     Node.prototype.resetQuery = function() {
       // we have to copy the cypher values on each object
-      this.cypher = {};
-      _.extend(this.cypher, this.constructor.prototype.cypher);
-      this.cypher.where = [];
-      this.cypher.hasProperty = [];
-      this.cypher.match = [];
-      this.cypher.return_properties = [];
-      this.cypher.start = {};
+      this.cypher = new CypherQuery();
+      this.cypher.segments = {};
+      _.extend(this.cypher.segments, this.constructor.cypherStatementSegments);
+      this.cypher.segments.where = [];
+      this.cypher.segments.hasProperty = [];
+      this.cypher.segments.match = [];
+      this.cypher.segments.return_properties = [];
+      this.cypher.segments.start = {};
       this._query_history_ = [];
       if (this.id)
-        this.cypher.from = this.id;
+        this.cypher.segments.from = this.id;
       return this; // return self for chaining
     }
   
@@ -1651,7 +1914,7 @@
   
     Node.prototype.setUriById = function(id) {
       if (_.isNumber(id))
-        this.uri = Graph.request().absoluteUrl(this.__type__+'/'+id);
+        this.uri = Graph.request().absoluteUrl(this.__TYPE__+'/'+id);
       return this;
     }
   
@@ -1662,14 +1925,18 @@
       if ((typeof this.data === 'object') && (this.data !== null)) {
         var data = (useReference) ? this.data : _.extend(this.data);
         data = helpers.flattenObject(data);
-        // remove null values since neo4j can't store them
-        for(var key in data) {
-          if ((typeof data[key] === 'undefined') || (data[key]===null))
-            delete data[key];
-        }
         return data;
       }
       return this.data;
+    }
+  
+    Node.prototype.dataForCypher = function() {
+      var data = this.flattenData();
+      for (var attr in data) {
+        data['`'+attr+'`'] = data[attr];
+        delete data[attr];
+      }
+      return data;
     }
   
     Node.prototype.unflattenData = function(useReference) {
@@ -1681,7 +1948,7 @@
     }
   
     Node.prototype.hasValidData = function() {
-      return helpers.isValidData(this.data);
+      return helpers.isObjectLiteral(this.data);
     }
   
     Node.prototype.applyDefaultValues = function() {
@@ -1720,35 +1987,39 @@
       var fields = this.fieldsToIndex();
       var keys = [];
       _.each(fields, function(toBeIndexed, field) {
-        if (toBeIndexed === true) 
+        if (toBeIndexed === true)
           keys.push(field);
       });
       keys = _.uniq(_.union(keys, this.uniqueFields()));
       return keys;
     }
   
-    // Returns all fields that should be unique
-    // They need to be defined in your model, e.g.:
-    //
-    // Node.register_model({
-    //  fields: {
-    //    unique: {
-    //      email: true
-    //    }
-    // }});
+    /**
+     * Returns all fields that should be unique
+     * They need to be defined in your model, e.g.:
+     *
+     * Node.register_model({
+     *  fields: {
+     *    unique: {
+     *      email: true
+     *    }
+     * }});
+     */
     Node.prototype.uniqueFields = function() {
       var keys = [];
       _.each(this.fields.unique, function(isUnique, field) {
-        if (isUnique === true) 
+        if (isUnique === true)
           keys.push(field);
       });
       return keys;
     }
   
-    // # Autoindex
-    // Check the `schema` of the model and builds an autoindex, optional with unique option
-    // see for more details: http://docs.neo4j.org/chunked/milestone/query-constraints.html
-    // TODO: only via cypher query, to simplify process
+    /**
+     * # Autoindex
+     * Check the `schema` of the model and builds an autoindex, optional with unique option
+     * see for more details: http://docs.neo4j.org/chunked/milestone/query-constraints.html
+     * TODO: only via cypher query, to simplify process
+     */
     Node.prototype.ensureIndex = function(options, cb) {
       var args;
       ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) && ( options = args.options ) && ( cb = args.callback ) );
@@ -1757,47 +2028,55 @@
         fields: this.fieldsForAutoindex(),  // fields that have to be indexed
         unique: this.uniqueFields() || []   // fields that have be indexed as unique
       }, options);
-      var self    = this
-        , keys    = _.uniq(_.union(options.fields, options.unique)) // merge index + unique here
-        , todo    = keys.length
-        , done    = 0
-        , errors  = []
-        , results = [];
+      var self    = this;
+      var keys    = _.uniq(_.union(options.fields, options.unique)); // merge index + unique here
+      var todo    = keys.length;
+      var done    = 0;
+      var errors  = [];
+      var results = [];
       if (!options.label)
-        return cb(Error('Label is mandatory, you can set the label as options as well'), null);
+        throw Error('Label is mandatory, you can set the label as options as well');
       var url = 'schema/index/'+options.label;
       var queryHead = "CREATE CONSTRAINT ON (n:" + options.label + ") ASSERT ";
       // get all indexes fields
-      // TODO: find a way to distinct index 
-      this.getIndex(function(err, indexedFields) {
+      // TODO: find a way to distinct index
+      this.getIndex(function(err, indexedFields, debug) {
         // sort out fields that are already indexed
         for (var i=0; i < indexedFields.length; i++) {
           keys = _.without(keys, indexedFields[i]);
         }
-        // return without any arguments if there are no fields to index 
-        if (keys.length === 0)
-          return cb(null, null);
+        // return without any arguments if there are no fields to index
+        if (keys.length === 0) {
+          return cb(null, null, debug);
+        }
         _.each(keys, function(key){
           var isUnique = (_.indexOf(options.unique, key) >= 0);
           var query = queryHead + "n.`" + key + "`" + ( (isUnique) ? " IS UNIQUE" : "")+";";
           var after = function(err, res) {
             done++;
-            if ((typeof err === 'object') && (err !== null)) {
-              if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException'))
-                // we ignore this "error"
-                results.push(res);
-              else
-                errors.push(err);
+            if ((err === 'object') && (err !== null)) {
+              // we transform the given error(s) to an array to iterate through it
+              var errAsArray = (err.length > 0) ? err : [ err ];
+              errAsArray.forEach(function(err) {
+                if ((err.cause) && (err.cause.cause) && (err.cause.cause.exception === 'AlreadyIndexedException')) {
+                  // we ignore this "error"
+                  results.push(res);
+                } else {
+                  errors.push(err);
+                }
+              });
             } else {
               results.push(res);
             }
-            if (done === todo)
-              cb((errors.length > 0) ? errors : null, results);
+            if (done === todo) {
+              cb((errors.length > 0) ? errors : null, results, debug);
+            }
           };
-          if (isUnique)
+          if (isUnique) {
             self.query(query, after);
-          else
+          } else {
             Graph.request().post(url, { data: { property_keys: [ key ] } }, after);
+          }
         });
       });
       return this;
@@ -1843,23 +2122,23 @@
       if (!label)
         return cb(Error("You need to set a label on `node.label` to work with autoindex"), null);
       var url = 'schema/index/'+this.label;
-      return Graph.request().get(url, function(err, res){
+      return Graph.request().get(url, function(err, res, debug){
         if ((typeof res === 'object') && (res !== null)) {
           var keys = [];
           _.each(res, function(data){
             if (data.label === label)
-              keys.push(data['property-keys']);
+              keys.push(data['property_keys']);
           });
-          return cb(null, _.flatten(keys));
+          return cb(null, _.flatten(keys), debug);
         } else {
-          return cb(err, res);
+          return cb(err, res, debug);
         }
       });
     }
   
     Node.prototype._hashData_ = function() {
       if (this.hasValidData())
-        return helpers.md5(JSON.stringify(this.data));
+        return helpers.md5(JSON.stringify(this.toObject()));
       else
         return null;
     }
@@ -1879,7 +2158,7 @@
     Node.prototype.save = function(cb) {
       var self = this;
       var labels = (self.labels.length > 0) ? self.labels : null;
-      return self.onBeforeSave(self, function(err) {
+      return self._onBeforeSave(self, function(err) {
         // don't execute if an error is passed through
         if ((typeof err !== 'undefined')&&(err !== null))
           cb(err, null);
@@ -1888,143 +2167,194 @@
             // assign labels back
             if (labels)
               self.labels = labels;
-            self.onAfterSave(err, self, cb, debug);
+            self._onAfterSave(err, self, cb, debug);
           });
       });
     }
   
-    Node.prototype.onBeforeSave = function(node, next) { next(null, null); }
+    Node.prototype._onBeforeSave = function(node, next) {
+      this.onBeforeSave(node, function(err) {
+        next(err);
+      });
+    }
+  
+    Node.prototype.onBeforeSave = function(node, next) {
+      next(null, null);
+    }
   
     Node.prototype.onSave = function(cb) {
       var self = this;
       if (this._is_singleton_)
         return cb(Error('Singleton instances can not be persisted'), null);
       if (!this.hasValidData())
-        return cb(Error(this.__type__+' does not contain valid data. `'+this.__type__+'.data` must be an object.'));
+        return cb(Error(this.__TYPE__+' does not contain valid data. `'+this.__TYPE__+'.data` must be an object.'));
       this.resetQuery();
       this.applyDefaultValues();
-      var method = null;
   
-      function __prepareData(err, data, debug, cb) {
-        // copy persisted data on initially instanced node
-        data.copyTo(self);
-        data = self;
-        self._is_singleton_ = false;
-        self._is_instanced_ = true;
-        if (!err)
-          self.isPersisted(true);
-        return cb(null, data, debug);
-      }
-      
       this.id = this._id_;
   
       if (this.id > 0) {
-        method = 'update';
-        Graph.request().put(this.__type__+'/'+this._id_+'/properties', { data: this.flattenData() }, function(err, res, debug) {
-          if (err) {
-            return cb(err, res, debug);
-          } else {
-            self.isPersisted(true);
-            cb(err, self, debug);
-          }
-        });
+        // we generate: { n: { data } } -> n.`prop` = '' , … ,
+        // update node
+        Graph
+          .start('n = node({id})')
+          .addParameter({ id: Number(this.id) })
+          .setWith({ n: this.dataForCypher() })
+          .exec(function(err, res, debug) {
+            if (err) {
+              return cb(err, res, debug);
+            } else {
+              self.isPersisted(true);
+              cb(err, self, debug);
+            }
+          });
       } else {
-        method = 'create';
-        Graph.request().post(this.__type__, { data: this.flattenData() }, function(err, node, debug) {
-          if ((err) || (!node))
-            return cb(err, node);
-          else
-            return __prepareData(err, node, debug, cb);
-        });
+        // create node
+        var labels = (this.labels.length > 0) ? ':'+this.labels.join(':') : '';
+        var data = {};
+        data['n'+labels] = this.dataForCypher();
+        Graph
+          .start()
+          .create(data)
+          .return('n')
+          .limit(1)
+          .exec(function(err, res, debug) {
+            if ((err)||(!res)) {
+              return cb(err, res, debug);
+            } else {
+              var node = res;
+              // copy persisted data on initially instanced node
+              node.copyTo(self);
+              node = self;
+              node._is_singleton_ = false;
+              node._is_instanced_ = true;
+              self.isPersisted(true);
+              return cb(null, node, debug);
+            }
+          });
       }
+    }
+  
+    Node.prototype._onAfterSave = function(err, node, next, debug) {
+      this.onAfterSave(err, node, function(err, node, debug) {
+        // we use labelsAsArray to avoid duplicate labels
+        var labels = node.labels = node.labelsAsArray();
+        // cancel if we have an error here
+        if (err)
+          return next(err, node, debug);
+        if (labels.length > 0) {
+          // we need to post the label in an extra request
+          // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
+          node.addLabels(labels, function(labelError, notUseableData, debugLabel) {
+            // add label err if we have one
+            if (labelError)
+              err = labelError;
+            // add debug label if we have one
+            if (debug)
+              debug = (debugLabel) ? [ debug, debugLabel ] : debug;
+            return next(err, node, debug);
+          });
+        } else {
+          return next(err, node, debug);
+        }
+      }, debug);
     }
   
     Node.prototype.onAfterSave = function(err, node, next, debug) {
-      // we use labelsAsArray to avoid duplicate labels
-      var labels = node.labels = node.labelsAsArray();
-      // cancel if we have an error here
-      if (err)
-        return next(err, node, debug);
-      if (labels.length > 0) {
-        // we need to post the label in an extra request
-        // cypher inappropriate since it can't handle { attributes.with.dots: 'value' } …
-        node.createLabels(labels, function(labelError, notUseableData, debugLabel) {
-          // add label err if we have one
-          if (labelError)
-            err = labelError;
-          // add debug label if we have one
-          if (debug)
-            debug = (debugLabel) ? [ debug, debugLabel ] : debug;
-          return next(err, node, debug);
-        });
-      } else {
-        return next(err, node, debug);
-      }
+      return next(err, node, debug);
     }
   
     Node.prototype.update = function(data, cb) {
-      if (!helpers.isValidData(data)) {
+      if (!helpers.isObjectLiteral(data)) {
         cb(Error('To perform an update you need to pass valid data for updating as first argument'), null);
       }
       else if (this.hasId()) {
+        if (typeof cb !== 'function')
+          throw Error('To perform an .update() on an instanced node, you have to give a cb as argument');
         this.findById(this._id_).update(data, cb);
         return this;
       } else {
         data = helpers.flattenObject(data);
-        this.cypher.set = [];
+        this.cypher.segments.set = [];
         for (var attribute in data) {
           this.addSetDefinition(attribute, data[attribute]);
         }
       }
-      this.cypher._update = true;
+      this.cypher.segments._update_ = true; // update flag is used in graph._processResults
+      this.cypher.segments.start[this.__TYPE_IDENTIFIER__] =  this.__TYPE__ + '(' + this.cypher.segments.by_id + ')';
       return this.exec(cb);
     }
   
     Node.prototype.addSetDefinition = function(attribute, value) {
-      // if already parameters are added, starting with {_value#i_} instead of {_value0_}
-      var parametersStartCountAt = ((this.cypher.parameters)&&(this.cypher.parameters.length > 0)) ? this.cypher.parameters.length : 0;
-      if (this.cypher._useParameters) {
+      if (this.cypher.useParameters) {
+        if (!this.cypher.hasParameters())
+          this.cypher.parameters = {};
+        // if already parameters are added, starting with {_value#i_} instead of {_value0_}
+        var parametersStartCountAt = (this.cypher.parameters) ? Object.keys(this.cypher.parameters).length : 0;
         var key = '_value'+parametersStartCountAt+'_';
         var parameter = {};
         parameter[key] = value;
-        this.cypher.set.push(
-          helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__type_identifier__, { valuesToParameters: true })
-        );      
-        this._addParameterToCypher(parameter);
+        this.cypher.segments.set.push(
+          helpers.cypherKeyValueToString(attribute, '{'+key+'}', this.__TYPE_IDENTIFIER__, { valuesToParameters: true })
+        );
+        this._addParameterToCypher(value);
       } else {
-        this.cypher.set.push(helpers.cypherKeyValueToString(attribute, value, this.__type_identifier__));
+        this.cypher.segments.set.push(helpers.cypherKeyValueToString(attribute, value, this.__TYPE_IDENTIFIER__));
       }
     }
   
-    Node.prototype.load = function(cb) {
+    Node.prototype.load = function(cb, debug) {
       var self = this;
-      return this.onBeforeLoad(self, function(err, node){
+      return this._onBeforeLoad(self, function(err, node) {
         if (err)
-          cb(err, node);
+          cb(err, node, debug);
         else
-          self.onAfterLoad(node, cb);
+          self._onAfterLoad(node, cb, debug);
       })
     }
   
+    Node.prototype._onBeforeLoad = function(node, next, debug) {
+      this.onBeforeLoad(node, function(node) {
+        if (node.hasId()) {
+  
+          var _createNodeFromLabel = function(node, debug) {
+            node.isPersisted(true);
+            node.__skip_loading_labels__ = null;
+            next(null, node, debug);
+          }
+  
+          if (node.__skip_loading_labels__) {
+            return _createNodeFromLabel(node, debug);
+          } else {
+            // only load labels if it's set to not loaded
+            return node.allLabels(function(err, labels, debug) {
+              if (err)
+                return next(err, labels);
+              node.setLabels(labels);
+  
+              return _createNodeFromLabel(node, debug);
+            });
+          }
+        } else {
+          return next(null, node);
+        }
+      });
+    }
+  
+    Node.prototype.reload = function (cb) {
+      this._is_loaded_ = false;
+      this.load(cb);
+    }
+  
     Node.prototype.onBeforeLoad = function(node, next) {
-      if (node.hasId()) {
-        var DefaultConstructor = this.recommendConstructor();
-        // To check that it's invoked by Noder::find() or Person::find()
-        var constructorNameOfStaticMethod = this.label || helpers.constructorNameOfFunction(DefaultConstructor);
-        node.allLabels(function(err, labels, debug) {
-          if (err)
-            return next(err, labels);
-          node.labels = labels;
-          if (labels.length === 1)
-            node.label = labels[0]
-          // convert node to it's model if it has a distinct label and differs from static method
-          if ( (node.label) && (node.label !== constructorNameOfStaticMethod) )
-            node = Node.convertNodeToModel(node, node.label, DefaultConstructor);
-          next(null, node, debug);
-        });
-      } else {
-        next(null, node);
-      } 
+      return next(node);
+    }
+  
+    Node.prototype._onAfterLoad = function(node, next) {
+      node._is_loaded_ = true;
+      this.onAfterLoad(node, function(err, node) {
+        next(err, node);
+      });
     }
   
     Node.prototype.onAfterLoad = function(node, next) {
@@ -2089,7 +2419,7 @@
       if ( (self.hasId()) || (typeof label !== 'string') )
         return self; // return self for chaining
       self._query_history_.push({ withLabel: label });
-      self.cypher.label = label;
+      self.cypher.segments.label = label;
       return self.exec(cb);
     }
   
@@ -2136,23 +2466,21 @@
         // MATCH p = allShortestPaths(martin-[*]-michael)
         // RETURN p
         var type = (options.relationships.type) ? ':'+options.relationships.type : options.relationships.type;
-        // this.cypher.start = {};
-        this.cypher.start.a = 'node('+start+')';
-        this.cypher.start.b = 'node('+end+')';
-        
+        // this.cypher.segments.start = {};
+        this.cypher.segments.start.a = 'node('+start+')';
+        this.cypher.segments.start.b = 'node('+end+')';
+  
         var matchString = 'p = '+options.algorithm+'((a)-['+type+( (options.max_depth>0) ? '..'+options.max_depth : '*' )+']-(b))';
-        
-        this.cypher.match.push(matchString.replace(/\[\:\*+/, '[*'));
-        this.cypher.return_properties = ['p'];
+  
+        this.cypher.segments.match = [ matchString.replace(/\[\:\*+/, '[*') ];
+        this.cypher.segments.return_properties = ['p'];
       }
   
       return this.exec(cb);
     }
   
-    // Node.prototype.traversal = function(toNodeRelationshipPath, options, cb) { }
-  
     Node.prototype.count = function(identifier, cb) {
-      this.cypher._count = true;
+      this.cypher.segments._count = true;
       if (typeof identifier === 'function') {
         cb = identifier;
         identifier = '*';
@@ -2160,13 +2488,13 @@
       else if (typeof identifier !== 'string')
         identifier = '*';
   
-      if (Object.keys(this.cypher.start).length < 1) {
-        // this.cypher.start = {};
-        this.cypher.start[this.__type_identifier__] = this.__type__+'(*)'; // all nodes by default
+      if (Object.keys(this.cypher.segments.start).length < 1) {
+        // this.cypher.segments.start = {};
+        this.cypher.segments.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)'; // all nodes by default
       }
-      this.cypher.count = 'COUNT('+((this.cypher._distinct) ? 'DISTINCT ' : '')+identifier+')';
-      if (this.cypher._distinct)
-        // set `this.cypher._distinct` to false
+      this.cypher.segments.count = 'COUNT('+((this.cypher.segments._distinct) ? 'DISTINCT ' : '')+identifier+')';
+      if (this.cypher.segments._distinct)
+        // set `this.cypher.segments._distinct` to false
         this.distinct(undefined, false);
       // we only need the count column to return in this case
       if (typeof cb === 'function')
@@ -2177,25 +2505,28 @@
           }
           cb(err, result, debug);
         });
-      this._query_history_.push({ count: { distinct: this.cypher._distinct, identifier: identifier } });
+      this._query_history_.push({ count: { distinct: this.cypher.segments._distinct, identifier: identifier } });
       return this; // return self for chaining
     }
   
-    /*
+    /**
      * Query-Building methods
+     * It evaluates `this.cypher` flags (initialized from `this.cypherStatementSegments`)
+     * and prepares for query building  with `Graph.start()…`
+     * @todo split into parts for each statement segment (e.g. query.start, query.return_properties …)
+     * @return {object} prepared query statements
      */
-  
     Node.prototype._prepareQuery = function() {
-      var query = _.extend(this.cypher);
+      var query = _.extend(this.cypher.segments);
       var label = (query.label) ? ':'+query.label : '';
   
-      if ((this.cypher.start) && (Object.keys(this.cypher.start).length < 1)) {
-        if (query.from > 0) {
+      if ((this.cypher.segments.start) && (this.cypher.segments) && (Object.keys(this.cypher.segments.start).length < 1)) {
+        if (_.isNumber(query.from)) {
           query.start = {};
           query.start.n = 'node('+query.from+')';
           query.return_properties.push('n');
         }
-        if (query.to > 0) {
+        if (_.isNumber(query.to)) {
           query.start.m = 'node('+query.to+')';
           query.return_properties.push('m');
         }
@@ -2203,8 +2534,19 @@
   
       var relationships = '';
   
-      if ((query.return_properties)&&(query.return_properties.constructor === Array))
+      if ((query.return_properties)&&(query.return_properties.constructor === Array)) {
+        var returnLabels = null;
+        query.return_properties.forEach(function(returnProperty){
+          if ((returnLabels === null) && (/^n(\s+.*)*$/.test(returnProperty)))
+            returnLabels = true;
+        });
+  
+        // but we don't return labels if we have an action like DELETE
+        if ((returnLabels) && (!query.action))
+          query.return_properties.push('labels(n)');
+  
         query.return_properties = _.uniq(query.return_properties).join(', ')
+      }
   
       if (query.relationship) {
         if (query.relationship.constructor === Array) {
@@ -2234,7 +2576,10 @@
             y = '->';
           }
         }
-        query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.to > 0) ? 'm' : '' )+')');
+        if (query.match.length === 0) {
+          // this.cypher.segments can be an ID or a label
+          query.match.push('(n'+label+')'+x+'[r'+relationships+']'+y+'('+( (this.cypher.segments.to > 0) ? 'm' : ( (this.cypher.segments.to) ? this.cypher.segments.to.replace(/^\:*(.*)$/,':$1') : '' ) ) +')');
+        }
       }
   
       var __startObjectToString = function(start) {
@@ -2246,7 +2591,7 @@
       }
       // guess return objects from start string if it's not set
       // e.g. START n = node(*), a = node(2) WHERE … RETURN (~>) n, a;
-      if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(this.cypher.start)&&(Object.keys(this.cypher.start).length > 0))) {
+      if ((!query.return_properties)||((query.return_properties)&&(query.return_properties.length == 0)&&(this.cypher.segments.start)&&(Object.keys(this.cypher.segments.start).length > 0))) {
         query.start_as_string = ' '+__startObjectToString(query.start)
         if (/ [a-zA-Z]+ \= /.test(query.start_as_string)) {
           var matches = query.start_as_string;
@@ -2255,43 +2600,52 @@
           for (var i = 0; i < matches.length; i++) {
             query.return_properties.push(matches[i].replace(/^[\s\,]*([a-z]+).*$/i,'$1'));
           }
-          if ((Graph.request().version >= 2)&&(query.return_properties.length === 1)&&(query.return_properties[0] === 'n')) {
-            // try adding labels if we have only n[node] as return propert
-            query.return_properties.push('labels(n)');
-          }
           query.return_properties = query.return_properties.join(', ');
         }
       }
   
-      // Set a fallback to START n = node(*) if it's not null
-      if ((this.cypher.start) && (Object.keys(this.cypher.start).length < 1)&&(!(query.match.length > 0))) {
-        // query.start = 'n = node(*)';
-        query.start[this.__type_identifier__] = this.__type__+'(*)';
-      }
       if ((!(query.match.length>0))&&(this.label)) {
         // e.g. ~> MATCH (n:Person)
-        if (this.__type_identifier__ === 'n')
-          query.match.push('(n:'+this.label+')');
-        else if (this.__type_identifier__ === 'r')
-          query.match.push('[r:'+this.label+']');
+        if (this.__TYPE_IDENTIFIER__ === 'n')
+          query.match = [ '(n:'+this.label+')' ];
+        else if (this.__TYPE_IDENTIFIER__ === 'r')
+          query.match = [ '[r:'+this.label+']' ];
+      }
+  
+      // Set a fallback to START n = node(*) if it's not null
+      if ((this.cypher.segments.start) && (Object.keys(this.cypher.segments.start).length < 1)&&(!(query.match.length > 0))) {
+        // query.start = 'n = node(*)';
+        // leave out if a `MATCH` is defined (will speed up query in some cases)
+        if (query.match.length > 0) {
+          query.start = '';
+        } else {
+          query.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+'(*)';
+        }
+  
       }
   
       // rule(s) for findById
-      if (query.by_id > 0) {
-        var identifier = query.node_identifier || this.__type_identifier__;
-        // put in where clause if `START n = node(*)` or no START statement exists
-        if ( (Object.keys(this.cypher.start).length < 1) || (this.cypher.start.n === 'node(*)') ) {
-          // we have to use the id method for the special key `id`
-          query.where.push("id("+identifier+") = "+query.by_id);
+      if (_.isNumber(query.by_id)) {
+        // put in where clause if one or no START statement exists
+        if (Object.keys(this.cypher.segments.start).length <= 1) {
+          var id = query.by_id;
+          if (this.cypher.useParameters) {
+            this.cypher.segments.start.n = 'node({_node_id_})';
+            this.cypher.addParameter( { _node_id_: id } );
+          } else {
+            this.cypher.segments.start.n = 'node('+id+')';
+          }
+  
         }
       }
-      // add all `HAS (property)` statements to where 
+      // add all `HAS (property)` statements to where
       if (query.hasProperty.length > 0) {
         // remove duplicate properties, not necessary but looks nicer
-        var whereHasProperties = _.uniq(query.hasProperty);
-        for (var i = whereHasProperties.length-1; i>=0; i--) {
-          query.where.unshift('HAS ('+whereHasProperties[i]+')');
-        }
+        _.uniq(query.hasProperty).forEach(function(property) {
+          query.where.unshift('HAS ('+property+')');
+        });
+        // remove all duplicate-AND-conditions
+        query.where = _.unique(query.where);
       }
   
       query.start_as_string = __startObjectToString(query.start);
@@ -2299,17 +2653,22 @@
       return query;
     }
   
-    Node.prototype.toCypherQuery = function() {
-      var query = this._prepareQuery()
-        , graph = Graph.start(query.start_as_string);
-  
-      if (query.match.length > 0)
-        graph.match(query.match.join(' AND '));
+    Node.prototype.toQuery = function() {
+      if (this.hasId() && (!(Object.keys(this.cypher.segments.start).length > 1))) {
+        return Node.findById(this._id_).toQuery();
+      }
+      var query = this._prepareQuery();
+      var graph = Graph.start(query.start_as_string);
+      if (query.match.length > 0) {
+        if (this.cypher._optionalMatch)
+          graph.optionalMatch(query.match.join(' AND '));
+        else
+          graph.match(query.match.join(' AND '));
+      }
       if ((query.where)&&(query.where.length > 0))
         graph.where(query.where.join(' AND '));
       if (query.set)
         graph.set(query.set);
-      
       if (query.action)
         graph.custom(query.action+' '+query.actionWith);
       else if (query._distinct)
@@ -2322,25 +2681,33 @@
         graph.skip(Number(query.skip));
       if (query.limit)
         graph.limit(Number(query.limit));
+      graph.cypher.parameters = this.cypher.parameters;
+      return graph.toQuery();
+    }
   
-      return graph.toCypherQuery();
+    Node.prototype.toQueryString = function() {
+      return this.toQuery().toString();
+    }
+  
+    Node.prototype.toCypherQuery = function() {
+      return this.toQuery().toCypher();
     }
   
     Node.prototype._start_node_id = function(fallback) {
       if (typeof fallback === 'undefined')
         fallback = '*'
-      if (this.cypher.from > 0)
-        return this.cypher.from;
-      if (this.cypher.by_id)
-        return this.cypher.by_id;
+      if (this.cypher.segments.from > 0)
+        return this.cypher.segments.from;
+      if (this.cypher.segments.by_id)
+        return this.cypher.segments.by_id;
       else
-        return (this.hasId()) ? this.id : fallback; 
+        return (this.hasId()) ? this.id : fallback;
     }
   
     Node.prototype._end_node_id = function(fallback) {
       if (typeof fallback === 'undefined')
         fallback = '*'
-      return (this.cypher.to > 0) ? this.cypher.to : fallback; 
+      return (this.cypher.segments.to > 0) ? this.cypher.segments.to : fallback;
     }
   
     Node.prototype.singletonForQuery = function(cypher) {
@@ -2350,45 +2717,42 @@
     }
   
     Node.prototype.exec = function(cb, cypher_or_request) {
-      var request = null
-        , cypherQuery = null;
-      // you can alternatively use an url 
+      var request = null;
+      var cypherQuery = null;
+      // you can alternatively use an url
       if (typeof cypher_or_request === 'string')
         cypherQuery = cypher_or_request;
       else if (typeof cypher_or_request === 'object')
         request = _.extend({ type: 'get', data: {}, url: null }, cypher_or_request);
-      
+  
       if (typeof cb === 'function') {
-        var cypher = this.toCypherQuery();
-        // reset node, because it might be called from prototype
-        // if we have only one return property, we resort this
-        if ( (this.cypher.return_properties)&&(this.cypher.return_properties.length === 1) ) {
-          if (cypherQuery)
-            this.query(cypherQuery, cb);
-          else if (request)
-            this.query(request, cb);
-          else
-            // default, use the build cypher query
-            this.query(cypher, cb);
-        } else {
-          this.query(cypher, cb);
-        } 
+        this.cypher.parameters = this.toQuery().parameters;
+        return this.query(this.toCypherQuery(), cb);
       }
       return this;
     }
   
-    Node.prototype.query = function(cypherQuery, options, cb) {
+    Node.prototype.query = function(cypherQuery, parameters, cb, options) {
       var self = this;
-      
-      // sort arguments
-      if (typeof options !== 'object') {
-        cb = options;
+  
+      if (typeof parameters === 'function') {
+        cb = parameters;
+        parameters = {};
         options = {};
       }
   
-      options.cypher = this.cypher;
+      // sort arguments
+      if (!options) {
+        options = {};
+      }
+  
+      options.cypher = _.extend(this.cypher.segments, { parameters: this.cypher.parameters });
   
       var graph = Graph.start();
+  
+      // of loading is deactivated on Node, disable on Graph here as well
+      if (!this.load)
+        graph.disableLoading();
   
       // apply option values from Node to request
       if (this.label)
@@ -2396,17 +2760,17 @@
   
       options.recommendConstructor = this.recommendConstructor();
   
-      if ((this.cypher._useParameters) && (this.cypher.parameters) && (Object.keys(this.cypher.parameters).length > 0)) {
-        graph.parameters(this.cypher.parameters);
+      if ((this.cypher.useParameters) && (this.cypher.hasParameters()) && (Object.keys(this.cypher.parameters).length > 0)) {
+        graph.setParameters(this.cypher.parameters);
       }
   
       if (typeof cypherQuery === 'string') {
         // check for stream flag
         // in stream case we use stream() instead of query()
         if (this._stream_) {
-          return graph.stream(cypherQuery, options, cb);
+          return graph.stream(cypherQuery, parameters, cb, options);
         } else {
-          return graph.query(cypherQuery, options, cb);
+          return graph.query(cypherQuery, parameters, cb, options);
         }
       } else if (typeof cypherQuery === 'object') {
         // we expect a raw request object here
@@ -2436,9 +2800,9 @@
       var self = this.singletonForQuery();
       self._query_history_.push({ withRelation: true });
       // we expect a string or an array
-      self.cypher.relationship = (typeof relation === 'string') ? relation : relation.join('|');
-      self.cypher.incoming = true;
-      self.cypher.outgoing = true;
+      self.cypher.segments.relationship = (typeof relation === 'string') ? relation : relation.join('|');
+      self.cypher.segments.incoming = true;
+      self.cypher.segments.outgoing = true;
       self.exec(cb);
       return self;
     }
@@ -2447,18 +2811,18 @@
       var self = this.singletonForQuery();
       self._query_history_.push({ incomingRelationships: true }); // only as a ”flag”
       if (typeof relation !== 'function') {
-        self.cypher.relationship = relation;
+        self.cypher.segments.relationship = relation;
       } else {
         cb = relation;
       }
-      self.cypher.node_identifier = 'n';
-      // self.cypher.start = {};
-      self.cypher.start.n = 'node('+self._start_node_id('*')+')';
-      if (self.cypher.to > 0)
-        self.cypher.start.m = 'node('+self._end_node_id('*')+')';
-      self.cypher.incoming = true;
-      self.cypher.outgoing = false;
-      self.cypher.return_properties = ['r'];
+      self.cypher.segments.node_identifier = 'n';
+      // self.cypher.segments.start = {};
+      self.cypher.segments.start.n = 'node('+self._start_node_id('*')+')';
+      if (self.cypher.segments.to > 0)
+        self.cypher.segments.start.m = 'node('+self._end_node_id('*')+')';
+      self.cypher.segments.incoming = true;
+      self.cypher.segments.outgoing = false;
+      self.cypher.segments.return_properties = ['r'];
       self.exec(cb);
       return self; // return self for chaining
     }
@@ -2467,18 +2831,18 @@
       var self = this.singletonForQuery();
       self._query_history_.push({ outgoingRelationships: true }); // only as a ”flag”
       if (typeof relation !== 'function') {
-        self.cypher.relationship = relation;
+        self.cypher.segments.relationship = relation;
       } else {
         cb = relation;
       }
-      self.cypher.node_identifier = 'n';
-      // self.cypher.start = {};
-      self.cypher.start.n = 'node('+self._start_node_id('*')+')';
-      if (self.cypher.to > 0)
-        self.cypher.start.m = 'node('+self._end_node_id('*')+')';
-      self.cypher.incoming = false;
-      self.cypher.outgoing = true;
-      self.cypher.return_properties = ['r'];
+      self.cypher.segments.node_identifier = 'n';
+      // self.cypher.segments.start = {};
+      self.cypher.segments.start.n = 'node('+self._start_node_id('*')+')';
+      if (self.cypher.segments.to > 0)
+        self.cypher.segments.start.m = 'node('+self._end_node_id('*')+')';
+      self.cypher.segments.incoming = false;
+      self.cypher.segments.outgoing = true;
+      self.cypher.segments.return_properties = ['r'];
       self.exec(cb);
       return self; // return self for chaining
     }
@@ -2486,21 +2850,23 @@
     Node.prototype.incomingRelationsFrom = function(node, relation, cb) {
       var self = this.singletonForQuery();
       self._query_history_.push({ incomingRelationshipsFrom: true }); // only as a ”flag”
-      self.cypher.from = self.id || null;
-      self.cypher.to = helpers.getIdFromObject(node);
+      self.cypher.segments.from = self.id || null;
+      // node can be a number or a label string: `123` | `Person`
+      self.cypher.segments.to = helpers.getIdFromObject(node) || node;
       if (typeof relation !== 'function')
-        self.cypher.relationship = relation;
-      self.cypher.return_properties = ['r'];
+        self.cypher.segments.relationship = relation;
+      self.cypher.segments.return_properties = ['r'];
       return self.incomingRelations(relation, cb);
     }
   
     Node.prototype.outgoingRelationsTo = function(node, relation, cb) {
       var self = this.singletonForQuery();
       self._query_history_.push({ outgoingRelationshipsTo: true }); // only as a ”flag”
-      self.cypher.to = helpers.getIdFromObject(node);
+      // node can be a number or a label string: `123` | `Person`
+      self.cypher.segments.to = helpers.getIdFromObject(node) || node;
       if (typeof relation !== 'function')
-        self.cypher.relationship = relation;
-      self.cypher.return_properties = ['r'];
+        self.cypher.segments.relationship = relation;
+      self.cypher.segments.return_properties = ['r'];
       return self.outgoingRelations(relation, cb);
     }
   
@@ -2508,14 +2874,13 @@
       var self = this.singletonForQuery();
       self._query_history_.push({ allDirections: true });
       if (typeof relation !== 'function')
-        self.cypher.relationship = relation;
-      self.cypher.node_identifier = 'n';
-      // self.cypher.start = {};
-      self.cypher.start.n = 'node('+self._start_node_id('*')+')';
-      self.cypher.start.m = 'node('+self._end_node_id('*')+')';
-      self.cypher.incoming = true;
-      self.cypher.outgoing = true;
-      self.cypher.return_properties = ['n', 'm', 'r'];
+        self.cypher.segments.relationship = relation;
+      self.cypher.segments.node_identifier = 'n';
+      self.cypher.segments.start.n = 'node('+self._start_node_id('*')+')';
+      self.cypher.segments.start.m = 'node('+self._end_node_id('*')+')';
+      self.cypher.segments.incoming = true;
+      self.cypher.segments.outgoing = true;
+      self.cypher.segments.return_properties = ['n', 'm', 'r'];
       self.exec(cb);
       return self; // return self for chaining
     }
@@ -2523,17 +2888,17 @@
     Node.prototype.relationsBetween = function(node, relation, cb) {
       var self = this.singletonForQuery();
       self._query_history_.push({ relationshipsBetween: true });
-      self.cypher.to = helpers.getIdFromObject(node);
+      self.cypher.segments.to = helpers.getIdFromObject(node) || node;
       if (typeof relation !== 'function')
-        self.cypher.relationship = relation;
-      self.cypher.return_properties = ['r'];
+        self.cypher.segments.relationship = relation;
+      self.cypher.segments.return_properties = ['r'];
       self.exec(cb);
       return self.allDirections(relation, cb);
     }
   
     Node.prototype.allRelations = function(relation, cb) {
       var self = this.singletonForQuery();
-      var label = (this.cypher.label) ? ':'+this.cypher.label : '';
+      var label = (this.cypher.segments.label) ? ':'+this.cypher.segments.label : '';
       if (typeof relation === 'string') {
         relation = ':'+relation;
       } else {
@@ -2541,28 +2906,28 @@
         relation = '';
       }
       self._query_history_.push({ allRelationships: true });
-      self.cypher.match.push('(n)'+label+'-[r'+relation+']-()');
-      self.cypher.return_properties = ['r'];
+      self.cypher.segments.match = [ '(n'+label+')-[r'+relation+']-()' ];
+      self.cypher.segments.return_properties = ['r'];
       self.exec(cb);
       return self; // return self for chaining
     }
   
     Node.prototype.limit = function(limit, cb) {
       this._query_history_.push({ LIMIT: limit });
-      this.cypher.limit = parseInt(limit);
+      this.cypher.segments.limit = parseInt(limit);
       if (limit === NaN)
         throw Error('LIMIT must be an integer number');
-      if (this.cypher.action === 'DELETE')
+      if (this.cypher.segments.action === 'DELETE')
         throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
       this.exec(cb);
       return this; // return self for chaining
     }
   
     Node.prototype.skip = function(skip, cb) {
-      this.cypher.skip = parseInt(skip);
+      this.cypher.segments.skip = parseInt(skip);
       if (skip === NaN)
         throw Error('SKIP must be an integer number');
-      this._query_history_.push({ SKIP: this.cypher.skip });
+      this._query_history_.push({ SKIP: this.cypher.segments.skip });
       this.exec(cb);
       return this; // return self for chaining
     }
@@ -2570,7 +2935,7 @@
     Node.prototype.distinct = function(cb, value) {
       if (typeof value !== 'boolean')
         value = true;
-      this.cypher._distinct = value;
+      this.cypher.segments._distinct = value;
       this._query_history_.push({ dictinct: value });
       this.exec(cb);
       return this; // return self for chaining
@@ -2584,18 +2949,18 @@
         direction = property[key];
         property = key;
         if ( (typeof direction === 'string') && ((/^(ASC|DESC)$/).test(direction)) ) {
-          this.cypher.order_direction = direction;
+          this.cypher.segments.order_direction = direction;
         }
       } else if (typeof property === 'string') {
         // custom statement, no process at all
         // we use 1:1 the string
-        this.cypher.order_by = property;
+        this.cypher.segments.order_by = property;
       } else if (typeof cb === 'string') {
         identifier = cb;
         cb = null;
       }
       if (typeof identifier === 'undefined')
-        identifier = this.__type_identifier__;
+        identifier = this.__TYPE_IDENTIFIER__;
       if ((typeof identifier === 'string') && (/^[nmr]$/i.test(identifier))) {
         if (identifier === 'n') this.whereNodeHasProperty(property);
         if (identifier === 'm') this.whereEndNodeHasProperty(property);
@@ -2607,12 +2972,12 @@
       if (identifier) {
         // s.th. like ORDER BY n.`name` ASC
         // escape property
-        this.cypher.order_by = identifier + ".`"+property+"`";
+        this.cypher.segments.order_by = identifier + ".`"+property+"`";
       } else {
         // s.th. like ORDER BY n.name ASC
-        this.cypher.order_by = property;
+        this.cypher.segments.order_by = property;
       }
-      this._query_history_.push({ ORDER_BY: this.cypher.order_by });
+      this._query_history_.push({ ORDER_BY: this.cypher.segments.order_by });
       this.exec(cb);
       return this; // return self for chaining
     }
@@ -2640,7 +3005,7 @@
       if (/^n(\:[a-zA-Z]+)*$/.test(string))
         string = '('+string+')';
       this._query_history_.push({ MATCH: string });
-      this.cypher.match.push(string);
+      this.cypher.segments.match.push(string);
       this.exec(cb);
       return this; // return self for chaining
     }
@@ -2653,12 +3018,12 @@
       if (typeof options === 'undefined')
         options = { add: false };
       if (!options.add)
-        this.cypher.return_properties = [];
+        this.cypher.segments.return_properties = [];
       if (returnStatement) {
-        this.cypher.return_properties = this.cypher.return_properties.concat(
+        this.cypher.segments.return_properties = this.cypher.segments.return_properties.concat(
           (returnStatement.constructor === Array) ? returnStatement : returnStatement.split(', ')
         );
-        this._query_history_.push({ RETURN: this.cypher.return_properties });
+        this._query_history_.push({ RETURN: this.cypher.segments.return_properties });
       }
       this.exec(cb);
       return this; // return self for chaining
@@ -2669,19 +3034,19 @@
       var self = this;
       if (!self._is_singleton_)
         self = this.singleton(undefined, this);
-      if (self.label) self.withLabel(self.label);
+      if (self.label)
+        self.withLabel(self.label);
       //self.resetQuery();
       if (typeof start !== 'string')
-        self.cypher.start = null;
+        self.cypher.segments.start = null;
       else
-        self.cypher.start = start;
+        self.cypher.segments.start = start;
       self._query_history_.push({ START: self.cypher.start });
       self.exec(cb);
       return self; // return self for chaining
     }
   
     Node.prototype.where = function(where, cb, options) {
-      this.cypher.where = [];
       if (_.isObject(where)) {
         if (Object.keys(where).length === 0) {
           // return here
@@ -2699,32 +3064,31 @@
         options.identifier = 'n';
   
       // add identifier to return properties if not exists already
-      if (_.indexOf(this.cypher.return_properties, options.identifier) === -1) 
-        this.cypher.return_properties.push(options.identifier);
+      if (_.indexOf(this.cypher.segments.return_properties, options.identifier) === -1)
+        this.cypher.segments.return_properties.push(options.identifier);
   
   
-      if (this.cypher.start) {
-        if (!this.cypher.start.n)
-          this.cypher.start.n = 'node(*)';
-        if (this.cypher.start.m)
-          this.cypher.start.m = 'node(*)';
+      if (this.cypher.segments.start) {
+        if (!this.cypher.segments.start.n)
+          this.cypher.segments.start.n = 'node(*)';
+        if (this.cypher.segments.start.m)
+          this.cypher.segments.start.m = 'node(*)';
         if (options.identifier === 'r')
-          this.cypher.start.r = 'relationship(*)';
+          this.cypher.segments.start.r = 'relationship(*)';
       }
   
       // use parameters for query or send an ordinary string?
       // http://docs.neo4j.org/chunked/stable/rest-api-cypher.html
       if (typeof options.valuesToParameters === 'undefined')
-        options.valuesToParameters = Boolean(this.cypher._useParameters);
+        options.valuesToParameters = Boolean(this.cypher.useParameters);
       // if already parameters are added, starting with {_value#i_} instead of {_value0_}
       if ((this.cypher.parameters)&&(this.cypher.parameters.length > 0))
         options.parametersStartCountAt = this.cypher.parameters.length;
-      var condition = new helpers.ConditionalParameters(_.extend(where), options)
-        , whereCondition = condition.toString();
-      this.cypher.where.push(whereCondition);
-      if ((options.valuesToParameters) && (condition.parameters))
-        this._addParametersToCypher(condition.parameters);
-  
+      var condition = new ConditionalParameters(_.extend(where), options);
+      var whereCondition = condition.toString();
+      this.cypher.segments.where.push(whereCondition);
+      if ((options.valuesToParameters) && (condition.hasParameters()))
+        this._addParametersToCypher(condition.values());
       this._query_history_.push({ WHERE: whereCondition });
   
       this.exec(cb);
@@ -2769,13 +3133,13 @@
         property = property.replace(/^[nmr]\./,'')
       // if NOT default to true/false, no property condition is needed
       if (!/[\!\?]$/.test(property)) {
-        if (this.cypher.return_properties.length === 0) {
+        if (this.cypher.segments.return_properties.length === 0) {
           this.findAll();
         }
         // no identifier found, guessing from return properties
         if (typeof identifier !== 'string')
-          identifier = this.cypher.return_properties[this.cypher.return_properties.length-1];
-        this.cypher.hasProperty.push(identifier+'.`'+property+'`');
+          identifier = this.cypher.segments.return_properties[this.cypher.segments.return_properties.length-1];
+        this.cypher.segments.hasProperty.push(identifier+'.`'+property+'`');
         this._query_history_.push({ HAS: { identifier: identifier, property: property }});
       }
       this.exec(cb);
@@ -2801,21 +3165,21 @@
     Node.prototype.delete = function(cb) {
       if (this.hasId())
         return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
-      this._query_history_.push({ DELETE: true });
-      this.cypher.action = 'DELETE';
-      if (this.cypher.limit)
+      if (this.cypher.segments.limit)
         throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
+      this._query_history_.push({ DELETE: true });
+      this.cypher.segments.action = 'DELETE';
       return this.exec(cb);
     }
   
     Node.prototype.deleteIncludingRelations = function(cb) {
       var label = (this.label) ? ":"+this.label : "";
-      if (Object.keys(this.cypher.start).length < 1) {
-        // this.cypher.start = {};
-        this.cypher.start[this.__type_identifier__] = this.__type__+"(*)";
+      if (Object.keys(this.cypher.segments.start).length < 1) {
+        this.cypher.segments.start[this.__TYPE_IDENTIFIER__] = this.__TYPE__+"(*)";
       }
-      this.cypher.match.push([ '('+this.__type_identifier__+label+")-[r?]-()" ]);
-      this.cypher.return_properties = [ "n", "r" ];
+      this.cypher._optionalMatch = true;
+      this.cypher.segments.match = [ '('+this.__TYPE_IDENTIFIER__+label+")-[r]-()" ];
+      this.cypher.segments.return_properties = [ "n", "r" ];
       return this.delete(cb);
     }
   
@@ -2823,9 +3187,9 @@
       var self = this;
       this.onBeforeRemove(function(/*err*/) {
         if (self._is_singleton_)
-          return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__type__),null);
+          return cb(Error("To delete results of a query use delete(). remove() is for removing an instanced "+this.__TYPE__),null);
         if (self.hasId()) {
-          return Graph.request().delete(self.__type__+'/'+self.id, cb);
+          return Graph.start('n = node({id}) DELETE n', { id: self.id }, cb);
         }
       })
       return this;
@@ -2833,7 +3197,7 @@
   
     Node.prototype.onBeforeRemove = function(next) { next(null,null); }
   
-    // was mistakenly called `removeWithRelationships`, so it is renamed 
+    // was mistakenly called `removeWithRelationships`, so it is renamed
     Node.prototype.removeIncludingRelations = function(cb) {
       var self = this;
       return this.removeAllRelations(function(err) {
@@ -2885,7 +3249,7 @@
     Node.prototype.createRelation = function(options, cb) {
       var self = this;
       options = _.extend({
-        from_id: this.id,
+        from_id: this._id_,
         to_id: null,
         type: null,
         // unique: false ,// TODO: implement!
@@ -2896,26 +3260,6 @@
         throw Error("You have to give the type of relationship, e.g. 'knows|follows'");
       if (options.properties)
         options.properties = helpers.flattenObject(options.properties);
-  
-      var _create_relationship_by_options = function(options) {
-        Graph.request().post('node/'+options.from_id+'/relationships', {
-          data: {
-            to: new Node({},options.to_id).uri,
-            type: options.type,
-            data: options.properties
-          }
-        }, function(err, relationship) {
-          // to execute the hooks we manually perform the save method
-          // TODO: make a static method in relationships, s.th. create_between_nodes(startId, endId, data)
-          if (err)
-            return cb(err, relationship);
-          else {
-            relationship.save(cb);
-          }
-        });
-        return self;
-      }
-  
       if ((_.isNumber(options.from_id))&&(_.isNumber(options.to_id))&&(typeof cb === 'function')) {
         if (options.distinct) {
           Node.findById(options.from_id).outgoingRelationsTo(options.to_id, options.type, function(err, result) {
@@ -2923,10 +3267,12 @@
               return cb(err, result);
             if ((result) && (result.length === 1)) {
               // if we have only one relationship, we update this one
-              neo4jrestful.constructorOf('Relationship').findById(result[0].id, function(err, relationship){
+              Node.Relationship.findById(result[0].id, function(err, relationship){
                 if (relationship) {
                   if (options.properties)
                     relationship.data = options.properties;
+                  if (options.type)
+                    relationship.type = options.type;
                   relationship.save(cb);
                 } else {
                   cb(err, relationship);
@@ -2934,12 +3280,14 @@
               })
             } else {
               // we create a new one
-              return _create_relationship_by_options(options);
+              Node.Relationship.create(options.type, options.properties, options.from_id, options.to_id, cb);
+              return self;
             }
           });
         } else {
           // create relationship
-          return _create_relationship_by_options(options);
+          Node.Relationship.create(options.type, options.properties, options.from_id, options.to_id, cb);
+          return self;
         }
       } else {
         cb(Error('Missing from_id('+options.from_id+') or to_id('+options.to_id+') OR no cb attached'), null);
@@ -3033,6 +3381,11 @@
       return (label) ? Node.registered_model(label) || Fallback : Fallback;
     }
   
+    Node.prototype.setId = function(id) {
+      this.id = this._id_ = id;
+      return this;
+    }
+  
     /*
      * Label methods
      */
@@ -3049,6 +3402,9 @@
     }
   
     Node.prototype.setLabels = function(labels) {
+      if (typeof labels === 'string') {
+        labels = [ labels ];
+      }
       if (_.isArray(labels)) {
         this.labels = labels;
       }
@@ -3070,9 +3426,7 @@
     }
   
     Node.prototype.allLabels = function(cb) {
-      if ( (this.hasId()) && (_.isFunction(cb)) ) {
-        return Graph.request().get('node/'+this.id+'/labels', cb);
-      }
+      return this.requestLabels(cb);
     }
   
     Node.prototype.createLabel = function(label, cb) {
@@ -3090,12 +3444,21 @@
       if ( (this.hasId()) && (_.isFunction(cb)) ) {
         if (!_.isArray(labels))
           labels = [ labels ];
-        self.allLabels(function(err, storedLabels) {
+        self.allLabels(function(err, storedLabels, debug) {
+          if (err)
+            return cb(err, storedLabels, debug);
           if (!_.isArray(storedLabels))
             storedLabels = [];
-          storedLabels.push(labels);
-          storedLabels = _.uniq(_.flatten(storedLabels));
-          self.replaceLabels(storedLabels, cb);
+          var addLabels = [];
+          // only add new labels
+          labels.forEach(function(label){
+            if (_.indexOf(storedLabels, label) === -1)
+              addLabels.push(label);
+          });
+          if (addLabels.length > 0)
+            self.createLabels(addLabels, cb);
+          else
+            cb(null, storedLabels, debug);
         });
       } else {
         // otherwise it can be used as a setter
@@ -3122,8 +3485,23 @@
     }
   
     Node.prototype.removeLabels = function(cb) {
+      var id = this.id;
       if ( (this.hasId()) && (_.isFunction(cb)) ) {
-        return Graph.request().delete('node/'+this.id+'/labels', cb);
+        this.allLabels(function(err, labels, debug) {
+          if ((err)||(!labels))
+            return cb(err, labels, debug);
+          var todo = labels.length;
+          if (todo === 0)
+            return cb(null, null, debug);
+          labels.forEach(function(label) {
+            return Graph.request().delete('node/'+id+'/labels/'+label, function() {
+              todo--;
+              if (todo === 0)
+                cb(null, null, debug);
+            });
+          });
+        })
+  
       } else {
         return this;
       }
@@ -3133,7 +3511,7 @@
       return {
         id: this.id,
         classification: this.classification,
-        data: _.extend(this.data),
+        data: _.clone(this.data),
         uri: this.uri,
         label: (this.label) ? this.label : null,
         labels: (this.labels.length > 0) ? _.clone(this.labels) : []
@@ -3155,14 +3533,15 @@
   
     /*
      * STATIC METHODS for `find` Queries
-     */ 
+     */
   
     Node.prototype.find = function(where, cb) {
       var self = this;
       if (!self._is_singleton_)
         self = this.singleton(undefined, this);
       self._query_history_.push({ find: true });
-      if (self.label) self.withLabel(self.label);
+      if (self.label)
+        self.withLabel(self.label);
       if ((typeof where === 'string')||(typeof where === 'object')) {
         return self.where(where,cb);
       } else {
@@ -3177,7 +3556,7 @@
         where = undefined;
       }
       self = this.find(where);
-      self.cypher.limit = 1;
+      self.cypher.segments.limit = 1;
       return self.exec(cb);
     }
   
@@ -3185,22 +3564,27 @@
       var self = this;
       if (!self._is_singleton_)
         self = this.singleton(undefined, this);
+      var id = Number(id);
+      if (isNaN(id))
+        throw Error('You have to use a number as id argument');
       self._query_history_.push({ findById: id });
-      if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
-        // to reduce calls we'll make a specific restful request for one node
-        Graph.request().get(this.__type__+'/'+id, function(err, object) {
-          if ((object) && (typeof self.load === 'function')) {
-            //  && (typeof node.load === 'function')     
-            object.load(cb);
-          } else {
-            cb(err, object);
+      if (typeof cb === 'function') {
+        var nodeSingleton = this.constructor.create().setId(id);
+        if (!this.load)
+          nodeSingleton.disableLoading();
+        nodeSingleton.exec(function(err, found, debug) {
+          if ((err)&&(err.exception === 'EntityNotFoundException')) {
+            return cb(null, null, debug);
+          } else if (found) {
+            found = found[0];
           }
+          cb(err, found, debug);
         });
         return this;
       } else {
-        self.cypher.by_id = Number(id);
+        self.cypher.segments.by_id = Number(id);
         return self.findByKeyValue({ id: id }, cb);
-      } 
+      }
     }
   
     Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
@@ -3222,14 +3606,15 @@
         key = 'id';
       if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
         self._query_history_.push({ findByKeyValue: true });
-        var identifier = self.cypher.node_identifier || self.__type_identifier__;
-        if (self.cypher.return_properties.length === 0)
-          self.cypher.return_properties = [ identifier ];
+        var identifier = self.cypher.segments.node_identifier || self.__TYPE_IDENTIFIER__;
+        if (self.cypher.segments.return_properties.length === 0)
+          self.cypher.segments.return_properties = [ identifier ];
         if (key !== 'id') {
           var query = {};
           query[key] = value;
           self.where(query);
-          if (self.label) self.withLabel(self.label);
+          if (self.label)
+            self.withLabel(self.label);
           // if we have an id: value, we will build the query in prepareQuery
         }
         if (typeof cb === 'function') {
@@ -3251,7 +3636,7 @@
             }
           });
         }
-       
+  
       }
       return self;
     }
@@ -3262,12 +3647,14 @@
   
     Node.prototype.findAll = function(cb) {
       var self = this;
-      if (!self._is_singleton_)
+      if (!self._is_singleton_) {
         self = this.singleton(undefined, this);
+      }
       self._query_history_.push({ findAll: true });
-      self.cypher.limit = null;
-      self.cypher.return_properties = ['n'];
-      if (self.label) self.withLabel(self.label);
+      self.cypher.segments.limit = null;
+      self.cypher.segments.return_properties = ['n'];
+      if (self.label)
+        self.withLabel(self.label);
       return self.exec(cb);
     }
   
@@ -3283,25 +3670,35 @@
             return cb(Error("More than one node found… You have query one distinct result"), null);
           // else
           var node = new self.constructor(where);
-          node.save(cb);  
+          node.save(cb);
         }
       });
       return this;
     }
   
     /*
-     * Static methods (misc)
-     */
-  
-    Node.prototype.copy_of = function(that) {
-      return _.extend({},that);
-    }
-  
-    /*
      * Singleton methods, shorthands for their corresponding (static) prototype methods
      */
   
-    // TODO: maybe better to replace manual argument passing with .apply method?!
+    /**
+     * Create a singleton
+     * Here a singleton (name may convey a singleton object is as single instance)
+     * is a node object that is used as object to use
+     * all `static` methods of the node api.
+     *
+     * Example:
+     *    `Node.singleton().findOne().where()`
+     */
+    Node.prototype.singleton = function(id, label) {
+      var Class = this.constructor;
+      var node = new Class({},id);
+      if (typeof label === 'string')
+        node.label = label;
+      node.resetQuery();
+      node._is_singleton_ = true;
+      node.resetQuery();
+      return node;
+    }
   
     Node.singleton = function(id, label) {
       return this.prototype.singleton(id, label);
@@ -3343,13 +3740,13 @@
       return this.prototype.start(start, cb);
     }
   
-    Node.query = function(cypherQuery, options, cb) {
-      return this.prototype.singleton().query(cypherQuery, options, cb);
+    Node.query = function(cypherQuery, parameters, cb, options) {
+      return this.prototype.singleton().query(cypherQuery, parameters, cb, options);
     }
   
     Node.registerModel = function(Class, label, prototype, cb) {
-      var name = null
-        , ParentModel = this;
+      var name = null;
+      var ParentModel = this;
   
       if (typeof Class === 'string') {
   
@@ -3367,13 +3764,10 @@
         if (typeof prototype !== 'object')
           prototype = {};
         label = name = Class;
+  
         // we define here an anonymous constructor
         Class = function() {
           this.init.apply(this, arguments);
-          if (Class.prototype.label === null)
-            this.label = this._constructor_name_ = label;
-          else
-            this.label = this._constructor_name_ = Class.prototype.label;
         }
   
         _.extend(Class, ParentModel); // 'static' methods
@@ -3394,6 +3788,8 @@
           }
         }
   
+        Class.prototype._constructor_name_ = Class.prototype.label = label;
+  
         if (!Class.prototype.labels)
           Class.prototype.labels = [];
         else
@@ -3406,14 +3802,17 @@
         // we expect to have a `class`-object as known from CoffeeScript
         Class.prototype.labels = Class.getParentModels();
         if (typeof label === 'string') {
-          name = label; 
+          name = label;
         } else {
           name = helpers.constructorNameOfFunction(Class);
           cb = label;
         }
+        Class.prototype.label = name;
       }
       Node.__models__[name] = Class;
-      Class.prototype.initialize(cb);
+      if (typeof cb === 'function') {
+        Class.prototype.initialize(cb);
+      }
       return Class;
     }
   
@@ -3427,7 +3826,7 @@
         while((Class.__super__) && (i < 10)) {
           i++;
           modelName = helpers.constructorNameOfFunction(Class.__super__);
-          
+  
           if (!/^(Node|Relationship|Path)/.test(modelName))
             models.push(modelName);
           if ((Class.prototype.labels)&&(Class.prototype.labels.length > 0))
@@ -3454,11 +3853,7 @@
       if (typeof model === 'function') {
         model = helpers.constructorNameOfFunction(model);
       }
-      return Node.registered_models()[model] || null;
-    }
-  
-    Node.convertNodeToModel = function(node, model, fallbackModel) {
-      return this.prototype.convertNodeToModel(node, model, fallbackModel);
+      return Node.registeredModels()[model] || null;
     }
   
     Node.ensureIndex = function(cb) {
@@ -3489,44 +3884,55 @@
       return this.find().deleteIncludingRelations(cb);
     }
   
-    Node.create = function(data, id) {
-      return new this(data, id);
+    Node.create = function(data, id, cb) {
+      if (typeof id === 'function') {
+        cb = id;
+        id = undefined;
+      }
+      var node = new this(data, id);
+      if (typeof cb === 'function')
+        return node.save(cb);
+      else
+        return node;
     }
   
-    // remove underscore naming
-  
-    // Node.delete_all_including_relations = function(cb) { return this.deleteAllIncludingRelations(cb); }
-    // Node.enable_loading                 = function() { return this.enableLoading(); }
-    // Node.disable_loading                = function() { return this.disableLoading(); }
-    // Node.get_index                      = function(cb) { return this.getIndex(cb); }
-    // Node.drop_entire_index              = function(cb) { return this.dropEntireIndex(cb); }
-    // Node.dropIndex                      = function(fields, cb) { return this.dropEntireIndex(fields, cb); }
-    // Node.ensure_index                   = function(cb) { return this.ensureIndex(cb); }
-    // Node.convert_node_to_model          = function(node, model, fallbackModel) { return this.convertNodeToModel(node, model, fallbackModel); }
-  
-    // Node.find_all                       = function(cb) { return this.findAll(cb); }
-    // Node.find_by_id                     = function(id, cb) { return this.findById(id, cb); }
-    // Node.find_one                       = function(where, cb) { return this.findOne(where, cb); }
-    // Node.find_or_create                 = function(where, cb) { return this.findOrCreate(where, cb); }
-    // Node.find_by_key_value              = function(key, value, cb) { return this.findByKeyValue(key, value, cb); }
-    // Node.find_one_by_key_value          = function(key, value, cb) { return this.findOneByKeyValue(key, value, cb); }
-  
-    // keep in all upcoming version, because they are the only real global methods
-  
-    // except these:
-  
-    Node.registered_model               = Node.registeredModel;
-    Node.registered_models              = Node.registeredModels;
-    Node.unregister_model               = Node.unregisterModel;
-    Node.register_model                 = Node.registerModel;
-  
-    // only once
-    if ((typeof Graph.prototype === 'object') && (!Node.prototype._addParametersToCypher)) {
-      Node.prototype._addParametersToCypher         = Graph.prototype._addParametersToCypher;
-      Node.prototype._addParameterToCypher          = Graph.prototype._addParameterToCypher;
+    Node.new = function(data, id, cb) {
+      return this.create(data, id, cb);
     }
   
-    return Node;
+    Node.setDefaultFields = function(fields) {
+      return this._setModelFields('defaults', fields);
+    }
+  
+    Node.setIndexFields = function(fields) {
+      return this._setModelFields('indexes', fields);
+    }
+  
+    Node.setUniqueFields = function(fields) {
+      return this._setModelFields('unique', fields);
+    }
+  
+    Node._setModelFields = function(part, fields) {
+      // part: defaults|unique|indexes
+      for (var attribute in this.prototype.fields[part])
+        // delete previous fields
+        delete(this.prototype.fields[part][attribute]);
+      if ((typeof fields === 'object') && (fields !== null)) {
+        for (var attribute in fields)
+          this.prototype.fields[part][attribute] = fields[attribute]
+      }
+      return this;
+    }
+  
+    Node.registered_model   = Node.registeredModel;
+    Node.registered_models  = Node.registeredModels;
+    Node.unregister_model   = Node.unregisterModel;
+    Node.register_model     = Node.registerModel;
+  
+    Node.prototype._addParametersToCypher = Graph.prototype._addParametersToCypher;
+    Node.prototype._addParameterToCypher  = Graph.prototype._addParameterToCypher;
+  
+    return neo4jrestful.Node = Node;
   }
   
   if (typeof window !== 'object') {
@@ -3534,14 +3940,15 @@
       init: __initNode__
     }
   } else {
-    var initNode = __initNode__;
+    window.Neo4jMapper.initNode = __initNode__;
   }
     
   /*
    * include file: 'src/path.js'
    */
-  
-  var __initPath__ = function() {
+  // # Path
+  // Path Object represents a path between two Nodes
+  var __initPath__ = function(neo4jrestful) {
   
     var helpers = null
       , _       = null
@@ -3556,7 +3963,7 @@
       _       = require('underscore');
     }
   
-    // Constructor
+    // Constructor of Path
     var Path = function Path() {
       this.nodes = [];
       this.relationships = [];
@@ -3571,18 +3978,18 @@
       this._is_instanced_ = true;
     }
   
-    Path.prototype.classification = 'Path'; // only needed for toObject()
-    Path.prototype.from = null;
-    Path.prototype.to = null;
-    Path.prototype.start = null;
-    Path.prototype.end = null;
-    Path.prototype.length = 0;
-    Path.prototype.relationships = null;
-    Path.prototype.nodes = null;
-    Path.prototype._response_ = null;
-    Path.prototype._is_singleton_ = false;
-    Path.prototype._is_persisted_ = false;
-    Path.prototype._is_instanced_ = null;
+    Path.prototype.classification   = 'Path';   // only needed for toObject()
+    Path.prototype.from             = null;
+    Path.prototype.to               = null;
+    Path.prototype.start            = null;
+    Path.prototype.end              = null;
+    Path.prototype.length           = 0;
+    Path.prototype.relationships    = null;
+    Path.prototype.nodes            = null;
+    Path.prototype._response_       = null;
+    Path.prototype._is_singleton_   = false;
+    Path.prototype._is_persisted_   = false;
+    Path.prototype._is_instanced_   = null;
   
     Path.prototype.singleton = function() {
       var path = new Path();
@@ -3676,11 +4083,13 @@
   
     Path.prototype.resetQuery = function() { return this; }
   
-    Path.create = function() {
+    Path.new = function() {
       return new Path();
     }
   
-    return Path;
+    Path.create = Path.new;
+  
+    return neo4jrestful.Path = Path;
   }
   
   if (typeof window !== 'object') {
@@ -3688,11 +4097,12 @@
       init: __initPath__
     };
   } else {
-    var initPath = __initPath__;
+    window.Neo4jMapper.initPath = __initPath__;
   }  
   /*
    * include file: 'src/relationship.js'
    */
+  // # Relationship
   /*
    * TODO:
    * * make query mapper from Node available for relationships as well
@@ -3701,26 +4111,18 @@
   
   var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   
-    // Requirements (for browser and nodejs):
-    // * Node
-    // * neo4jmapper helpres
-    // * underscorejs
-  
-    var helpers  = null;
-    var _        = null;
   
     if (typeof window === 'object') {
-      helpers = window.Neo4jMapper.helpers;
-      _       = window._;
+      var helpers = window.Neo4jMapper.helpers;
+      var _       = window._;
     } else {
-      helpers  = require('./helpers');
-      _        = require('underscore');
+      var helpers  = require('./helpers');
+      var _        = require('underscore');
     }
   
-    // Constructor
-    var Relationship = function Relationship(data, start, end, id) {
-      this.id = id || null;
-      this.data = data || {};
+    // Constructor of Relationship
+    var Relationship = function Relationship(type, data, start, end, id, cb) {
+      this.type = this._type_ = type || null;
       this.from = {
         id: null,
         uri: null
@@ -3729,48 +4131,78 @@
         id: null,
         uri: null
       };
-      if (_.isString(start))
-        this.setPointUriById('from', start);
-      else if (_.isNumber(start))
-        this.setPointIdByUri('from', start);
-      if (_.isString(end))
-        this.setPointUriById('to', end);
-      else if (_.isNumber(end))
-        this.setPointIdByUri('to', end);
-      // this.resetQuery();
-      if (id) {
-        this.setUriById(id);
-      }
+      this.data = data || {};
+  
+      var startID = null;
+      var endID = null;
+  
+      if (start)
+        if (Number(start.id))
+          startID = Number(start.id);
+        else if (Number(start))
+          startID = Number(start);
+        else if (start)
+          // we assume we have a url here
+          this.setPointIdByUri('from', start);
+  
+      if (startID)
+        this.setPointUriById('from', startID);
+  
+      if (end)
+        if (Number(end.id))
+          endID = Number(end.id);
+        else if (Number(end))
+          endID = Number(end);
+        else if (end)
+          // we assume we have a url here
+          this.setPointIdByUri('to', end);
+  
+      if (endID)
+        this.setPointUriById('to', endID);
+  
       this.fields = _.extend({},{
         defaults: _.extend({}, this.fields.defaults),
         indexes: _.extend({}, this.fields.indexes) // TODO: implement
       });
+  
       this._is_instanced_ = true;
+  
+      if (typeof id === 'number') {
+        this.setUriById(id);
+        this.id = this._id_ = id;
+      } else {
+        cb = id;
+      }
+      if (typeof cb === 'function') {
+        return this.save(cb);
+      }
     }
   
-    Relationship.prototype.classification = 'Relationship'; // only needed for toObject()
-    Relationship.prototype.data = {};
-    Relationship.prototype.start = null;
-    Relationship.prototype.type = null;
-    Relationship.prototype.end = null;
-    Relationship.prototype.from = null;
-    Relationship.prototype.to = null;
-    Relationship.prototype.id = null;
-    Relationship.prototype._id_ = null;
-    Relationship.prototype._hashedData_ = null;
-    Relationship.prototype.uri = null;
-    Relationship.prototype._response_ = null;
-    Relationship.prototype._is_singleton_ = false;
-    Relationship.prototype._is_persisted_ = false;
-    Relationship.prototype.cypher = {};
-    Relationship.prototype._is_instanced_ = null;
+    Relationship.prototype.classification   = 'Relationship'; // only needed for toObject()
+    Relationship.prototype.data             = {};
+    Relationship.prototype.start            = null;
+    Relationship.prototype.type             = null;
+    Relationship.prototype._type_           = null;           // like `_id_` to keep a reference to the legacy type
+    Relationship.prototype.end              = null;
+    Relationship.prototype.from             = null;
+    Relationship.prototype.to               = null;
+    Relationship.prototype.id               = null;
+    Relationship.prototype._id_             = null;
+    Relationship.prototype._hashedData_     = null;
+    Relationship.prototype.uri              = null;
+    Relationship.prototype._response_       = null;
+    Relationship.prototype._is_singleton_   = false;
+    Relationship.prototype._is_persisted_   = false;
+    Relationship.prototype.cypher           = null;
+    Relationship.prototype._is_instanced_   = null;
     Relationship.prototype.fields = {
       defaults: {},
       indexes: {}
     };
   
-    Relationship.prototype.__type__ = 'relationship';
-    Relationship.prototype.__type_identifier__ = 'r';
+    // should **never** be changed
+    Relationship.prototype.__TYPE__ = 'relationship';
+    Relationship.prototype.__TYPE_IDENTIFIER__ = 'r';
   
     Relationship.prototype.singleton = function() {
       var relationship = new Relationship();
@@ -3782,10 +4214,10 @@
     Relationship.prototype.setPointUriById = function(startOrEnd, id) {
       if (typeof startOrEnd !== 'string')
         startOrEnd = 'from';
-      if ((startOrEnd !== 'from')||(startOrEnd !== 'to'))
+      if ((startOrEnd !== 'from')&&(startOrEnd !== 'to'))
         throw Error("You have to set startOrEnd argument to 'from' or 'to'");
       if (_.isNumber(id)) {
-        this[startOrEnd].uri = Graph.prototype.neo4jmapper.absoluteUrl('/relationship/'+id);
+        this[startOrEnd].uri = neo4jrestful.absoluteUrl('/relationship/'+id);
         this[startOrEnd].id = id;
       }
       return this;
@@ -3810,9 +4242,9 @@
         self = this.singleton(undefined, this);
       if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
         // to reduce calls we'll make a specific restful request for one node
-        return Graph.request().get(this.__type__+'/'+id, function(err, object) {
+        return Graph.request().get(this.__TYPE__+'/'+id, function(err, object) {
           if ((object) && (typeof self.load === 'function')) {
-            //  && (typeof node.load === 'function')     
+            //  && (typeof node.load === 'function')
             object.load(cb);
           } else {
             cb(err, object);
@@ -3822,30 +4254,6 @@
       return this;
     }
   
-    Relationship.prototype.update = function(data, cb) {
-      var self = this;
-      if (helpers.isValidData(data)) {
-        this.data = _.extend(this.data, data);
-        data = this.flattenData();
-      } else {
-        cb = data;
-      }
-      if (!this.hasId())
-        return cb(Error('Singleton instances can not be persisted'), null);
-      if (this.hasId()) {
-        // copy 'private' _id_ to public
-        this.id = this._id_;
-        Graph.request().put(this.__type__+'/'+this.id+'/properties', { data: data }, function(err,data){
-          if (err)
-            return cb(err, data);
-          else
-            return cb(null, self);
-        });
-      } else {
-        return cb(Error('You have to save() the relationship before you can perform an update'), null);
-      }
-    }
-  
     Relationship.prototype.save = function(cb) {
       var self = this;
       self.onBeforeSave(self, function(err) {
@@ -3853,10 +4261,92 @@
         if ((typeof err !== 'undefined')&&(err !== null))
           cb(err, null);
         else
-          self.onSave(function(err, node, debug) {
-            self.onAfterSave(self, cb, debug);
+          self.onSave(function(err, relationship, debug) {
+            if (err)
+              return cb(err, relationship, debug);
+            else
+              return self.onAfterSave(self, cb, debug);
           });
       });
+    }
+  
+    Relationship.prototype.onSave = function(cb) {
+      var self = this;
+      if (this._is_singleton_)
+        return cb(Error('Singleton instances can not be persisted'), null);
+      if (!this.hasValidData())
+        return cb(Error('relationship does not contain valid data. `'+this.__TYPE__+'.data` must be an object.'));
+      this.resetQuery();
+      this.applyDefaultValues();
+  
+      this.id = this._id_;
+  
+      if (!this.type)
+        throw Error("Type for a relationship is mandatory, e.g. `relationship.type = 'KNOW'`");
+      if ((!(this.from))||(isNaN(this.from.id)))
+        throw Error('Relationship requires a `relationship.from` startnode');
+      if ((!(this.to))||(isNaN(this.to.id)))
+        throw Error('Relationship requires a `relationship.to` endnode');
+  
+      if (this.hasId()) {
+  
+        if ((this._type_) && (this.type !== this._type_)) {
+          // type has changed
+          // since we can't update a relationship type (only properties)
+          // we have to create a new relationship and delete the "old" one
+          return Relationship.create(this.type, this.data, this.start, this.end, function(err, relationship, debug) {
+            if (err) {
+              return cb(err, relationship, debug);
+            } else {
+              self.remove(function(err, res, debugDelete) {
+                if (err) {
+                  return cb(err, res, debugDelete);
+                } else {
+                  relationship.copyTo(self);
+                  return cb(null, self, debug);
+                }
+              })
+            }
+          })
+        }
+  
+        // UPDATE properties
+        // url = 'relationship/'+this._id_+'/properties';
+        Graph
+          .start('r = relationship({id})', {
+            id: Number(this.id),
+          })
+          .setWith( { r: this.dataForCypher() } )
+          .return('r')
+          .exec(cb);
+      } else {
+        Graph
+          .start('n = node({from}), m = node({to})', {
+            from: Number(this.from.id),
+            to: Number(this.to.id),
+          })
+          .create([ '(n)-[r: '+helpers.escapeProperty(this.type), this.dataForCypher(), ']->(m)'])
+          .return('r')
+          .limit(1)
+          .exec(function(err, relationship, debug) {
+            if ((err) || (!relationship))
+              return cb(err, relationship, debug);
+            else {
+              relationship.copyTo(self);
+              return cb(null, self, debug);
+            }
+          });
+      }
+    }
+  
+    Relationship.prototype.update = function(data, cb) {
+      if (helpers.isObjectLiteral(data)) {
+        this.data = _.extend(this.data, data);
+        data = this.flattenData();
+      } else {
+        cb = data;
+      }
+      return this.save(cb);
     }
   
     Relationship.prototype.populateWithDataFromResponse = function(data, create) {
@@ -3874,7 +4364,7 @@
         relationship.data = relationship._response_.data;
         relationship.data = helpers.unflattenObject(this.data);
         relationship.uri  = relationship._response_.self;
-        relationship.type = relationship._response_.type;
+        relationship.type = relationship._type_ = relationship._response_.type;
         if ((relationship._response_.self) && (relationship._response_.self.match(/[0-9]+$/))) {
           relationship.id = relationship._id_ = Number(relationship._response_.self.match(/[0-9]+$/)[0]);
         }
@@ -3908,7 +4398,7 @@
       var errors = [];
       for (var i = 0; i < 2; i++) {
         (function(point){
-          neo4jrestful.constructorOf('Node').findById(self[point].id,function(err,node) {
+          Relationship.Node.findById(self[point].id,function(err,node) {
             self[point] = node;
             if (err)
               errors.push(err);
@@ -3916,7 +4406,7 @@
             if (done === 2) {
               cb((errors.length === 0) ? null : errors, self);
             }
-              
+  
           });
         })(attributes[i]);
       }
@@ -3924,33 +4414,58 @@
   
     Relationship.prototype.load = function(cb) {
       var self = this;
-      this.onBeforeLoad(self, function(err, relationship){
+      this._onBeforeLoad(self, function(err, relationship){
         if (err)
           cb(err, relationship);
         else
-          self.onAfterLoad(relationship, cb);
+          self._onAfterLoad(relationship, cb);
       })
     }
   
+    Relationship.prototype._onBeforeLoad = function(relationship, next) {
+      return this.onBeforeLoad(relationship, function(err, relationship) {
+        if (relationship.hasId()) {
+          relationship.loadFromAndToNodes(function(err, relationship){
+            next(err, relationship);
+          });
+        } else {
+          next(null, relationship);
+        }
+      });
+    }
+  
     Relationship.prototype.onBeforeLoad = function(relationship, next) {
-      if (relationship.hasId()) {
-        relationship.loadFromAndToNodes(function(err, relationship){
-          next(err, relationship);
-        });
-      } else {
-        next(null, relationship);
-      } 
+      return next(null, relationship);
+    }
+  
+    Relationship.prototype._onAfterLoad = function(relationship, next) {
+      return this.onAfterLoad(relationship, function(err, relationship) {
+        return next(null, relationship);
+      })
     }
   
     Relationship.prototype.onAfterLoad = function(relationship, next) {
       return next(null, relationship);
     }
   
+    Relationship.prototype.toQuery = function() {
+      if (this.hasId()) {
+        return Graph
+          .start('r = relationship('+this.id+')')
+          .return('r').toQuery();
+      }
+      return Graph.start('r = relationship(*)').toQuery();
+    }
+  
+    Relationship.prototype.toQueryString = Node.prototype.toQueryString;
+  
+    Relationship.prototype.toCypherQuery = Node.prototype.toCypherQuery;
+  
     Relationship.prototype.toObject = function() {
       var o = {
         id: this.id,
         classification: this.classification,
-        data: _.extend(this.data),
+        data: _.clone(this.data),
         start: this.start,
         end: this.end,
         from: _.extend(this.from),
@@ -3965,15 +4480,25 @@
       return o;
     }
   
+    Relationship.prototype._hashData_ = function() {
+      if (this.hasValidData())
+        return helpers.md5(JSON.stringify(this.toObject()));
+      else
+        return null;
+    }
+  
     Relationship.prototype.onBeforeSave = function(node, next) {
       next(null, null);
     }
   
-    Relationship.prototype.onAfterSave = function(node, next, debug) {
-      return next(null, node, debug);
+    Relationship.prototype.onAfterSave = function(relationship, next, debug) {
+      return next(null, relationship, debug);
     }
   
-    Relationship.prototype.resetQuery = function() { return this; }
+    Relationship.prototype.resetQuery = function() {
+      this.cypher = new helpers.CypherQuery();
+      return this;
+    }
   
     Relationship.prototype._load_hook_reference_  = null;
   
@@ -3989,22 +4514,43 @@
       return Relationship;
     }
   
+  
     /* from Node */
     Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues
-    Relationship.prototype.copy_of            = Node.prototype.copy_of;
-    Relationship.prototype.onSave             = Node.prototype.onSave;
-    Relationship.prototype.hasValidData       = Node.prototype.hasValidData;
-    Relationship.prototype.flattenData        = Node.prototype.flattenData;
-    Relationship.prototype.setUriById         = Node.prototype.setUriById;
-    Relationship.prototype.isPersisted        = Node.prototype.isPersisted;
-    Relationship.prototype.hasId              = Node.prototype.hasId;
-    Relationship.prototype._hashData_         = Node.prototype._hashData_;
   
-    Relationship.create = function(data, start, end, id) {
-      return new Relationship(data, start, end, id);
+    // Copys only the node's relevant data(s) to another object
+    Relationship.prototype.copyTo = function(r) {
+      r.id = r._id_ = this._id_;
+      r.data   = _.clone(this.data);
+      r.uri = this.uri;
+      r._response_ = _.clone(this._response_);
+      r.from = _.clone(this.from);
+      r.to = _.clone(this.to);
+      r.start = this.start;
+      r.end = this.end;
+      r.type = r._type_ = this._type_;
+      return r;
     }
   
-    return Relationship;
+    Relationship.prototype.hasValidData     = Node.prototype.hasValidData;
+    Relationship.prototype.flattenData      = Node.prototype.flattenData;
+    Relationship.prototype.setUriById       = Node.prototype.setUriById;
+    Relationship.prototype.isPersisted      = Node.prototype.isPersisted;
+    Relationship.prototype.hasId            = Node.prototype.hasId;
+    Relationship.prototype.dataForCypher    = Node.prototype.dataForCypher;
+  
+    Relationship.setDefaultFields            = Node.setDefaultFields;
+    Relationship.setIndexFields              = Node.setIndexFields;
+    Relationship.setUniqueFields             = Node.setUniqueFields;
+    Relationship._setModelFields             = Node._setModelFields;
+  
+    Relationship.new = function(type, data, start, end, id, cb) {
+      return new Relationship(type, data, start, end, id, cb);
+    }
+  
+    Relationship.create = Relationship.new;
+  
+    return neo4jrestful.Relationship = Relationship;
   }
   
   if (typeof window !== 'object') {
@@ -4012,13 +4558,15 @@
       init: __initRelationship__
     }
   } else {
-    var initRelationship = __initRelationship__;
+    window.Neo4jMapper.initRelationship = __initRelationship__;
   }
     
   /*
    * include file: 'src/transaction.js'
    */
-  //http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
+  // # Transaction
+  // Can be used to send (many) cypher statement(s) as transaction
+  // see: [http://docs.neo4j.org/chunked/preview/rest-api-transactional.html](http://docs.neo4j.org/chunked/preview/rest-api-transactional.html)
   
   var __initTransaction__ = function(neo4jrestful) {
   
@@ -4052,6 +4600,8 @@
       this.begin(cypher, parameters, cb);
     }
   
+    Transaction.Statement = Statement;
+  
     Transaction.prototype.statements = null;
     Transaction.prototype._response_ = null;
     Transaction.prototype.neo4jrestful = null;
@@ -4060,11 +4610,9 @@
     Transaction.prototype.uri = null
     Transaction.prototype.expires = null;
     Transaction.prototype.results = null;
-    Transaction.prototype._concurrentTransmission_ = 0;
+    Transaction.prototype._concurrentTransmissions_ = 0;
     Transaction.prototype._responseError_ = null; //will contain response Error
     Transaction.prototype._resortResults_ = true;
-    Transaction.prototype._detectTypes_ = false; // n AS (Node), id(n) AS (Node.id), r AS [Relationship]
-    // Transaction.prototype._loadOnResult_ = neo4jrestful.constructor.prototype._loadOnResult_;
   
     Transaction.prototype.begin = function(cypher, parameters, cb) {
       // reset
@@ -4077,24 +4625,25 @@
     }
   
     Transaction.prototype.add = function(cypher, parameters, cb) {
-      var self = this;
       var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
       var statements = args.statements;
       // we cancel the operation if we are comitting
       if (this.status === 'committed') {
-        if (typeof args.cb === 'function')
-          cb(Error("You can't add statements after transaction is committed"), null);
+        var err = Error("You can't add statements after transaction is committed");
+        if (typeof args.cb === 'function') {
+          cb(err, null);
+        } else {
+          throw err;
+        }
         return this;
       }
       this.addStatementsToQueue(statements);
-      if ((args.cb) && (!self.onResponse)) {
+      if (args.cb) {
         cb = args.cb;
-        this.onResponse = cb;
       } else {
         // we execute if we have a callback
-        // till then we will collect the statements
+        // till then we'll collect the statements
         return this;
-        //cb = function() { /* /dev/null/ */ };
       }
       return this.exec(cb);
     }
@@ -4105,14 +4654,13 @@
       if (typeof cb !== 'function') {
         return this;
       }
+      self.onResponse = cb;
   
       var url = '';
       var untransmittedStatements = this.untransmittedStatements();
-      
+  
       if (this.status === 'committing') {
         // commit transaction
-        // if (!this.id)
-        //   return this;//.exec(cb);
         url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
       } else if (!this.id) {
         // begin a transaction
@@ -4132,25 +4680,25 @@
         self.statements[i].status = 'sending';
         statements.push({ statement: statement.statement, parameters: statement.parameters });
       });
-      this._concurrentTransmission_++;
+      this._concurrentTransmissions_++;
       this.neo4jrestful.post(url, { data: { statements: statements } }, function(err, response, debug) {
         self._response_ = response;
-        self._concurrentTransmission_--;
+        self._concurrentTransmissions_--;
         self._applyResponse(err, response, debug, untransmittedStatements);
-        
+  
         untransmittedStatements.forEach(function(statement) {
           self.statements[statement.position].status = statement.status = 'sended';
         });
-        
+  
         untransmittedStatements = self.untransmittedStatements();
   
         if (untransmittedStatements.length > 0) {
           // re call exec() until all statements are transmitted
-          // TODO: set a limit to avoid endless loop          
+          // TODO: set a limit to avoid endless loop
           return self.exec(cb);
         }
         // TODO: sort and populate resultset, but currently no good way to detect result objects
-        else if (self._concurrentTransmission_ === 0) {//  {
+        else if (self._concurrentTransmissions_ === 0) {//  {
           if (typeof self.onResponse === 'function') {
             var cb = self.onResponse;
             // release onResponse for (optional) next cb
@@ -4211,10 +4759,16 @@
           self.results.push(response.results[i]);
         }
       });
-      if ((err)||(!response))
+      if ((err)||(!response)) {
         self._responseError_ = (self._responseError_) ? self._responseError_.push(err) : self._responseError_ = [ err ];
-      else
+      } else {
         self.populateWithDataFromResponse(response);
+        // keep track of open transactions
+        if (self.status === 'open')
+          Transaction.__open_transactions__[self.id] = self;
+        else
+          delete Transaction.__open_transactions__[self.id];
+      }
     }
   
     Transaction.prototype.toObject = function() {
@@ -4238,7 +4792,7 @@
         // exists only on POST a new transaction
         if (data.commit) {
           var match = data.commit.match(/^(.+?\/transaction\/(\d+))\/commit$/);
-          this.id = match[2];
+          this.id = Number(match[2]);
           this.uri = match[1];
         }
       }
@@ -4275,6 +4829,10 @@
       return new Transaction(cypher, parameters, cb);
     }
   
+    Transaction.new = function(cypher, parameters) {
+      return new Transaction(cypher, parameters);
+    }
+  
     Transaction.prototype.onResponse = null;
   
     Transaction._sortTransactionArguments = function(cypher, parameters, cb) {
@@ -4298,15 +4856,22 @@
     }
   
     Transaction.prototype.rollback = function(cb) {
+      var self = this;
       if ((this.id)&&(this.status!=='finalized')) {
-        this.neo4jrestful.delete('/transaction/'+this.id, cb);
+        this.neo4jrestful.delete('/transaction/'+this.id, function(err, res, debug) {
+          // remove from open_transactions
+          if (!err)
+            delete Transaction.__open_transactions__[self.id];
+          cb(err, res, debug);
+        });
       } else {
         cb(Error('You can only perform a rollback on an open transaction.'), null);
       }
       return this;
     }
   
-    Transaction.prototype.undo = Transaction.prototype.rollback;
+    Transaction.prototype.undo   = Transaction.prototype.rollback;
+    Transaction.prototype.delete = Transaction.prototype.rollback;
   
     Transaction.begin = function(cypher, parameters, cb) {
       return new Transaction(cypher, parameters, cb);
@@ -4318,11 +4883,47 @@
     Transaction.commit = function(cypher, parameters, cb) {
       return new Transaction().commit(cypher, parameters, cb);
     }
-    
-    // Transaction.prototype.createObjectFromResponseData = neo4jrestful.constructor.prototype.createObjectFromResponseData;
-    // Transaction.prototype._processResult = Graph.prototype._processResult;
   
-    return Transaction;
+    Transaction.executeAllOpenTransactions = function(cb, action) {
+      // action can be commit|rollback
+      if (typeof action === 'undefined')
+        action = 'commit';
+      var count = Object.keys(Transaction.__open_transactions__).length;
+      var errors = [];
+      var debugs = [];
+  
+      var _onDone_ = function(err, res, debug) {
+        count--;
+        if (err)
+          errors.push(err);
+        debugs.push(debug);
+        if (count === 0)
+          cb( ((errors.length > 0) ? errors : null), null, debugs );
+      }
+  
+      for (var id in Transaction.__open_transactions__) {
+        Transaction.__open_transactions__[id][action](_onDone_);
+      }
+  
+      return this;
+    }
+  
+    Transaction.commitAll   = function(cb) {
+      return this.executeAllOpenTransactions(cb, 'commit');
+    }
+    Transaction.closeAll    = Transaction.commitAll;
+  
+    Transaction.rollbackAll = function(cb) {
+      Transaction.executeAllOpenTransactions(cb, 'rollback');
+    }
+  
+    Transaction.deleteAll   = Transaction.rollbackAll;
+    Transaction.undoAll     = Transaction.rollbackAll;
+  
+    // all open transactions
+    Transaction.__open_transactions__ = {};
+  
+    return neo4jrestful.Transaction = Transaction;
   
   }
   
@@ -4331,37 +4932,73 @@
       init: __initTransaction__
     };
   } else {
-    var initTransaction = __initTransaction__;
+    window.Neo4jMapper.initTransaction = __initTransaction__;
   }  
   /*
    * include file: 'src/graph.js'
    */
-  // **The Graph** respresents the database
-  // You can perform basic actions and queries directly on the entire graphdatabase
+  /**
+   * **The Graph** respresents the cypher-query-api of the neo4j database
+   * You can perform basic actions and queries directly on the graph
+   * ###[Query Structure](http://docs.neo4j.org/refcard/2.0/)
+   * Read Query Structure:
+   * [START]
+   * [MATCH]
+   * [WHERE]
+   * [WITH [ORDER BY] [SKIP] [LIMIT]]
+   * RETURN [ORDER BY] [SKIP] [LIMIT]
+   *
+   * Write-Only Query Structure:
+   * (CREATE [UNIQUE] | MERGE)*
+   * [SET|DELETE|FOREACH]*
+   * [RETURN [ORDER BY] [SKIP] [LIMIT]]
+   *
+   * Read-Write Query Structure:
+   * [START]
+   * [MATCH]
+   * [WHERE]
+   * [WITH [ORDER BY] [SKIP] [LIMIT]]
+   * [CREATE [UNIQUE]|MERGE]*
+   * [SET|DELETE|FOREACH]*
+   * [RETURN [ORDER BY] [SKIP] [LIMIT]]
+   *
+   * @todo: maybe check of valid query structure?!
+   */
   
-  // Initialize the Graph object with a neo4jrestful client
+  
+  /**
+   * Initialize the Graph object with a neo4jrestful client
+   *
+   * @param {object} neo4jrestful object
+   * @return {object} Graph object
+   */
   var __initGraph__ = function(neo4jrestful) {
   
     // Requirements (for browser and nodejs):
-    // * neo4jmapper helpers
-    // * underscorejs
-    var _       = null;
-    var helpers = null;
+    //   * neo4jmapper helpers
+    //   * underscorejs
   
     if (typeof window === 'object') {
-      helpers = window.Neo4jMapper.helpers;
-      _       = window._;
+      var helpers               = window.Neo4jMapper.helpers;
+      var _                     = window._;
+      var CypherQuery           = window.Neo4jMapper.CypherQuery;
+      var ConditionalParameters = window.Neo4jMapper.ConditionalParameters;
     } else {
-      helpers = require('./helpers');
-      _       = require('underscore');
+      var helpers               = require('./helpers');
+      var _                     = require('underscore');
+      var CypherQuery           = require('./cypherquery');
+      var ConditionalParameters = require('./conditionalparameters')
     }
   
     // Ensure that we have a Neo4jRestful client we can work with
     if ((typeof neo4jrestful !== 'undefined') && (helpers.constructorNameOfFunction(neo4jrestful) !== 'Neo4jRestful'))
       throw Error('You have to use an Neo4jRestful object as argument')
   
-    // Constructor
-  
+    /**
+     * Constructor of Graph
+     * @constructor
+     * @param {string} url
+     */
     var Graph = function Graph(url) {
       if (url) {
         this.neo4jrestful = new neo4jrestful.constructor(url);
@@ -4372,71 +5009,204 @@
   
     Graph.prototype.neo4jrestful                  = neo4jrestful;
     Graph.prototype._query_history_               = null;
-    // see graph.resetQuery for initialization
-    Graph.prototype.cypher = {
-      query: null,           // the cypher query string
-      parameters: null,      // object with paremeters
-      _useParameters: true   // better performance + rollback possible (upcoming feature)
-    };
+    // see graph.resetQuery() for initialization
+    Graph.prototype.cypher                        = null;
+    Graph.prototype._queryString_                 = '';           // stores a query string temporarily
     Graph.prototype._loadOnResult_                = 'node|relationship|path';
-    Graph.prototype._resortResults_               = true; // see in graph.query() -> _increaseDone()
-    Graph.prototype._nativeResults_               = false; // it's not implemented, all results are processed so far
-    
-    // ### Will contain the info response of the neo4j database
-    Graph.prototype.info        = null;
-    Graph.prototype._response_  = null; // contains the last response object
-    Graph.prototype._columns_   = null;
+    Graph.prototype._resortResults_               = true;         // see in graph.query() -> _increaseDone()
+    Graph.prototype._nativeResults_               = false;        // it's not implemented, all results are processed so far
   
-    Graph.prototype.exec = function(query, cb) {    
-      if (typeof query !== 'string') {
+    Graph.prototype.info                          = null;         // contains the info response of the neo4j database
+  
+    Graph.prototype._response_                    = null;         // contains the last response object
+    Graph.prototype._columns_                     = null;         // contains `columns` of { columns: [ … ], data: [ … ] }
+  
+    /**
+      * The following argument combinations are accepted:
+      * * query, parameters, cb
+      * * parameters, cb
+      * * query, cb
+      * * cb
+      *
+      * Example:
+      *
+      *     `Graph.new().exec('START n=node({id}) RETURN n;', { id: 123 }, cb);`
+      *
+      *
+      * @param  {string|object|function} [query]
+      * @param  {object|function} [parameters]
+      * @param  {Function} cb (optional, but needed to trigger query execution finally)
+      */
+    Graph.prototype.exec = function(query, parameters, cb) {
+      if (typeof query === 'function') {
         cb = query;
-        query = this.toCypherQuery();
+        query = undefined;
+        parameters = undefined;
+      } else if (typeof parameters === 'function') {
+        cb = parameters;
+        if (typeof query === 'object') {
+          parameters = query;
+          query = undefined;
+        }
       }
-      if (typeof cb === 'function') { 
-        this.query(query, {}, cb);
+      if (typeof query === 'object') {
+        // query may be parameters
+        parameters = query;
+        query = undefined;
+      }
+      if ((typeof parameters === 'object') && (parameters !== null)) {
+        this.addParameters(parameters);
+      }
+      if (typeof cb === 'function') {
+        // args: queryString, parameters (are added above), cb, options (no options are used here)
+        this.query(query, {}, cb, {});
       }
       return this;
     }
   
-    Graph.prototype.query = function(cypherQuery, options, cb) {
+    /**
+     * Executes a (cypher)-query-string directly in neo4j
+     *
+     * Example:
+     *
+     *    `Graph.query('START n=node(123) RETURN n;', cb);`
+     *
+     * @param  {string} cypherQuery
+     * @param  {object} [parameters]
+     * @param  {Function} cb
+     * @param  {object} [options] will be passed to `neo4jrestful.query`
+     */
+    Graph.prototype.query = function(cypherQuery, parameters, cb, options) {
       var self = this;
       if (typeof cypherQuery !== 'string') {
-        throw Error('First argument must be a query string');
+        cypherQuery = this.toCypherQuery();
       }
-      if (typeof options === 'function') {
-        cb = options;
+      if (typeof parameters === 'function') {
+        cb = parameters;
+        options = {};
+        parameters = {};
+      }
+      if ((typeof options !== 'object')&&(options !== null)) {
         options = {};
       }
   
-      options.params = (typeof this.cypher._useParameters === 'boolean') ? this.cypher.parameters : {};
+      if (!parameters)
+        parameters = {};
+      if (Object.keys(parameters).length > 0) {
+        this.addParameters(parameters);
+      }
+  
+      options.params = (typeof this.cypher.useParameters === 'boolean') ? this.parameters() : {};
       options.context = self;
   
-      this.neo4jrestful.query(cypherQuery, options, function(err, res, debug) {
-        self._processResult(err, res, debug, options, function(err, res, debug) {
-          // Is used by Node on performing an "update" via a cypher query
-          // The result length is 1, so we remove the array
-          if ((res)&&(res.length===1)&&(options.cypher)) {
-            if ((options.cypher.limit === 1) || (options.cypher._update) || (typeof res[0] !== 'object')) {
-              res = res[0];
+      // we expect a cb in most cases and perfom the query immediately
+      if (typeof cb === 'function') {
+        this.neo4jrestful.query(cypherQuery, options, function(err, res, debug) {
+          self._processResult(err, res, debug, options, function(err, res, debug) {
+            // Is used by Node on performing an "update" via a cypher query
+            // The result length is 1, so we remove the array
+            if ((res)&&(res.length===1)&&(options.cypher)) {
+              if ((options.cypher.limit === 1) || (options.cypher._update_) || (typeof res[0] !== 'object')) {
+                res = res[0];
+              }
             }
-          }
-          cb(err, res, debug);
+            cb(err, res, debug);
+          });
         });
-      })
+      } else {
+        // otherwise we store the query string and expect it will be executed with `.exec(cb)` or `.stream(cb)`
+        this._queryString_ = cypherQuery;
+      }
+  
       return this;
     }
   
+    /**
+     * Returns the number of column wich contains the labels
+     * @private
+     * @param  {array} columns
+     * @return {number} of column
+     */
+    Graph.prototype.__indexOfLabelColumn = function(columns) {
+      var labelColumns = this.__indexOfLabelColumns(columns);
+      var keys = Object.keys(labelColumns);
+      return (keys.length === 1) ? keys[0] : -1;
+    }
+  
+    /**
+     * Returns the numbers of column wich contain labels
+     * @private
+     * @param  {array} columns
+     * @return {array} indexes
+     */
+    Graph.prototype.__indexOfLabelColumns = function(columns) {
+      var labelColumns = {};
+      if (typeof columns === 'undefined')
+        columns = this._columns_;
+      for (var i=0; i < columns.length; i++) {
+        if (/^labels\([a-zA-Z]+\)$/.test(columns[i]))
+          labelColumns[i] = columns[i];
+      }
+      return labelColumns;
+    }
+  
+    /**
+     * Removes label column from array
+     * @private
+     * @param  {array} array
+     * @param  {number} columnIndexOfLabel
+     * @return {array} without label column
+     */
+    Graph.prototype.__removeLabelColumnFromArray = function(array, columnIndexOfLabel) {
+      if (typeof columnIndexOfLabel !== 'number')
+        columnIndexOfLabel = this.__indexOfLabelColumn();
+      array.splice(columnIndexOfLabel, 1);
+      return array;
+    }
+  
+    /**
+     * Removes label column from results
+     * @private
+     * @param  {array} result
+     * @return {array} without label column
+     */
+    Graph.prototype.__sortOutLabelColumn = function(result) {
+      var nodeLabels = [];
+      var nodeLabelsColumn = this.__indexOfLabelColumn(result.columns);
+      var self = this;
+      if (nodeLabelsColumn >= 0) {
+        // we have a 'labels(n)' column
+        for (var i=0; i < result.data.length; i++) {
+          nodeLabels.push(result.data[i][nodeLabelsColumn]);
+          result.data[i] = self.__removeLabelColumnFromArray(result.data[i], nodeLabelsColumn);
+        }
+        this._columns_ = self.__removeLabelColumnFromArray(this._columns_, nodeLabelsColumn);
+      }
+      return nodeLabels;
+    }
+  
+    /**
+     * Processes results array, i.e.
+     * * sort out data result
+     * * detect objects and instantiate them
+     * * applies labels from result set on node object(s)
+     * @param  {object}   err
+     * @param  {object}   result
+     * @param  {object}   debug
+     * @param  {object}   options
+     * @param  {Function} cb
+     */
     Graph.prototype._processResult = function(err, result, debug, options, cb) {
       var self = options.context;
       self._response_ = self.neo4jrestful._response_;
       self._columns_ = self.neo4jrestful._columns_;
       if (err)
         return cb(err, result, debug);
-      var loadNode = /node/i.test(self._loadOnResult_)
-        , loadRelationship = /relation/i.test(self._loadOnResult_)
-        , loadPath = /path/i.test(self._loadOnResult_)
-        , todo = 0
-        , done = 0;
+      var loadNode = /node/i.test(self._loadOnResult_);
+      var loadRelationship = /relation/i.test(self._loadOnResult_);
+      var loadPath = /path/i.test(self._loadOnResult_);
+      var todo = 0;
+      var iterationDone = false;
   
       // if we have the native mode, return results instantly at this point
       // TODO: to be implemented
@@ -4447,9 +5217,13 @@
       // increase the number of done jobs
       // resort the results if options is activated
       // and finally invoke the cb if we are done
-      var __increaseDone = function() {
-        if (done+1 >= todo) {
-          // all jobs are done
+      var __oneMoreJobDone = function() {
+        if ((todo === 0)&&(iterationDone)) {
+  
+          if (result.data.length === 0) {
+            // empty result
+            return cb(err, null, debug);
+          }
   
           // if is set to true, sort result:
           // * return only the data (columns are attached to graph._columns_)
@@ -4458,115 +5232,210 @@
           if (self._resortResults_) {
             var cleanResult = result.data;
             // remove array, if we have only one column
-            if (result.columns.length === 1) {
+            if (self._columns_.length === 1) {
               for (var row=0; row < cleanResult.length; row++) {
                 cleanResult[row] = cleanResult[row][0];
               }
+            }
+            if ((self.cypher.limit === 1) && (cleanResult.length === 1)) {
+              // if we have a limit of 1 we can only get data[0] or null
+              cleanResult = (cleanResult.length === 1) ? cleanResult[0] : null;
             }
             cb(err, cleanResult, debug);
           } else {
             cb(err, result, debug);
           }
         } else {
-          done++;
+          todo--;
         }
       }
+  
+  
   
       if ((!result.data)&&(result.length === 1)) {
         return cb(err, result[0], debug);
       }
   
+      // check for node labels column (is attached by query builder)
+      // copy to a new array and remove column from result to the results cleaner
+      var nodeLabelsColumn = this.__indexOfLabelColumn(result.columns);
+      var nodeLabels = (this._resortResults_) ? this.__sortOutLabelColumn(result) : null;
+  
+      var recommendConstructor = options.recommendConstructor;
+  
       for (var row=0; row < result.data.length; row++) {
         for (var column=0; column < result.data[row].length; column++) {
           var data = result.data[row][column];
           // try to create an instance if we have an object here
-          var object = ((typeof data === 'object') && (data !== null)) ? self.neo4jrestful.createObjectFromResponseData(data, options.recommendConstructor) : data;          
-          result.data[row][column] = object;
+          if ((typeof data === 'object') && (data !== null))
+            self.neo4jrestful.createObjectFromResponseData(result.data[row][column], recommendConstructor);
+          // result.data[row][column] = object;
+          var object = result.data[row][column];
   
-          (function(object, isLastObject) {
-            
-            if (object) {
-              if ((object.classification === 'Node') && (loadNode)) {
-                todo++;
-                object.load(__increaseDone);
+          if (object) {
+            if ((object.classification === 'Node') && (loadNode)) {
+  
+              if (nodeLabelsColumn >= 0) {
+                // if we have labels(n) column
+                var labels = nodeLabels.shift()
+                object = self.neo4jrestful.Node.instantiateNodeAsModel(object, labels, options.recommendConstructor);
+                object.__skip_loading_labels__ = true;
               }
-              else if ((object.classification === 'Relationship') && (loadRelationship)) {
-                todo++;
-                object.load(__increaseDone);
-              }
-              else if ((object.classification === 'Path') && (loadPath)) {
-                todo++;
-                object.load(__increaseDone);
-              }
+              todo++;
+              object.load(__oneMoreJobDone);
             }
-            
-            // if no loading is activated and at the last row+column, execute cb
-            if ((isLastObject) && (todo === 0))
-              __increaseDone();
+            else if ((object.classification === 'Relationship') && (loadRelationship)) {
+              todo++;
+              object.load(__oneMoreJobDone);
+            }
+            else if ((object.classification === 'Path') && (loadPath)) {
+              todo++;
+              object.load(__oneMoreJobDone);
+            }
   
-          })(object, (row === result.data.length-1) && (column === result.data[row].length-1));
+            result.data[row][column] = object;
+          }
+  
         }
       }
-      if ((todo === 0) && (done === 0) && (result.data.length === 0)) {
-        // empty result
-        return cb(err, null, debug);
-      }
+  
+      iterationDone = true;
+      __oneMoreJobDone();
+  
+      return this;
+  
     }
   
-    // ### Shortcut for neo4jrestul.stream
-    Graph.prototype.stream = function(cypherQuery, options, cb) {
+    /**
+     * Stream a cypher query
+     * @param  {string}   [cypherQuery]
+     * @param  {object}   [parameters]
+     * @param  {Function} cb
+     * @param  {object}   [options]
+     */
+    Graph.prototype.stream = function(cypherQuery, parameters, cb, options) {
       var self = this;
-      var Node = neo4jrestful.constructorOf('Node');
-      var recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
-      if (typeof cypherQuery !== 'string') {
+      var Node = Graph.Node;
+      // check arguments for callback
+      if (typeof cypherQuery === 'function') {
         cb = cypherQuery;
+        cypherQuery = undefined;
+      } else if (typeof parameters === 'function') {
+        cb = parameters;
+        parameters = undefined;
+      }
+      if (typeof cypherQuery !== 'string') {
         cypherQuery = this.toCypherQuery();
       }
-      else if (typeof options === 'function') {
-        cb = options;
-        options = undefined;
+      if (parameters) {
+        this.addParameters(parameters);
       }
-      this.neo4jrestful.stream(cypherQuery, options, function(data) {
-        // neo4jrestful alerady created an object, but not with a recommend constructtr
-        if ((data) && (typeof data === 'object') && (data._response_)) {
-          data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+      if (!options) {
+        options = {};
+      }
+      // get and set option values
+      var recommendConstructor = (options) ? options.recommendConstructor || Node : Node;
+      options.params = (typeof this.cypher.useParameters === 'boolean') ? this.parameters() : {};
+      parameters = this.parameters();
+      var i = 0; // counter is used to prevent changing _columns_ more than once
+      var indexOfLabelColumn = null;
+      this.neo4jrestful.stream(cypherQuery, options, function(data, response, debug) {
+        // neo4jrestful already created an object, but not with a recommend constructor
+        self._columns_ = response._columns_;
+        if ((self._resortResults_)&&(i === 0)) {
+          indexOfLabelColumn = self.__indexOfLabelColumn(self._columns_);
+          if (indexOfLabelColumn >= 0) {
+            // remove [ 'n', 'labels(n)' ] labels(n) column
+            self._columns_ = self.__removeLabelColumnFromArray(self._columns_, indexOfLabelColumn);
+          }
         }
+        if ((data) && (typeof data === 'object')) {
+          if (data.constructor === Array) {
+            var labels = null;
+            if ((self._resortResults_) && (indexOfLabelColumn >= 0)) {
+              labels = data[indexOfLabelColumn];
+              data = self.__removeLabelColumnFromArray(data, indexOfLabelColumn);
+              if (data.length === 1)
+                data = data[0];
+            }
+            for (var column = 0; column < data.length; column++) {
+              if ((data[column]) && (data[column]._response_)) {
+                data[column] = self.neo4jrestful.createObjectFromResponseData(data[column]._response_, recommendConstructor);
+                data[column] = self.neo4jrestful.Node.instantiateNodeAsModel(data[column], labels);
+              }
   
-        cb(data);
+            }
+          }
+        }
+        self._response_ = response;
+        if ((data) && (data._response_)) {
+          data = self.neo4jrestful.createObjectFromResponseData(data._response_, recommendConstructor);
+          // data = self.neo4jrestful.Node.instantiateNodeAsModel(data, labels);
+        }
+        i++;
+        return cb(data, self, debug);
       });
       return this;
     }
   
-    Graph.prototype.parameters = function(parameters) {
-      if (typeof parameters !== 'object')
+    /**
+     * Shortcut for `graph.stream`
+     * @see  Graph.prototype.stream
+     */
+    Graph.prototype.each = Graph.prototype.stream;
+  
+    /**
+     * Set cypher parameters (and removes previous ones if exists)
+     * @param  {object} parameters
+     */
+    Graph.prototype.setParameters = function(parameters) {
+      if ((typeof parameters !== 'object') || (parameters === null))
         throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
-      if (this.cypher._useParameters === null)
-        this.cypher._useParameters = true;
+      if (this.cypher.useParameters === null)
+        this.cypher.useParameters = true;
       this.cypher.parameters = parameters;
       return this;
     }
   
+    /**
+     * Get cypher parameters
+     * @return  {object} parameters
+     */
+    Graph.prototype.parameters = function() {
+      return this.cypher.parameters || {};
+    }
+  
+    /**
+     * Add cypher Parameters
+     * @param  {object} parameters
+     */
     Graph.prototype.addParameters = function(parameters) {
-      if (typeof parameters !== 'object')
-        throw Error('parameter(s) as argument must be an object, e.g. { key: "value" }')
-      if (this.cypher._useParameters === null)
-        this.cypher._useParameters = true;
-      if (!this.cypher.parameters)
-        this.cypher.parameters = {};
-      // _.extend(this.cypher.parameters, parameters);
-      for (var attr in parameters) {
-        this.cypher.parameters[attr] = parameters[attr];
-      }
+      this.cypher.addParameters(parameters);
       return this;
     }
   
-    // ### Deletes *all* nodes and *all* relationships
+    /**
+     * Add cypher Parameter
+     * @param  {object} parameter
+     */
+    Graph.prototype.addParameter = function(parameter) {
+      return this.addParameters(parameter);
+    }
+  
+    /**
+     * Deletes *all* nodes and *all* relationships
+     * @param  {Function} cb
+     */
     Graph.prototype.wipeDatabase = function(cb) {
       var query = "START n=node(*) MATCH n-[r?]-() DELETE n, r;";
       return this.query(query, cb);
     }
   
-    // ### Counts all objects of a specific type: (all|node|relationship|[nr]:Movie)
+    /**
+     * Counts all objects of a specific type
+     * @param  {String}   (all|node|relationship|[nr]:Movie)
+     * @param  {Function} cb
+     */
     Graph.prototype.countAllOfType = function(type, cb) {
       var query = '';
       if      (/^n(ode)*$/i.test(type))
@@ -4577,7 +5446,7 @@
         // count labels
         query = "MATCH "+type+" RETURN "+type[0]+";";
       else
-        query = "START n=node(*) MATCH n-[r?]-() RETURN count(n), count(r);";
+        query = "START n=node(*) OPTIONAL MATCH n-[r]-() RETURN count(n), count(r);";
       return Graph.query(query, function(err,data){
         if ((data)&&(data.data)) {
           var count = data.data[0][0];
@@ -4589,27 +5458,43 @@
       });
     }
   
-    // ### Counts all relationships
+    /**
+     * Counts all relationships
+     * @param  {Function} cb
+     */
     Graph.prototype.countRelationships = function(cb) {
       return this.countAllOfType('relationship', cb);
     }
   
-    // alias for countRelationships()
+    /**
+     * Alias for countRelationships()
+     * @see Graph.countRelationships()
+     * @param  {Function} cb
+     */
     Graph.prototype.countRelations = function(cb) {
       return this.countRelationships(cb);
     }
   
-    // ### Counts all nodes
+    /**
+     * Counts all nodes
+     * @param  {Function} cb
+     */
     Graph.prototype.countNodes = function(cb) {
       return this.countAllOfType('node', cb);
     }
   
-    // ### Counts all relationships and nodes
+    /**
+     * Counts all relationships and nodes
+     * @param  {Function} cb
+     */
     Graph.prototype.countAll = function(cb) {
       return this.countAllOfType('all', cb);
     }
   
-    // ### Queries information of the database and stores it on `this.info` 
+    /**
+     * Queries information of the database and stores it on `this.info`
+     * @param  {Function} cb
+     */
     Graph.prototype.about = function(cb) {
       var self = this;
       if (this.info)
@@ -4624,114 +5509,319 @@
         });
     }
   
-    // ### Reset the query history
+    /**
+     * Resets the query history
+     */
     Graph.prototype.resetQuery = function() {
       this._query_history_ = [];
-      this.cypher = {};
-      for (var attr in Graph.prototype.cypher) {
-        this.cypher[attr] = Graph.prototype.cypher[attr];
-      }
-      this.cypher.parameters = {};
+      this._queryString_ = '';
+      this.cypher = new CypherQuery();
       return this;
     }
   
-    // ### Startpoint to begin query chaining
-    // e.g. Graph.start().where( …
-    Graph.prototype.start = function(start, cb) {
+    /**
+     *  Startpoint to begin query chaining
+     *
+     *  Example:
+     *    `Graph.start().where( …`
+     *
+     * @param  {string}   start
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.start = function(start, parameters, cb) {
       this.resetQuery();
-      if (typeof start !== 'string') {
+      if (typeof start === 'function') {
         cb = start;
         start = null;
       }
       if (start)
         this._query_history_.push({ START: start });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.match = function(match, cb) {
-      this._query_history_.push({ MATCH: match });
-      return this.exec(cb);
+    /**
+     * `MATCH …`
+     * @param  {object|string|array}   match
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     * @param  {object}   [options]
+     */
+    Graph.prototype.match = function(match, parameters, cb, options) {
+      var self = this;
+      if (typeof options !== 'object')
+        options = {};
+      var matchString = '';
+      if (typeof match === 'object') {
+        if (match.length) {
+          match.forEach(function(item){
+            if (typeof item === 'object') {
+              matchString += self._addObjectLiteralForStatement(item);
+            } else {
+              matchString += String(item);
+            }
+          });
+        } else {
+          matchString = self._addObjectLiteralForStatement(match);
+        }
+      } else {
+        matchString = match;
+      }
+      // do we have "ON MATCH", "OPTIONAL MATCH" or "MATCH" ?
+      if (!options.switch)
+        this._query_history_.push({ MATCH: matchString });
+      else if (options.switch === 'ON MATCH')
+        this._query_history_.push({ ON_MATCH: matchString });
+      else if (options.switch === 'OPTIONAL MATCH')
+        this._query_history_.push({ OPTIONAL_MATCH: matchString });
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.onMatch = function(onMatch, cb) {
-      this._query_history_.push({ ON_MATCH: onMatch });
-      return this.exec(cb);
+    /**
+     * `ON MATCH …`
+     * @param  {string|object|array}   onMatch
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.onMatch = function(onMatch, parameters, cb) {
+      return this.match(onMatch, parameters, cb, { switch: 'ON MATCH' });
     }
   
-    Graph.prototype.with = function(withStatement, cb) {
+    /**
+     * `OPTIONAL MATCH …`
+     * @param  {string|object|array}   onMatch
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.optionalMatch = function(optionalMatch, parameters, cb) {
+      return this.match(optionalMatch, parameters, cb, { switch: 'OPTIONAL MATCH' });
+    }
+  
+    /**
+     * `WITH …`
+     * @param  {string}   withStatement
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.with = function(withStatement, parameters, cb) {
       this._query_history_.push({ WITH: withStatement });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.skip = function(skip, cb) {
+    /**
+     * `SKIP …`
+     * @param  {number}   skip
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.skip = function(skip, parameters, cb) {
       skip = parseInt(skip);
       if (skip === NaN)
         throw Error('SKIP must be an integer');
       this._query_history_.push({ SKIP: skip });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.limit = function(limit, cb) {
+    /**
+     * `LIMIT …`
+     * @param  {number}   limit
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.limit = function(limit, parameters, cb) {
       limit = parseInt(limit);
       if (limit === NaN)
         throw Error('LIMIT must be an integer');
       this._query_history_.push({ LIMIT: limit });
-      return this.exec(cb);
+      this.cypher.limit = limit; // TODO: implement: if limit 1 only return { r } or null instead if [ { r } ]
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.merge = function(merge, cb) {
+    /**
+     * `MERGE …`
+     * @param  {string}   merge
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.merge = function(merge, parameters, cb) {
       // TODO: values to parameter
       this._query_history_.push({ MERGE: merge });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.custom = function(statement, cb) {
-      this._query_history_.push(statement);
-      return this.exec(cb);
-    }
-  
-    // will be used to send statements
-    // Graph.prototype.statement = null;
-  
-    Graph.prototype.set = function(set, cb) {
-      if ((typeof set === 'object')&&(set.constructor === Array)) {
-        set = set.join(', ');
+    /**
+     * Pure string as statement segment
+     * @param  {string}   statement
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.custom = function(statement, parameters, cb) {
+      if ((typeof statement === 'object') && (typeof statement.toQuery === 'function')) {
+        this._query_history_.push(statement.toQuery().toString());
+      } else {
+        this._query_history_.push(statement);
       }
-      this._query_history_.push({ SET: set });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.create = function(create, cb) {
-      this._query_history_.push({ CREATE: create });
-      return this.exec(cb);
+    /**
+     * `SET …`
+     * @param  {string|object}   set
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.set = function(set, parameters, cb) {
+      var setString = '';
+      var data = null;
+      if ((typeof set === 'object')&&(set !== null)) {
+        if (set.constructor !== Array) {
+          data = set;
+          set = [];
+          if (this.cypher.useParameters) {
+            set = this._addKeyValuesToParameters(data, ' = ');
+          } else {
+            for (var key in data) {
+              var value = data[key];
+              set.push(helpers.escapeProperty(key)+' = '+helpers.valueToStringForCypherQuery(value, "'"));
+            }
+          }
+        }
+        setString += set.join(', ');
+      } else {
+        setString += set;
+      }
+      this._query_history_.push({ SET: setString });
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.onCreate = function(onCreate, cb) {
-      this._query_history_.push({ ON_CREATE: onCreate });
-      return this.exec(cb);
+    /**
+     * `SET n = …`, sets explicit to a set of values
+     *
+     * Example:
+     *  `{ n: { name: 'Steve' } }`
+     *  ~> SET n = { `name`: 'Steve' }
+     *
+     * @param  {object}   setWith value set
+     * @param  {[type]}   parameters
+     * @param  {Function} cb
+     */
+    Graph.prototype.setWith = function(setWith, parameters, cb) {
+      var setString = '';
+      setString += Object.keys(setWith)[0]+' = ';
+      if (this.cypher.useParameters) {
+        setString += this._addObjectLiteralToParameters(setWith[Object.keys(setWith)[0]]);
+      } else {
+        setString += helpers.serializeObjectForCypher(setWith[Object.keys(setWith)[0]]);
+      }
+      this._query_history_.push({ SET: setString });
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.createUnique = function(create, cb) {
-      this._query_history_.push({ CREATE_UNIQUE: create });
-      return this.exec(cb);
+    /**
+     * `CREATE …`
+     * @param  {string|object}   create
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     * @param  {[type]}   [options]
+     */
+    Graph.prototype.create = function(create, parameters, cb, options) {
+      var self = this;
+      var creates = [];
+      if (typeof options !== 'object')
+        options = {};
+      options = _.defaults(options, {
+        action: 'CREATE'
+      });
+      if (typeof create === 'object') {
+        creates.push('( ');
+        if (create.length) {
+          create.forEach(function(item){
+            if (typeof item === 'object') {
+              creates.push(self._addObjectLiteralForStatement(item));
+            } else {
+              creates.push(String(item));
+            }
+          });
+        } else {
+          // we have a object literal
+          var parts = [];
+  
+          for (var part in create) {
+  
+            for (var attr in create[part]) {
+              // on create, only add values beside `null` and `undefined`, otherwise neo4j will throw an exception
+              if ((create[part][attr] === undefined)||(create[part][attr] === null)) {
+                delete create[part][attr];
+              }
+            }
+            parts.push(part + ' ' + self._addObjectLiteralForStatement(create[part]));
+          }
+          creates.push(parts.join(', '));
+        }
+        creates.push(' )');
+      } else {
+        creates = [ create ];
+      }
+      var statementSegment = {};
+      // { CREATE:  creates.join(' ') } for instance
+      statementSegment[options.action] = creates.join(' ');
+      this._query_history_.push(statementSegment);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.createIndexOn = function(createIndexOn, cb) {
-      this._query_history_.push({ CREATE_INDEX_ON: createIndexOn });
-      return this.exec(cb);
+    /**
+     * `ON CREATE …`
+     * @see Graph.prototype.create
+     */
+    Graph.prototype.onCreate = function(onCreate, parameters, cb) {
+      return this.create(onCreate, parameters, cb, { action: 'ON_CREATE' });
     }
   
-    Graph.prototype.case = function(caseStatement, cb) {
+    /**
+     * `CREATE UNIQUE …`
+     * @see Graph.prototype.create
+     */
+    Graph.prototype.createUnique = function(createUnique, parameters, cb) {
+      return this.create(createUnique, parameters, cb, { action: 'CREATE_UNIQUE' });
+    }
+  
+    /**
+     * `CREATE INDEX ON …`
+     * @see Graph.prototype.create
+     */
+    Graph.prototype.createIndexOn = function(createIndexOn, parameters, cb) {
+      return this.create(createIndexOn, parameters, cb, { action: 'CREATE_INDEX_ON' });
+    }
+  
+    /**
+     * `CASE … END`
+     * @param  {string}   caseStatement
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.case = function(caseStatement, parameters, cb) {
       this._query_history_.push({ CASE: caseStatement.replace(/END\s*$/i,'') + ' END ' });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.dropIndexOn = function(dropIndexOn, cb) {
+    /**
+     * `DROP INDEX ON …`
+     * @param  {string}   dropIndexOn
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.dropIndexOn = function(dropIndexOn, parameters, cb) {
       this._query_history_.push({ DROP_INDEX_ON: dropIndexOn });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.orderBy = function(property, cb) {
+    /**
+     * `ORDER BY …`
+     * @param  {string|object}   property
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.orderBy = function(property, parameters, cb) {
       var direction = ''
         , s = '';
       if (typeof property === 'object') {
@@ -4745,94 +5835,176 @@
         s = property;
       }
       this._query_history_.push({ ORDER_BY: s });
-      return this.exec(cb);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.where = function(where, cb) {
+    /**
+     * `WHERE …`
+     *
+     * Examples:
+     *    Graph.start('n=node(1)').where({ $OR : [ { 'n.name?': 'Steve' }, { 'n.name?': 'Jobs' } ] })
+     *    Graph.start('n=node(1)').where("n.name? = {name1} OR n.name? = {name2}", { name1: 'Steve', name2: 'Jobs' })
+     *
+     * @param  {object|string}   where
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.where = function(where, parameters, cb) {
       if (typeof where === 'string') {
         this._query_history_.push({ WHERE: where });
-        return this.exec(cb);
+        return this.exec(parameters, cb);
       }
-      if (this.cypher._useParameters === null)
-        this.cypher._useParameters = true;
+      if (this.cypher.useParameters === null)
+        this.cypher.useParameters = true;
       if (!_.isArray(where))
         where = [ where ];
-      var options = { valuesToParameters: this.cypher._useParameters };
-      var condition = new helpers.ConditionalParameters(where, options)
-      , whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
+      var options = { valuesToParameters: this.cypher.useParameters, parametersStartCountAt: Object.keys(this.cypher.parameters || {}).length };
+      var condition = new ConditionalParameters(where, options);
+      var whereCondition = condition.toString().replace(/^\(\s(.+)\)$/, '$1');
+  
       this._query_history_.push({ WHERE: whereCondition });
-      if (this.cypher._useParameters)
-        this._addParametersToCypher(condition.parameters);
-      return this.exec(cb);
+      if (this.cypher.useParameters)
+        this.addParameters(condition.parameters);
+      return this.exec(parameters, cb);
     }
   
-    Graph.prototype.return = function(returnStatement, cb) {
-      this._query_history_.push({ RETURN: returnStatement });
-      return this.exec(cb);
-    }
-  
-    Graph.prototype.returnDistinct = function(returnStatement, cb) {
-      this._query_history_.push({ RETURN_DISTINCT: returnStatement });
-      return this.exec(cb);
-    }
-  
-    Graph.prototype.delete = function(deleteStatement, cb) {
-      this._query_history_.push({ DELETE: deleteStatement });
-      return this.exec(cb);
-    }
-  
-    Graph.prototype.remove = function(remove, cb) {
-      this._query_history_.push({ REMOVE: remove });
-      return this.exec(cb);
-    }
-  
-    Graph.prototype.foreach = function(foreach, cb) {
-      this._query_history_.push({ FOREACH: foreach });
-      return this.exec(cb);
-    }
-  
-    Graph.prototype.comment = function(comment, cb) {
-      this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
-      return this.exec(cb);
-    }
-  
-    Graph.prototype.toCypherQuery = function(options) {
-      var s = ''
-        , chopLength = 15
-        , defaultOptions = {
-            niceFormat: true
-          };
-      if (typeof options !== 'object')
-        options = {};
-      else
-        _.defaults(options, defaultOptions);
-      for (var i=0; i < this._query_history_.length; i++) {
-        var queryFragment = this._query_history_[i];
-        if (typeof queryFragment === 'string') {
-          // if we have just a string, we add the string to final query, no manipulation
-          s += queryFragment;
-          continue;
-        }
-        var attribute = Object.keys(this._query_history_[i])[0]
-          , forQuery = this._query_history_[i][attribute];
-        // remove underscore from attribute, e.g. ORDER_BY -> ORDER BY
-        attribute = attribute.replace(/([A-Z]{1})\_([A-Z]{1})/g, '$1 $2');
-        if (options.niceFormat) {
-          // extend attribute-string with whitespace
-          attribute = attribute + Array(chopLength - attribute.length).join(' ');
-        }
-        if (forQuery !== null)
-          s += '\n'+attribute+' '+String(forQuery)+' ';
+    /**
+     * `RETURN …`
+     * @param  {String}   returnStatement
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.return = function(returnStatement, parameters, cb, distinct) {
+      var parts = [];
+      if (returnStatement) {
+        if (returnStatement.constructor === Array)
+          parts = returnStatement;
+        if ((typeof returnStatement === 'Object') && (Object.keys(returnStatement).length > 0))
+          Object.keys(returnStatement).forEach(function(key) {
+            parts.push(key+' AS ' + returnStatement[key]);
+          });
       }
-      return s.trim()+';';
+      if (parts.length > 0)
+        returnStatement = parts.join(', ');
+      if (distinct === true)
+        this._query_history_.push({ RETURN_DISTINCT: returnStatement });
+      else
+        this._query_history_.push({ RETURN: returnStatement });
+      return this.exec(parameters, cb);
     }
   
-    // # Enables loading for specific types
-    // Define type(s) simply in a string
-    // e.g.:
-    // 'node|relationship|path' or '*' to enable load for all types
-    // 'node|relationship' to enable for node + relationships
-    // '' to disable for all (you can also use `disableLoading()` instead)
+    /**
+     * `RETURN DISTINCT …`
+     * @param  {[type]}   returnStatement
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.returnDistinct = function(returnStatement, parameters, cb) {
+      return this.return(returnStatement, parameters, cb, true);
+    }
+  
+    /**
+     * `DELETE …`
+     * @param  {string}   deleteStatement
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.delete = function(deleteStatement, parameters, cb) {
+      this._query_history_.push({ DELETE: deleteStatement });
+      return this.exec(parameters, cb);
+    }
+  
+    /**
+     * `REMOVE …`
+     * @param  {string}   remove
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.remove = function(remove, parameters, cb) {
+      this._query_history_.push({ REMOVE: remove });
+      return this.exec(parameters, cb);
+    }
+  
+    /**
+     * `FOR EACH …`
+     * @param  {[type]}   foreach
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.foreach = function(foreach, parameters, cb) {
+      this._query_history_.push({ FOREACH: foreach });
+      return this.exec(parameters, cb);
+    }
+  
+    /**
+     * `UNION …`
+     * @param  {[type]}   union
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.union = function(union, parameters, cb) {
+      this._query_history_.push({ UNION: union });
+      return this.exec(parameters, cb);
+    }
+  
+    /**
+     * `USING …`
+     * @param  {[type]}   using
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.using = function(using, parameters, cb) {
+      this._query_history_.push({ USING: using });
+      return this.exec(parameters, cb);
+    }
+  
+    /**
+     * Cypher-compatible-comment
+     * @param  {string}   comment
+     * @param  {object}   [parameters]
+     * @param  {Function} [cb]
+     */
+    Graph.prototype.comment = function(comment, parameters, cb) {
+      this.custom(' /* '+comment.replace(/^\s*\/\*\s*/,'').replace(/\s*\*\/\s*$/,'')+' */ ');
+      return this.exec(parameters, cb);
+    }
+  
+    /**
+     * Returns cypher query object
+     * @return {object} Cypher query object
+     */
+    Graph.prototype.toQuery = function() {
+      this.cypher.statements = this._query_history_;
+      return this.cypher;
+    }
+  
+    /**
+     * Return query as String
+     * @return {string} query
+     */
+    Graph.prototype.toQueryString = function() {
+      return this.toQuery().toString();
+    }
+  
+    /**
+     * @see Graph.prototype.toQueryString
+     */
+    Graph.prototype.toCypherQuery = function() {
+      return this.toQuery().toCypher();
+    }
+  
+  
+    /**
+     * Enables loading for specific types
+     * Define type(s) simply in a string
+     *
+     * Examples:
+     *   'node|relationship|path' or '*' to enable load for all types
+     *   'node|relationship' to enable for node + relationships
+     *   '' to disable for all (you can also use `disableLoading()` instead)
+     *
+     * @param  {string} classifications
+     */
     Graph.prototype.enableLoading = function(classifications) {
       if (classifications === '*')
         classifications = 'node|relationship|path';
@@ -4840,18 +6012,24 @@
       return this;
     }
   
-    // # Disables loading on results (speeds up queries but less convenient)
+    /**
+     * Disables loading on results (speeds up queries but less convenient)
+     */
     Graph.prototype.disableLoading = function() {
       this._loadOnResult_ = '';
       return this;
     }
   
-    // # Sort Results
-    // By default we get results like:
-    // { columns: [ 'node' ], data: [ [ { nodeObject#1 } ], … [ { nodeObject#n} ]] }
-    // To keep it more handy, we return just the data
-    // and (if we have only 1 column) instead of [ {node} ] -> {node}
-    // If you want to have access to the columns anyway, you can get them on `graph._columns_`
+    /**
+     * Sort Results
+     * By default we get results like:
+     * `{ columns: [ 'node' ], data: [ [ { nodeObject#1 } ], … [ { nodeObject#n} ]] }`
+     * To keep it more handy, we return just the data
+     * and (if we have only 1 column) instead of [ {node} ] -> {node}
+     * If you want to have access to the columns anyway, you can get them on `graph._columns_`
+     *
+     * @param  {boolean} trueOrFalse
+     */
     Graph.prototype.sortResult = function(trueOrFalse) {
       if (typeof trueOrFalse === 'undefined')
         trueOrFalse = true;
@@ -4859,32 +6037,52 @@
       return this;
     }
   
+    /**
+     * Enables sorting of result
+     */
     Graph.prototype.enableSorting = function() {
       return this.sortResult(true);
     }
   
+    /**
+     * Disbales sorting of result
+     */
     Graph.prototype.disableSorting = function() {
       return this.sortResult(false);
     }
   
+    /**
+     * Enables processing of result
+     */
     Graph.prototype.enableProcessing = function() {
       this.sortResult(true);
       this.enableLoading('*');
       return this;
     }
   
+    /**
+     * Disbales processing of result
+     */
     Graph.prototype.disableProcessing = function() {
       this.sortResult(false);
       this.disableLoading();
       return this;
     }
   
+    /**
+     * Will be called for logging, can be overriddin with a custom function
+     */
     Graph.prototype.log = function(){ /* > /dev/null */ };
   
-    // Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]
+    /**
+     * Expect s.th. like [ value, value2 ] or [ { key1: value }, { key2: value } ]
+     * @private
+     * @param  {object|array} parameters
+     * @return {object} parameters
+     */
     Graph.prototype._addParametersToCypher = function(parameters) {
       if ( (typeof parameters === 'object') && (parameters) && (parameters.constructor === Array) ) {
-        if (!this.cypher.parameters)
+        if (!this.cypher.hasParameters())
           this.cypher.parameters = {};
         for (var i=0; i < parameters.length; i++) {
           this._addParameterToCypher(parameters[i]);
@@ -4895,117 +6093,244 @@
       return this.cypher.parameters;
     }
   
+    /**
+     * Expect s.th. like 'value' or { parameterkey: 'value' }
+     * @private
+     * @param  {string|object} parameter
+     * @return {object} parameters
+     */
     Graph.prototype._addParameterToCypher = function(parameter) {
-      if (typeof parameter === 'object') {
-        if (!this.cypher.parameters)
-          this.cypher.parameters = {};
+      if (!this.cypher.hasParameters())
+        this.cypher.parameters = {};
+      if ((typeof parameter === 'object')&&(parameter !== null)) {
         _.extend(this.cypher.parameters, parameter);
       } else {
         // we name the parameter with `_value#_`
         var count = Object.keys(this.cypher.parameters).length;
-        this.cypher.parameters['_value'+count+'_'] = parameter;
+        // values with `undefined` will be replaced with `null` because neo4j doesn't process `undefined`
+        this.cypher.parameters['_value'+count+'_'] = (typeof parameter === 'undefined') ? null : parameter;
+        // return the placeholder
+        return '{_value'+count+'_}';
       }
       return this.cypher.parameters;
     }
   
-    /*
-     * Static methods
-     * (are shortcuts to methods on new instanced Graph())
+    /**
+     * Add key value to parameters
+     * @private
+     * @param  {object} key/value object literal
+     * @param  {string} [assignOperator], can be ' = ' or ' : ' for instance
+     * @return {array} values
      */
-    Graph.query = function(cypher, options, cb) {
-      return Graph.disableProcessing().query(cypher, options, cb);
+    Graph.prototype._addKeyValuesToParameters = function(o, assignOperator) {
+      o = helpers.flattenObject(o);
+      var values = [];
+      var identifierDelimiter = '`';
+      if (typeof assignOperator !== 'string')
+        assignOperator = ' = ';
+      for (var attr in o) {
+        values.push(helpers.escapeProperty(attr, identifierDelimiter) + assignOperator + this._addParameterToCypher(o[attr]));
+      }
+      return values;
     }
   
-    Graph.stream = function(cypher, options, cb) {
-      return new Graph.disableProcessing().stream(cypher, options, cb);
+    /**
+     * Add object literal to parameters
+     * @private
+     * @param {object} objectLiteral
+     * @return {string} map, e.g. `{ n.`name`: '…', …, n.`phone`: '…'  }`
+     */
+    Graph.prototype._addObjectLiteralToParameters = function(objectLiteral) {
+      return '{ '+this._addKeyValuesToParameters(objectLiteral, ' : ').join(', ')+' }';
     }
   
+    /**
+     * Adds object literal to query.
+     * If parameters are used (default), values will be added to parameters and replaced with `{_value%n_}`
+     * @private
+     * @param  {object} o
+     * @return {string} serialized object literal
+     */
+    Graph.prototype._addObjectLiteralForStatement = function(o) {
+      var s = '';
+      if (this.cypher.useParameters)
+        s = this._addObjectLiteralToParameters(o);
+      else
+        s = helpers.serializeObjectForCypher(o);
+      return s;
+    }
+  
+    /**
+     * # Static methods
+     * are aliases to methods on instanced Graph()
+     */
+  
+    /**
+     * @see Graph.prototype.query
+     */
+    Graph.query = function(cypher, parameters, cb, options) {
+      return Graph.disableProcessing().query(cypher, parameters, cb, options);
+    }
+  
+    /**
+     * @see Graph.prototype.stream
+     */
+    Graph.stream = function(cypher, parameters, cb, options) {
+      return new Graph.disableProcessing().stream(cypher, parameters, cb, options);
+    }
+  
+    /**
+     * @see Graph.prototype.wipeDatabase
+     */
     Graph.wipeDatabase = function(cb) {
       return new Graph().wipeDatabase(cb);
     }
   
+    /**
+     * @see Graph.prototype.countAllOfType
+     */
     Graph.countAllOfType = function(type, cb) {
       return new Graph().countAllOfType(type, cb);
     }
   
+    /**
+     * @see Graph.prototype.countRelationships
+     */
     Graph.countRelationships = function(cb) {
       return new Graph().countRelationships(cb);
     }
   
-    // alias for count_relationships
+    /**
+     * @see Graph.prototype.countRelations
+     */
     Graph.countRelations = function(cb) {
       return new Graph().countRelationships(cb);
     }
-    
+  
+    /**
+     * @see Graph.prototype.countNodes
+     */
     Graph.countNodes = function(cb) {
       return new Graph().countNodes(cb);
     }
-    
+  
+    /**
+     * @see Graph.prototype.countAll
+     */
     Graph.countAll = function(cb) {
       return new Graph().countAll(cb);
     }
   
+    /**
+     * @see Graph.prototype.about
+     */
     Graph.about = function(cb) {
       return new Graph().about(cb);
     }
   
-    Graph.start = function(start, cb) {
-      return Graph.enableProcessing().start(start, cb);
+    /**
+     * @see Graph.prototype.start
+     */
+    Graph.start = function(start, parameters, cb) {
+      return new Graph().enableProcessing().start(start, parameters, cb);
     }
   
+    /**
+     * @see Graph.prototype.custom
+     */
+    Graph.custom = function(statement, parameters, cb) {
+      return Graph.start().custom(statement, parameters, cb);
+    }
+  
+    /**
+     * @see Graph.prototype.match
+     */
+    Graph.match = function(statement, parameters, cb) {
+      return Graph.start().match(statement, parameters, cb);
+    }
+  
+    /**
+     * @see Graph.prototype.where
+     */
+    Graph.where = function(statement, parameters, cb) {
+      return Graph.start().where(statement, parameters, cb);
+    }
+  
+    /**
+     * @see Graph.prototype.return
+     */
+    Graph.return = function(statement, parameters, cb) {
+      return Graph.start().return(statement, parameters, cb);
+    }
+  
+    /**
+     * @see Graph.prototype.create
+     */
+    Graph.create = function(statement, parameters, cb) {
+      return Graph.start().create(statement, parameters, cb);
+    }
+  
+    /**
+     * @see Graph.prototype.enableLoading
+     */
     Graph.enableLoading = function(classifications) {
-      Graph.prototype.enableLoading(classifications);
-      return new Graph();
+      return Graph.start().enableLoading(classifications);
     }
   
+    /**
+     * @see Graph.prototype.disableLoading
+     */
     Graph.disableLoading = function() {
-      Graph.prototype.disableLoading();
-      return new Graph();
+      return Graph.start().disableLoading();
     }
   
+    /**
+     * @see Graph.prototype.disableProcessing
+     */
     Graph.disableProcessing = function() {
-      Graph.prototype.disableProcessing();
-      return new Graph();
+      return Graph.start().disableProcessing();
     }
   
+    /**
+     * @see Graph.prototype.enableProcessing
+     */
     Graph.enableProcessing = function() {
-      Graph.prototype.enableProcessing();
-      return new Graph();
+      return Graph.start().enableProcessing();
     }
   
+    /**
+     * @see Graph.prototype.enableSorting
+     */
     Graph.enableSorting = function() {
-      Graph.prototype.enableSorting();
-      return new Graph();
+      return Graph.start().enableSorting();
     }
   
+    /**
+     * @see Graph.prototype.disableSorting
+     */
     Graph.disableSorting = function() {
-      Graph.prototype.disableSorting(false);
-      return new Graph();
+      return Graph.start().disableSorting();
     }
   
+    /**
+     * Returns a new neo4jrestful client
+     * Can be used for direct requests on neo4j for instance
+     * @return {object} neo4jrestful
+     */
     Graph.request = function() {
       // creates a new neo4jrestful client
       return neo4jrestful.singleton();
     }
   
-    Graph.create = function(url) {
+    /**
+     * Instanciate a new Graph object, same as `new Graph()
+     * @see Graph
+     */
+    Graph.new = function(url) {
       return new Graph(url);
     }
   
-    // wipe_database function(cb) 
-    // count_all_of_type function(type, cb)
-    // count_relationships = function(cb)
-    // count_relations = function(cb)
-    // count_nodes = function(cb)
-    // count_all = function(cb)
-    // enable_loading = function(classifications)
-    // disable_loading = function()
-    // disable_processing = function()
-    // enable_processing = function()
-    // enable_sorting = function()
-    // disable_sorting = function() {
-  
-    return Graph;
+    return neo4jrestful.Graph = Graph;
   }
   
   if (typeof window !== 'object') {
@@ -5013,8 +6338,9 @@
       init: __initGraph__
     };
   } else {
-    var initGraph = __initGraph__;
-  }  
+    window.Neo4jMapper.initGraph = __initGraph__;
+  }
+    
   /*
    * include file: 'src/browser/browser_footer.js'
    */
