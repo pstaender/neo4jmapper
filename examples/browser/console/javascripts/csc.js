@@ -2,7 +2,7 @@
 var CoffeeScriptConsole;
 
 CoffeeScriptConsole = (function() {
-  CoffeeScriptConsole.prototype.outputContainer = '<pre class="outputResult"></pre>';
+  CoffeeScriptConsole.prototype.outputContainer = '<pre class="outputResult"><i class="icon-cancel"></i><span class="data"></span></pre>';
 
   CoffeeScriptConsole.prototype.echoEvalOutput = true;
 
@@ -13,7 +13,7 @@ CoffeeScriptConsole = (function() {
   CoffeeScriptConsole.prototype.adjustInputHeightUnit = 'em';
 
   function CoffeeScriptConsole(options) {
-    var attr, o, outputHistory, _i, _len;
+    var $e, attr, i, o, _i, _len, _ref;
     if (options == null) {
       options = {};
     }
@@ -33,11 +33,23 @@ CoffeeScriptConsole = (function() {
     for (attr in options) {
       this[attr] = options[attr];
     }
-    if (store && this.storeOutput) {
-      outputHistory = store.get('CoffeeScriptConsole_output') || [];
-      for (_i = 0, _len = outputHistory.length; _i < _len; _i++) {
-        o = outputHistory[_i];
-        this.echo(o.output, o.classification, false);
+    this.store = store || null;
+    if (this.store && this.storeOutput) {
+      this.outputHistory = this.store.get('CoffeeScriptConsole_output') || [];
+      _ref = this.outputHistory;
+      for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+        o = _ref[i];
+        if (typeof o === 'object' && o) {
+          $e = this.echo(o.output, {
+            classification: o.classification,
+            doStore: false,
+            data: {
+              position: i,
+              code: o.code,
+              outputString: o.outputString
+            }
+          });
+        }
       }
     }
     this.init();
@@ -61,8 +73,8 @@ CoffeeScriptConsole = (function() {
       }
       this.history.push(command);
     }
-    if (store && this.storeInput) {
-      return store.set('CoffeeScriptConsole_history', this.history);
+    if (this.store && this.storeInput) {
+      return this.store.set('CoffeeScriptConsole_history', this.history);
     }
   };
 
@@ -89,15 +101,33 @@ CoffeeScriptConsole = (function() {
   };
 
   CoffeeScriptConsole.prototype.clearInputHistory = function() {
+    var _ref;
     this.history = [];
-    if (store && this.storeInput) {
-      return store.set('CoffeeScriptConsole_history', this.history);
+    if (this.storeInput) {
+      return (_ref = this.store) != null ? _ref.set('CoffeeScriptConsole_history', this.history) : void 0;
+    }
+  };
+
+  CoffeeScriptConsole.prototype.storeOutputHistory = function() {
+    var _ref;
+    if (this.storeOutput) {
+      return (_ref = this.store) != null ? _ref.set('CoffeeScriptConsole_output', this.outputHistory) : void 0;
+    }
+  };
+
+  CoffeeScriptConsole.prototype.removeFromOutputHistory = function(pos) {
+    if (this.store && this.storeOutput && this.outputHistory[pos]) {
+      delete this.outputHistory[pos];
+      return this.storeOutputHistory();
     }
   };
 
   CoffeeScriptConsole.prototype.clearOutputHistory = function() {
-    if (store && this.storeOutput) {
-      return store.set('CoffeeScriptConsole_output', []);
+    this.outputHistory = [];
+    if (this.store && this.storeOutput) {
+      return true;
+    } else {
+      return false;
     }
   };
 
@@ -111,7 +141,15 @@ CoffeeScriptConsole = (function() {
     }
   };
 
-  CoffeeScriptConsole.prototype._resultToString = function(output) {
+  CoffeeScriptConsole.prototype.outputString = function(output) {
+    if (typeof output === 'object' && output !== null) {
+      return JSON.stringify(output, null, '  ');
+    } else {
+      return String(output);
+    }
+  };
+
+  CoffeeScriptConsole.prototype.outputStringFormatted = function(output) {
     if (typeof output === 'object' && output !== null) {
       if (output.constructor === Array) {
         return json2html(output);
@@ -185,19 +223,27 @@ CoffeeScriptConsole = (function() {
 
   CoffeeScriptConsole.prototype._keyIsTriggeredManuallay = false;
 
-  CoffeeScriptConsole.prototype.echo = function(output, classification, doStore) {
-    var $e, $output, cssClass, history, outputAsString;
-    if (typeof doStore !== 'boolean') {
-      doStore = this.storeOutput;
+  CoffeeScriptConsole.prototype.echo = function(output, options) {
+    var $e, $output, attr, cssClass, history, historyData, outputAsString, _ref;
+    if (options == null) {
+      options = {};
+    }
+    if (typeof options.doStore !== 'boolean') {
+      options.doStore = this.storeOutput;
     }
     $e = $(this.outputContainer);
+    if (options.data) {
+      for (attr in options.data) {
+        $e.data(attr, options.data[attr]);
+      }
+    }
     $output = this.$output;
     cssClass = '';
-    if (typeof classification === 'string' && classification !== 'evalOutput') {
-      cssClass = classification;
+    if (typeof options.classification === 'string' && options.classification !== 'evalOutput') {
+      cssClass = options.classification;
       $e.addClass(cssClass);
     } else {
-      if (classification === 'evalOutput' && !this.echoEvalOutput) {
+      if (options.classification === 'evalOutput' && !this.echoEvalOutput) {
         return $e;
       }
       if (typeof output === 'function') {
@@ -225,19 +271,25 @@ CoffeeScriptConsole = (function() {
     if (cssClass) {
       $e.addClass(cssClass);
     }
-    if (store && doStore) {
-      history = store.get('CoffeeScriptConsole_output') || [];
-      history.push({
-        output: this._resultToString(output),
-        classification: cssClass
-      });
+    if (!$e.data('outputString')) {
+      $e.data('outputString', this.outputString(output));
+    }
+    if (this.store && options.doStore) {
+      history = this.outputHistory;
+      historyData = {
+        output: this.outputStringFormatted(output),
+        classification: cssClass,
+        code: (_ref = options.data) != null ? _ref.code : void 0,
+        outputString: $e.data('outputString')
+      };
+      history.push(historyData);
       store.set('CoffeeScriptConsole_output', history);
     }
-    outputAsString = this._resultToString(output);
+    outputAsString = this.outputStringFormatted(output);
     if (/^\<.+\>/.test(outputAsString)) {
-      $e.html(outputAsString);
+      $e.find('span.data').html(outputAsString);
     } else {
-      $e.text(outputAsString);
+      $e.find('span.data').text(outputAsString);
     }
     $output.prepend($e);
     setTimeout(function() {
@@ -263,6 +315,9 @@ CoffeeScriptConsole = (function() {
     });
     suggestionFor = null;
     suggestionNr = 0;
+    $input.on('focus', function(e) {
+      return self._adjustTextareaHeight($(this));
+    });
     return $input.on('keydown', function(e) {
       var code, cursorPosition, linesCount, originalCode, suggestions, _ref, _ref1;
       code = originalCode = $(this).val();
@@ -339,6 +394,19 @@ CoffeeScriptConsole = (function() {
     });
   };
 
+  CoffeeScriptConsole.prototype.compile = function(code) {
+    return CoffeeScript.compile(code, {
+      bare: true
+    });
+  };
+
+  CoffeeScriptConsole.prototype["eval"] = function(code, context) {
+    if (context == null) {
+      context = window;
+    }
+    return eval.call(window, code);
+  };
+
   CoffeeScriptConsole.prototype.executeCode = function(code, $input) {
     var $e, e, js, output, _ref;
     if (code == null) {
@@ -348,22 +416,32 @@ CoffeeScriptConsole = (function() {
       $input = this.$input;
     }
     try {
-      js = CoffeeScript.compile(code, {
-        bare: true
-      });
-      output = eval.call(window, js);
+      js = this.compile(code);
+      output = this["eval"](js);
       $input.val('');
       this._currentHistoryPosition = null;
       this.addToHistory(code);
-      $e = this.echo(output, 'evalOutput');
-      if (this._resultToString(output) === '') {
+      $e = this.echo(output, {
+        classification: 'evalOutput',
+        data: {
+          code: code,
+          position: this.outputHistory.length
+        }
+      });
+      $e.data('code', code);
+      if (this.outputStringFormatted(output) === '') {
         return;
       }
       return this.onAfterEvaluate(output, $e);
     } catch (_error) {
       e = _error;
       $input.addClass('error');
-      $e = this.echo(e, 'evalOutput');
+      $e = this.echo(e, {
+         classification: 'evalOutput',
+        data: {
+          error: e.message
+        }
+      });
       return this.onCodeError(e, $e);
     }
   };

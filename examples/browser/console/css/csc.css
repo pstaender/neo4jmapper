@@ -11,16 +11,18 @@ body {
   background: #f6f6f6;
   font-family: "Lucida";
   font-size: 14px;
-  transition: background 0.2s; }
-
-body, a {
+  transition: background 0.2s;
   color: #222222; }
+
+a {
+  color: #309ffc;
+  text-decoration: none; }
+  a:hover {
+    text-decoration: underline; }
 
 body.dark {
   background: #333333;
   color: #eeeeee; }
-  body.dark a {
-    color: #eeeeee; }
 
 .consoleTypo, .outputResult {
   font-family: Menlo, "Courier New", Terminal, monospace;
@@ -40,12 +42,17 @@ body.dark {
   font-size: 22px; }
   #consoleDashboard i:hover {
     cursor: pointer; }
+  #consoleDashboard a {
+    color: black; }
+
+.dark #consoleDashboard a {
+  color: white; }
 
 #consoleInput {
   background: white;
   width: 95%;
   border: 0;
-  padding: 1em;
+  padding: 1.5%;
   margin: 0 auto;
   resize: none;
   min-height: 3em;
@@ -65,18 +72,34 @@ body.dark {
 
 .dark .outputResult.object, .dark .outputResult ol.array, .dark .outputResult li.string span.value {
   color: #dddddd; }
+.dark .outputResult:hover {
+  background: #262626; }
+.dark .outputResult i {
+  color: #dddddd; }
 
 .outputResult {
   display: block;
-  padding: 1em;
+  position: relative;
+  padding: 1.5%;
   padding-bottom: 0;
   position: relative;
   opacity: 0;
   height: 0;
   transition: all 0.2s ease-out; }
+  .outputResult i {
+    color: black;
+    opacity: 0.15; }
+  .outputResult i.icon-cancel {
+    position: absolute;
+    right: 1.5%; }
+  .outputResult:hover {
+    cursor: pointer;
+    background: #fdfdfd; }
+    .outputResult:hover i {
+      opacity: 0.6; }
   .outputResult.visible {
-    padding: 1em;
-    padding-bottom: 0;
+    margin: 1%;
+    padding: 0.5em;
     opacity: 1;
     height: auto; }
   .outputResult li.string span.value {

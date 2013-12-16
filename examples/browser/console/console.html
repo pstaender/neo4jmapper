@@ -7,118 +7,18 @@
   <link rel="stylesheet" href="webfonts/css/animation.css">
   <link rel="stylesheet" type="text/css" href="css/csc.css" />
   <script type="text/javascript" src="javascripts/lib/jquery.min.js"></script>
-  <script type="text/javascript" src="javascripts/lib/coffee-script.js"></script>
+  <script type="text/javascript" src="javascripts/lib/iced-coffee-script.js"></script>
   <script type="text/javascript" src="//underscorejs.org/underscore-min.js"></script>
   <script type="text/javascript" src="//pstaender.github.io/neo4jmapper/examples/browser/lib/superagent.js"></script>
   <script type="text/javascript" src="//pstaender.github.io/neo4jmapper/examples/browser/neo4jmapper_complete.js"></script>
   <script type="text/javascript" src="javascripts/lib/store.min.js"></script>
   <script type="text/javascript" src="javascripts/json2html.js"></script>
   <script type="text/javascript" src="javascripts/csc.js"></script>
-  <script type="text/javascript">
-  var usage = function() {
-    var s = '# CoffeeScriptConsole\n\n';
-    s += '  * press `shift+enter` to insert new line(s)\n';
-    s += '  * press `keyup`/`keydown` to browse through history\n';
-    s += '  * use `echo()` instead of `console.log()` to echo\n';
-    s += '  * `clearHistory()` clears console history\n';
-    s += '  * `clear()` clears screen\n';
-    s += '  * `echoEvalOutput(true|false)` echo result of executed code\n\n';
-    s += '## Keyboard Shortcuts\n';
-    s += '  * `cmd+k` clear output screen\n';
-    s += '  * `cmd+shift+k` toggle echo eval output';
-    return s;
-  }
-
-  $(window).ready(function(){
-    var $consoleDashboard = $('#consoleDashboard');
-    var csc = new CoffeeScriptConsole({
-      $input: $('#consoleInput'),
-      $output: $('#consoleOutput'),
-      suggestions: 'usage(),clearHistory(),clearScreen(),echoEvalOutput(true),echo,clear()'.split(',')
-    });
-    window.puts = window.echo = function(output) {
-      csc.echo(output);
-    };
-    window.clearHistory = function() {
-      csc.clearHistory();
-    }
-    window.clear = function() {
-      window.clearScreen();
-      csc.clearOutputHistory();
-    }
-
-    window.clearScreen = function() {
-      csc.$output.html('');
-    }
-
-    window.echoEvalOutput = function(trueOrFalse) {
-      if (typeof trueOrFalse === 'boolean') {
-        $flag = $('#consoleDashboard .echoEvalOutput i')
-        if (trueOrFalse) {
-          $flag.addClass('icon-eye');
-          $flag.removeClass('icon-eye-off');
-        } else {
-          $flag.addClass('icon-eye-off');
-          $flag.removeClass('icon-eye');
-        }
-        csc.echoEvalOutput = trueOrFalse;
-        if (store)
-          store.set('echoEvalOutput', trueOrFalse);
-      }
-    }
-
-    if (store) {
-      window.echoEvalOutput(typeof store.get('echoEvalOutput') === 'boolean' ? store.get('echoEvalOutput') : true);
-    }
-
-    window.load = function(url, cb) {
-      return $.getScript(url, cb);
-    }
-
-    var toggleEchoEvalOutput = function() {
-      window.echoEvalOutput(!csc.echoEvalOutput);
-    }
-
-    $(document).on('keydown', function(e) {
-      $('#consoleInput').focus(); // TODO: replace with less resource intensive check
-      // cmd + k, clear console
-      if ((e.keyCode === 75 && e.metaKey) || (e.keyCode === 75 && e.ctrlKey)) {
-        // cmd + k + shift, toggle echo eval output
-        if (e.shiftKey) {
-          toggleEchoEvalOutput();
-        } else {
-          window.clear();
-        }
-      }
-    });
-
-    $iconDark = $consoleDashboard.find('i.icon-ajust');
-
-    $iconDark.on('click', function() {
-      $('body').toggleClass('dark');
-      store.set('darkColorTheme', $('body').hasClass('dark'));
-    });
-
-    $consoleDashboard.find('i.icon-eye, i.icon-eye-off').on('click', function(){
-      toggleEchoEvalOutput();
-    });
-
-    if (store) {
-      window.echoEvalOutput(store.get('echoEvalOutput'));
-      if (store.get('darkColorTheme')) {
-        $iconDark.trigger('click');
-      }
-    }
-  });
-  </script>
+  <script type="text/javascript" src="javascripts/browsereditor.js"></script>
 </head>
 <body>
   <div id="main">
-    <textarea id="consoleInput" class="consoleTypo" autofocus="autofocus">{Node,Graph,Transaction,helpers,client} = new Neo4jMapper('http://zeitpulse.com:7480/')
-new Graph().about (err, aboutGraph) -> echo aboutGraph
-usage() # provides information about the console, press `enter` to execute code
-
-</textarea>
+    <textarea id="consoleInput" class="consoleTypo" autofocus="autofocus">usage() # press enter</textarea>
     <div id="consoleOutput"></div>
     <div id="consoleDashboard">
       <span class="echoEvalOutput">

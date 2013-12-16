@@ -46,7 +46,11 @@
         return this.html += "<ul class=\"object\">" + (parts.join('')) + "</ul>";
       }
     } else if (typeof o === 'string') {
-      return this.html += this.stringDelimiter + o.replace(new RegExp("[\\\\" + this.stringDelimiter + "]", 'g', '\\$&')) + this.stringDelimiter;
+      if (this.detectUrls && /^[a-z]+\:\/\//g.test(o)) {
+        return this.html += "<a href=\"" + o + "\">" + o + "</a>";
+      } else {
+        return this.html += this.stringDelimiter + o.replace(new RegExp("[\\\\" + this.stringDelimiter + "]", 'g', '\\$&')) + this.stringDelimiter;
+      }
     } else {
       return this.html += String(o);
     }
@@ -54,6 +58,7 @@
   Json2Html.prototype.stringDelimiter = '"';
   Json2Html.prototype.html = '';
   Json2Html.prototype.references = null;
+  Json2Html.prototype.detectUrls = true;
   Json2Html.prototype.toString = function() {
     return this.html;
   };

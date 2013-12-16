@@ -1,0 +1,141 @@
+html *
+  margin: 0
+  padding: 0
+  list-style: none
+html, body, #main
+  position: relative
+  width: 100%
+body
+  background: #f6f6f6
+  font-family: 'Lucida'
+  font-size: 14px
+  transition: background 0.2s
+  color: #222
+a
+  color: #309ffc//#3381c9
+  // font-weight: bolder
+  text-decoration: none
+  &:hover
+    text-decoration: underline
+body.dark
+  background: #333
+  color: #eee
+
+.consoleTypo, .outputResult
+  font-family: Menlo, "Courier New", Terminal, monospace
+  color: #999
+  &.error
+    color: #ffadad
+.dark .outputResult
+  color: #ddd
+  &.error
+    color: #e64141
+#consoleDashboard
+  position: fixed
+  bottom: 1em
+  right: 1em
+  font-size: 22px
+  i:hover
+    cursor: pointer
+  a
+    color: #000
+.dark #consoleDashboard a
+  color: #fff
+#consoleInput
+  background: #fff
+  width: 95%
+  border: 0
+  padding: 1.5%
+  margin: 0 auto
+  resize: none
+  min-height: 3em
+  transition: height 0.1s
+  margin: 0 auto
+  display: block
+  margin-top: 0.5em
+  overflow: hidden
+  outline: none
+.dark #consoleInput
+  background: #222
+  color: #fff
+#consoleInput, .outputResult
+  font-size: 20px
+.dark
+  .outputResult
+    &.object, ol.array, li.string span.value
+      color: #ddd
+    &:hover
+      background: #262626
+    i
+      color: #ddd
+.outputResult
+  display: block
+  position: relative
+  padding: 1.5%
+  padding-bottom: 0
+  position: relative
+  opacity: 0
+  height: 0
+  transition: all 0.2s ease-out
+  i
+    color: #000
+    opacity: 0.15
+  i.icon-cancel
+    position: absolute
+    right: 1.5%
+  &:hover
+    cursor: pointer
+    background: #fdfdfd
+    i
+      opacity: 0.6
+  &.visible
+    margin: 1%
+    padding: 0.5em
+    opacity: 1
+    height: auto
+  li.string span.value
+    color: #000
+  &.boolean, li.boolean span.value
+    color: #4eaaa7
+  &.number, li.number span.value
+    color: #f38346
+  &.function, li.function span.value
+    color: #67bf99
+  &.undefined, li.undefined span.value, .circularReference
+    color: #d47ed1
+    &.evalOutput
+      display: none
+  &.array
+    color: #429db7
+  &.object
+    color: #666
+  ol.array
+    list-style: none
+    display: inline
+    color: #666
+    &:before
+      content: '['
+    &:after
+      content: ']'
+    // ul.object li
+    //   display: block
+    li
+      display: block //inline
+    > li
+      &:after
+        content: ','
+      &:last-child:after
+        content: ''
+  ul.object
+    list-style: none
+    display: inline
+    &:before
+      content: '{'
+    &:after
+      content: '}'
+  ol.array, ul.object
+    li
+      margin-left: 1em
+      list-style: none
+      span.attribute:after
+        content: ': '
