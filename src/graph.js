@@ -732,7 +732,6 @@ var __initGraph__ = function(neo4jrestful) {
    * @param  {Function} [cb]
    */
   Graph.prototype.set = function(set, parameters, cb) {
-    var self = this;
     var setString = '';
     var data = null;
     if ((typeof set === 'object')&&(set !== null)) {
@@ -1187,7 +1186,6 @@ var __initGraph__ = function(neo4jrestful) {
   Graph.prototype._addKeyValuesToParameters = function(o, assignOperator) {
     o = helpers.flattenObject(o);
     var values = [];
-    var key = '';
     var identifierDelimiter = '`';
     if (typeof assignOperator !== 'string')
       assignOperator = ' = ';

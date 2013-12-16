@@ -326,10 +326,10 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     if (this.header['X-Stream'] === 'true') {
 
       var stream = JSONStream.parse([/^columns|data$/, true]);
-      
+
       var isDataColumn = false;
       self._columns_ = [];
-      
+
       stream.on('data', function(data) {
         // detect column and data array
         // { columns: [ '1', … , 'n' ], data: [ [ … ] ] }
@@ -345,7 +345,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
           }
         }
       });
-      
+
       stream.on('end', function() {
         // prevent to pass undefined, but maybe an undefined is more clear
         cb(null, null);
@@ -475,7 +475,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     cb(null, res, debug);
   }
 
-  Neo4jRestful.prototype.onSuccess = function(cb, res, status, options) {
+  Neo4jRestful.prototype.onSuccess = function(cb, res, status) {
 
     this._debug_.res = res;
     this._debug_.status = status;
@@ -562,7 +562,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
     if (typeof cypher !== 'string')
       throw Error('cypher argument has to be a string');
 
-    return this.query(cypher, options, function(data, a, b) {
+    return this.query(cypher, options, function(data) {
       if (data) {
         if (typeof self.onProcessStream === 'function') {
           todo++;

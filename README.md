@@ -24,7 +24,7 @@ Give Neo4jMapper a try in the [coffeesript-testing-console](http://pstaender.git
   $ npm test
 ```
 
-Beware that a lot of nodes will be written and kept in your database, so avoid running any of these tests + examples on productive instances ;)
+Beware that a lot of nodes will be written and kept in your database, so avoid running any of these tests + examples on productive instances.
 
 ## Usage and Testing in Browser
 
@@ -39,10 +39,11 @@ Neo4jMapper is available in modern Browsers (except the streaming feature), but 
   * complete documentation
   * cleanup redundant tests
   * dox (markdown and jsdoc flavoured) sourcecode documentation
+  * use parameter-values by default for all statement segments that are generated
 
 ### Tested against:
 
-* Neo4j v2 RC 1 (not working with previous milestones!)
+* Neo4j v2
 * Node 0.8 - 0.11 [see Travis CI](https://travis-ci.org/pstaender/neo4jmapper)
 * Chrome (v22+) and Safari (v7+)
 

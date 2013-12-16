@@ -177,16 +177,12 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
     this.id = this._id_;
 
-    var relationshipPropertiesFlatten = this.flattenData();
-
     if (!this.type)
       throw Error("Type for a relationship is mandatory, e.g. `relationship.type = 'KNOW'`");
     if ((!(this.from))||(isNaN(this.from.id)))
       throw Error('Relationship requires a `relationship.from` startnode');
     if ((!(this.to))||(isNaN(this.to.id)))
       throw Error('Relationship requires a `relationship.to` endnode');
-
-    var url = null;
 
     if (this.hasId()) {
 

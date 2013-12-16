@@ -657,18 +657,10 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype._onBeforeLoad = function(node, next, debug) {
-    var self = this;
     this.onBeforeLoad(node, function(node) {
       if (node.hasId()) {
-        var DefaultConstructor = self.recommendConstructor();
-        // To check that it's invoked by Noder::find() or Person::find()
-        var constructorNameOfStaticMethod = self.label || helpers.constructorNameOfFunction(DefaultConstructor);
 
         var _createNodeFromLabel = function(node, debug) {
-          // convert node to it's model if it has a distinct label and differs from constructor
-          // if ( (node.label) && (node._constructor_name_ !== constructorNameOfStaticMethod) ) {
-          //   Node.convertNodeToModel(node, node.label, DefaultConstructor);
-          // }
           node.isPersisted(true);
           node.__skip_loading_labels__ = null;
           next(null, node, debug);
@@ -1830,16 +1822,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       if (!_.isArray(labels))
         labels = [ labels ];
       self.labels = labels;
-      // remove all labels
-      self.removeLabels(function(err, res, debug) {
-        if (err)
-          return cb(err, res, debug);
-        // an add all labels
-        return self.addLabels(labels, cb);
-      })
-      // This doesn't work anymore since v2 M6 …
-      // https://github.com/neo4j/neo4j/issues/1279
-      // Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
+      Graph.request().put('node/'+self.id+'/labels', { data: labels }, cb);
     }
     return this;
   }
