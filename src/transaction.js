@@ -271,7 +271,15 @@ var __initTransaction__ = function(neo4jrestful) {
 
   Transaction._sortTransactionArguments = function(cypher, parameters, cb) {
     var statements = null;
-    if (typeof cypher === 'string') {
+    // we might have a Graph or CypherQuery Object
+    if ((typeof cypher === 'object') && ((typeof cypher.toQuery === 'function') || (typeof cypher.statementsToString === 'function'))) {
+      if (cypher.toQuery) {
+        statements = [ { statement: cypher.toQuery().statementsToString(), parameters: cypher.parameters() }];
+      } else {
+        statements = [ { statement: cypher.statementsToString(), parameters: cypher.parameters() }];
+      }
+      cb = parameters;
+    } else if (typeof cypher === 'string') {
       if (typeof parameters === 'function') {
         cb = parameters;
         parameters = {};

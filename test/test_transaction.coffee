@@ -125,7 +125,12 @@ describe 'Neo4jMapper (transaction)', ->
       expect(transaction.results[0].data[0][0].name).to.be.equal 'Linda'
       expect(transaction.results[0].data[0][1]).to.be.above 0
       expect(transaction.status).to.be.equal 'committed'
-      done()
+      Transaction.commit Graph.create(query, { props: { name: 'Dave' } }), (err, transaction) ->
+        expect(err).to.be null
+        expect(transaction.results).to.have.length 1
+        expect(transaction.results[0].data[0][0].name).to.be.equal 'Dave'
+        expect(transaction.status).to.be.equal 'committed'
+        done()
 
   it 'expect to execute rollbacks', (done) ->
     query = 'CREATE (n {props}) RETURN n AS node, id(n) AS ID'
