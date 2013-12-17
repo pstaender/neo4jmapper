@@ -8,17 +8,19 @@
   <link rel="stylesheet" type="text/css" href="css/csc.css" />
   <script type="text/javascript" src="javascripts/lib/jquery.min.js"></script>
   <script type="text/javascript" src="javascripts/lib/iced-coffee-script.js"></script>
+  <script type="text/javascript" src="javascripts/lib/store.min.js"></script>
   <script type="text/javascript" src="//underscorejs.org/underscore-min.js"></script>
   <script type="text/javascript" src="//pstaender.github.io/neo4jmapper/examples/browser/lib/superagent.js"></script>
   <script type="text/javascript" src="//pstaender.github.io/neo4jmapper/examples/browser/neo4jmapper_complete.js"></script>
-  <script type="text/javascript" src="javascripts/lib/store.min.js"></script>
   <script type="text/javascript" src="javascripts/json2html.js"></script>
   <script type="text/javascript" src="javascripts/csc.js"></script>
   <script type="text/javascript" src="javascripts/browsereditor.js"></script>
 </head>
 <body>
   <div id="main">
-    <textarea id="consoleInput" class="consoleTypo" autofocus="autofocus">usage() # press enter</textarea>
+    <textarea id="consoleInput" class="consoleTypo" autofocus="autofocus" spellcheck="false">{Node,Relationship,Graph,Transaction} = new Neo4jMapper('http://zeitpulse.com:7480')
+
+usage() # provides help for using this console</textarea>
     <div id="consoleOutput"></div>
     <div id="consoleDashboard">
       <span class="echoEvalOutput">

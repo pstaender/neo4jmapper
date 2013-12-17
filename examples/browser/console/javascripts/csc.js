@@ -12,6 +12,8 @@ CoffeeScriptConsole = (function() {
 
   CoffeeScriptConsole.prototype.adjustInputHeightUnit = 'em';
 
+  CoffeeScriptConsole.prototype.storePrefix = 'CoffeeScriptConsole_';
+
   function CoffeeScriptConsole(options) {
     var $e, attr, i, o, _i, _len, _ref;
     if (options == null) {
@@ -33,9 +35,9 @@ CoffeeScriptConsole = (function() {
     for (attr in options) {
       this[attr] = options[attr];
     }
-    this.store = store || null;
+    this.store = window.store || null;
     if (this.store && this.storeOutput) {
-      this.outputHistory = this.store.get('CoffeeScriptConsole_output') || [];
+      this.outputHistory = this.store.get(this.storePrefix + 'output') || [];
       _ref = this.outputHistory;
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         o = _ref[i];
@@ -65,6 +67,10 @@ CoffeeScriptConsole = (function() {
 
   CoffeeScriptConsole.prototype._currentHistoryPosition = null;
 
+  CoffeeScriptConsole.prototype.lastPrompt = function() {
+    return this.history[this.history.length - 1];
+  };
+
   CoffeeScriptConsole.prototype.addToHistory = function(command) {
     command = command != null ? command.trim() : void 0;
     if (command) {
@@ -74,7 +80,7 @@ CoffeeScriptConsole = (function() {
       this.history.push(command);
     }
     if (this.store && this.storeInput) {
-      return this.store.set('CoffeeScriptConsole_history', this.history);
+      return this.store.set(this.storePrefix + 'history', this.history);
     }
   };
 
@@ -104,14 +110,19 @@ CoffeeScriptConsole = (function() {
     var _ref;
     this.history = [];
     if (this.storeInput) {
-      return (_ref = this.store) != null ? _ref.set('CoffeeScriptConsole_history', this.history) : void 0;
+      if ((_ref = this.store) != null) {
+        _ref.set(this.storePrefix + 'history', this.history);
+      }
+      return true;
+    } else {
+      return false;
     }
   };
 
   CoffeeScriptConsole.prototype.storeOutputHistory = function() {
     var _ref;
     if (this.storeOutput) {
-      return (_ref = this.store) != null ? _ref.set('CoffeeScriptConsole_output', this.outputHistory) : void 0;
+      return (_ref = this.store) != null ? _ref.set(this.storePrefix + 'output', this.outputHistory) : void 0;
     }
   };
 
@@ -124,6 +135,7 @@ CoffeeScriptConsole = (function() {
 
   CoffeeScriptConsole.prototype.clearOutputHistory = function() {
     this.outputHistory = [];
+    this.storeOutputHistory();
     if (this.store && this.storeOutput) {
       return true;
     } else {
@@ -283,7 +295,7 @@ CoffeeScriptConsole = (function() {
         outputString: $e.data('outputString')
       };
       history.push(historyData);
-      store.set('CoffeeScriptConsole_output', history);
+      store.set(this.storePrefix + 'output', history);
     }
     outputAsString = this.outputStringFormatted(output);
     if (/^\<.+\>/.test(outputAsString)) {
