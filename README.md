@@ -277,7 +277,7 @@ Example:
 ```js
   Graph
     .custom('START n=node({id}) RETURN n LIMIT 1;', { id: 123 }, cb);
-``
+```
 
 #### Graph query methods
 

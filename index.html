@@ -190,15 +190,10 @@
   3. callback (optional)</p>
 <p>Example:</p>
 <pre><code class="lang-js">  Graph
-    .custom(&#39;START n=node({id}) RETURN n LIMIT 1;&#39;, { id: 123 }, cb);
-``
-
-#### Graph query methods
-
-Here are most of all available methods to query the graph. `…` represents the strings containing the statements:
-
-```js
-  Graph
+    .custom(&#39;START n=node({id}) RETURN n LIMIT 1;&#39;, { id: 123 }, cb);</code></pre>
+<h4>Graph query methods</h4>
+<p>Here are most of all available methods to query the graph. <code>…</code> represents the strings containing the statements:</p>
+<pre><code class="lang-js">  Graph
     .start(…)
     .match(…)
     .onMatch(…)
@@ -901,7 +896,7 @@ Example:
 ```js
   Graph
     .custom('START n=node({id}) RETURN n LIMIT 1;', { id: 123 }, cb);
-``
+```
 
 #### Graph query methods
 
