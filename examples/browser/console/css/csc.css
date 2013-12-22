@@ -85,7 +85,8 @@ body.dark {
   position: relative;
   opacity: 0;
   height: 0;
-  transition: all 0.2s ease-out; }
+  transition: all 0.2s ease-out;
+  word-wrap: break-word; }
   .outputResult i {
     color: black;
     opacity: 0.15; }

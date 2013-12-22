@@ -305,23 +305,51 @@ class CoffeeScriptConsole
   eval: (code, context = window) ->
     eval.call window, code
 
+  onBeforeExecutingCode: (s) ->
+    if typeof s is 'string'
+      s = s.replace(/^\n*(.*)\n*$/,'$1').split('\n').join('\n')
+      # s.th. like `*name = `
+      lines = for line in s.split('\n')
+        if line and /^\s*\*[a-zA-Z_$]*[0-9a-zA-Z_$]*\s*\=\s*/.test(line)
+          codeEscaped = line.replace(/'/g, "\\'")
+          match = line.match(/^(\s*)\*([a-zA-Z_$]*[0-9a-zA-Z_$]*)\s*\=\s*(.+)\s*$/)
+          functionParts = match[3].match /^(.*)\(([^\)]*)\)\s*$/
+          deferString = "defer err, #{match[2]}"
+          if functionParts
+            functionCall = if functionParts[2] then functionParts[1]+" "+functionParts[2]+", "+deferString else functionParts[1]+" "+deferString
+          else
+            functionCall = match[3] + ", " + deferString
+          """
+            await #{functionCall}
+            if typeof echo is 'function'
+              echo(err, { classification: "\#{if err and not #{match[2]} then "error " else ""}evalOutput", data: { error: err?.message, code: '#{codeEscaped}' } }) if err
+              echo(#{match[2]}, { classification: "evalOutput", data: { code: '#{codeEscaped}' } })
+          """.split('\n').join("\n#{match[1]}")
+        else
+          line
+      s = lines.join('\n')
+    s
+
   executeCode: (code = @$input?.val(), $input = @$input) ->
     # execute code
+    code = @onBeforeExecutingCode(originalCode = code)
     try
       js = @compile(code)
       output = @eval(js)
       $input.val('')
       @_currentHistoryPosition = null
-      @addToHistory(code)
-      $e = @echo(output, { classification: 'evalOutput', data: { code: code, position: @outputHistory.length } })
-      $e.data('code', code)
+      @addToHistory(originalCode)
+      $e = @echo(output, { classification: 'evalOutput', data: { code: originalCode, position: @outputHistory.length } })
       return if @outputStringFormatted(output) is ''
       @onAfterEvaluate output, $e
     catch e
       $input.addClass 'error'
-      $e = @echo(e, { classification: 'evalOutput', data: { error: e.message } })
+      # we always display error message(s)
+      $e = @echo(e?.message or e, { classification: 'error evalOutput', data: { code: originalCode, error: e.message } })
       @onCodeError e, $e
 
   onAfterEvaluate: (output, $e) ->
 
   onCodeError: (error, $e) ->
+
+module.exports = exports = CoffeeScriptConsole if require? and exports?

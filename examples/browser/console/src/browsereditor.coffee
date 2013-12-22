@@ -21,14 +21,14 @@ $(window).ready ->
   $input = $("#consoleInput")
   $output = $("#consoleOutput")
 
-  csc = new CoffeeScriptConsole(
+  window.csc = csc = new CoffeeScriptConsole(
     $input: $input
     $output: $output
     suggestions: "usage(),clearHistory(),clearScreen(),echoEvalOutput(true),echo,clear()".split(",")
   )
 
-  window.puts = window.echo = (output) ->
-    csc.echo output
+  window.echo = (output, options) ->
+    csc.echo output, options
 
   window.clearHistory = ->
     csc.clearHistory()
@@ -60,7 +60,7 @@ $(window).ready ->
     window.echoEvalOutput not csc.echoEvalOutput
 
   $(document).on "keydown", (e) ->
-    $("#consoleInput").focus() # TODO: replace with less resource intensive check
+    $("#consoleInput").focus() unless ( e.metaKey or e.shiftKey or e.ctrlKey) # TODO: replace with less resource intensive check
     # cmd + k
     if (e.keyCode is 75 and e.metaKey) or (e.keyCode is 75 and e.ctrlKey)
       # `cmd + k + shift` toggle echo eval output
@@ -86,14 +86,14 @@ $(window).ready ->
     window.echoEvalOutput store.get("echoEvalOutput")
     $iconDark.trigger "click"  if store.get("darkColorTheme")
 
-  $("#consoleOutput .outputResult").live "click", (e) ->
+  $("#consoleOutput .outputResult").live "dblclick", (e) ->
     if $(e.target).hasClass("attribute") or $(e.target).hasClass("value")
       $input.val $(e.target).html()
     else
       $input.val $(this).data("outputString")
     $input.focus()
 
-  $("#consoleOutput .outputResult").live "dblclick", (e) ->
+  $("#consoleOutput .outputResult").live "click", (e) ->
     $input.val $(this).data("code")
     $input.focus()
 

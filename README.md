@@ -3,7 +3,7 @@
 
 Written in JavaScript for browser- and serverside usage.
 
-[Give Neo4jMapper a try in the coffeesript-live-console](http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html)
+[Try Neo4jMapper with the coffeesript-live-console](http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html#http://zeitpulse.com:7480)
 
 ### Why another neo4j client?
 

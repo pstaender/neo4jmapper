@@ -9,13 +9,13 @@ $(window).ready(function() {
   $consoleDashboard = $("#consoleDashboard");
   $input = $("#consoleInput");
   $output = $("#consoleOutput");
-  csc = new CoffeeScriptConsole({
+  window.csc = csc = new CoffeeScriptConsole({
     $input: $input,
     $output: $output,
     suggestions: "usage(),clearHistory(),clearScreen(),echoEvalOutput(true),echo,clear()".split(",")
   });
-  window.puts = window.echo = function(output) {
-    return csc.echo(output);
+  window.echo = function(output, options) {
+    return csc.echo(output, options);
   };
   window.clearHistory = function() {
     return csc.clearHistory();
@@ -54,7 +54,9 @@ $(window).ready(function() {
     return window.echoEvalOutput(!csc.echoEvalOutput);
   };
   $(document).on("keydown", function(e) {
-    $("#consoleInput").focus();
+    if (!(e.metaKey || e.shiftKey || e.ctrlKey)) {
+      $("#consoleInput").focus();
+    }
     if ((e.keyCode === 75 && e.metaKey) || (e.keyCode === 75 && e.ctrlKey)) {
       if (e.shiftKey) {
         return toggleEchoEvalOutput();
@@ -82,7 +84,7 @@ $(window).ready(function() {
       $iconDark.trigger("click");
     }
   }
-  $("#consoleOutput .outputResult").live("click", function(e) {
+  $("#consoleOutput .outputResult").live("dblclick", function(e) {
     if ($(e.target).hasClass("attribute") || $(e.target).hasClass("value")) {
       $input.val($(e.target).html());
     } else {
@@ -90,7 +92,7 @@ $(window).ready(function() {
     }
     return $input.focus();
   });
-  $("#consoleOutput .outputResult").live("dblclick", function(e) {
+  $("#consoleOutput .outputResult").live("click", function(e) {
     $input.val($(this).data("code"));
     return $input.focus();
   });

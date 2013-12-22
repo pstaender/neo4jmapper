@@ -15,12 +15,60 @@
   <script type="text/javascript" src="../lib/underscore-min.js"></script>
   <script type="text/javascript" src="../lib/superagent.js"></script>
   <script type="text/javascript" src="../neo4jmapper_complete.js"></script>
+  <script type="text/javascript">
+  $(window).ready(function(){
+    var checkForDatabaseUrl = function() {
+      if (window.location.hash) {
+        clear();
+        var url = window.location.hash.replace(/^#/,'');
+        try {
+          var neo4j = new Neo4jMapper(url);
+          window.Node = neo4j.Node;
+          window.Relationship = neo4j.Relationship;
+          window.Graph = neo4j.Graph;
+          window.Transaction = neo4j.Transaction;
+          echo("Connected to '"+url+"'; Node, Relationship, Graph und Transaction are ready for use.")
+        } catch (e) {
+          e.message = e.message+'\nYou can attach the database url as hash on the browser url: `#http://localhost:7474` for instance'
+          echo(e);
+        }
+      }
+    }
+
+    window.echo = function(output, options) {
+      if (typeof output === 'object') {
+        if (output.constructor === Array) {
+          output.forEach(function(o,i){
+            if (typeof o.toObject === 'function')
+              output[i] = o.toObject();
+          });
+        } else {
+          if (typeof output.toObject === 'function')
+            output = output.toObject();
+        }
+      }
+      window.csc.echo(output, options);
+    }
+
+    window.query = function(mapper) {
+      if (mapper) {
+        // if (typeof mapper === 'function')
+        //   mapper = mapper();
+        if (typeof mapper.toQuery === 'function')
+          echo(mapper.toQuery().toString());
+      }
+    }
+
+    window.onhashchange = function() {
+      checkForDatabaseUrl();
+    }
+    checkForDatabaseUrl();
+  });
+  </script>
 </head>
 <body>
   <div id="main">
-    <textarea id="consoleInput" class="consoleTypo" autofocus="autofocus" spellcheck="false">{Node,Relationship,Graph,Transaction} = new Neo4jMapper('http://zeitpulse.com:7480')
-
-usage() # provides help for using this console</textarea>
+    <textarea id="consoleInput" class="consoleTypo" autofocus="autofocus" spellcheck="false">usage() # provides help for using this console</textarea>
     <div id="consoleOutput"></div>
     <div id="consoleDashboard">
       <span class="echoEvalOutput">
