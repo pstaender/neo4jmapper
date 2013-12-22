@@ -19,7 +19,7 @@
   $(window).ready(function(){
     var checkForDatabaseUrl = function() {
       if (window.location.hash) {
-        clear();
+        // clear();
         var url = window.location.hash.replace(/^#/,'');
         try {
           var neo4j = new Neo4jMapper(url);
