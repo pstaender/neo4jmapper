@@ -339,12 +339,11 @@ class CoffeeScriptConsole
       $input.val('')
       @_currentHistoryPosition = null
       @addToHistory(originalCode)
-      $e = @echo(output, { classification: 'evalOutput', data: { code: originalCode, position: @outputHistory.length } })
+      $e = @echo(output, { classification: 'evalOutput lastLineResult', data: { code: originalCode, position: @outputHistory.length } })
       return if @outputStringFormatted(output) is ''
       @onAfterEvaluate output, $e
     catch e
       $input.addClass 'error'
-      # we always display error message(s)
       $e = @echo(e?.message or e, { classification: 'error evalOutput', data: { code: originalCode, error: e.message } })
       @onCodeError e, $e
 

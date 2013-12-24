@@ -6,6 +6,11 @@
   <link rel="stylesheet" href="webfonts/css/csc.css">
   <link rel="stylesheet" href="webfonts/css/animation.css">
   <link rel="stylesheet" type="text/css" href="css/csc.css" />
+  <style type="text/css">
+    .evalOutput.lastLineResult {
+      display: none;
+    }
+  </style>
   <script type="text/javascript" src="javascripts/lib/jquery.min.js"></script>
   <script type="text/javascript" src="javascripts/lib/iced-coffee-script.js"></script>
   <script type="text/javascript" src="javascripts/lib/store.min.js"></script>
@@ -35,6 +40,8 @@
       }
     }
 
+    window.csc.echoOutputOfEvaluation = false;
+
     window.echo = function(output, options) {
       if (typeof output === 'object') {
         if (output.constructor === Array) {
@@ -48,6 +55,13 @@
         }
       }
       window.csc.echo(output, options);
+    }
+
+    window.dump = function() {
+      if (arguments.length > 0)
+        Array.prototype.slice.call(arguments).forEach(function(arg){
+          window.csc.echo(arg);
+        });
     }
 
     window.query = function(mapper) {

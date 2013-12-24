@@ -467,7 +467,7 @@ CoffeeScriptConsole = (function() {
       this._currentHistoryPosition = null;
       this.addToHistory(originalCode);
       $e = this.echo(output, {
-        classification: 'evalOutput',
+        classification: 'evalOutput lastLineResult',
         data: {
           code: originalCode,
           position: this.outputHistory.length
