@@ -10,7 +10,7 @@ Written in JavaScript for browser- and serverside usage
 
 See [http://pstaender.github.io/neo4jmapper](http://pstaender.github.io/neo4jmapper) for Documentation and Examples
 
-Give Neo4jMapper a try in the [coffeesript-testing-console](http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html)
+Try Neo4jMapper against a neo4j-demo-instance via a [coffeesript-console](http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html#http://zeitpulse.com:7480)
 
 ## Installation
 
