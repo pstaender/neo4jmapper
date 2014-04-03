@@ -1507,10 +1507,12 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.delete = function(cb) {
-    if (this.hasId())
-      return cb(Error('To delete a node, use remove(). delete() is for queries'),null);
-    if (this.cypher.segments.limit)
+    if (this.hasId()) {
+      throw Error('To delete a node, use remove(). delete() is for queries');
+    }
+    if (this.cypher.segments.limit) {
       throw Error("You can't use a limit on a DELETE, use WHERE instead to specify your limit");
+    }
     this._query_history_.push({ DELETE: true });
     this.cypher.segments.action = 'DELETE';
     return this.exec(cb);
@@ -1906,24 +1908,28 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.findById = function(id, cb) {
     var id = Number(id);
-    if (isNaN(id))
-      throw Error('You have to use a number as id argument');
+    if (isNaN(id)) {
+      throw Error('You have to give a numeric id as argument');
+    }
     this._query_history_.push({ findById: id });
+    this.cypher.segments.by_id = Number(id);
+    var identifier = this.cypher.segments.node_identifier || this.__TYPE_IDENTIFIER__;
+    this.cypher.segments.return_properties = [ identifier ];
     if (typeof cb === 'function') {
-      this.setId(id);
-      this.exec(function(err, found, debug) {
+      return this.exec(function(err, found, debug) {
         if ((err)&&(err.exception === 'EntityNotFoundException')) {
           return cb(null, null, debug);
-        } else if (found) {
+        }
+        if (found) {
+          if (found.length > 1) {
+            return cb(Error('More than one result rows on findById… expected only one distinct result'), found, debug);
+          }
           found = found[0];
         }
         cb(err, found, debug);
       });
-      return this;
-    } else {
-      this.cypher.segments.by_id = Number(id);
-      return this.findByKeyValue({ id: id }, cb);
     }
+    return this.findByKeyValue({ id: id });
   }
 
   Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {

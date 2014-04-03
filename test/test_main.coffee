@@ -232,7 +232,7 @@ describe 'Neo4jMapper', ->
               if todo is 0
                 done()
 
-    it.skip 'expect to request many concurrent queries on different databases', (done) ->
+    it 'expect to request many concurrent queries on different databases', (done) ->
       todo = 40
       databases = [ configForTest.neo4jURL ]
       databases.push(configForTest.neo4jURL2) if configForTest.neo4jURL2
@@ -566,18 +566,18 @@ describe 'Neo4jMapper', ->
           node.remove ->
             done()
 
-    # it.only 'expect to find a node by id matching the corresponding label', (done) ->
-    #   Person = Node.registerModel 'Person'
-    #   Department = Node.registerModel 'Department'
-    #   Department.create name: 'R+D', (err, department) ->
-    #     expect(err).to.be null
-    #     Person.create name: 'Lisa', (err, lisa) ->
-    #       expect(err).to.be null
-    #       Department.findById lisa.id, (err, found) ->
-    #         expect(err).to.be null
-    #         expect(err).to.be null
-    #         console.log err, found
-    #         done()
+    it 'expect to find a node by id matching the corresponding label', (done) ->
+      Person = Node.registerModel 'Person'
+      Department = Node.registerModel 'Department'
+      Department.create name: 'R+D', (err, department) ->
+        expect(err).to.be null
+        Person.create name: 'Lisa', (err, lisa) ->
+          expect(err).to.be null
+          Department.findById lisa.id, (err, found) ->
+            expect(err).to.be null
+            expect(found).to.be null
+            # expect(found?.id).to.be undefined
+            done()
 
     it 'expect to find one specific node by key/value', (done) ->
       node = new Node title: generateUID()

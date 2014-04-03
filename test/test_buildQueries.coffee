@@ -93,6 +93,12 @@ describe 'Neo4jMapper (cypher queries)', ->
             "MATCH (n:Person) RETURN n, labels(n);"
           ]
 
+        "Actor.findById(123)":
+          [
+             Actor.findById(123)
+            "START n = node(123) MATCH (n:Actor) RETURN n, labels(n);"
+          ]
+
         "Actor.findAll()":
           [
              Actor.findAll()
