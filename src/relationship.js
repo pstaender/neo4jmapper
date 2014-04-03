@@ -100,11 +100,18 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
   Relationship.prototype.__TYPE__ = 'relationship';
   Relationship.prototype.__TYPE_IDENTIFIER__ = 'r';
 
-  Relationship.prototype.singleton = function() {
+  Relationship.prototype.singleton = function(id) {
     var relationship = new Relationship();
+    if (typeof id === 'number') {
+      this.id = this._id_ = id;
+    }
     relationship._is_singleton_ = true;
     // relationship.resetQuery();
     return relationship;
+  }
+
+  Relationship.singleton = function(id) {
+    return this.prototype.singleton(id);
   }
 
   Relationship.prototype.setPointUriById = function(startOrEnd, id) {
@@ -134,8 +141,6 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
 
   Relationship.prototype.findById = function(id, cb) {
     var self = this;
-    if (!self._is_singleton_)
-      self = this.singleton(undefined, this);
     if ( (_.isNumber(Number(id))) && (typeof cb === 'function') ) {
       // to reduce calls we'll make a specific restful request for one node
       return Graph.request().get(this.__TYPE__+'/'+id, function(err, object) {
@@ -403,7 +408,7 @@ var __initRelationship__ = function(neo4jrestful, Graph, Node) {
    */
 
   Relationship.findById = function(id, cb) {
-    return this.prototype.findById(id, cb);
+    return Relationship.singleton().findById(id, cb);
   }
 
   Relationship.recommendConstructor = function() {

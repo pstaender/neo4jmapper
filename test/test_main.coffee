@@ -232,7 +232,7 @@ describe 'Neo4jMapper', ->
               if todo is 0
                 done()
 
-    it 'expect to request many concurrent queries on different databases', (done) ->
+    it.skip 'expect to request many concurrent queries on different databases', (done) ->
       todo = 40
       databases = [ configForTest.neo4jURL ]
       databases.push(configForTest.neo4jURL2) if configForTest.neo4jURL2
@@ -565,6 +565,19 @@ describe 'Neo4jMapper', ->
           expect(found._constructor_name_).to.be.equal 'Person'
           node.remove ->
             done()
+
+    # it.only 'expect to find a node by id matching the corresponding label', (done) ->
+    #   Person = Node.registerModel 'Person'
+    #   Department = Node.registerModel 'Department'
+    #   Department.create name: 'R+D', (err, department) ->
+    #     expect(err).to.be null
+    #     Person.create name: 'Lisa', (err, lisa) ->
+    #       expect(err).to.be null
+    #       Department.findById lisa.id, (err, found) ->
+    #         expect(err).to.be null
+    #         expect(err).to.be null
+    #         console.log err, found
+    #         done()
 
     it 'expect to find one specific node by key/value', (done) ->
       node = new Node title: generateUID()
@@ -1075,12 +1088,12 @@ describe 'Neo4jMapper', ->
       Node.registerModel(Person)
       Person::disableLoading()
       new Person({ name: 'Alice' }).save (err, a) ->
-        Person::findById a.id, (err, alice) ->
+        Person.findById a.id, (err, alice) ->
           expect(err).to.be null
           expect(alice.label).to.be null
           expect(alice._is_loaded_).to.be null
           Person::enableLoading()
-          Person::findById alice.id, (err, alice) ->
+          Person.findById alice.id, (err, alice) ->
             expect(err).to.be null
             expect(alice.label).to.be.equal 'Person'
             expect(alice._is_loaded_).to.be true

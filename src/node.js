@@ -608,21 +608,22 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.update = function(data, cb) {
+    if (!this._is_singleton_) {
+      return this.constructor.findById(this._id_).update(data, cb);
+    }
+    if (this.hasId() && (typeof cb !== 'function')) {
+      throw Error('To perform an .update() on an instanced node, you have to give a cb as argument');
+    }
     if (!helpers.isObjectLiteral(data)) {
-      cb(Error('To perform an update you need to pass valid data for updating as first argument'), null);
+      throw Error('To perform an .update() you need to pass a valid data object literal as first argument');
     }
-    else if (this.hasId()) {
-      if (typeof cb !== 'function')
-        throw Error('To perform an .update() on an instanced node, you have to give a cb as argument');
-      this.findById(this._id_).update(data, cb);
-      return this;
-    } else {
-      data = helpers.flattenObject(data);
-      this.cypher.segments.set = [];
-      for (var attribute in data) {
-        this.addSetDefinition(attribute, data[attribute]);
-      }
+
+    data = helpers.flattenObject(data);
+    this.cypher.segments.set = [];
+    for (var attribute in data) {
+      this.addSetDefinition(attribute, data[attribute]);
     }
+
     this.cypher.segments._update_ = true; // update flag is used in graph._processResults
     this.cypher.segments.start[this.__TYPE_IDENTIFIER__] =  this.__TYPE__ + '(' + this.cypher.segments.by_id + ')';
     return this.exec(cb);
@@ -1582,7 +1583,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       var direction = _options.direction;
       if ( (!(direction === 'incoming')) || (!(direction === 'outgoing')) )
         direction = 'all';
-      Node.prototype.findById(this.id)[direction+'Relations']().delete(cb);
+      Node.findById(this.id)[direction+'Relations']().delete(cb);
     } else {
       cb(Error("You can remove relationships only from an instanced node /w a valid cb"), null);
     }
@@ -1904,18 +1905,13 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.findById = function(id, cb) {
-    var self = this;
-    if (!self._is_singleton_)
-      self = this.singleton(undefined, this);
     var id = Number(id);
     if (isNaN(id))
       throw Error('You have to use a number as id argument');
-    self._query_history_.push({ findById: id });
+    this._query_history_.push({ findById: id });
     if (typeof cb === 'function') {
-      var nodeSingleton = this.constructor.create().setId(id);
-      if (!this.load)
-        nodeSingleton.disableLoading();
-      nodeSingleton.exec(function(err, found, debug) {
+      this.setId(id);
+      this.exec(function(err, found, debug) {
         if ((err)&&(err.exception === 'EntityNotFoundException')) {
           return cb(null, null, debug);
         } else if (found) {
@@ -1925,17 +1921,14 @@ var __initNode__ = function(neo4jrestful, Graph) {
       });
       return this;
     } else {
-      self.cypher.segments.by_id = Number(id);
-      return self.findByKeyValue({ id: id }, cb);
+      this.cypher.segments.by_id = Number(id);
+      return this.findByKeyValue({ id: id }, cb);
     }
   }
 
   Node.prototype.findByKeyValue = function(key, value, cb, _limit_) {
-    var self = this;
     if (typeof _limit_ === 'undefined')
       _limit_ = null;
-    if (!self._is_singleton_)
-      self = this.singleton(undefined, this);
     // we have s.th. like
     // { key: value }
     if (typeof key === 'object') {
@@ -1948,20 +1941,20 @@ var __initNode__ = function(neo4jrestful, Graph) {
     if (typeof key !== 'string')
       key = 'id';
     if ( (_.isString(key)) && (typeof value !== 'undefined') ) {
-      self._query_history_.push({ findByKeyValue: true });
-      var identifier = self.cypher.segments.node_identifier || self.__TYPE_IDENTIFIER__;
-      if (self.cypher.segments.return_properties.length === 0)
-        self.cypher.segments.return_properties = [ identifier ];
+      this._query_history_.push({ findByKeyValue: true });
+      var identifier = this.cypher.segments.node_identifier || this.__TYPE_IDENTIFIER__;
+      if (this.cypher.segments.return_properties.length === 0)
+        this.cypher.segments.return_properties = [ identifier ];
       if (key !== 'id') {
         var query = {};
         query[key] = value;
-        self.where(query);
-        if (self.label)
-          self.withLabel(self.label);
+        this.where(query);
+        if (this.label)
+          this.withLabel(this.label);
         // if we have an id: value, we will build the query in prepareQuery
       }
       if (typeof cb === 'function') {
-        return self.exec(function(err,found){
+        return this.exec(function(err,found){
           if (err)
             return cb(err, found);
           else {
@@ -1981,7 +1974,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
       }
 
     }
-    return self;
+    return this;
   }
 
   Node.prototype.findOneByKeyValue = function(key, value, cb) {
@@ -1989,21 +1982,17 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.prototype.findAll = function(cb) {
-    var self = this;
-    if (!self._is_singleton_) {
-      self = this.singleton(undefined, this);
-    }
-    self._query_history_.push({ findAll: true });
-    self.cypher.segments.limit = null;
-    self.cypher.segments.return_properties = ['n'];
-    if (self.label)
-      self.withLabel(self.label);
-    return self.exec(cb);
+    this._query_history_.push({ findAll: true });
+    this.cypher.segments.limit = null;
+    this.cypher.segments.return_properties = ['n'];
+    if (this.label)
+      this.withLabel(this.label);
+    return this.exec(cb);
   }
 
   Node.prototype.findOrCreate = function(where, cb) {
     var self = this;
-    this.find(where).count(function(err, count, debug) {
+    this.constructor.find(where).count(function(err, count, debug) {
       if (err)
         return cb(err, count, debug);
       else {
@@ -2048,39 +2037,39 @@ var __initNode__ = function(neo4jrestful, Graph) {
   }
 
   Node.find = function(where, cb) {
-    return this.prototype.find(where, cb);
+    return this.prototype.singleton().find(where, cb);
   }
 
   Node.findAll = function(cb) {
-    return this.prototype.findAll(cb);
+    return this.prototype.singleton().findAll(cb);
   }
 
   Node.findById = function(id, cb) {
-    return this.prototype.findById(id, cb);
+    return this.prototype.singleton().findById(id, cb);
   }
 
   Node.findOne = function(where, cb) {
-    return this.prototype.findOne(where, cb);
+    return this.prototype.singleton().findOne(where, cb);
   }
 
   Node.find = function(where, cb) {
-    return this.prototype.find(where, cb);
+    return this.prototype.singleton().find(where, cb);
   }
 
   Node.findOrCreate = function(where, cb) {
-    return this.prototype.findOrCreate(where, cb);
+    return this.prototype.singleton().findOrCreate(where, cb);
   }
 
   Node.findByKeyValue = function(key, value, cb) {
-    return this.prototype.findByKeyValue(key, value, cb);
+    return this.prototype.singleton().findByKeyValue(key, value, cb);
   }
 
   Node.findOneByKeyValue = function(key, value, cb) {
-    return this.prototype.findOneByKeyValue(key, value, cb);
+    return this.prototype.singleton().findOneByKeyValue(key, value, cb);
   }
 
   Node.start = function(start, cb) {
-    return this.prototype.start(start, cb);
+    return this.prototype.singleton().start(start, cb);
   }
 
   Node.query = function(cypherQuery, parameters, cb, options) {
