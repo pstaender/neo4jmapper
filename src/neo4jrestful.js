@@ -150,7 +150,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
   Neo4jRestful.prototype.timeout                    = 5000;
   Neo4jRestful.prototype.exact_version              = null;
   Neo4jRestful.prototype.version                    = null;
-  Neo4jRestful.prototype.ignore_exception_pattern   = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found
+  Neo4jRestful.prototype.ignoreExceptionPattern     = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found
   Neo4jRestful.prototype.urlOptions = {
     protocol: 'http',
     domain: 'localhost',
@@ -543,7 +543,7 @@ var __initNeo4jRestful__ = function(urlOrOptions) {
         self.log('**debug** Could not create/parse a valuable error object', e);
       }
     }
-    if ( (err) && (err.exception) && (self.ignore_exception_pattern) && (self.ignore_exception_pattern.test(err.exception)) ) {
+    if ( (err) && (err.exception) && (self.ignoreExceptionPattern) && (self.ignoreExceptionPattern.test(err.exception)) ) {
       // we ignore by default notfound exceptions, because they are no "syntactical" errors
       return cb(null, null, this._debug_);
     } else {

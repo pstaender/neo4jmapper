@@ -154,6 +154,8 @@ var __initNode__ = function(neo4jrestful, Graph) {
     by_id: null
   };
 
+  Node.prototype.ignoreExceptionPattern   = /^EntityNotFoundException$/; // will be used ONLY on findById
+
   Node.prototype._is_instanced_           = null;   // flag that this object is instanced
   Node.prototype._is_singleton_           = false;  // flag that this object is a singleton
   Node.prototype._is_loaded_              = null;
@@ -1908,6 +1910,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
 
   Node.prototype.findById = function(id, cb) {
     var id = Number(id);
+    var self = this;
     if (isNaN(id)) {
       throw Error('You have to give a numeric id as argument');
     }
@@ -1917,7 +1920,7 @@ var __initNode__ = function(neo4jrestful, Graph) {
     this.cypher.segments.return_properties = [ identifier ];
     if (typeof cb === 'function') {
       return this.exec(function(err, found, debug) {
-        if ((err)&&(err.exception === 'EntityNotFoundException')) {
+        if ( (err) && (err.exception) && (self.ignoreExceptionPattern) && (self.ignoreExceptionPattern.test(err.exception)) ) {
           return cb(null, null, debug);
         }
         if (found) {

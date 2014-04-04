@@ -566,6 +566,12 @@ describe 'Neo4jMapper', ->
           node.remove ->
             done()
 
+    it 'expect to get null instead of an error if node by id is not found', (done) ->
+      Node.findById new Date().getTime(), (err, found) ->
+        expect(err).to.be null
+        expect(found).to.be null
+        done()
+
     it 'expect to find a node by id matching the corresponding label', (done) ->
       Person = Node.registerModel 'Person'
       Department = Node.registerModel 'Department'
@@ -1440,7 +1446,7 @@ describe 'Neo4jMapper', ->
 
   describe 'relationship', ->
 
-    it 'expect to get a relationship by id, update and remove it', (done) ->
+    it 'expect to get a relationship by id', (done) ->
       new Node().save (err, a) ->
         new Node().save (err, b) ->
           a.createRelationTo b, 'related', { since: 'year' }, (err, result) ->
@@ -1449,19 +1455,36 @@ describe 'Neo4jMapper', ->
               expect(err).to.be null
               expect(found.id).to.be.equal result.id
               expect(found.data.since).to.be.equal 'year'
-              found.data = from: 'Berlin'
-              found.save (err) ->
+              Relationship.findById new Date().getTime(), (err, found) ->
                 expect(err).to.be null
-                Relationship.findById result.id, (err, found) ->
-                  expect(err).to.be null
-                  expect(found.data.since).to.be undefined
-                  expect(found.data.from).to.be.equal 'Berlin'
-                  found.remove (err) ->
-                    expect(err).to.be null
-                    Relationship.findById result.id, (err, found) ->
-                      expect(err).to.be null
-                      expect(found).to.be null
-                      done()
+                expect(found).to.be null
+                done()
+
+    it 'expect to update a relationship', (done) ->
+      new Node().save (err, a) -> new Node().save (err, b) ->
+        a.createRelationTo b, 'related', { since: 'year' }, (err, relationship) ->
+          expect(err).to.be null
+          id = relationship.id
+          expect(id).to.be.a 'number'
+          relationship.data.from = 'Berlin'
+          relationship.save (err, relationship) ->
+            expect(err).to.be null
+            expect(relationship.id).to.be.equal id
+            expect(relationship.data.from).to.be.equal 'Berlin'
+            done()
+
+    it 'expect to remove a relationship', (done) ->
+      new Node().save (err, a) -> new Node().save (err, b) ->
+        a.createRelationTo b, 'related', { since: 'year' }, (err, relationship) ->
+          expect(err).to.be null
+          id = relationship.id
+          expect(id).to.be.a 'number'
+          relationship.remove (err) ->
+            expect(err).to.be null
+            Relationship.findById id, (err, found) ->
+              expect(err).to.be null
+              expect(found).to.be null
+              done()
 
     it 'expect to trigger load hook and loading both nodes on getById', (done) ->
       new Node( name: 'Alice' ).save (err, a) ->
