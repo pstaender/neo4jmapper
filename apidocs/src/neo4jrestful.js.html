@@ -1,0 +1,550 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width" charset="utf-8"><title>neo4jmapper</title><!-- Foundation CSS--><link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/css/foundation.min.css"><!-- Prism CSS--><style type="text/css">/**
+ * prism.js default theme for JavaScript, CSS and HTML
+ * Based on dabblet (http://dabblet.com)
+ * @author Lea Verou
+ */
+
+code[class*="language-"],
+pre[class*="language-"] {
+	color: black;
+	text-shadow: 0 1px white;
+	font-family: Consolas, Monaco, 'Andale Mono', monospace;
+	direction: ltr;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+
+	-webkit-hyphens: none;
+	-moz-hyphens: none;
+	-ms-hyphens: none;
+	hyphens: none;
+}
+
+::-moz-selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+::selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+@media print {
+	code[class*="language-"],
+	pre[class*="language-"] {
+		text-shadow: none;
+	}
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+	padding: 1em;
+	margin: .5em 0;
+	overflow: auto;
+}
+
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+	background: #f5f2f0;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+	padding: .1em;
+	border-radius: .3em;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: slategray;
+}
+
+.token.punctuation {
+	color: #999;
+}
+
+.namespace {
+	opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number {
+	color: #905;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string {
+	color: #690;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+	color: #a67f59;
+	background: hsla(0,0%,100%,.5);
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+	color: #07a;
+}
+
+
+.token.regex,
+.token.important {
+	color: #e90;
+}
+
+.token.important {
+	font-weight: bold;
+}
+
+.token.entity {
+	cursor: help;
+}
+</style><!-- Custom Styles--><style type="text/css">h1.page-title small {
+  font-weight: 400;
+}
+/*.section-container, .section-container .section .title
+  border-color #e6e6e6*/
+#nav .section.active {
+  padding-top: 0 !important;
+}
+#nav .section.active .title {
+  background: #ddd;
+}
+#nav .section .title {
+  background-color: #eee;
+}
+#nav .section .title a {
+  font-weight: 700;
+  padding: 0.6em;
+}
+#nav .section .title a small {
+  font-size: 0.8em;
+  line-height: 1em;
+  display: block;
+  color: #888;
+  margin: 2px 0 -2px;
+}
+#nav .section .title:hover {
+  background: #ddd;
+}
+#nav ul.solo {
+  border-top: 1px solid #ccc;
+  padding: 0.875em;
+}
+code {
+  background: transparent;
+  line-height: 1.3em;
+  font-weight: normal;
+}
+.comment {
+  position: relative;
+  padding-bottom: 1.5em;
+  margin-bottom: 2em;
+  border-bottom: 1px solid #ddd;
+}
+.comment ol,
+.comment ul {
+  margin-left: 2.25em;
+}
+.comment ol.no-bullet,
+.comment ul.no-bullet {
+  margin-left: 0;
+}
+.comment header {
+  margin-bottom: 1.5em;
+}
+.comment header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.2em;
+}
+.comment .section-container,
+.comment .section-container > .section > .content {
+  border: none;
+}
+.comment .section-container > .section > .title {
+  padding: auto;
+  background: none !important;
+  border: none !important;
+}
+.comment .section-container > .section > .title a {
+  border-radius: 4px;
+  font-weight: 700;
+  padding: 1px 10px 1px 0;
+  margin-right: 5px;
+  color: #ccc;
+}
+.comment .section-container > .section:hover .title a {
+  color: #999;
+}
+.comment .section-container > .section.active .title a {
+  color: #2ba6cb;
+}
+.comment .section-container > .section > .content {
+  padding: 0.9em 0 0;
+}
+.comment div.description h2 {
+  font-size: 1.2em;
+}
+.comment .tags span {
+  margin-right: 4px;
+}
+.comment .tags .name,
+.comment .tags .type {
+  font-weight: 700;
+}
+.comment .tags .types {
+  color: #666;
+}
+.comment .tags .description {
+  margin-left: 15px;
+}
+.ctx-type {
+  margin-right: 6px;
+  font-size: 0.7em;
+}
+</style><script srr="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/js/vendor/custom.modernizr.js"></script></head><body><div class="row"><div class="small-12 columns"><h1 class="page-title">neo4jmapper<small> src/neo4jrestful.js</small></h1></div></div><div class="row"><div id="nav" class="large-3 columns"><div data-section="accordian" data-options="" class="section-container accordian"><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/conditionalparameters.js.html"><small>src/</small>conditionalparameters.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/cypherquery.js.html"><small>src/</small>cypherquery.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/graph.js.html"><small>src/</small>graph.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../apidocs/src/graph.js.html#__initGraph__">__initGraph__</a></li><li><a href="../../apidocs/src/graph.js.html#Graph">Graph</a></li><li><a href="../../apidocs/src/graph.js.html#exec">exec</a></li><li><a href="../../apidocs/src/graph.js.html#query">query</a></li><li><a href="../../apidocs/src/graph.js.html#_processResult">_processResult</a></li><li><a href="../../apidocs/src/graph.js.html#stream">stream</a></li><li><a href="../../apidocs/src/graph.js.html#each">each</a></li><li><a href="../../apidocs/src/graph.js.html#setParameters">setParameters</a></li><li><a href="../../apidocs/src/graph.js.html#parameters">parameters</a></li><li><a href="../../apidocs/src/graph.js.html#addParameters">addParameters</a></li><li><a href="../../apidocs/src/graph.js.html#addParameter">addParameter</a></li><li><a href="../../apidocs/src/graph.js.html#wipeDatabase">wipeDatabase</a></li><li><a href="../../apidocs/src/graph.js.html#countAllOfType">countAllOfType</a></li><li><a href="../../apidocs/src/graph.js.html#countRelationships">countRelationships</a></li><li><a href="../../apidocs/src/graph.js.html#countRelations">countRelations</a></li><li><a href="../../apidocs/src/graph.js.html#countNodes">countNodes</a></li><li><a href="../../apidocs/src/graph.js.html#countAll">countAll</a></li><li><a href="../../apidocs/src/graph.js.html#about">about</a></li><li><a href="../../apidocs/src/graph.js.html#resetQuery">resetQuery</a></li><li><a href="../../apidocs/src/graph.js.html#start">start</a></li><li><a href="../../apidocs/src/graph.js.html#match">match</a></li><li><a href="../../apidocs/src/graph.js.html#onMatch">onMatch</a></li><li><a href="../../apidocs/src/graph.js.html#optionalMatch">optionalMatch</a></li><li><a href="../../apidocs/src/graph.js.html#with">with</a></li><li><a href="../../apidocs/src/graph.js.html#skip">skip</a></li><li><a href="../../apidocs/src/graph.js.html#limit">limit</a></li><li><a href="../../apidocs/src/graph.js.html#merge">merge</a></li><li><a href="../../apidocs/src/graph.js.html#custom">custom</a></li><li><a href="../../apidocs/src/graph.js.html#set">set</a></li><li><a href="../../apidocs/src/graph.js.html#setWith">setWith</a></li><li><a href="../../apidocs/src/graph.js.html#create">create</a></li><li><a href="../../apidocs/src/graph.js.html#onCreate">onCreate</a></li><li><a href="../../apidocs/src/graph.js.html#createUnique">createUnique</a></li><li><a href="../../apidocs/src/graph.js.html#createIndexOn">createIndexOn</a></li><li><a href="../../apidocs/src/graph.js.html#case">case</a></li><li><a href="../../apidocs/src/graph.js.html#dropIndexOn">dropIndexOn</a></li><li><a href="../../apidocs/src/graph.js.html#orderBy">orderBy</a></li><li><a href="../../apidocs/src/graph.js.html#where">where</a></li><li><a href="../../apidocs/src/graph.js.html#return">return</a></li><li><a href="../../apidocs/src/graph.js.html#returnDistinct">returnDistinct</a></li><li><a href="../../apidocs/src/graph.js.html#delete">delete</a></li><li><a href="../../apidocs/src/graph.js.html#remove">remove</a></li><li><a href="../../apidocs/src/graph.js.html#foreach">foreach</a></li><li><a href="../../apidocs/src/graph.js.html#union">union</a></li><li><a href="../../apidocs/src/graph.js.html#using">using</a></li><li><a href="../../apidocs/src/graph.js.html#comment">comment</a></li><li><a href="../../apidocs/src/graph.js.html#toQuery">toQuery</a></li><li><a href="../../apidocs/src/graph.js.html#toQueryString">toQueryString</a></li><li><a href="../../apidocs/src/graph.js.html#toCypherQuery">toCypherQuery</a></li><li><a href="../../apidocs/src/graph.js.html#enableLoading">enableLoading</a></li><li><a href="../../apidocs/src/graph.js.html#disableLoading">disableLoading</a></li><li><a href="../../apidocs/src/graph.js.html#sortResult">sortResult</a></li><li><a href="../../apidocs/src/graph.js.html#enableSorting">enableSorting</a></li><li><a href="../../apidocs/src/graph.js.html#disableSorting">disableSorting</a></li><li><a href="../../apidocs/src/graph.js.html#enableProcessing">enableProcessing</a></li><li><a href="../../apidocs/src/graph.js.html#disableProcessing">disableProcessing</a></li><li><a href="../../apidocs/src/graph.js.html#log">log</a></li><li><a href="../../apidocs/src/graph.js.html#query">query</a></li><li><a href="../../apidocs/src/graph.js.html#stream">stream</a></li><li><a href="../../apidocs/src/graph.js.html#wipeDatabase">wipeDatabase</a></li><li><a href="../../apidocs/src/graph.js.html#countAllOfType">countAllOfType</a></li><li><a href="../../apidocs/src/graph.js.html#countRelationships">countRelationships</a></li><li><a href="../../apidocs/src/graph.js.html#countRelations">countRelations</a></li><li><a href="../../apidocs/src/graph.js.html#countNodes">countNodes</a></li><li><a href="../../apidocs/src/graph.js.html#countAll">countAll</a></li><li><a href="../../apidocs/src/graph.js.html#about">about</a></li><li><a href="../../apidocs/src/graph.js.html#start">start</a></li><li><a href="../../apidocs/src/graph.js.html#custom">custom</a></li><li><a href="../../apidocs/src/graph.js.html#match">match</a></li><li><a href="../../apidocs/src/graph.js.html#where">where</a></li><li><a href="../../apidocs/src/graph.js.html#return">return</a></li><li><a href="../../apidocs/src/graph.js.html#create">create</a></li><li><a href="../../apidocs/src/graph.js.html#enableLoading">enableLoading</a></li><li><a href="../../apidocs/src/graph.js.html#disableLoading">disableLoading</a></li><li><a href="../../apidocs/src/graph.js.html#disableProcessing">disableProcessing</a></li><li><a href="../../apidocs/src/graph.js.html#enableProcessing">enableProcessing</a></li><li><a href="../../apidocs/src/graph.js.html#enableSorting">enableSorting</a></li><li><a href="../../apidocs/src/graph.js.html#disableSorting">disableSorting</a></li><li><a href="../../apidocs/src/graph.js.html#request">request</a></li><li><a href="../../apidocs/src/graph.js.html#new">new</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/helpers.js.html"><small>src/</small>helpers.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/index.js.html"><small>src/</small>index.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/lib/md5.js.html"><small>src/lib/</small>md5.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/lib/sequence.js.html"><small>src/lib/</small>sequence.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section active"><p data-section-title class="title"><a href="../../apidocs/src/neo4jrestful.js.html"><small>src/</small>neo4jrestful.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../apidocs/src/neo4jrestful.js.html#Neo4jRestful">Neo4jRestful</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/node.js.html"><small>src/</small>node.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../apidocs/src/node.js.html#__initNode__">__initNode__</a></li><li><a href="../../apidocs/src/node.js.html#Node">Node</a></li><li><a href="../../apidocs/src/node.js.html#init">init</a></li><li><a href="../../apidocs/src/node.js.html#convertToModel">convertToModel</a></li><li><a href="../../apidocs/src/node.js.html#__TYPE__">__TYPE__</a></li><li><a href="../../apidocs/src/node.js.html#resetQuery">resetQuery</a></li><li><a href="../../apidocs/src/node.js.html#uniqueFields">uniqueFields</a></li><li><a href="../../apidocs/src/node.js.html#ensureIndex">ensureIndex</a></li><li><a href="../../apidocs/src/node.js.html#withLabel">withLabel</a></li><li><a href="../../apidocs/src/node.js.html#_prepareQuery">_prepareQuery</a></li><li><a href="../../apidocs/src/node.js.html#withRelations">withRelations</a></li><li><a href="../../apidocs/src/node.js.html#requestLabels">requestLabels</a></li><li><a href="../../apidocs/src/node.js.html#stream">stream</a></li><li><a href="../../apidocs/src/node.js.html#find">find</a></li><li><a href="../../apidocs/src/node.js.html#singleton">singleton</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/path.js.html"><small>src/</small>path.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../apidocs/src/path.js.html#populateWithDataFromResponse">populateWithDataFromResponse</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/relationship.js.html"><small>src/</small>relationship.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../apidocs/src/relationship.js.html#__initRelationship__">__initRelationship__</a></li><li><a href="../../apidocs/src/relationship.js.html#findById">findById</a></li><li><a href="../../apidocs/src/relationship.js.html#applyDefaultValues">applyDefaultValues</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../apidocs/src/transaction.js.html"><small>src/</small>transaction.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div></div></div><div class="small-12 large-9 columns"><article class="comment"><header><h1 id="Neo4jRestful">Neo4jRestful</h1><h5 class="subheader"><div class="label radius ctx-type">function</div>Neo4jRestful()</h5></header><ul class="no-bullet tags"></ul><div data-section="accordian" data-options="one_up: false;" class="section-container code auto"><div class="section"><p data-section-title class="title"><a href="#">Description</a></p><div data-section-content class="content description"><p>Constructor</p></div></div><div class="section"><p data-section-title class="title"><a href="#">Source</a></p><div data-section-content class="content"><pre><code class="language-javascript">var Neo4jRestful = function Neo4jRestful(url, options) {
+    var self = this;
+    var urlPattern = /^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i;
+    var urlMatches = null;
+    if (typeof url === 'undefined') {
+      // use global
+      url = urlOrOptions;
+    }
+    if (typeof options !== 'object') {
+      options = (typeof url === 'object') ? url : {};
+    }
+    if (typeof url === 'string') {
+      options.url = url;
+    }
+    if (typeof options.url === 'string') {
+      // check url
+      // ensure one trailing slash
+      options.url = options.url.replace(/\</code></pre></div></div></div></article><article class="comment"><header></header><ul class="no-bullet tags"></ul><div data-section="accordian" data-options="one_up: false;" class="section-container code auto"><div class="section"><p data-section-title class="title"><a href="#">Description</a></p><div data-section-content class="content description"><p>/, &#39;/&#39;);<br />      // stop here if we don&#39;t have a valid url<br />      if (!urlPattern.test(options.url)) {<br />        var message = &quot;Your URL (&quot;+url+&quot;) needs to match the default url pattern &#39;http(s)://(username:password@)domain(:port)/(endpoint)…&#39;&quot;;<br />        throw Error(message);<br />      }<br />      // extract all parts from the given url<br />      // TODO: use extractet Options<br />      urlMatches = options.url.match(urlPattern);<br />      this.urlOptions = _.defaults({<br />        &#39;protocol&#39;: urlMatches[1],<br />        &#39;user&#39;: urlMatches[4],<br />        &#39;password&#39;: urlMatches[5],<br />        &#39;domain&#39;: urlMatches[6],<br />        &#39;port&#39;: urlMatches[8],<br />        &#39;endpoint&#39;: urlMatches[9]<br />      }, this.urlOptions);<br />      if (this.urlOptions.endpoint) {<br />        // strip preceding slash(es)<br />        this.urlOptions.endpoint = this.urlOptions.endpoint.replace(/^\/+/, &#39;&#39;);<br />      }<br />    } else {<br />      throw Error(&#39;No url found. Argument must be either an URL as string or an option object including an <code>.url</code> property.&#39;);<br />    }</p><pre><code>// we may have an error handler in options, if so, assign it to this object
+if (typeof options.onConnectionError === &#39;function&#39;) {
+  this.onConnectionError = options.onConnectionError;
+}
+
+// copy header
+self.header = _.extend({}, Neo4jRestful.prototype.header);
+
+if (!__established_connection__[this.absoluteUrl(&#39;/&#39;)])
+  self.checkAvailability();
+</code></pre><p>  }</p><p>  Neo4jRestful.RequestDebug = RequestDebug;<br />  Neo4jRestful.CustomError  = CustomError;</p><p>  Neo4jRestful.prototype.options                    = null;<br />  // template for the header of each request to neo4j<br />  Neo4jRestful.prototype.header = {<br />    &#39;Accept&#39;: &#39;application/json&#39;,<br />    &#39;Content-Type&#39;: &#39;application/json&#39;<br />  };<br />  Neo4jRestful.prototype.timeout                    = 5000;<br />  Neo4jRestful.prototype.exact_version              = null;<br />  Neo4jRestful.prototype.version                    = null;<br />  Neo4jRestful.prototype.ignoreExceptionPattern     = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found<br />  Neo4jRestful.prototype.urlOptions = {<br />    protocol: &#39;http&#39;,<br />    domain: &#39;localhost&#39;,<br />    port: 7474,<br />    user: &#39;&#39;,<br />    password: &#39;&#39;,<br />    endpoint: &#39;db/data/&#39;<br />  };</p><p>  // is used for measurement of request-to-respond<br />  Neo4jRestful.prototype.<em>request_on</em>               = null;<br />  Neo4jRestful.prototype.<em>response_on</em>              = null;<br />  // contains data of the response<br />  Neo4jRestful.prototype.<em>response</em>                 = null;<br />  Neo4jRestful.prototype.<em>columns</em>                  = null;<br />  Neo4jRestful.prototype.<em>detectTypesOnColumns</em>     = false; // n AS <code>(Node)</code>, labels(n) AS <code>(Node.id)</code>, r AS <code>[Relationship]</code><br />  Neo4jRestful.prototype.<em>debug</em>                    = null;</p><p>  Neo4jRestful.prototype.query = function(cypher, options, cb) {<br />    var args;<br />    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) );<br />    if (typeof cypher !== &#39;string&#39;) {<br />      throw Error(&#39;cypher argument has to be a string&#39;);<br />    } else {<br />      this.log(&#39;<strong>info</strong>&#39;, &#39;cypher:&#39;, cypher.trim().replace(/\s+/g,&#39; &#39;));<br />      this.post(&#39;/&#39;+this.urlOptions.endpoint+&#39;cypher&#39;,{<br />        data: {<br />          query: cypher,<br />          params: options.params || {}<br />        }<br />      }, function(err, result, debug){<br />        return cb(err, result, debug);<br />      });<br />    }<br />  }</p><p>  // <a href="http://docs.neo4j.org/chunked/preview/rest-api-transactional.html">http://docs.neo4j.org/chunked/preview/rest-api-transactional.html</a><br />  Neo4jRestful.prototype.statement = function() {<br />    throw Error(&#39;Not implemented, yet&#39;);<br />  }</p><p>  Neo4jRestful.prototype.checkAvailability = function(cb) {<br />    var self = this;<br />    this.<em>sendHttpRequest({<br />      method: &#39;GET&#39;,<br />      url: self.absoluteUrl(&#39;/&#39;),<br />      timeout: self.timeout<br />    }, function(err, res) {<br />        var body = (res) ? res.body : null;<br />        if ((typeof res !== &#39;undefined&#39;) &amp;&amp; (res.status === 200)&amp;&amp;(body)&amp;&amp;(body.neo4j<em>version)) {<br />          self.exact<em>version = body.neo4j<em>version;<br />          self.version = Number(self.exact_version.replace(/^([0-9]+.<em>[0-9]</em>)(.*)$/, &#39;$1&#39;));<br />          var error = (self.version &lt; 2) ? Error(&#39;Neo4jMapper is not build+tested for neo4j version below v2&#39;) : null;<br />          __established_connection</em></em>[self.absoluteUrl(&#39;/&#39;)] = true;<br />          if (typeof cb === &#39;function&#39;)<br />            cb(error, body.neo4j_version);<br />        } else {<br />          __established_connection</em></em>[self.absoluteUrl(&#39;/&#39;)] = false;<br />          self.onConnectionError(Error(&quot;Can&#39;t detect neo4j… Sure neo4j service is available on &quot;+self.absoluteUrl(&#39;/&#39;)+&quot;? &quot;+((err) ? &#39;(&#39;+err.message+&#39;)&#39; : &#39;&#39;)), self);<br />        }<br />      }<br />    );<br />    return this;<br />  }</p><p>  Neo4jRestful.prototype.absoluteUrl = function(url) {<br />    if (typeof url !== &#39;string&#39;)<br />      url = &#39;&#39;;<br />    if (!url)<br />      url = this.url || &#39;/&#39;;<br />    if (url) {<br />      var baseUrl = this._connectionString();<br />      // strip redundant endpoints if they exists<br />      return baseUrl + url.replace(/^\/+/, &#39;&#39;).replace(new RegExp(&#39;^&#39;+this.urlOptions.endpoint.split(&#39;/&#39;).join(&#39;\/&#39;)+&#39;*&#39;), &#39;&#39;);<br />    }<br />  }</p><p>  Neo4jRestful.prototype._connectionString = function() {<br />    return this.urlOptions.protocol + &#39;://&#39;</p><pre><code>  + String(((this.urlOptions.user)&amp;&amp;(this.urlOptions.password)) ? this.urlOptions.user + &#39;:&#39; + this.urlOptions.password+&#39;@&#39; : &#39;&#39; )
+  + this.urlOptions.domain
+  + &#39;:&#39; + this.urlOptions.port
+  + &#39;/&#39; + this.urlOptions.endpoint;
+</code></pre><p>  }</p><p>  Neo4jRestful.prototype.request = function(url, options, cb) {<br />    var debug = null; // debug object<br />    if (typeof options === &#39;undefined&#39;)<br />      options = {};</p><pre><code>// apply default options
+_.defaults(options, {
+  method: &#39;GET&#39;,
+  data: null,
+  debug: false,
+  // use copy of header, not reference
+  header: _.extend({},this.header)
+});
+
+if (typeof url !== &#39;string&#39;) {
+
+  throw Error(&quot;First argument &#39;url&#39; hast to be a string&quot;);
+
+}
+
+this.url = options.url = url;
+this.header = options.header;
+
+var requestedUrl = this.absoluteUrl();
+var data = options.data;
+
+if ( (typeof data === &#39;object&#39;) &amp;&amp; (data !== null) )
+ data = JSON.stringify(options.data);
+
+// create debug object
+this._debug_ = new RequestDebug({
+  options: options,
+  requested_url: requestedUrl,
+  method: options.method,
+  data: data,
+  header: this.header,
+  res: null,
+  status: null,
+  err: null
+});
+
+// options for makeRequest()
+var _options_ = {
+  requestedUrl: requestedUrl,
+  method: options.method,
+  data: data,
+  options: options,
+  debug: debug,
+  url: url
+};
+
+return this._makeRequest(_options_, cb);
+</code></pre><p>  }</p><p>  Neo4jRestful.prototype.<em>makeRequest = function(_options</em>, cb) {<br />    var self = this;<br />    // apply default options on options<br />    <em>.defaults(_options</em>, {<br />      cache: false,<br />      timeout: this.timeout,<br />      loadNode: true // enables the load hooks<br />    });</p><pre><code>// create final options object from _options_.options
+var options = _options_.options;
+
+options.absolute_url = _options_.requestedUrl;
+options.url = _options_.url;
+options.method = _options_.method;
+options.data = _options_.data;
+
+this.log(&#39;**debug**&#39;, &#39;URI:&#39;, options.method+&quot;:&quot;+options.url+&quot; (&quot;+options.absolute_url+&quot;)&quot;);
+this.log(&#39;**debug**&#39;, &#39;sendedData:&#39;, options.data);
+this.log(&#39;**debug**&#39;, &#39;sendedHeader:&#39;, self.header);
+
+this._request_on_ = new Date().getTime();
+
+var requestOptions = {
+  method: options.method,
+  url: options.absolute_url,
+  header: self.header
+};
+
+if (options.data)
+  requestOptions.data = options.data;
+
+// stream
+if (this.header[&#39;X-Stream&#39;] === &#39;true&#39;) {
+
+  var stream = JSONStream.parse([/^columns|data$/, true]);
+
+  var isDataColumn = false;
+  self._columns_ = [];
+
+  stream.on(&#39;data&#39;, function(data) {
+    // detect column and data array
+    // { columns: [ &#39;1&#39;, … , &#39;n&#39; ], data: [ [ … ] ] }
+    if (isDataColumn) {
+      return cb(data);
+    } else if (data) {
+      if (data.constructor === Array) {
+        isDataColumn = true;
+        return cb(data);
+      } else {
+        self._columns_.push(data);
+        return;
+      }
+    }
+  });
+
+  stream.on(&#39;end&#39;, function() {
+    // prevent to pass undefined, but maybe an undefined is more clear
+    cb(null, null);
+  });
+
+  stream.on(&#39;root&#39;, function(root, count) {
+    self._response_on_ = new Date().getTime();
+    // remove x-stream from header
+    delete self.header[&#39;X-Stream&#39;];
+    if (!count) {
+      cb(null, Error(&#39;No matches in stream found (&#39;+ root +&#39;)&#39;), self._de);
+    }
+  });
+
+  requestOptions.stream = stream;
+
+}
+
+// now finally send the request
+this._sendHttpRequest(requestOptions, function(err, res) {
+  self._response_ = res;
+  self._response_on_ = new Date().getTime();
+
+  self._debug_.responseTime = self.responseTime();
+
+  if (err) {
+    self.onError(cb, err, &#39;error&#39;, options);
+  } else {
+    // we might have a reponse with a failure status code
+    if (res.status &gt;= 400) {
+      self.onError(cb, res.body, &#39;error&#39;, options);
+    } else {
+      if (res.body)
+        self._columns_ = res.body.columns || null;
+      self.onSuccess(cb, res.body, &#39;success&#39;, options);
+    }
+  }
+});
+</code></pre><p>  }</p><p>  // ### Wrapper for superagent and request<br />  // Private method, can be indirectly &#39;accessed&#39; via neo4jrestful.get|post|delete|put or neo4jrestfule.request<br />  Neo4jRestful.prototype.<em>sendHttpRequest = function(options, cb) {
+    </em>.defaults(options, {<br />      header: {},<br />      data: null,<br />      method: &#39;GET&#39;,<br />      timeout: null,<br />      stream: false<br />    });<br />    var isBrowser = Boolean(typeof window === &#39;object&#39;);<br />    if (typeof cb !== &#39;function&#39;)<br />      throw Error(&#39;Callback as 2nd argument is mandatory&#39;);<br />    if ((typeof options !== &#39;object&#39;)||(!options.url))<br />      cb(Error(&quot;Set { url: &#39;…&#39; } as argument&quot;));<br />    if (isBrowser) {<br />      // ### superagent for browserside usage<br />      var req = window.superagent(options.method, options.url).set(options.header);<br />      if (options.data)<br />        req.send(options.data);<br />      if (options.stream) {<br />        return req.pipe(options.stream);<br />      } else {<br />        return req.end(function(err, res) {<br />          // compatibility of superagent to response api<br />          if (typeof res === &#39;object&#39;) {<br />            res.statusCode = res.status;<br />          }<br />          return cb(err, res);<br />        });<br />      }</p><pre><code>} else {
+  // ### request module for nodejs
+  var req = request;
+  options.json = true;
+  if (options.data) {
+    if (typeof options.data === &#39;string&#39;)
+      options.body = options.data;
+    else
+      options.json = options.data;
+  }
+  if (options.stream) {
+    return req(options).pipe(options.stream);
+  } else {
+    return req(options, function(err, res) {
+      // compatibility of response to superagent api
+      if (typeof res === &#39;object&#39;) {
+        res.status = res.statusCode;
+      }
+      return cb(err, res);
+    });
+  }
+}
+</code></pre><p>  }</p><p>  Neo4jRestful.prototype.onProcess = function(res, cb, debug) {<br />    if (!res) {<br />      // return here if no response is present<br />      return cb(null, res, debug);<br />    } else if (<em>.isArray(res)) {<br />      for (var i=0; i &lt; res.length; i++) {<br />        res[i] = this.createObjectFromResponseData(res[i]);<br />      }<br />    } else if ( (res.data) &amp;&amp; (</em>.isArray(res.data)) ) {<br />      // iterate throught res.data rows + columns<br />      // an try to detect Node, Relationships + Path objects<br />      for (var row=0; row &lt; res.data.length; row++) {<br />        for (var column=0; column &lt; res.data[row].length; column++) {<br />          res.data[row][column] = this.createObjectFromResponseData(res.data[row][column]);<br />        }<br />      }</p><pre><code>} else if (_.isObject(res)) {
+  res = this.createObjectFromResponseData(res);
+}
+cb(null, res, debug);
+</code></pre><p>  }</p><p>  Neo4jRestful.prototype.onProcessStream = function(res, cb, debug) {<br />    if (res) {<br />      for (var column=0; column &lt; res.length; column++) {<br />        res[column] = this.createObjectFromResponseData(res[column]);<br />      }<br />    }<br />    cb(null, res, debug);<br />  }</p><p>  Neo4jRestful.prototype.onSuccess = function(cb, res, status) {</p><pre><code>this._debug_.res = res;
+this._debug_.status = status;
+
+if (status === &#39;success&#39;) {
+  if (typeof this.onProcess === &#39;function&#39;)
+    return this.onProcess(res, cb, this._debug_);
+  else
+    return cb(null, res, this._debug_);
+} else {
+  cb(res, status, this._debug_);
+}
+</code></pre><p>  }</p><p>  Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {<br />    // in some (rare) case, we get an empty {} as error<br />    if ( (responseError) &amp;&amp; (typeof responseError === &#39;object&#39;) &amp;&amp; (Object.keys(responseError).length === 0) ) {<br />      return cb(null, res.body || null, this.<em>debug</em>);<br />    }<br />    var err = responseError;<br />    var self = this;<br />    var statusCode = (this.<em>response</em>) ? this.<em>response</em>.status : null;<br />    var error = ( err &amp;&amp; err.responseText ) ? Error(err.responseText) : err;<br />    if (!error) {<br />      // TODO: code with description<br />      var errDescription = &#39;Response Error (&#39;+this.<em>response</em>.status+&#39;)&#39;;<br />      error = new ResponseError(errDescription, this.<em>response</em>.status);<br />    }</p><pre><code>this._debug_.res = res;
+this._debug_.err = err;
+this._debug_.error = error;
+
+try {
+  // jquery is an optional feature since superagent
+  if (jQuery) {
+    // try to extract the first &lt;p&gt; or &lt;pre&gt; from html body, else return error object for better debugging
+    if (jQuery(err.responseText).find(&#39;body pre:first, body p:first&#39;)[0])
+      err.responseText = jQuery(err.responseText).find(&#39;body pre:first, body p:first&#39;).first().text().trim().replace(/(\s|\n)+/g,&#39; &#39;);
+    else if (jQuery(err.responseText).text()) {
+      err.responseText = jQuery(err.responseText).text().trim();
+    }
+  } else {
+    // remove all tags to get plain message
+    // TODO: find a real jQuery replacement
+    err.responseText = err.responseText.replace(/(&lt;([^&gt;]+)&gt;)/ig,&#39;&#39;).trim();
+  }
+} catch(e) {
+  // ignore exception
+}
+// try to create a valuable error object from response
+if ((err)&amp;&amp;(err.responseText)&amp;&amp;(typeof err.responseText === &#39;string&#39;)) {
+  try {
+    var err = JSON.parse(err.responseText);
+    var ErrorHandler = (/^(\/)*db\/data(\/)*$/.test(options.url)) ? CypherQueryError : QueryError;
+    err = new ErrorHandler(err.message, {
+      stacktrace: err.stacktrace,
+      exception: err.exception,
+      statusCode: statusCode,
+      url: options.url,
+      method: options.method,
+      data: data
+    });
+  } catch (e) {
+    self.log(&#39;**debug** Could not create/parse a valuable error object&#39;, e);
+  }
+}
+if ( (err) &amp;&amp; (err.exception) &amp;&amp; (self.ignoreExceptionPattern) &amp;&amp; (self.ignoreExceptionPattern.test(err.exception)) ) {
+  // we ignore by default notfound exceptions, because they are no &quot;syntactical&quot; errors
+  return cb(null, null, this._debug_);
+} else {
+  return cb(err || error, null, this._debug_);
+}
+</code></pre><p>  }</p><p>  Neo4jRestful.prototype.stream = function(cypher, options, cb) {<br />    var args;<br />    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) );<br />    this.header[&#39;X-Stream&#39;] = &#39;true&#39;;<br />    var self = this;<br />    var todo = 0;<br />    var done = 0;</p><pre><code>if (typeof cypher !== &#39;string&#39;)
+  throw Error(&#39;cypher argument has to be a string&#39;);
+
+return this.query(cypher, options, function(data) {
+  if (data) {
+    if (typeof self.onProcessStream === &#39;function&#39;) {
+      todo++;
+      self.onProcessStream(data, function(err, data) {
+        if ( (data) &amp;&amp; (data.length === 1) )
+          data = data[0];
+        if (done &gt;= todo) {
+          // done
+          cb(data, self);
+          return cb(null, self, self._debug_);
+        } else {
+          return cb(data, self, self._debug_);
+        }
+      })
+    } else {
+      return cb(data, self, self._debug_);
+    }
+  } else {
+    return cb(null, self, self._debug_);
+  }
+});
+</code></pre><p>  }</p><p>  Neo4jRestful.prototype.get = function(url, options, cb) {<br />    var args;<br />    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = &#39;GET&#39; ) );<br />    return this.request(url, options, cb);<br />  }</p><p>  Neo4jRestful.prototype.post = function(url, options, cb) {<br />    var args;<br />    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = &#39;POST&#39; ) );<br />    return this.request(url, options, cb);<br />  }<br />  Neo4jRestful.prototype.put = function(url, options, cb) {<br />    var args;<br />    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = &#39;PUT&#39; ) );<br />    return this.request(url, options, cb);<br />  }</p><p>  Neo4jRestful.prototype.delete = function(url, options, cb) {<br />    var args;<br />    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = &#39;DELETE&#39; ) );<br />    return this.request(url, options, cb);<br />  }</p><p>  Neo4jRestful.prototype.log = function(){ /* &gt; /dev/null</p></div></div><div class="section"><p data-section-title class="title"><a href="#">Source</a></p><div data-section-content class="content"><pre><code class="language-javascript">};
+
+  Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
+    if ((responseData === null) || (responseData === ''))
+      return null;
+    var uri = (responseData) ? responseData.self : null;
+    var Node = Neo4jRestful.Node;
+    var Relationship = Neo4jRestful.Relationship;
+    var Path = Neo4jRestful.Path;
+    if (typeof Class !== 'function')
+      Class = Node;
+    if (uri) {
+      if (/\/db\/data\/node\/[0-9]+\</code></pre></div></div></div></article><article class="comment"><header></header><ul class="no-bullet tags"></ul><div data-section="accordian" data-options="one_up: false;" class="section-container code auto"><div class="section"><p data-section-title class="title"><a href="#">Description</a></p><div data-section-content class="content description"><p>/.test(uri)) {<br />        // we have a node or an inheriated class<br />        var n = new Class();<br />        n = n.populateWithDataFromResponse(responseData);<br />        return n;<br />      } else if (/\/db\/data\/relationship\/[0-9]+\/*$/.test(uri)) {<br />        // we have a relationship<br />        var r = new Relationship();<br />        r = r.populateWithDataFromResponse(responseData);<br />        return r;<br />      }<br />    }<br />    else {<br />      if ((<em>.isNumber(responseData.length))&amp;&amp;(</em>.isString(responseData.start))) {<br />        // we have a path<br />        var p = new Path();<br />        p = p.populateWithDataFromResponse(responseData);<br />        return p;<br />      }<br />    }<br />    return responseData;<br />  }</p><p>  Neo4jRestful.prototype.responseTime = function() {<br />    if ((this.<em>request_on</em> &gt; 0) &amp;&amp; (this.<em>response_on</em> &gt; 0)) {<br />      return this.<em>response_on</em> - this.<em>request_on</em>;<br />    } else {<br />      return null;<br />    }<br />  }</p><p>  Neo4jRestful.prototype.responseTimeAsString = function() {<br />    var time = this.responseTime();<br />    if (time) {<br />      return Math.floor(time/10)/100 + &#39;[s]&#39;;<br />    } else {<br />      return &#39;&#39;;<br />    }<br />  }</p><p>  Neo4jRestful.prototype.onConnectionError = function(/* err, self</p></div></div><div class="section"><p data-section-title class="title"><a href="#">Source</a></p><div data-section-content class="content"><pre><code class="language-javascript">{
+    // overwrite with your own function to decide what to do if no connection can be established</code></pre></div></div></div></article><article class="comment"><header></header><ul class="no-bullet tags"></ul><div data-section="accordian" data-options="one_up: false;" class="section-container code auto"><div class="section"><p data-section-title class="title"><a href="#">Description</a></p><div data-section-content class="content description"><p>/dev/null</p></div></div><div class="section"><p data-section-title class="title"><a href="#">Source</a></p><div data-section-content class="content"><pre><code class="language-javascript">}
+
+  Neo4jRestful.prototype.singleton = function() {
+    // creates a new instanced copy of this client
+    return new Neo4jRestful(this._connectionString());
+  }
+
+  Neo4jRestful.create = function(url, options) {
+    return new Neo4jRestful(url, options);
+  }
+
+  if (typeof window === 'object')
+    window.Neo4jRestful = Neo4jRestful;
+
+  return Neo4jRestful;
+};
+
+if (typeof window !== 'object') {
+  // nodejs
+  module.exports = exports = {
+    init: __initNeo4jRestful__
+  };
+} else {
+  window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;
+}</code></pre></div></div></div></article></div></div><!-- Foundation JS--><script type="text/javascript">document.write('<script src=' +
+('__proto__' in {} ? 'http://cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min' : 'http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min') +
+'.js><\/script>')
+</script><script src="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/js/foundation.min.js"></script><script src="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/js/foundation/foundation.reveal.min.js"></script><!-- Prism js--><script>/**
+ * Prism: Lightweight, robust, elegant syntax highlighting
+ * MIT license http://www.opensource.org/licenses/mit-license.php/
+ * @author Lea Verou http://lea.verou.me
+ */(function(){var e=/\blang(?:uage)?-(?!\*)(\w+)\b/i,t=self.Prism={util:{type:function(e){return Object.prototype.toString.call(e).match(/\[object (\w+)\]/)[1]},clone:function(e){var n=t.util.type(e);switch(n){case"Object":var r={};for(var i in e)e.hasOwnProperty(i)&&(r[i]=t.util.clone(e[i]));return r;case"Array":return e.slice()}return e}},languages:{extend:function(e,n){var r=t.util.clone(t.languages[e]);for(var i in n)r[i]=n[i];return r},insertBefore:function(e,n,r,i){i=i||t.languages;var s=i[e],o={};for(var u in s)if(s.hasOwnProperty(u)){if(u==n)for(var a in r)r.hasOwnProperty(a)&&(o[a]=r[a]);o[u]=s[u]}return i[e]=o},DFS:function(e,n){for(var r in e){n.call(e,r,e[r]);t.util.type(e)==="Object"&&t.languages.DFS(e[r],n)}}},highlightAll:function(e,n){var r=document.querySelectorAll('code[class*="language-"], [class*="language-"] code, code[class*="lang-"], [class*="lang-"] code');for(var i=0,s;s=r[i++];)t.highlightElement(s,e===!0,n)},highlightElement:function(r,i,s){var o,u,a=r;while(a&&!e.test(a.className))a=a.parentNode;if(a){o=(a.className.match(e)||[,""])[1];u=t.languages[o]}if(!u)return;r.className=r.className.replace(e,"").replace(/\s+/g," ")+" language-"+o;a=r.parentNode;/pre/i.test(a.nodeName)&&(a.className=a.className.replace(e,"").replace(/\s+/g," ")+" language-"+o);var f=r.textContent;if(!f)return;f=f.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\u00a0/g," ");var l={element:r,language:o,grammar:u,code:f};t.hooks.run("before-highlight",l);if(i&&self.Worker){var c=new Worker(t.filename);c.onmessage=function(e){l.highlightedCode=n.stringify(JSON.parse(e.data),o);t.hooks.run("before-insert",l);l.element.innerHTML=l.highlightedCode;s&&s.call(l.element);t.hooks.run("after-highlight",l)};c.postMessage(JSON.stringify({language:l.language,code:l.code}))}else{l.highlightedCode=t.highlight(l.code,l.grammar,l.language);t.hooks.run("before-insert",l);l.element.innerHTML=l.highlightedCode;s&&s.call(r);t.hooks.run("after-highlight",l)}},highlight:function(e,r,i){return n.stringify(t.tokenize(e,r),i)},tokenize:function(e,n,r){var i=t.Token,s=[e],o=n.rest;if(o){for(var u in o)n[u]=o[u];delete n.rest}e:for(var u in n){if(!n.hasOwnProperty(u)||!n[u])continue;var a=n[u],f=a.inside,l=!!a.lookbehind,c=0;a=a.pattern||a;for(var h=0;h<s.length;h++){var p=s[h];if(s.length>e.length)break e;if(p instanceof i)continue;a.lastIndex=0;var d=a.exec(p);if(d){l&&(c=d[1].length);var v=d.index-1+c,d=d[0].slice(c),m=d.length,g=v+m,y=p.slice(0,v+1),b=p.slice(g+1),w=[h,1];y&&w.push(y);var E=new i(u,f?t.tokenize(d,f):d);w.push(E);b&&w.push(b);Array.prototype.splice.apply(s,w)}}}return s},hooks:{all:{},add:function(e,n){var r=t.hooks.all;r[e]=r[e]||[];r[e].push(n)},run:function(e,n){var r=t.hooks.all[e];if(!r||!r.length)return;for(var i=0,s;s=r[i++];)s(n)}}},n=t.Token=function(e,t){this.type=e;this.content=t};n.stringify=function(e,r,i){if(typeof e=="string")return e;if(Object.prototype.toString.call(e)=="[object Array]")return e.map(function(t){return n.stringify(t,r,e)}).join("");var s={type:e.type,content:n.stringify(e.content,r,i),tag:"span",classes:["token",e.type],attributes:{},language:r,parent:i};s.type=="comment"&&(s.attributes.spellcheck="true");t.hooks.run("wrap",s);var o="";for(var u in s.attributes)o+=u+'="'+(s.attributes[u]||"")+'"';return"<"+s.tag+' class="'+s.classes.join(" ")+'" '+o+">"+s.content+"</"+s.tag+">"};if(!self.document){self.addEventListener("message",function(e){var n=JSON.parse(e.data),r=n.language,i=n.code;self.postMessage(JSON.stringify(t.tokenize(i,t.languages[r])));self.close()},!1);return}var r=document.getElementsByTagName("script");r=r[r.length-1];if(r){t.filename=r.src;document.addEventListener&&!r.hasAttribute("data-manual")&&document.addEventListener("DOMContentLoaded",t.highlightAll)}})();;
+Prism.languages.markup={comment:/&lt;!--[\w\W]*?-->/g,prolog:/&lt;\?.+?\?>/,doctype:/&lt;!DOCTYPE.+?>/,cdata:/&lt;!\[CDATA\[[\w\W]*?]]>/i,tag:{pattern:/&lt;\/?[\w:-]+\s*(?:\s+[\w:-]+(?:=(?:("|')(\\?[\w\W])*?\1|\w+))?\s*)*\/?>/gi,inside:{tag:{pattern:/^&lt;\/?[\w:-]+/i,inside:{punctuation:/^&lt;\/?/,namespace:/^[\w-]+?:/}},"attr-value":{pattern:/=(?:('|")[\w\W]*?(\1)|[^\s>]+)/gi,inside:{punctuation:/=|>|"/g}},punctuation:/\/?>/g,"attr-name":{pattern:/[\w:-]+/g,inside:{namespace:/^[\w-]+?:/}}}},entity:/&amp;#?[\da-z]{1,8};/gi};Prism.hooks.add("wrap",function(e){e.type==="entity"&&(e.attributes.title=e.content.replace(/&amp;/,"&"))});;
+Prism.languages.css={comment:/\/\*[\w\W]*?\*\//g,atrule:{pattern:/@[\w-]+?.*?(;|(?=\s*{))/gi,inside:{punctuation:/[;:]/g}},url:/url\((["']?).*?\1\)/gi,selector:/[^\{\}\s][^\{\};]*(?=\s*\{)/g,property:/(\b|\B)[\w-]+(?=\s*:)/ig,string:/("|')(\\?.)*?\1/g,important:/\B!important\b/gi,ignore:/&(lt|gt|amp);/gi,punctuation:/[\{\};:]/g};Prism.languages.markup&&Prism.languages.insertBefore("markup","tag",{style:{pattern:/(&lt;|<)style[\w\W]*?(>|&gt;)[\w\W]*?(&lt;|<)\/style(>|&gt;)/ig,inside:{tag:{pattern:/(&lt;|<)style[\w\W]*?(>|&gt;)|(&lt;|<)\/style(>|&gt;)/ig,inside:Prism.languages.markup.tag.inside},rest:Prism.languages.css}}});;
+Prism.languages.clike={comment:{pattern:/(^|[^\\])(\/\*[\w\W]*?\*\/|(^|[^:])\/\/.*?(\r?\n|$))/g,lookbehind:!0},string:/("|')(\\?.)*?\1/g,"class-name":{pattern:/((?:(?:class|interface|extends|implements|trait|instanceof|new)\s+)|(?:catch\s+\())[a-z0-9_\.\\]+/ig,lookbehind:!0,inside:{punctuation:/(\.|\\)/}},keyword:/\b(if|else|while|do|for|return|in|instanceof|function|new|try|catch|finally|null|break|continue)\b/g,"boolean":/\b(true|false)\b/g,"function":{pattern:/[a-z0-9_]+\(/ig,inside:{punctuation:/\(/}}, number:/\b-?(0x[\dA-Fa-f]+|\d*\.?\d+([Ee]-?\d+)?)\b/g,operator:/[-+]{1,2}|!|&lt;=?|>=?|={1,3}|(&amp;){1,2}|\|?\||\?|\*|\/|\~|\^|\%/g,ignore:/&(lt|gt|amp);/gi,punctuation:/[{}[\];(),.:]/g};;
+Prism.languages.javascript=Prism.languages.extend("clike",{keyword:/\b(var|let|if|else|while|do|for|return|in|instanceof|function|new|with|typeof|try|catch|finally|null|break|continue)\b/g,number:/\b-?(0x[\dA-Fa-f]+|\d*\.?\d+([Ee]-?\d+)?|NaN|-?Infinity)\b/g});Prism.languages.insertBefore("javascript","keyword",{regex:{pattern:/(^|[^/])\/(?!\/)(\[.+?]|\\.|[^/\r\n])+\/[gim]{0,3}(?=\s*($|[\r\n,.;})]))/g,lookbehind:!0}});Prism.languages.markup&&Prism.languages.insertBefore("markup","tag",{script:{pattern:/(&lt;|<)script[\w\W]*?(>|&gt;)[\w\W]*?(&lt;|<)\/script(>|&gt;)/ig,inside:{tag:{pattern:/(&lt;|<)script[\w\W]*?(>|&gt;)|(&lt;|<)\/script(>|&gt;)/ig,inside:Prism.languages.markup.tag.inside},rest:Prism.languages.javascript}}});;
+Prism.languages.coffeescript=Prism.languages.extend("javascript",{"block-comment":/([#]{3}\s*\r?\n(.*\s*\r*\n*)\s*?\r?\n[#]{3})/g,comment:/(\s|^)([#]{1}[^#^\r^\n]{2,}?(\r?\n|$))/g,keyword:/\b(this|window|delete|class|extends|namespace|extend|ar|let|if|else|while|do|for|each|of|return|in|instanceof|new|with|typeof|try|catch|finally|null|undefined|break|continue)\b/g});Prism.languages.insertBefore("coffeescript","keyword",{"function":{pattern:/[a-z|A-z]+\s*[:|=]\s*(\([.|a-z\s|,|:|{|}|\"|\'|=]*\))?\s*-&gt;/gi,inside:{"function-name":/[_?a-z-|A-Z-]+(\s*[:|=])| @[_?$?a-z-|A-Z-]+(\s*)| /g,operator:/[-+]{1,2}|!|=?&lt;|=?&gt;|={1,2}|(&amp;){1,2}|\|?\||\?|\*|\//g}},"attr-name":/[_?a-z-|A-Z-]+(\s*:)| @[_?$?a-z-|A-Z-]+(\s*)| /g});;
+Prism.languages.scss=Prism.languages.extend("css",{comment:{pattern:/(^|[^\\])(\/\*[\w\W]*?\*\/|\/\/.*?(\r?\n|$))/g,lookbehind:!0},atrule:/@[\w-]+(?=\s+(\(|\{|;))/gi,url:/([-a-z]+-)*url(?=\()/gi,selector:/([^@;\{\}\(\)]?([^@;\{\}\(\)]|&amp;|\#\{\$[-_\w]+\})+)(?=\s*\{(\}|\s|[^\}]+(:|\{)[^\}]+))/gm});Prism.languages.insertBefore("scss","atrule",{keyword:/@(if|else if|else|for|each|while|import|extend|debug|warn|mixin|include|function|return)|(?=@for\s+\$[-_\w]+\s)+from/i});Prism.languages.insertBefore("scss","property",{variable:/((\$[-_\w]+)|(#\{\$[-_\w]+\}))/i});Prism.languages.insertBefore("scss","ignore",{placeholder:/%[-_\w]+/i,statement:/\B!(default|optional)\b/gi,"boolean":/\b(true|false)\b/g,"null":/\b(null)\b/g,operator:/\s+([-+]{1,2}|={1,2}|!=|\|?\||\?|\*|\/|\%)\s+/g});
+;
+</script><script>  var headerHeight = 64;
+
+  $(document).foundation();
+
+  $(function(){
+    $('pre code').addClass('language-javascript');
+  //   $('#nav > ul > li > a[href$="'+location.pathname.substring(location.pathname.lastIndexOf('/')+1, location.pathname.length)+'"]').parent().addClass('active');
+  })</script></body></html>

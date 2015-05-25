@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for src/transaction.js</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../prettify.css">
+    <link rel="stylesheet" href="../base.css">
+    <style type='text/css'>
+        div.coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">src/transaction.js</span></h1>
+    <h2>
+        Statements: <span class="metric">85.65% <small>(191 / 223)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">66.96% <small>(75 / 112)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">84.38% <small>(27 / 32)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">85.65% <small>(191 / 223)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Ignored: <span class="metric"><span class="ignore-none">none</span></span> &nbsp;&nbsp;&nbsp;&nbsp;
+    </h2>
+    <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">src/</a> &#187; transaction.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">22</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">21</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-yes">76</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">23</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// # Transaction
+// Can be used to send (many) cypher statement(s) as transaction
+// see: [http://docs.neo4j.org/chunked/preview/rest-api-transactional.html](http://docs.neo4j.org/chunked/preview/rest-api-transactional.html)
+&nbsp;
+var __initTransaction__ = function(neo4jrestful) {
+&nbsp;
+  var Statement = function Statement(transaction, cypher, parameters) {
+    this._transaction_  = transaction;
+    this.statement = cypher;
+    this.parameters = parameters;
+  }
+&nbsp;
+  Statement.prototype._transaction_ = null;
+  Statement.prototype.statement = '';
+  Statement.prototype.parameters = null;
+  Statement.prototype.status = null; // 'sending', 'sended'
+  Statement.prototype.position = null;
+  Statement.prototype.results = null;
+  Statement.prototype.errors = null;
+&nbsp;
+  Statement.prototype.toObject = <span class="fstat-no" title="function not covered" >function() {</span>
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      statement: this.statement,
+      parameters: JSON.stringify(this.parameters),
+      status: this.status,
+      position: this.position,
+      errors: this.errors,
+      results: this.results,
+    };
+  }
+&nbsp;
+  var Transaction = function Transaction(cypher, parameters, cb) {
+    this.neo4jrestful = neo4jrestful.singleton();
+    this.begin(cypher, parameters, cb);
+  }
+&nbsp;
+  Transaction.Statement = Statement;
+&nbsp;
+  Transaction.prototype.statements = null;
+  Transaction.prototype._response_ = null;
+  Transaction.prototype.neo4jrestful = null;
+  Transaction.prototype.status = ''; // new|creating|open|committing|committed
+  Transaction.prototype.id = null;
+  Transaction.prototype.uri = null
+  Transaction.prototype.expires = null;
+  Transaction.prototype.results = null;
+  Transaction.prototype._concurrentTransmissions_ = 0;
+  Transaction.prototype._responseError_ = null; //will contain response Error
+  Transaction.prototype._resortResults_ = true;
+&nbsp;
+  Transaction.prototype.begin = function(cypher, parameters, cb) {
+    // reset
+    this.statements = [];
+    this.results = [];
+    this.errors = [];
+    this.id = null;
+    this.status = 'new';
+    return this.add(cypher, parameters, cb);
+  }
+&nbsp;
+  Transaction.prototype.add = function(cypher, parameters, cb) {
+    var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+    var statements = args.statements;
+    // we cancel the operation if we are comitting
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (this.status === 'committed') {
+<span class="cstat-no" title="statement not covered" >      var err = Error("You can't add statements after transaction is committed");</span>
+<span class="cstat-no" title="statement not covered" >      if (typeof args.cb === 'function') {</span>
+<span class="cstat-no" title="statement not covered" >        cb(err, null);</span>
+      } else {
+<span class="cstat-no" title="statement not covered" >        throw err;</span>
+      }
+<span class="cstat-no" title="statement not covered" >      return this;</span>
+    }
+    this.addStatementsToQueue(statements);
+    if (args.cb) {
+      cb = args.cb;
+    } else {
+      // we execute if we have a callback
+      // till then we'll collect the statements
+      return this;
+    }
+    return this.exec(cb);
+  }
+&nbsp;
+  Transaction.prototype.exec = function(cb) {
+    var self = this;
+    // stop here if there is no callback attached
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof cb !== 'function') {
+<span class="cstat-no" title="statement not covered" >      return this;</span>
+    }
+    self.onResponse = cb;
+&nbsp;
+    var url = '';
+    var untransmittedStatements = this.untransmittedStatements();
+&nbsp;
+    if (this.status === 'committing') {
+      // commit transaction
+      url = (this.id) ? '/transaction/'+this.id+'/commit' : '/transaction/commit';
+    } else if (!this.id) {
+      // begin a transaction
+      this.status = 'creating';
+      url = '/transaction';
+    } else <span class="missing-if-branch" title="else path not taken" >E</span>if (this.status === 'open') {
+      // add to transaction
+      this.status = 'adding';
+      url = '/transaction/'+this.id;
+    } else <span class="cstat-no" title="statement not covered" >if (this.status = 'committed') {</span>
+<span class="cstat-no" title="statement not covered" >      cb(Error('Transaction is committed. Create a new transaction instead.'), null, null);</span>
+    } else {
+<span class="cstat-no" title="statement not covered" >      throw Error('Transaction has a unknown status. Possible are: creating|open|committing|committed');</span>
+    }
+    var statements = [];
+    untransmittedStatements.forEach(function(statement, i){
+      self.statements[i].status = 'sending';
+      statements.push({ statement: statement.statement, parameters: statement.parameters });
+    });
+    this._concurrentTransmissions_++;
+    this.neo4jrestful.post(url, { data: { statements: statements } }, function(err, response, debug) {
+      self._response_ = response;
+      self._concurrentTransmissions_--;
+      self._applyResponse(err, response, debug, untransmittedStatements);
+&nbsp;
+      untransmittedStatements.forEach(function(statement) {
+        self.statements[statement.position].status = statement.status = 'sended';
+      });
+&nbsp;
+      untransmittedStatements = self.untransmittedStatements();
+&nbsp;
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (untransmittedStatements.length &gt; 0) {
+        // re call exec() until all statements are transmitted
+        // TODO: set a limit to avoid endless loop
+<span class="cstat-no" title="statement not covered" >        return self.exec(cb);</span>
+      }
+      // TODO: sort and populate resultset, but currently no good way to detect result objects
+      else <span class="missing-if-branch" title="else path not taken" >E</span>if (self._concurrentTransmissions_ === 0) {//  {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof self.onResponse === 'function') {
+          var cb = self.onResponse;
+          // release onResponse for (optional) next cb
+          self.onResponse = null;
+          // call final callback
+          if (self.status === 'committing')
+            self.status = 'committed';
+          cb(self._responseError_, self, debug);
+          return self;
+        }
+      }
+    });
+&nbsp;
+    return this;
+  }
+&nbsp;
+  Transaction.prototype.addStatementsToQueue = function(statements) {
+    var self = this;
+    if ((statements) &amp;&amp; (statements.constructor === Array) &amp;&amp; (statements.length &gt; 0)) {
+      // attach all statments
+      statements.forEach(function(data){
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (data.statement) {
+          var statement = new Statement(self, data.statement, data.parameters);
+          statement.position = self.statements.length;
+          self.statements.push(statement);
+        }
+      });
+    }
+    return this;
+  }
+&nbsp;
+  Transaction.prototype._applyResponse = function(err, response, debug, untransmittedStatements) {
+    var self = this;
+    // if error on request/response
+    if (self.status !== 'committing')
+      self.status = 'open';
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (err) {
+<span class="cstat-no" title="statement not covered" >      self.status = (err.status) ? err.status : err;</span>
+<span class="cstat-no" title="statement not covered" >      if (!self.status)</span>
+<span class="cstat-no" title="statement not covered" >        self.status = self._response_.status;</span>
+    }
+    untransmittedStatements.forEach(function(statement, i){
+      if (response.errors[i]) {
+        statement.error = response.errors[i];
+        self.errors.push(response.errors[i]);
+      }
+      if (response.results[i]) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (self._resortResults_) {
+          // move row property one level above
+          // { rows: [ {}, {} ]} -&gt; { [ {}, {} ]}
+          response.results[i].data.forEach(function(data, j){
+            //if ((response.results[i]) &amp;&amp; (data.row)) {
+            <span class="missing-if-branch" title="else path not taken" >E</span>if (data.row) {
+              response.results[i].data[j] = data.row;
+            }
+          })
+        }
+        self.results.push(response.results[i]);
+      }
+    });
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((err)||(!response)) {
+<span class="cstat-no" title="statement not covered" >      self._responseError_ = (self._responseError_) ? self._responseError_.push(err) : self._responseError_ = [ err ];</span>
+    } else {
+      self.populateWithDataFromResponse(response);
+      // keep track of open transactions
+      if (self.status === 'open')
+        Transaction.__open_transactions__[self.id] = self;
+      else
+        delete Transaction.__open_transactions__[self.id];
+    }
+  }
+&nbsp;
+  Transaction.prototype.toObject = <span class="fstat-no" title="function not covered" >function() {</span>
+<span class="cstat-no" title="statement not covered" >    var statements = [];</span>
+<span class="cstat-no" title="statement not covered" >    this.statements.forEach(<span class="fstat-no" title="function not covered" >function(stat){</span></span>
+<span class="cstat-no" title="statement not covered" >      statements.push(stat.toObject());</span>
+    });
+<span class="cstat-no" title="statement not covered" >    return {</span>
+      id: this.id,
+      status: this.status,
+      statements: statements,
+      expires: this.expires,
+      uri: this.uri,
+    };
+  }
+&nbsp;
+  Transaction.prototype.populateWithDataFromResponse = function(data) {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (data) {
+      if ((data.transaction) &amp;&amp; (data.transaction.expires))
+        this.expires = new Date(data.transaction.expires);
+      // exists only on POST a new transaction
+      if (data.commit) {
+        var match = data.commit.match(/^(.+?\/transaction\/(\d+))\/commit$/);
+        this.id = Number(match[2]);
+        this.uri = match[1];
+      }
+    }
+  }
+&nbsp;
+  Transaction.prototype.untransmittedStatements = function() {
+    var statements = [];
+    this.statements.forEach(function(statement){
+      if ((statement)&amp;&amp;(!statement.status))
+        statements.push(statement);
+    });
+    return statements;
+  }
+&nbsp;
+  Transaction.prototype.commit = function(cypher, parameters, cb) {
+    if (typeof cypher === 'function') {
+      cb = cypher;
+    } else {
+      var args = Transaction._sortTransactionArguments(cypher, parameters, cb);
+      this.addStatementsToQueue(args.statements);
+      cb = args.cb;
+    }
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof cb !== 'function') {
+<span class="cstat-no" title="statement not covered" >      throw Error('You need to attach a callback an a commit/close operation');</span>
+    }
+    this.onResponse = cb;
+    this.status = 'committing';
+    return this.exec(cb);
+  }
+&nbsp;
+  Transaction.prototype.close = Transaction.prototype.commit;
+&nbsp;
+  Transaction.create = <span class="fstat-no" title="function not covered" >function(cypher, parameters, cb) {</span>
+<span class="cstat-no" title="statement not covered" >    return new Transaction(cypher, parameters, cb);</span>
+  }
+&nbsp;
+  Transaction.new = <span class="fstat-no" title="function not covered" >function(cypher, parameters) {</span>
+<span class="cstat-no" title="statement not covered" >    return new Transaction(cypher, parameters);</span>
+  }
+&nbsp;
+  Transaction.prototype.onResponse = null;
+&nbsp;
+  Transaction._sortTransactionArguments = function(cypher, parameters, cb) {
+    var statements = null;
+    // we might have a Graph or CypherQuery Object
+    if ((typeof cypher === 'object') &amp;&amp; ((typeof cypher.toQuery === 'function') || (<span class="branch-2 cbranch-no" title="branch not covered" >typeof cypher.statementsToString === 'function')</span>)) {
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (cypher.toQuery) {
+        statements = [ { statement: cypher.toQuery().statementsToString(), parameters: cypher.parameters() }];
+      } else {
+<span class="cstat-no" title="statement not covered" >        statements = [ { statement: cypher.statementsToString(), parameters: cypher.parameters() }];</span>
+      }
+      cb = parameters;
+    } else if (typeof cypher === 'string') {
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof parameters === 'function') {
+<span class="cstat-no" title="statement not covered" >        cb = parameters;</span>
+<span class="cstat-no" title="statement not covered" >        parameters = {};</span>
+      }
+      statements = [ { statement: cypher, parameters: parameters || <span class="branch-1 cbranch-no" title="branch not covered" >{} </span>} ];
+    } else <span class="missing-if-branch" title="if path not taken" >I</span>if ((cypher) &amp;&amp; (<span class="branch-1 cbranch-no" title="branch not covered" >cypher.constructor === Array)</span>) {
+<span class="cstat-no" title="statement not covered" >      cb = parameters;</span>
+<span class="cstat-no" title="statement not covered" >      statements = cypher;</span>
+    } else <span class="missing-if-branch" title="if path not taken" >I</span>if ((cypher) &amp;&amp; (<span class="branch-1 cbranch-no" title="branch not covered" >cypher.statement)</span>) {
+<span class="cstat-no" title="statement not covered" >      statements = [ cypher ];</span>
+    }
+    return {
+      statements: statements,
+      cb: cb || null
+    }
+  }
+&nbsp;
+  Transaction.prototype.rollback = function(cb) {
+    var self = this;
+    <span class="missing-if-branch" title="else path not taken" >E</span>if ((this.id)&amp;&amp;(this.status!=='finalized')) {
+      this.neo4jrestful.delete('/transaction/'+this.id, function(err, res, debug) {
+        // remove from open_transactions
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (!err)
+          delete Transaction.__open_transactions__[self.id];
+        cb(err, res, debug);
+      });
+    } else {
+<span class="cstat-no" title="statement not covered" >      cb(Error('You can only perform a rollback on an open transaction.'), null);</span>
+    }
+    return this;
+  }
+&nbsp;
+  Transaction.prototype.undo   = Transaction.prototype.rollback;
+  Transaction.prototype.delete = Transaction.prototype.rollback;
+&nbsp;
+  Transaction.begin = function(cypher, parameters, cb) {
+    return new Transaction(cypher, parameters, cb);
+  }
+&nbsp;
+  Transaction.create = Transaction.begin;
+  Transaction.open = Transaction.begin;
+&nbsp;
+  Transaction.commit = function(cypher, parameters, cb) {
+    return new Transaction().commit(cypher, parameters, cb);
+  }
+&nbsp;
+  Transaction.executeAllOpenTransactions = function(cb, action) {
+    // action can be commit|rollback
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof action === 'undefined')
+<span class="cstat-no" title="statement not covered" >      action = 'commit';</span>
+    var count = Object.keys(Transaction.__open_transactions__).length;
+    var errors = [];
+    var debugs = [];
+&nbsp;
+    var _onDone_ = function(err, res, debug) {
+      count--;
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (err)
+<span class="cstat-no" title="statement not covered" >        errors.push(err);</span>
+      debugs.push(debug);
+      if (count === 0)
+        cb( ((errors.length &gt; 0) ? <span class="branch-0 cbranch-no" title="branch not covered" >errors </span>: null), null, debugs );
+    }
+&nbsp;
+    for (var id in Transaction.__open_transactions__) {
+      Transaction.__open_transactions__[id][action](_onDone_);
+    }
+&nbsp;
+    return this;
+  }
+&nbsp;
+  Transaction.commitAll   = function(cb) {
+    return this.executeAllOpenTransactions(cb, 'commit');
+  }
+  Transaction.closeAll    = Transaction.commitAll;
+&nbsp;
+  Transaction.rollbackAll = function(cb) {
+    Transaction.executeAllOpenTransactions(cb, 'rollback');
+  }
+&nbsp;
+  Transaction.deleteAll   = Transaction.rollbackAll;
+  Transaction.undoAll     = Transaction.rollbackAll;
+&nbsp;
+  // all open transactions
+  Transaction.__open_transactions__ = {};
+&nbsp;
+  return neo4jrestful.Transaction = Transaction;
+&nbsp;
+}
+&nbsp;
+<span class="missing-if-branch" title="else path not taken" >E</span>if (typeof window !== 'object') {
+  module.exports = exports = {
+    init: __initTransaction__
+  };
+} else {
+<span class="cstat-no" title="statement not covered" >  window.Neo4jMapper.initTransaction = __initTransaction__;</span>
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon May 25 2015 18:43:30 GMT+0200 (CEST)</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

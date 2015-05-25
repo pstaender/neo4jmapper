@@ -1,0 +1,449 @@
+<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width" charset="utf-8"><title>neo4jmapper</title><!-- Foundation CSS--><link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/css/foundation.min.css"><!-- Prism CSS--><style type="text/css">/**
+ * prism.js default theme for JavaScript, CSS and HTML
+ * Based on dabblet (http://dabblet.com)
+ * @author Lea Verou
+ */
+
+code[class*="language-"],
+pre[class*="language-"] {
+	color: black;
+	text-shadow: 0 1px white;
+	font-family: Consolas, Monaco, 'Andale Mono', monospace;
+	direction: ltr;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+
+	-webkit-hyphens: none;
+	-moz-hyphens: none;
+	-ms-hyphens: none;
+	hyphens: none;
+}
+
+::-moz-selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+::selection {
+	text-shadow: none;
+	background: #b3d4fc;
+}
+
+@media print {
+	code[class*="language-"],
+	pre[class*="language-"] {
+		text-shadow: none;
+	}
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+	padding: 1em;
+	margin: .5em 0;
+	overflow: auto;
+}
+
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+	background: #f5f2f0;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+	padding: .1em;
+	border-radius: .3em;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: slategray;
+}
+
+.token.punctuation {
+	color: #999;
+}
+
+.namespace {
+	opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number {
+	color: #905;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string {
+	color: #690;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+	color: #a67f59;
+	background: hsla(0,0%,100%,.5);
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+	color: #07a;
+}
+
+
+.token.regex,
+.token.important {
+	color: #e90;
+}
+
+.token.important {
+	font-weight: bold;
+}
+
+.token.entity {
+	cursor: help;
+}
+</style><!-- Custom Styles--><style type="text/css">h1.page-title small {
+  font-weight: 400;
+}
+/*.section-container, .section-container .section .title
+  border-color #e6e6e6*/
+#nav .section.active {
+  padding-top: 0 !important;
+}
+#nav .section.active .title {
+  background: #ddd;
+}
+#nav .section .title {
+  background-color: #eee;
+}
+#nav .section .title a {
+  font-weight: 700;
+  padding: 0.6em;
+}
+#nav .section .title a small {
+  font-size: 0.8em;
+  line-height: 1em;
+  display: block;
+  color: #888;
+  margin: 2px 0 -2px;
+}
+#nav .section .title:hover {
+  background: #ddd;
+}
+#nav ul.solo {
+  border-top: 1px solid #ccc;
+  padding: 0.875em;
+}
+code {
+  background: transparent;
+  line-height: 1.3em;
+  font-weight: normal;
+}
+.comment {
+  position: relative;
+  padding-bottom: 1.5em;
+  margin-bottom: 2em;
+  border-bottom: 1px solid #ddd;
+}
+.comment ol,
+.comment ul {
+  margin-left: 2.25em;
+}
+.comment ol.no-bullet,
+.comment ul.no-bullet {
+  margin-left: 0;
+}
+.comment header {
+  margin-bottom: 1.5em;
+}
+.comment header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.2em;
+}
+.comment .section-container,
+.comment .section-container > .section > .content {
+  border: none;
+}
+.comment .section-container > .section > .title {
+  padding: auto;
+  background: none !important;
+  border: none !important;
+}
+.comment .section-container > .section > .title a {
+  border-radius: 4px;
+  font-weight: 700;
+  padding: 1px 10px 1px 0;
+  margin-right: 5px;
+  color: #ccc;
+}
+.comment .section-container > .section:hover .title a {
+  color: #999;
+}
+.comment .section-container > .section.active .title a {
+  color: #2ba6cb;
+}
+.comment .section-container > .section > .content {
+  padding: 0.9em 0 0;
+}
+.comment div.description h2 {
+  font-size: 1.2em;
+}
+.comment .tags span {
+  margin-right: 4px;
+}
+.comment .tags .name,
+.comment .tags .type {
+  font-weight: 700;
+}
+.comment .tags .types {
+  color: #666;
+}
+.comment .tags .description {
+  margin-left: 15px;
+}
+.ctx-type {
+  margin-right: 6px;
+  font-size: 0.7em;
+}
+</style><script srr="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/js/vendor/custom.modernizr.js"></script></head><body><div class="row"><div class="small-12 columns"><h1 class="page-title">neo4jmapper<small> src/lib/md5.js</small></h1></div></div><div class="row"><div id="nav" class="large-3 columns"><div data-section="accordian" data-options="" class="section-container accordian"><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/conditionalparameters.js.html"><small>src/</small>conditionalparameters.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/cypherquery.js.html"><small>src/</small>cypherquery.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/graph.js.html"><small>src/</small>graph.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../../apidocs/src/graph.js.html#__initGraph__">__initGraph__</a></li><li><a href="../../../apidocs/src/graph.js.html#Graph">Graph</a></li><li><a href="../../../apidocs/src/graph.js.html#exec">exec</a></li><li><a href="../../../apidocs/src/graph.js.html#query">query</a></li><li><a href="../../../apidocs/src/graph.js.html#_processResult">_processResult</a></li><li><a href="../../../apidocs/src/graph.js.html#stream">stream</a></li><li><a href="../../../apidocs/src/graph.js.html#each">each</a></li><li><a href="../../../apidocs/src/graph.js.html#setParameters">setParameters</a></li><li><a href="../../../apidocs/src/graph.js.html#parameters">parameters</a></li><li><a href="../../../apidocs/src/graph.js.html#addParameters">addParameters</a></li><li><a href="../../../apidocs/src/graph.js.html#addParameter">addParameter</a></li><li><a href="../../../apidocs/src/graph.js.html#wipeDatabase">wipeDatabase</a></li><li><a href="../../../apidocs/src/graph.js.html#countAllOfType">countAllOfType</a></li><li><a href="../../../apidocs/src/graph.js.html#countRelationships">countRelationships</a></li><li><a href="../../../apidocs/src/graph.js.html#countRelations">countRelations</a></li><li><a href="../../../apidocs/src/graph.js.html#countNodes">countNodes</a></li><li><a href="../../../apidocs/src/graph.js.html#countAll">countAll</a></li><li><a href="../../../apidocs/src/graph.js.html#about">about</a></li><li><a href="../../../apidocs/src/graph.js.html#resetQuery">resetQuery</a></li><li><a href="../../../apidocs/src/graph.js.html#start">start</a></li><li><a href="../../../apidocs/src/graph.js.html#match">match</a></li><li><a href="../../../apidocs/src/graph.js.html#onMatch">onMatch</a></li><li><a href="../../../apidocs/src/graph.js.html#optionalMatch">optionalMatch</a></li><li><a href="../../../apidocs/src/graph.js.html#with">with</a></li><li><a href="../../../apidocs/src/graph.js.html#skip">skip</a></li><li><a href="../../../apidocs/src/graph.js.html#limit">limit</a></li><li><a href="../../../apidocs/src/graph.js.html#merge">merge</a></li><li><a href="../../../apidocs/src/graph.js.html#custom">custom</a></li><li><a href="../../../apidocs/src/graph.js.html#set">set</a></li><li><a href="../../../apidocs/src/graph.js.html#setWith">setWith</a></li><li><a href="../../../apidocs/src/graph.js.html#create">create</a></li><li><a href="../../../apidocs/src/graph.js.html#onCreate">onCreate</a></li><li><a href="../../../apidocs/src/graph.js.html#createUnique">createUnique</a></li><li><a href="../../../apidocs/src/graph.js.html#createIndexOn">createIndexOn</a></li><li><a href="../../../apidocs/src/graph.js.html#case">case</a></li><li><a href="../../../apidocs/src/graph.js.html#dropIndexOn">dropIndexOn</a></li><li><a href="../../../apidocs/src/graph.js.html#orderBy">orderBy</a></li><li><a href="../../../apidocs/src/graph.js.html#where">where</a></li><li><a href="../../../apidocs/src/graph.js.html#return">return</a></li><li><a href="../../../apidocs/src/graph.js.html#returnDistinct">returnDistinct</a></li><li><a href="../../../apidocs/src/graph.js.html#delete">delete</a></li><li><a href="../../../apidocs/src/graph.js.html#remove">remove</a></li><li><a href="../../../apidocs/src/graph.js.html#foreach">foreach</a></li><li><a href="../../../apidocs/src/graph.js.html#union">union</a></li><li><a href="../../../apidocs/src/graph.js.html#using">using</a></li><li><a href="../../../apidocs/src/graph.js.html#comment">comment</a></li><li><a href="../../../apidocs/src/graph.js.html#toQuery">toQuery</a></li><li><a href="../../../apidocs/src/graph.js.html#toQueryString">toQueryString</a></li><li><a href="../../../apidocs/src/graph.js.html#toCypherQuery">toCypherQuery</a></li><li><a href="../../../apidocs/src/graph.js.html#enableLoading">enableLoading</a></li><li><a href="../../../apidocs/src/graph.js.html#disableLoading">disableLoading</a></li><li><a href="../../../apidocs/src/graph.js.html#sortResult">sortResult</a></li><li><a href="../../../apidocs/src/graph.js.html#enableSorting">enableSorting</a></li><li><a href="../../../apidocs/src/graph.js.html#disableSorting">disableSorting</a></li><li><a href="../../../apidocs/src/graph.js.html#enableProcessing">enableProcessing</a></li><li><a href="../../../apidocs/src/graph.js.html#disableProcessing">disableProcessing</a></li><li><a href="../../../apidocs/src/graph.js.html#log">log</a></li><li><a href="../../../apidocs/src/graph.js.html#query">query</a></li><li><a href="../../../apidocs/src/graph.js.html#stream">stream</a></li><li><a href="../../../apidocs/src/graph.js.html#wipeDatabase">wipeDatabase</a></li><li><a href="../../../apidocs/src/graph.js.html#countAllOfType">countAllOfType</a></li><li><a href="../../../apidocs/src/graph.js.html#countRelationships">countRelationships</a></li><li><a href="../../../apidocs/src/graph.js.html#countRelations">countRelations</a></li><li><a href="../../../apidocs/src/graph.js.html#countNodes">countNodes</a></li><li><a href="../../../apidocs/src/graph.js.html#countAll">countAll</a></li><li><a href="../../../apidocs/src/graph.js.html#about">about</a></li><li><a href="../../../apidocs/src/graph.js.html#start">start</a></li><li><a href="../../../apidocs/src/graph.js.html#custom">custom</a></li><li><a href="../../../apidocs/src/graph.js.html#match">match</a></li><li><a href="../../../apidocs/src/graph.js.html#where">where</a></li><li><a href="../../../apidocs/src/graph.js.html#return">return</a></li><li><a href="../../../apidocs/src/graph.js.html#create">create</a></li><li><a href="../../../apidocs/src/graph.js.html#enableLoading">enableLoading</a></li><li><a href="../../../apidocs/src/graph.js.html#disableLoading">disableLoading</a></li><li><a href="../../../apidocs/src/graph.js.html#disableProcessing">disableProcessing</a></li><li><a href="../../../apidocs/src/graph.js.html#enableProcessing">enableProcessing</a></li><li><a href="../../../apidocs/src/graph.js.html#enableSorting">enableSorting</a></li><li><a href="../../../apidocs/src/graph.js.html#disableSorting">disableSorting</a></li><li><a href="../../../apidocs/src/graph.js.html#request">request</a></li><li><a href="../../../apidocs/src/graph.js.html#new">new</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/helpers.js.html"><small>src/</small>helpers.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/index.js.html"><small>src/</small>index.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section active"><p data-section-title class="title"><a href="../../../apidocs/src/lib/md5.js.html"><small>src/lib/</small>md5.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/lib/sequence.js.html"><small>src/lib/</small>sequence.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/neo4jrestful.js.html"><small>src/</small>neo4jrestful.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../../apidocs/src/neo4jrestful.js.html#Neo4jRestful">Neo4jRestful</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/node.js.html"><small>src/</small>node.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../../apidocs/src/node.js.html#__initNode__">__initNode__</a></li><li><a href="../../../apidocs/src/node.js.html#Node">Node</a></li><li><a href="../../../apidocs/src/node.js.html#init">init</a></li><li><a href="../../../apidocs/src/node.js.html#convertToModel">convertToModel</a></li><li><a href="../../../apidocs/src/node.js.html#__TYPE__">__TYPE__</a></li><li><a href="../../../apidocs/src/node.js.html#resetQuery">resetQuery</a></li><li><a href="../../../apidocs/src/node.js.html#uniqueFields">uniqueFields</a></li><li><a href="../../../apidocs/src/node.js.html#ensureIndex">ensureIndex</a></li><li><a href="../../../apidocs/src/node.js.html#withLabel">withLabel</a></li><li><a href="../../../apidocs/src/node.js.html#_prepareQuery">_prepareQuery</a></li><li><a href="../../../apidocs/src/node.js.html#withRelations">withRelations</a></li><li><a href="../../../apidocs/src/node.js.html#requestLabels">requestLabels</a></li><li><a href="../../../apidocs/src/node.js.html#stream">stream</a></li><li><a href="../../../apidocs/src/node.js.html#find">find</a></li><li><a href="../../../apidocs/src/node.js.html#singleton">singleton</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/path.js.html"><small>src/</small>path.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../../apidocs/src/path.js.html#populateWithDataFromResponse">populateWithDataFromResponse</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/relationship.js.html"><small>src/</small>relationship.js</a></p><div data-section-content class="content"><ul class="side-nav"><li><a href="../../../apidocs/src/relationship.js.html#__initRelationship__">__initRelationship__</a></li><li><a href="../../../apidocs/src/relationship.js.html#findById">findById</a></li><li><a href="../../../apidocs/src/relationship.js.html#applyDefaultValues">applyDefaultValues</a></li></ul></div></div><div class="section"><p data-section-title class="title"><a href="../../../apidocs/src/transaction.js.html"><small>src/</small>transaction.js</a></p><div data-section-content class="content"><ul class="side-nav"></ul></div></div></div></div><div class="small-12 large-9 columns"><article class="comment"><header></header><ul class="no-bullet tags"></ul><div data-section="accordian" data-options="one_up: false;" class="section-container code auto"><div class="section"><p data-section-title class="title"><a href="#">Description</a></p><div data-section-content class="content description"></div></div><div class="section"><p data-section-title class="title"><a href="#">Source</a></p><div data-section-content class="content"><pre><code class="language-javascript">// source: https://gist.github.com/aredo/3001685
+var md5 = function (string) {
+
+  function RotateLeft(lValue, iShiftBits) {
+   return (lValue&lt;&lt;iShiftBits) | (lValue&gt;&gt;&gt;(32-iShiftBits));
+  }
+
+  function AddUnsigned(lX,lY) {
+    var lX4,lY4,lX8,lY8,lResult;
+    lX8 = (lX &amp; 0x80000000);
+    lY8 = (lY &amp; 0x80000000);
+    lX4 = (lX &amp; 0x40000000);
+    lY4 = (lY &amp; 0x40000000);
+    lResult = (lX &amp; 0x3FFFFFFF)+(lY &amp; 0x3FFFFFFF);
+    if (lX4 &amp; lY4) {
+      return (lResult ^ 0x80000000 ^ lX8 ^ lY8);
+    }
+    if (lX4 | lY4) {
+      if (lResult &amp; 0x40000000) {
+        return (lResult ^ 0xC0000000 ^ lX8 ^ lY8);
+      } else {
+        return (lResult ^ 0x40000000 ^ lX8 ^ lY8);
+      }
+    } else {
+      return (lResult ^ lX8 ^ lY8);
+    }
+  }
+
+  function F(x,y,z) { return (x &amp; y) | ((~x) &amp; z); }
+  function G(x,y,z) { return (x &amp; z) | (y &amp; (~z)); }
+  function H(x,y,z) { return (x ^ y ^ z); }
+  function I(x,y,z) { return (y ^ (x | (~z))); }
+
+  function FF(a,b,c,d,x,s,ac) {
+    a = AddUnsigned(a, AddUnsigned(AddUnsigned(F(b, c, d), x), ac));
+    return AddUnsigned(RotateLeft(a, s), b);
+  };
+
+  function GG(a,b,c,d,x,s,ac) {
+    a = AddUnsigned(a, AddUnsigned(AddUnsigned(G(b, c, d), x), ac));
+    return AddUnsigned(RotateLeft(a, s), b);
+  };
+
+  function HH(a,b,c,d,x,s,ac) {
+    a = AddUnsigned(a, AddUnsigned(AddUnsigned(H(b, c, d), x), ac));
+    return AddUnsigned(RotateLeft(a, s), b);
+  };
+
+  function II(a,b,c,d,x,s,ac) {
+    a = AddUnsigned(a, AddUnsigned(AddUnsigned(I(b, c, d), x), ac));
+    return AddUnsigned(RotateLeft(a, s), b);
+  };
+
+  function ConvertToWordArray(string) {
+    var lWordCount;
+    var lMessageLength = string.length;
+    var lNumberOfWords_temp1=lMessageLength + 8;
+    var lNumberOfWords_temp2=(lNumberOfWords_temp1-(lNumberOfWords_temp1 % 64))/64;
+    var lNumberOfWords = (lNumberOfWords_temp2+1)*16;
+    var lWordArray=Array(lNumberOfWords-1);
+    var lBytePosition = 0;
+    var lByteCount = 0;
+    while ( lByteCount &lt; lMessageLength ) {
+      lWordCount = (lByteCount-(lByteCount % 4))/4;
+      lBytePosition = (lByteCount % 4)*8;
+      lWordArray[lWordCount] = (lWordArray[lWordCount] | (string.charCodeAt(lByteCount)&lt;&lt;lBytePosition));
+      lByteCount++;
+    }
+    lWordCount = (lByteCount-(lByteCount % 4))/4;
+    lBytePosition = (lByteCount % 4)*8;
+    lWordArray[lWordCount] = lWordArray[lWordCount] | (0x80&lt;&lt;lBytePosition);
+    lWordArray[lNumberOfWords-2] = lMessageLength&lt;&lt;3;
+    lWordArray[lNumberOfWords-1] = lMessageLength&gt;&gt;&gt;29;
+    return lWordArray;
+  };
+
+  function WordToHex(lValue) {
+    var WordToHexValue=&quot;&quot;,WordToHexValue_temp=&quot;&quot;,lByte,lCount;
+    for (lCount = 0;lCount&lt;=3;lCount++) {
+      lByte = (lValue&gt;&gt;&gt;(lCount*8)) &amp; 255;
+      WordToHexValue_temp = &quot;0&quot; + lByte.toString(16);
+      WordToHexValue = WordToHexValue + WordToHexValue_temp.substr(WordToHexValue_temp.length-2,2);
+    }
+    return WordToHexValue;
+  };
+
+  function Utf8Encode(string) {
+    string = string.replace(/\r\n/g,&quot;\n&quot;);
+    var utftext = &quot;&quot;;
+
+    for (var n = 0; n &lt; string.length; n++) {
+
+      var c = string.charCodeAt(n);
+
+      if (c &lt; 128) {
+        utftext += String.fromCharCode(c);
+      }
+      else if((c &gt; 127) &amp;&amp; (c &lt; 2048)) {
+        utftext += String.fromCharCode((c &gt;&gt; 6) | 192);
+        utftext += String.fromCharCode((c &amp; 63) | 128);
+      }
+      else {
+        utftext += String.fromCharCode((c &gt;&gt; 12) | 224);
+        utftext += String.fromCharCode(((c &gt;&gt; 6) &amp; 63) | 128);
+        utftext += String.fromCharCode((c &amp; 63) | 128);
+      }
+
+    }
+
+    return utftext;
+  };
+
+  var x=Array();
+  var k,AA,BB,CC,DD,a,b,c,d;
+  var S11=7, S12=12, S13=17, S14=22;
+  var S21=5, S22=9 , S23=14, S24=20;
+  var S31=4, S32=11, S33=16, S34=23;
+  var S41=6, S42=10, S43=15, S44=21;
+
+  string = Utf8Encode(string);
+
+  x = ConvertToWordArray(string);
+
+  a = 0x67452301; b = 0xEFCDAB89; c = 0x98BADCFE; d = 0x10325476;
+
+  for (k=0;k&lt;x.length;k+=16) {
+    AA=a; BB=b; CC=c; DD=d;
+    a=FF(a,b,c,d,x[k+0], S11,0xD76AA478);
+    d=FF(d,a,b,c,x[k+1], S12,0xE8C7B756);
+    c=FF(c,d,a,b,x[k+2], S13,0x242070DB);
+    b=FF(b,c,d,a,x[k+3], S14,0xC1BDCEEE);
+    a=FF(a,b,c,d,x[k+4], S11,0xF57C0FAF);
+    d=FF(d,a,b,c,x[k+5], S12,0x4787C62A);
+    c=FF(c,d,a,b,x[k+6], S13,0xA8304613);
+    b=FF(b,c,d,a,x[k+7], S14,0xFD469501);
+    a=FF(a,b,c,d,x[k+8], S11,0x698098D8);
+    d=FF(d,a,b,c,x[k+9], S12,0x8B44F7AF);
+    c=FF(c,d,a,b,x[k+10],S13,0xFFFF5BB1);
+    b=FF(b,c,d,a,x[k+11],S14,0x895CD7BE);
+    a=FF(a,b,c,d,x[k+12],S11,0x6B901122);
+    d=FF(d,a,b,c,x[k+13],S12,0xFD987193);
+    c=FF(c,d,a,b,x[k+14],S13,0xA679438E);
+    b=FF(b,c,d,a,x[k+15],S14,0x49B40821);
+    a=GG(a,b,c,d,x[k+1], S21,0xF61E2562);
+    d=GG(d,a,b,c,x[k+6], S22,0xC040B340);
+    c=GG(c,d,a,b,x[k+11],S23,0x265E5A51);
+    b=GG(b,c,d,a,x[k+0], S24,0xE9B6C7AA);
+    a=GG(a,b,c,d,x[k+5], S21,0xD62F105D);
+    d=GG(d,a,b,c,x[k+10],S22,0x2441453);
+    c=GG(c,d,a,b,x[k+15],S23,0xD8A1E681);
+    b=GG(b,c,d,a,x[k+4], S24,0xE7D3FBC8);
+    a=GG(a,b,c,d,x[k+9], S21,0x21E1CDE6);
+    d=GG(d,a,b,c,x[k+14],S22,0xC33707D6);
+    c=GG(c,d,a,b,x[k+3], S23,0xF4D50D87);
+    b=GG(b,c,d,a,x[k+8], S24,0x455A14ED);
+    a=GG(a,b,c,d,x[k+13],S21,0xA9E3E905);
+    d=GG(d,a,b,c,x[k+2], S22,0xFCEFA3F8);
+    c=GG(c,d,a,b,x[k+7], S23,0x676F02D9);
+    b=GG(b,c,d,a,x[k+12],S24,0x8D2A4C8A);
+    a=HH(a,b,c,d,x[k+5], S31,0xFFFA3942);
+    d=HH(d,a,b,c,x[k+8], S32,0x8771F681);
+    c=HH(c,d,a,b,x[k+11],S33,0x6D9D6122);
+    b=HH(b,c,d,a,x[k+14],S34,0xFDE5380C);
+    a=HH(a,b,c,d,x[k+1], S31,0xA4BEEA44);
+    d=HH(d,a,b,c,x[k+4], S32,0x4BDECFA9);
+    c=HH(c,d,a,b,x[k+7], S33,0xF6BB4B60);
+    b=HH(b,c,d,a,x[k+10],S34,0xBEBFBC70);
+    a=HH(a,b,c,d,x[k+13],S31,0x289B7EC6);
+    d=HH(d,a,b,c,x[k+0], S32,0xEAA127FA);
+    c=HH(c,d,a,b,x[k+3], S33,0xD4EF3085);
+    b=HH(b,c,d,a,x[k+6], S34,0x4881D05);
+    a=HH(a,b,c,d,x[k+9], S31,0xD9D4D039);
+    d=HH(d,a,b,c,x[k+12],S32,0xE6DB99E5);
+    c=HH(c,d,a,b,x[k+15],S33,0x1FA27CF8);
+    b=HH(b,c,d,a,x[k+2], S34,0xC4AC5665);
+    a=II(a,b,c,d,x[k+0], S41,0xF4292244);
+    d=II(d,a,b,c,x[k+7], S42,0x432AFF97);
+    c=II(c,d,a,b,x[k+14],S43,0xAB9423A7);
+    b=II(b,c,d,a,x[k+5], S44,0xFC93A039);
+    a=II(a,b,c,d,x[k+12],S41,0x655B59C3);
+    d=II(d,a,b,c,x[k+3], S42,0x8F0CCC92);
+    c=II(c,d,a,b,x[k+10],S43,0xFFEFF47D);
+    b=II(b,c,d,a,x[k+1], S44,0x85845DD1);
+    a=II(a,b,c,d,x[k+8], S41,0x6FA87E4F);
+    d=II(d,a,b,c,x[k+15],S42,0xFE2CE6E0);
+    c=II(c,d,a,b,x[k+6], S43,0xA3014314);
+    b=II(b,c,d,a,x[k+13],S44,0x4E0811A1);
+    a=II(a,b,c,d,x[k+4], S41,0xF7537E82);
+    d=II(d,a,b,c,x[k+11],S42,0xBD3AF235);
+    c=II(c,d,a,b,x[k+2], S43,0x2AD7D2BB);
+    b=II(b,c,d,a,x[k+9], S44,0xEB86D391);
+    a=AddUnsigned(a,AA);
+    b=AddUnsigned(b,BB);
+    c=AddUnsigned(c,CC);
+    d=AddUnsigned(d,DD);
+  }
+
+  var temp = WordToHex(a)+WordToHex(b)+WordToHex(c)+WordToHex(d);
+
+  return temp.toLowerCase();
+}
+
+if (typeof window === 'object') {
+  window.Neo4jMapper.md5 = md5;
+} else {
+  module.exports = exports = md5;
+}</code></pre></div></div></div></article></div></div><!-- Foundation JS--><script type="text/javascript">document.write('<script src=' +
+('__proto__' in {} ? 'http://cdnjs.cloudflare.com/ajax/libs/zepto/1.0/zepto.min' : 'http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min') +
+'.js><\/script>')
+</script><script src="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/js/foundation.min.js"></script><script src="http://cdnjs.cloudflare.com/ajax/libs/foundation/4.1.6/js/foundation/foundation.reveal.min.js"></script><!-- Prism js--><script>/**
+ * Prism: Lightweight, robust, elegant syntax highlighting
+ * MIT license http://www.opensource.org/licenses/mit-license.php/
+ * @author Lea Verou http://lea.verou.me
+ */(function(){var e=/\blang(?:uage)?-(?!\*)(\w+)\b/i,t=self.Prism={util:{type:function(e){return Object.prototype.toString.call(e).match(/\[object (\w+)\]/)[1]},clone:function(e){var n=t.util.type(e);switch(n){case"Object":var r={};for(var i in e)e.hasOwnProperty(i)&&(r[i]=t.util.clone(e[i]));return r;case"Array":return e.slice()}return e}},languages:{extend:function(e,n){var r=t.util.clone(t.languages[e]);for(var i in n)r[i]=n[i];return r},insertBefore:function(e,n,r,i){i=i||t.languages;var s=i[e],o={};for(var u in s)if(s.hasOwnProperty(u)){if(u==n)for(var a in r)r.hasOwnProperty(a)&&(o[a]=r[a]);o[u]=s[u]}return i[e]=o},DFS:function(e,n){for(var r in e){n.call(e,r,e[r]);t.util.type(e)==="Object"&&t.languages.DFS(e[r],n)}}},highlightAll:function(e,n){var r=document.querySelectorAll('code[class*="language-"], [class*="language-"] code, code[class*="lang-"], [class*="lang-"] code');for(var i=0,s;s=r[i++];)t.highlightElement(s,e===!0,n)},highlightElement:function(r,i,s){var o,u,a=r;while(a&&!e.test(a.className))a=a.parentNode;if(a){o=(a.className.match(e)||[,""])[1];u=t.languages[o]}if(!u)return;r.className=r.className.replace(e,"").replace(/\s+/g," ")+" language-"+o;a=r.parentNode;/pre/i.test(a.nodeName)&&(a.className=a.className.replace(e,"").replace(/\s+/g," ")+" language-"+o);var f=r.textContent;if(!f)return;f=f.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\u00a0/g," ");var l={element:r,language:o,grammar:u,code:f};t.hooks.run("before-highlight",l);if(i&&self.Worker){var c=new Worker(t.filename);c.onmessage=function(e){l.highlightedCode=n.stringify(JSON.parse(e.data),o);t.hooks.run("before-insert",l);l.element.innerHTML=l.highlightedCode;s&&s.call(l.element);t.hooks.run("after-highlight",l)};c.postMessage(JSON.stringify({language:l.language,code:l.code}))}else{l.highlightedCode=t.highlight(l.code,l.grammar,l.language);t.hooks.run("before-insert",l);l.element.innerHTML=l.highlightedCode;s&&s.call(r);t.hooks.run("after-highlight",l)}},highlight:function(e,r,i){return n.stringify(t.tokenize(e,r),i)},tokenize:function(e,n,r){var i=t.Token,s=[e],o=n.rest;if(o){for(var u in o)n[u]=o[u];delete n.rest}e:for(var u in n){if(!n.hasOwnProperty(u)||!n[u])continue;var a=n[u],f=a.inside,l=!!a.lookbehind,c=0;a=a.pattern||a;for(var h=0;h<s.length;h++){var p=s[h];if(s.length>e.length)break e;if(p instanceof i)continue;a.lastIndex=0;var d=a.exec(p);if(d){l&&(c=d[1].length);var v=d.index-1+c,d=d[0].slice(c),m=d.length,g=v+m,y=p.slice(0,v+1),b=p.slice(g+1),w=[h,1];y&&w.push(y);var E=new i(u,f?t.tokenize(d,f):d);w.push(E);b&&w.push(b);Array.prototype.splice.apply(s,w)}}}return s},hooks:{all:{},add:function(e,n){var r=t.hooks.all;r[e]=r[e]||[];r[e].push(n)},run:function(e,n){var r=t.hooks.all[e];if(!r||!r.length)return;for(var i=0,s;s=r[i++];)s(n)}}},n=t.Token=function(e,t){this.type=e;this.content=t};n.stringify=function(e,r,i){if(typeof e=="string")return e;if(Object.prototype.toString.call(e)=="[object Array]")return e.map(function(t){return n.stringify(t,r,e)}).join("");var s={type:e.type,content:n.stringify(e.content,r,i),tag:"span",classes:["token",e.type],attributes:{},language:r,parent:i};s.type=="comment"&&(s.attributes.spellcheck="true");t.hooks.run("wrap",s);var o="";for(var u in s.attributes)o+=u+'="'+(s.attributes[u]||"")+'"';return"<"+s.tag+' class="'+s.classes.join(" ")+'" '+o+">"+s.content+"</"+s.tag+">"};if(!self.document){self.addEventListener("message",function(e){var n=JSON.parse(e.data),r=n.language,i=n.code;self.postMessage(JSON.stringify(t.tokenize(i,t.languages[r])));self.close()},!1);return}var r=document.getElementsByTagName("script");r=r[r.length-1];if(r){t.filename=r.src;document.addEventListener&&!r.hasAttribute("data-manual")&&document.addEventListener("DOMContentLoaded",t.highlightAll)}})();;
+Prism.languages.markup={comment:/&lt;!--[\w\W]*?-->/g,prolog:/&lt;\?.+?\?>/,doctype:/&lt;!DOCTYPE.+?>/,cdata:/&lt;!\[CDATA\[[\w\W]*?]]>/i,tag:{pattern:/&lt;\/?[\w:-]+\s*(?:\s+[\w:-]+(?:=(?:("|')(\\?[\w\W])*?\1|\w+))?\s*)*\/?>/gi,inside:{tag:{pattern:/^&lt;\/?[\w:-]+/i,inside:{punctuation:/^&lt;\/?/,namespace:/^[\w-]+?:/}},"attr-value":{pattern:/=(?:('|")[\w\W]*?(\1)|[^\s>]+)/gi,inside:{punctuation:/=|>|"/g}},punctuation:/\/?>/g,"attr-name":{pattern:/[\w:-]+/g,inside:{namespace:/^[\w-]+?:/}}}},entity:/&amp;#?[\da-z]{1,8};/gi};Prism.hooks.add("wrap",function(e){e.type==="entity"&&(e.attributes.title=e.content.replace(/&amp;/,"&"))});;
+Prism.languages.css={comment:/\/\*[\w\W]*?\*\//g,atrule:{pattern:/@[\w-]+?.*?(;|(?=\s*{))/gi,inside:{punctuation:/[;:]/g}},url:/url\((["']?).*?\1\)/gi,selector:/[^\{\}\s][^\{\};]*(?=\s*\{)/g,property:/(\b|\B)[\w-]+(?=\s*:)/ig,string:/("|')(\\?.)*?\1/g,important:/\B!important\b/gi,ignore:/&(lt|gt|amp);/gi,punctuation:/[\{\};:]/g};Prism.languages.markup&&Prism.languages.insertBefore("markup","tag",{style:{pattern:/(&lt;|<)style[\w\W]*?(>|&gt;)[\w\W]*?(&lt;|<)\/style(>|&gt;)/ig,inside:{tag:{pattern:/(&lt;|<)style[\w\W]*?(>|&gt;)|(&lt;|<)\/style(>|&gt;)/ig,inside:Prism.languages.markup.tag.inside},rest:Prism.languages.css}}});;
+Prism.languages.clike={comment:{pattern:/(^|[^\\])(\/\*[\w\W]*?\*\/|(^|[^:])\/\/.*?(\r?\n|$))/g,lookbehind:!0},string:/("|')(\\?.)*?\1/g,"class-name":{pattern:/((?:(?:class|interface|extends|implements|trait|instanceof|new)\s+)|(?:catch\s+\())[a-z0-9_\.\\]+/ig,lookbehind:!0,inside:{punctuation:/(\.|\\)/}},keyword:/\b(if|else|while|do|for|return|in|instanceof|function|new|try|catch|finally|null|break|continue)\b/g,"boolean":/\b(true|false)\b/g,"function":{pattern:/[a-z0-9_]+\(/ig,inside:{punctuation:/\(/}}, number:/\b-?(0x[\dA-Fa-f]+|\d*\.?\d+([Ee]-?\d+)?)\b/g,operator:/[-+]{1,2}|!|&lt;=?|>=?|={1,3}|(&amp;){1,2}|\|?\||\?|\*|\/|\~|\^|\%/g,ignore:/&(lt|gt|amp);/gi,punctuation:/[{}[\];(),.:]/g};;
+Prism.languages.javascript=Prism.languages.extend("clike",{keyword:/\b(var|let|if|else|while|do|for|return|in|instanceof|function|new|with|typeof|try|catch|finally|null|break|continue)\b/g,number:/\b-?(0x[\dA-Fa-f]+|\d*\.?\d+([Ee]-?\d+)?|NaN|-?Infinity)\b/g});Prism.languages.insertBefore("javascript","keyword",{regex:{pattern:/(^|[^/])\/(?!\/)(\[.+?]|\\.|[^/\r\n])+\/[gim]{0,3}(?=\s*($|[\r\n,.;})]))/g,lookbehind:!0}});Prism.languages.markup&&Prism.languages.insertBefore("markup","tag",{script:{pattern:/(&lt;|<)script[\w\W]*?(>|&gt;)[\w\W]*?(&lt;|<)\/script(>|&gt;)/ig,inside:{tag:{pattern:/(&lt;|<)script[\w\W]*?(>|&gt;)|(&lt;|<)\/script(>|&gt;)/ig,inside:Prism.languages.markup.tag.inside},rest:Prism.languages.javascript}}});;
+Prism.languages.coffeescript=Prism.languages.extend("javascript",{"block-comment":/([#]{3}\s*\r?\n(.*\s*\r*\n*)\s*?\r?\n[#]{3})/g,comment:/(\s|^)([#]{1}[^#^\r^\n]{2,}?(\r?\n|$))/g,keyword:/\b(this|window|delete|class|extends|namespace|extend|ar|let|if|else|while|do|for|each|of|return|in|instanceof|new|with|typeof|try|catch|finally|null|undefined|break|continue)\b/g});Prism.languages.insertBefore("coffeescript","keyword",{"function":{pattern:/[a-z|A-z]+\s*[:|=]\s*(\([.|a-z\s|,|:|{|}|\"|\'|=]*\))?\s*-&gt;/gi,inside:{"function-name":/[_?a-z-|A-Z-]+(\s*[:|=])| @[_?$?a-z-|A-Z-]+(\s*)| /g,operator:/[-+]{1,2}|!|=?&lt;|=?&gt;|={1,2}|(&amp;){1,2}|\|?\||\?|\*|\//g}},"attr-name":/[_?a-z-|A-Z-]+(\s*:)| @[_?$?a-z-|A-Z-]+(\s*)| /g});;
+Prism.languages.scss=Prism.languages.extend("css",{comment:{pattern:/(^|[^\\])(\/\*[\w\W]*?\*\/|\/\/.*?(\r?\n|$))/g,lookbehind:!0},atrule:/@[\w-]+(?=\s+(\(|\{|;))/gi,url:/([-a-z]+-)*url(?=\()/gi,selector:/([^@;\{\}\(\)]?([^@;\{\}\(\)]|&amp;|\#\{\$[-_\w]+\})+)(?=\s*\{(\}|\s|[^\}]+(:|\{)[^\}]+))/gm});Prism.languages.insertBefore("scss","atrule",{keyword:/@(if|else if|else|for|each|while|import|extend|debug|warn|mixin|include|function|return)|(?=@for\s+\$[-_\w]+\s)+from/i});Prism.languages.insertBefore("scss","property",{variable:/((\$[-_\w]+)|(#\{\$[-_\w]+\}))/i});Prism.languages.insertBefore("scss","ignore",{placeholder:/%[-_\w]+/i,statement:/\B!(default|optional)\b/gi,"boolean":/\b(true|false)\b/g,"null":/\b(null)\b/g,operator:/\s+([-+]{1,2}|={1,2}|!=|\|?\||\?|\*|\/|\%)\s+/g});
+;
+</script><script>  var headerHeight = 64;
+
+  $(document).foundation();
+
+  $(function(){
+    $('pre code').addClass('language-javascript');
+  //   $('#nav > ul > li > a[href$="'+location.pathname.substring(location.pathname.lastIndexOf('/')+1, location.pathname.length)+'"]').parent().addClass('active');
+  })</script></body></html>

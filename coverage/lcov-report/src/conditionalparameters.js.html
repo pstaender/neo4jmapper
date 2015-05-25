@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for src/conditionalparameters.js</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../prettify.css">
+    <link rel="stylesheet" href="../base.css">
+    <style type='text/css'>
+        div.coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">src/conditionalparameters.js</span></h1>
+    <h2>
+        Statements: <span class="metric">94.29% <small>(99 / 105)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">85.71% <small>(66 / 77)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">100% <small>(10 / 10)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">94.29% <small>(99 / 105)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Ignored: <span class="metric"><span class="ignore-none">none</span></span> &nbsp;&nbsp;&nbsp;&nbsp;
+    </h2>
+    <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">src/</a> &#187; conditionalparameters.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">55</span>
+<span class="cline-any cline-yes">36</span>
+<span class="cline-any cline-yes">55</span>
+<span class="cline-any cline-yes">55</span>
+<span class="cline-any cline-yes">55</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">66</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">89</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">83</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">33</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">99</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">125</span>
+<span class="cline-any cline-yes">125</span>
+<span class="cline-any cline-yes">125</span>
+<span class="cline-any cline-yes">120</span>
+<span class="cline-any cline-yes">120</span>
+<span class="cline-any cline-yes">120</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">89</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">102</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">86</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">102</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">103</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">99</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">120</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">90</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">88</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">48</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/*
+ * Builds a string from mongodb-like-query object
+ */
+&nbsp;
+<span class="missing-if-branch" title="if path not taken" >I</span>if (typeof window === 'object') {
+<span class="cstat-no" title="statement not covered" >  var _ = window._;</span>
+<span class="cstat-no" title="statement not covered" >  var helpers = window.Neo4jMapper.helpers;</span>
+} else {
+  var _ = require('underscore');
+  var helpers = require('./helpers');
+}
+&nbsp;
+var ConditionalParameters = function ConditionalParameters(conditions, options) {
+&nbsp;
+  ConditionalParameters.parameterRuleset = {
+    $IN: function(value) {
+      var s = '';
+      if ((typeof value === 'object') &amp;&amp; (value.length &gt; 0)) {
+        for (var i=0; i &lt; value.length; i++) {
+          value[i] = (typeof value[i] === 'string') ? "'"+helpers.escapeString(value[i])+"'" : helpers.valueToStringForCypherQuery(value[i]);
+        }
+        s = value.join(', ');
+      }
+      return 'IN [ ' + s + ' ]';
+    },
+    $in: function(value) { return this.$IN(value); }
+&nbsp;
+  };
+&nbsp;
+  ConditionalParameters.prototype.addValue = function(value) {
+    if (!this.parameters)
+      this.parameters = {};
+    var property = '_value'+(this.parametersStartCountAt + this.parametersCount())+'_';
+    this.parameters[property] = value;
+    return '{'+property+'}';
+  }
+&nbsp;
+  ConditionalParameters.prototype.values = function() {
+    var values = [];
+    for (var prop in this.parameters) {
+      values.push(this.parameters[prop]);
+    }
+    return values;
+  }
+&nbsp;
+  ConditionalParameters.prototype.parametersCount = function() {
+    if ((typeof this.parameters !== 'object')||(this.parameters === null))
+      return 0;
+    else
+      return Object.keys(this.parameters).length;
+  }
+&nbsp;
+  ConditionalParameters.prototype.hasParameters = function() {
+    return (this.parametersCount() &gt; 0);
+  }
+&nbsp;
+  ConditionalParameters.prototype.cypherKeyValueToString = function(key, originalValue, identifier) {
+    // call cypherKeyValueToString with this object context
+    return helpers.cypherKeyValueToString(key, originalValue, identifier, this);
+  }
+&nbsp;
+  ConditionalParameters.prototype.convert = function(condition, operator) {
+    if (typeof condition === 'undefined')
+      condition = this.conditions;
+    var options = _.extend({}, this.defaultOptions, this.options);
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (options.firstLevel)
+      options.firstLevel = false;
+    if (options.parametersStartCountAt)
+      this.parametersStartCountAt = options.parametersStartCountAt;
+    // TODO: if $not : [ {name: 'a'}] ~&gt; NOT (name = a)
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof condition === 'string')
+<span class="cstat-no" title="statement not covered" >      condition = [ condition ];</span>
+    if (typeof operator === 'undefined')
+      operator = this.operator; // AND
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof condition === 'object')
+      for (var key in condition) {
+        var value = condition[key];
+        var property = null;
+        if (_.isObject(condition[key])) {
+          var properties = [];
+          var firstKey = (_.keys(value)) ? _.keys(value)[0] : <span class="branch-1 cbranch-no" title="branch not covered" >null;</span>
+          if ((firstKey)&amp;&amp;(ConditionalParameters.is_operator.test(firstKey))) {
+            properties.push(this.convert(condition[key][firstKey], firstKey.replace(/\$/g,' ').trim().toUpperCase(), options));
+          } else {
+            for (var k in condition[key]) {
+              // k = key/property, remove identifier e.g. n.name
+              var property = k.replace(/^[nmrp]\./,'');
+              value = condition[key][k];
+&nbsp;
+              // only check for attributes if not s.th. like `n.name? = …`
+              var identifierWithProperty = (/\?$/.test(property)) ? '' : property;
+              if (identifierWithProperty) {
+                if (options.identifier)
+                  // we have s.th. like options.identifier = n; property = '`'+identifierWithProperty+'`'
+                  identifierWithProperty = options.identifier + '.' + identifierWithProperty;
+                else
+                  // we have no explicit identifier, so we use the complete key/property and expecting it contains identifier
+                  identifierWithProperty = k;
+                identifierWithProperty = helpers.escapeProperty(identifierWithProperty);
+              }
+              var hasAttribute = (identifierWithProperty) ? 'HAS ('+identifierWithProperty+') AND ' : '';
+              if (value === k) {
+                properties.push(hasAttribute+value);
+              // do we have s.th. like { name: { $IN: [ … ] } }
+              } else if ((typeof value === 'object')&amp;&amp;(value !== null)&amp;&amp;(Object.keys(value).length === 1)&amp;&amp;(typeof ConditionalParameters.parameterRuleset[Object.keys(value)[0]] === 'function')) {
+                properties.push(hasAttribute+' '+(identifierWithProperty || <span class="branch-1 cbranch-no" title="branch not covered" >k)</span>+' '+ConditionalParameters.parameterRuleset[Object.keys(value)[0]](value[Object.keys(value)[0]]));
+              } else {
+                properties.push(hasAttribute+this.cypherKeyValueToString(k, value,
+                  // only add an identifier if we have NOT s.th. like
+                  // n.name = ''  or r.since …
+                  (/^[a-zA-Z\_\-]+\./).test(k) ? null : options.identifier
+                ));
+              }
+            }
+          }
+          // merge sub conditions
+          condition[key] = properties.join(' '+operator+' ');
+        }
+      }
+&nbsp;
+    if ((condition.length === 1)&amp;&amp;(options.firstLevel === false)&amp;&amp;(/NOT/i.test(operator)))
+      return operator + ' ( '+condition.join('')+' )';
+    else
+      return '( '+condition.join(' '+operator+' ')+' )';
+  }
+&nbsp;
+  ConditionalParameters.prototype.toString = function() {
+    if (this.conditions)
+      this._s = this.convert();
+    return this._s;
+  }
+&nbsp;
+  // assign parameters and option(s)
+  if (typeof conditions === 'object') {
+    this.conditions = (conditions) ? conditions : <span class="branch-1 cbranch-no" title="branch not covered" >{};</span>
+  } else <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof conditions === 'string') {
+    this.conditions = null;
+    this._s = '( ' + conditions + ' )';
+    return;
+  } else {
+<span class="cstat-no" title="statement not covered" >    throw Error('First argument must be an object with conditional parameters or a plain string');</span>
+  }
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof options === 'object') {
+    this.options = options;
+    // assign some options if they exists to current object
+    if (typeof this.options.valuesToParameters !== 'undefined')
+      this.valuesToParameters = this.options.valuesToParameters;
+    if (typeof this.options.identifier !== 'undefined')
+      this.identifier = this.options.identifier;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof this.options.operator !== 'undefined')
+<span class="cstat-no" title="statement not covered" >      this.operator = this.options.operator;</span>
+  }
+}
+&nbsp;
+ConditionalParameters.is_operator = /^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i;
+&nbsp;
+ConditionalParameters.prototype.operator               = 'AND';
+ConditionalParameters.prototype.identifier             = 'n';
+ConditionalParameters.prototype.conditions             = null;
+&nbsp;
+// options are used to prevent overriding object attributes on recursive calls
+ConditionalParameters.prototype.options                = null;
+ConditionalParameters.prototype.defaultOptions         = { firstLevel: true, identifier: null };
+&nbsp;
+ConditionalParameters.prototype.parameters             = null;
+ConditionalParameters.prototype.valuesToParameters     = true;
+ConditionalParameters.prototype._s                     = '';
+ConditionalParameters.prototype.parametersStartCountAt = 0;
+&nbsp;
+<span class="missing-if-branch" title="if path not taken" >I</span>if (typeof window === 'object') {
+<span class="cstat-no" title="statement not covered" >  window.Neo4jMapper.ConditionalParameters = ConditionalParameters;</span>
+} else {
+  module.exports = exports = ConditionalParameters;
+}</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon May 25 2015 18:43:30 GMT+0200 (CEST)</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

@@ -1,0 +1,2118 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for src/neo4jrestful.js</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../prettify.css">
+    <link rel="stylesheet" href="../base.css">
+    <style type='text/css'>
+        div.coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">src/neo4jrestful.js</span></h1>
+    <h2>
+        Statements: <span class="metric">82.5% <small>(297 / 360)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">70.54% <small>(158 / 224)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">80.49% <small>(33 / 41)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">82.5% <small>(297 / 360)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Ignored: <span class="metric"><span class="ignore-none">none</span></span> &nbsp;&nbsp;&nbsp;&nbsp;
+    </h2>
+    <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">src/</a> &#187; neo4jrestful.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442
+443
+444
+445
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464
+465
+466
+467
+468
+469
+470
+471
+472
+473
+474
+475
+476
+477
+478
+479
+480
+481
+482
+483
+484
+485
+486
+487
+488
+489
+490
+491
+492
+493
+494
+495
+496
+497
+498
+499
+500
+501
+502
+503
+504
+505
+506
+507
+508
+509
+510
+511
+512
+513
+514
+515
+516
+517
+518
+519
+520
+521
+522
+523
+524
+525
+526
+527
+528
+529
+530
+531
+532
+533
+534
+535
+536
+537
+538
+539
+540
+541
+542
+543
+544
+545
+546
+547
+548
+549
+550
+551
+552
+553
+554
+555
+556
+557
+558
+559
+560
+561
+562
+563
+564
+565
+566
+567
+568
+569
+570
+571
+572
+573
+574
+575
+576
+577
+578
+579
+580
+581
+582
+583
+584
+585
+586
+587
+588
+589
+590
+591
+592
+593
+594
+595
+596
+597
+598
+599
+600
+601
+602
+603
+604
+605
+606
+607
+608
+609
+610
+611
+612
+613
+614
+615
+616
+617
+618
+619
+620
+621
+622
+623
+624
+625
+626
+627
+628
+629
+630
+631
+632
+633
+634
+635
+636
+637
+638
+639
+640
+641
+642
+643
+644
+645
+646
+647
+648
+649
+650
+651
+652
+653
+654
+655
+656
+657
+658
+659
+660
+661
+662
+663
+664
+665
+666
+667
+668
+669
+670
+671
+672
+673
+674
+675
+676
+677
+678
+679
+680
+681
+682
+683
+684
+685
+686
+687
+688
+689
+690
+691
+692</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">8456</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">448</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">453</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">604</span>
+<span class="cline-any cline-yes">604</span>
+<span class="cline-any cline-yes">604</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">604</span>
+<span class="cline-any cline-yes">604</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">628</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1595</span>
+<span class="cline-any cline-yes">1058</span>
+<span class="cline-any cline-yes">1595</span>
+<span class="cline-any cline-yes">1058</span>
+<span class="cline-any cline-yes">1595</span>
+<span class="cline-any cline-yes">1595</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1595</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">2040</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">636</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">636</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">34</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-yes">17</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1057</span>
+<span class="cline-any cline-yes">1050</span>
+<span class="cline-any cline-yes">1050</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1050</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1050</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1050</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-yes">1029</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-yes">636</span>
+<span class="cline-any cline-yes">636</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1068</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1061</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1061</span>
+<span class="cline-any cline-yes">1061</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1061</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1029</span>
+<span class="cline-any cline-yes">399</span>
+<span class="cline-any cline-yes">122</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">630</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">588</span>
+<span class="cline-any cline-yes">589</span>
+<span class="cline-any cline-yes">746</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">42</span>
+<span class="cline-any cline-yes">42</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1029</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">44</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-yes">1037</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">9</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">413</span>
+<span class="cline-any cline-yes">413</span>
+<span class="cline-any cline-yes">413</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">635</span>
+<span class="cline-any cline-yes">635</span>
+<span class="cline-any cline-yes">635</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1540</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1540</span>
+<span class="cline-any cline-yes">1540</span>
+<span class="cline-any cline-yes">1540</span>
+<span class="cline-any cline-yes">1540</span>
+<span class="cline-any cline-yes">1540</span>
+<span class="cline-any cline-yes">1366</span>
+<span class="cline-any cline-yes">1540</span>
+<span class="cline-any cline-yes">619</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">557</span>
+<span class="cline-any cline-yes">557</span>
+<span class="cline-any cline-yes">557</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">921</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">919</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1052</span>
+<span class="cline-any cline-yes">1052</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">445</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&nbsp;
+var __initNeo4jRestful__ = function(urlOrOptions) {
+&nbsp;
+  // will be set with environment depending values below
+  var helpers                    = null;
+  var _                          = null;
+  var jQuery                     = null;
+  var Sequence                   = null;
+  var JSONStream                 = null;
+  var request                    = null;
+  var __established_connection__ = {};    // a flag of all different db connections (differs by url)
+&nbsp;
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof window === 'object') {
+    // browser
+<span class="cstat-no" title="statement not covered" >    helpers      = window.Neo4jMapper.helpers;</span>
+<span class="cstat-no" title="statement not covered" >    _            = window._;</span>
+<span class="cstat-no" title="statement not covered" >    jQuery       = window.jQuery;</span>
+<span class="cstat-no" title="statement not covered" >    Sequence     = window.Sequence;</span>
+<span class="cstat-no" title="statement not covered" >    request      = window.superagent;</span>
+  } else {
+    // nodejs
+    helpers      = require('./helpers');
+    _            = require('underscore');
+    jQuery       = null;
+    Sequence     = require('./lib/sequence');
+    request      = require('request');
+    JSONStream   = require('JSONStream');
+  }
+&nbsp;
+  var ResponseError = <span class="fstat-no" title="function not covered" >function ResponseError(message, code) {</span>
+<span class="cstat-no" title="statement not covered" >    var e = new Error(message);</span>
+<span class="cstat-no" title="statement not covered" >    e.code = code;</span>
+<span class="cstat-no" title="statement not covered" >    return e;</span>
+  }
+&nbsp;
+  ResponseError.prototype.code = 0;
+&nbsp;
+  // Base for QueryError and CypherQueryError
+  var CustomError = <span class="fstat-no" title="function not covered" >function CustomError(message) {</span>
+<span class="cstat-no" title="statement not covered" >    if (typeof message === 'string')</span>
+<span class="cstat-no" title="statement not covered" >      this.message = message;</span>
+  }
+&nbsp;
+  CustomError.prototype.message = '';
+  CustomError.prototype.name = '';
+  CustomError.prototype.exception = null;
+  CustomError.prototype.cypher = null;
+  CustomError.prototype.stacktrace = null;
+  CustomError.prototype.statusCode = null;
+  CustomError.prototype.method = null;
+  CustomError.prototype.url = null;
+  CustomError.prototype.data = null;
+&nbsp;
+  // will be used to debug request+response
+  var RequestDebug = function RequestDebug(obj) {
+    // apply given data to current object
+    <span class="missing-if-branch" title="else path not taken" >E</span>if ((typeof obj === 'object') &amp;&amp; (obj))
+      for (var key in obj)
+        this[key] = obj[key];
+  }
+&nbsp;
+  RequestDebug.prototype.options        = null;
+  RequestDebug.prototype.requested_url  = '';
+  RequestDebug.prototype.method         = '';
+  RequestDebug.prototype.header         = null;
+  RequestDebug.prototype.res            = null;
+  RequestDebug.prototype.status         = null;
+  RequestDebug.prototype.err            = null;
+  RequestDebug.prototype.responseTime   = null;
+&nbsp;
+  var QueryError = <span class="fstat-no" title="function not covered" >function(message, options, name) {</span>
+<span class="cstat-no" title="statement not covered" >    var error = new CustomError(message);</span>
+<span class="cstat-no" title="statement not covered" >    error.name = (typeof name === 'string') ? name : "QueryError";</span>
+<span class="cstat-no" title="statement not covered" >    if (typeof options === 'object') {</span>
+<span class="cstat-no" title="statement not covered" >      error = _.extend(error, options);</span>
+    }
+  }
+&nbsp;
+  var CypherQueryError = <span class="fstat-no" title="function not covered" >function(message, options) {</span>
+<span class="cstat-no" title="statement not covered" >    var error = QueryError(message, options, 'CypherQueryError');</span>
+<span class="cstat-no" title="statement not covered" >    return _.extend(this, error);</span>
+  }
+&nbsp;
+  /*
+   * Constructor
+   */
+  var Neo4jRestful = function Neo4jRestful(url, options) {
+    var self = this;
+    var urlPattern = /^(http(s)*)\:\/\/((.+?)\:(.+?)\@)*(.+?)(\:([0-9]+)?)\/(.+)*$/i;
+    var urlMatches = null;
+    if (typeof url === 'undefined') {
+      // use global
+      url = urlOrOptions;
+    }
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof options !== 'object') {
+      options = (typeof url === 'object') ? url : {};
+    }
+    if (typeof url === 'string') {
+      options.url = url;
+    }
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof options.url === 'string') {
+      // check url
+      // ensure one trailing slash
+      options.url = options.url.replace(/\/*$/, '/');
+      // stop here if we don't have a valid url
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (!urlPattern.test(options.url)) {
+<span class="cstat-no" title="statement not covered" >        var message = "Your URL ("+url+") needs to match the default url pattern 'http(s)://(username:password@)domain(:port)/(endpoint)…'";</span>
+<span class="cstat-no" title="statement not covered" >        throw Error(message);</span>
+      }
+      // extract all parts from the given url
+      // TODO: use extractet Options
+      urlMatches = options.url.match(urlPattern);
+      this.urlOptions = _.defaults({
+        'protocol': urlMatches[1],
+        'user': urlMatches[4],
+        'password': urlMatches[5],
+        'domain': urlMatches[6],
+        'port': urlMatches[8],
+        'endpoint': urlMatches[9]
+      }, this.urlOptions);
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (this.urlOptions.endpoint) {
+        // strip preceding slash(es)
+        this.urlOptions.endpoint = this.urlOptions.endpoint.replace(/^\/+/, '');
+      }
+    } else {
+<span class="cstat-no" title="statement not covered" >      throw Error('No url found. Argument must be either an URL as string or an option object including an `.url` property.');</span>
+    }
+&nbsp;
+    // we may have an error handler in options, if so, assign it to this object
+    if (typeof options.onConnectionError === 'function') {
+      this.onConnectionError = options.onConnectionError;
+    }
+&nbsp;
+    // copy header
+    self.header = _.extend({}, Neo4jRestful.prototype.header);
+&nbsp;
+    if (!__established_connection__[this.absoluteUrl('/')])
+      self.checkAvailability();
+  }
+&nbsp;
+  Neo4jRestful.RequestDebug = RequestDebug;
+  Neo4jRestful.CustomError  = CustomError;
+&nbsp;
+  Neo4jRestful.prototype.options                    = null;
+  // template for the header of each request to neo4j
+  Neo4jRestful.prototype.header = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  };
+  Neo4jRestful.prototype.timeout                    = 5000;
+  Neo4jRestful.prototype.exact_version              = null;
+  Neo4jRestful.prototype.version                    = null;
+  Neo4jRestful.prototype.ignoreExceptionPattern     = /^(Node|Relationship)NotFoundException$/; // in some case we will ignore exceptions from neo4j, e.g. not found
+  Neo4jRestful.prototype.urlOptions = {
+    protocol: 'http',
+    domain: 'localhost',
+    port: 7474,
+    user: '',
+    password: '',
+    endpoint: 'db/data/'
+  };
+&nbsp;
+  // is used for measurement of request-to-respond
+  Neo4jRestful.prototype._request_on_               = null;
+  Neo4jRestful.prototype._response_on_              = null;
+  // contains data of the response
+  Neo4jRestful.prototype._response_                 = null;
+  Neo4jRestful.prototype._columns_                  = null;
+  Neo4jRestful.prototype._detectTypesOnColumns_     = false; // n AS `(Node)`, labels(n) AS `(Node.id)`, r AS `[Relationship]`
+  Neo4jRestful.prototype._debug_                    = null;
+&nbsp;
+  Neo4jRestful.prototype.query = function(cypher, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) );
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof cypher !== 'string') {
+<span class="cstat-no" title="statement not covered" >      throw Error('cypher argument has to be a string');</span>
+    } else {
+      this.log('**info**', 'cypher:', cypher.trim().replace(/\s+/g,' '));
+      this.post('/'+this.urlOptions.endpoint+'cypher',{
+        data: {
+          query: cypher,
+          params: options.params || {}
+        }
+      }, function(err, result, debug){
+        return cb(err, result, debug);
+      });
+    }
+  }
+&nbsp;
+  // http://docs.neo4j.org/chunked/preview/rest-api-transactional.html
+  Neo4jRestful.prototype.statement = <span class="fstat-no" title="function not covered" >function() {</span>
+<span class="cstat-no" title="statement not covered" >    throw Error('Not implemented, yet');</span>
+  }
+&nbsp;
+  Neo4jRestful.prototype.checkAvailability = function(cb) {
+    var self = this;
+    this._sendHttpRequest({
+      method: 'GET',
+      url: self.absoluteUrl('/'),
+      timeout: self.timeout
+    }, function(err, res) {
+        var body = (res) ? res.body : <span class="branch-1 cbranch-no" title="branch not covered" >null;</span>
+        <span class="missing-if-branch" title="else path not taken" >E</span>if ((typeof res !== 'undefined') &amp;&amp; (res.status === 200)&amp;&amp;(body)&amp;&amp;(body.neo4j_version)) {
+          self.exact_version = body.neo4j_version;
+          self.version = Number(self.exact_version.replace(/^([0-9]+\.*[0-9]*)(.*)$/, '$1'));
+          var error = (self.version &lt; 2) ? <span class="branch-0 cbranch-no" title="branch not covered" >Error('Neo4jMapper is not build+tested for neo4j version below v2') </span>: null;
+          __established_connection__[self.absoluteUrl('/')] = true;
+          if (typeof cb === 'function')
+            cb(error, body.neo4j_version);
+        } else {
+<span class="cstat-no" title="statement not covered" >          __established_connection__[self.absoluteUrl('/')] = false;</span>
+<span class="cstat-no" title="statement not covered" >          self.onConnectionError(Error("Can't detect neo4j… Sure neo4j service is available on "+self.absoluteUrl('/')+"? "+((err) ? '('+err.message+')' : '')), self);</span>
+        }
+      }
+    );
+    return this;
+  }
+&nbsp;
+  Neo4jRestful.prototype.absoluteUrl = function(url) {
+    if (typeof url !== 'string')
+      url = '';
+    if (!url)
+      url = this.url || '/';
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (url) {
+      var baseUrl = this._connectionString();
+      // strip redundant endpoints if they exists
+      return baseUrl + url.replace(/^\/+/, '').replace(new RegExp('^'+this.urlOptions.endpoint.split('/').join('\\/')+'*'), '');
+    }
+  }
+&nbsp;
+  Neo4jRestful.prototype._connectionString = function() {
+    return this.urlOptions.protocol + '://'
+      + String(((this.urlOptions.user)&amp;&amp;(<span class="branch-1 cbranch-no" title="branch not covered" >this.urlOptions.password)</span>) ? <span class="branch-0 cbranch-no" title="branch not covered" >this.urlOptions.user + ':' + this.urlOptions.password+'@' </span>: '' )
+      + this.urlOptions.domain
+      + ':' + this.urlOptions.port
+      + '/' + this.urlOptions.endpoint;
+  }
+&nbsp;
+  Neo4jRestful.prototype.request = function(url, options, cb) {
+    var debug = null; // debug object
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof options === 'undefined')
+<span class="cstat-no" title="statement not covered" >      options = {};</span>
+&nbsp;
+    // apply default options
+    _.defaults(options, {
+      method: 'GET',
+      data: null,
+      debug: false,
+      // use copy of header, not reference
+      header: _.extend({},this.header)
+    });
+&nbsp;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof url !== 'string') {
+&nbsp;
+<span class="cstat-no" title="statement not covered" >      throw Error("First argument 'url' hast to be a string");</span>
+&nbsp;
+    }
+&nbsp;
+    this.url = options.url = url;
+    this.header = options.header;
+&nbsp;
+    var requestedUrl = this.absoluteUrl();
+    var data = options.data;
+&nbsp;
+    if ( (typeof data === 'object') &amp;&amp; (data !== null) )
+     data = JSON.stringify(options.data);
+&nbsp;
+    // create debug object
+    this._debug_ = new RequestDebug({
+      options: options,
+      requested_url: requestedUrl,
+      method: options.method,
+      data: data,
+      header: this.header,
+      res: null,
+      status: null,
+      err: null
+    });
+&nbsp;
+    // options for makeRequest()
+    var _options_ = {
+      requestedUrl: requestedUrl,
+      method: options.method,
+      data: data,
+      options: options,
+      debug: debug,
+      url: url
+    };
+&nbsp;
+    return this._makeRequest(_options_, cb);
+  }
+&nbsp;
+  Neo4jRestful.prototype._makeRequest = function(_options_, cb) {
+    var self = this;
+    // apply default options on options
+    _.defaults(_options_, {
+      cache: false,
+      timeout: this.timeout,
+      loadNode: true // enables the load hooks
+    });
+&nbsp;
+    // create final options object from _options_.options
+    var options = _options_.options;
+&nbsp;
+    options.absolute_url = _options_.requestedUrl;
+    options.url = _options_.url;
+    options.method = _options_.method;
+    options.data = _options_.data;
+&nbsp;
+    this.log('**debug**', 'URI:', options.method+":"+options.url+" ("+options.absolute_url+")");
+    this.log('**debug**', 'sendedData:', options.data);
+    this.log('**debug**', 'sendedHeader:', self.header);
+&nbsp;
+    this._request_on_ = new Date().getTime();
+&nbsp;
+    var requestOptions = {
+      method: options.method,
+      url: options.absolute_url,
+      header: self.header
+    };
+&nbsp;
+    if (options.data)
+      requestOptions.data = options.data;
+&nbsp;
+    // stream
+    if (this.header['X-Stream'] === 'true') {
+&nbsp;
+      var stream = JSONStream.parse([/^columns|data$/, true]);
+&nbsp;
+      var isDataColumn = false;
+      self._columns_ = [];
+&nbsp;
+      stream.on('data', function(data) {
+        // detect column and data array
+        // { columns: [ '1', … , 'n' ], data: [ [ … ] ] }
+        if (isDataColumn) {
+          return cb(data);
+        } else <span class="missing-if-branch" title="else path not taken" >E</span>if (data) {
+          if (data.constructor === Array) {
+            isDataColumn = true;
+            return cb(data);
+          } else {
+            self._columns_.push(data);
+            return;
+          }
+        }
+      });
+&nbsp;
+      stream.on('end', function() {
+        // prevent to pass undefined, but maybe an undefined is more clear
+        cb(null, null);
+      });
+&nbsp;
+      stream.on('root', function(root, count) {
+        self._response_on_ = new Date().getTime();
+        // remove x-stream from header
+        delete self.header['X-Stream'];
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!count) {
+<span class="cstat-no" title="statement not covered" >          cb(null, Error('No matches in stream found ('+ root +')'), self._de);</span>
+        }
+      });
+&nbsp;
+      requestOptions.stream = stream;
+&nbsp;
+    }
+&nbsp;
+    // now finally send the request
+    this._sendHttpRequest(requestOptions, function(err, res) {
+      self._response_ = res;
+      self._response_on_ = new Date().getTime();
+&nbsp;
+      self._debug_.responseTime = self.responseTime();
+&nbsp;
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (err) {
+<span class="cstat-no" title="statement not covered" >        self.onError(cb, err, 'error', options);</span>
+      } else {
+        // we might have a reponse with a failure status code
+        if (res.status &gt;= 400) {
+          self.onError(cb, res.body, 'error', options);
+        } else {
+          if (res.body)
+            self._columns_ = res.body.columns || null;
+          self.onSuccess(cb, res.body, 'success', options);
+        }
+      }
+    });
+&nbsp;
+  }
+&nbsp;
+  // ### Wrapper for superagent and request
+  // Private method, can be indirectly 'accessed' via neo4jrestful.get|post|delete|put or neo4jrestfule.request
+  Neo4jRestful.prototype._sendHttpRequest = function(options, cb) {
+    _.defaults(options, {
+      header: {},
+      data: null,
+      method: 'GET',
+      timeout: null,
+      stream: false
+    });
+    var isBrowser = Boolean(typeof window === 'object');
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof cb !== 'function')
+<span class="cstat-no" title="statement not covered" >      throw Error('Callback as 2nd argument is mandatory');</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((typeof options !== 'object')||(!options.url))
+<span class="cstat-no" title="statement not covered" >      cb(Error("Set { url: '…' } as argument"));</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (isBrowser) {
+      // ### superagent for browserside usage
+<span class="cstat-no" title="statement not covered" >      var req = window.superagent(options.method, options.url).set(options.header);</span>
+<span class="cstat-no" title="statement not covered" >      if (options.data)</span>
+<span class="cstat-no" title="statement not covered" >        req.send(options.data);</span>
+<span class="cstat-no" title="statement not covered" >      if (options.stream) {</span>
+<span class="cstat-no" title="statement not covered" >        return req.pipe(options.stream);</span>
+      } else {
+<span class="cstat-no" title="statement not covered" >        return req.end(<span class="fstat-no" title="function not covered" >function(err, res) {</span></span>
+          // compatibility of superagent to response api
+<span class="cstat-no" title="statement not covered" >          if (typeof res === 'object') {</span>
+<span class="cstat-no" title="statement not covered" >            res.statusCode = res.status;</span>
+          }
+<span class="cstat-no" title="statement not covered" >          return cb(err, res);</span>
+        });
+      }
+&nbsp;
+    } else {
+      // ### request module for nodejs
+      var req = request;
+      options.json = true;
+      if (options.data) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof options.data === 'string')
+          options.body = options.data;
+        else
+<span class="cstat-no" title="statement not covered" >          options.json = options.data;</span>
+      }
+      if (options.stream) {
+        return req(options).pipe(options.stream);
+      } else {
+        return req(options, function(err, res) {
+          // compatibility of response to superagent api
+          <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof res === 'object') {
+            res.status = res.statusCode;
+          }
+          return cb(err, res);
+        });
+      }
+    }
+  }
+&nbsp;
+  Neo4jRestful.prototype.onProcess = function(res, cb, debug) {
+    if (!res) {
+      // return here if no response is present
+      return cb(null, res, debug);
+    } else if (_.isArray(res)) {
+      for (var i=0; i &lt; res.length; i++) {
+        res[i] = this.createObjectFromResponseData(res[i]);
+      }
+    } else if ( (res.data) &amp;&amp; (_.isArray(res.data)) ) {
+      // iterate throught res.data rows + columns
+      // an try to detect Node, Relationships + Path objects
+      for (var row=0; row &lt; res.data.length; row++) {
+        for (var column=0; column &lt; res.data[row].length; column++) {
+          res.data[row][column] = this.createObjectFromResponseData(res.data[row][column]);
+        }
+      }
+&nbsp;
+    } else <span class="missing-if-branch" title="else path not taken" >E</span>if (_.isObject(res)) {
+      res = this.createObjectFromResponseData(res);
+    }
+    cb(null, res, debug);
+  }
+&nbsp;
+  Neo4jRestful.prototype.onProcessStream = function(res, cb, debug) {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (res) {
+      for (var column=0; column &lt; res.length; column++) {
+        res[column] = this.createObjectFromResponseData(res[column]);
+      }
+    }
+    cb(null, res, debug);
+  }
+&nbsp;
+  Neo4jRestful.prototype.onSuccess = function(cb, res, status) {
+&nbsp;
+    this._debug_.res = res;
+    this._debug_.status = status;
+&nbsp;
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (status === 'success') {
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof this.onProcess === 'function')
+        return this.onProcess(res, cb, this._debug_);
+      else
+<span class="cstat-no" title="statement not covered" >        return cb(null, res, this._debug_);</span>
+    } else {
+<span class="cstat-no" title="statement not covered" >      cb(res, status, this._debug_);</span>
+    }
+  }
+&nbsp;
+  Neo4jRestful.prototype.onError = function(cb, responseError, res, options) {
+    // in some (rare) case, we get an empty {} as error
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ( (responseError) &amp;&amp; (typeof responseError === 'object') &amp;&amp; (Object.keys(responseError).length === 0) ) {
+<span class="cstat-no" title="statement not covered" >      return cb(null, res.body || null, this._debug_);</span>
+    }
+    var err = responseError;
+    var self = this;
+    var statusCode = (this._response_) ? this._response_.status : <span class="branch-1 cbranch-no" title="branch not covered" >null;</span>
+    var error = ( err &amp;&amp; err.responseText ) ? <span class="branch-0 cbranch-no" title="branch not covered" >Error(err.responseText) </span>: err;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!error) {
+      // TODO: code with description
+<span class="cstat-no" title="statement not covered" >      var errDescription = 'Response Error ('+this._response_.status+')';</span>
+<span class="cstat-no" title="statement not covered" >      error = new ResponseError(errDescription, this._response_.status);</span>
+    }
+&nbsp;
+    this._debug_.res = res;
+    this._debug_.err = err;
+    this._debug_.error = error;
+&nbsp;
+    try {
+      // jquery is an optional feature since superagent
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (jQuery) {
+        // try to extract the first &lt;p&gt; or &lt;pre&gt; from html body, else return error object for better debugging
+<span class="cstat-no" title="statement not covered" >        if (jQuery(err.responseText).find('body pre:first, body p:first')[0])</span>
+<span class="cstat-no" title="statement not covered" >          err.responseText = jQuery(err.responseText).find('body pre:first, body p:first').first().text().trim().replace(/(\s|\n)+/g,' ');</span>
+        else <span class="cstat-no" title="statement not covered" >if (jQuery(err.responseText).text()) {</span>
+<span class="cstat-no" title="statement not covered" >          err.responseText = jQuery(err.responseText).text().trim();</span>
+        }
+      } else {
+        // remove all tags to get plain message
+        // TODO: find a real jQuery replacement
+        err.responseText = err.responseText.replace(/(&lt;([^&gt;]+)&gt;)/ig,'').trim();
+      }
+    } catch(e) {
+      // ignore exception
+    }
+    // try to create a valuable error object from response
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((err)&amp;&amp;(err.responseText)&amp;&amp;(<span class="branch-2 cbranch-no" title="branch not covered" >typeof err.responseText === 'string')</span>) {
+<span class="cstat-no" title="statement not covered" >      try {</span>
+<span class="cstat-no" title="statement not covered" >        var err = JSON.parse(err.responseText);</span>
+<span class="cstat-no" title="statement not covered" >        var ErrorHandler = (/^(\/)*db\/data(\/)*$/.test(options.url)) ? CypherQueryError : QueryError;</span>
+<span class="cstat-no" title="statement not covered" >        err = new ErrorHandler(err.message, {</span>
+          stacktrace: err.stacktrace,
+          exception: err.exception,
+          statusCode: statusCode,
+          url: options.url,
+          method: options.method,
+          data: data
+        });
+      } catch (e) {
+<span class="cstat-no" title="statement not covered" >        self.log('**debug** Could not create/parse a valuable error object', e);</span>
+      }
+    }
+    if ( (err) &amp;&amp; (err.exception) &amp;&amp; (self.ignoreExceptionPattern) &amp;&amp; (self.ignoreExceptionPattern.test(err.exception)) ) {
+      // we ignore by default notfound exceptions, because they are no "syntactical" errors
+      return cb(null, null, this._debug_);
+    } else {
+      return cb(err || <span class="branch-1 cbranch-no" title="branch not covered" >error,</span> null, this._debug_);
+    }
+  }
+&nbsp;
+  Neo4jRestful.prototype.stream = function(cypher, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) );
+    this.header['X-Stream'] = 'true';
+    var self = this;
+    var todo = 0;
+    var done = 0;
+&nbsp;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof cypher !== 'string')
+<span class="cstat-no" title="statement not covered" >      throw Error('cypher argument has to be a string');</span>
+&nbsp;
+    return this.query(cypher, options, function(data) {
+      if (data) {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof self.onProcessStream === 'function') {
+          todo++;
+          self.onProcessStream(data, function(err, data) {
+            if ( (data) &amp;&amp; (data.length === 1) )
+              data = data[0];
+            <span class="missing-if-branch" title="if path not taken" >I</span>if (done &gt;= todo) {
+              // done
+<span class="cstat-no" title="statement not covered" >              cb(data, self);</span>
+<span class="cstat-no" title="statement not covered" >              return cb(null, self, self._debug_);</span>
+            } else {
+              return cb(data, self, self._debug_);
+            }
+          })
+        } else {
+<span class="cstat-no" title="statement not covered" >          return cb(data, self, self._debug_);</span>
+        }
+      } else {
+        return cb(null, self, self._debug_);
+      }
+    });
+  }
+&nbsp;
+  Neo4jRestful.prototype.get = function(url, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = 'GET' ) );
+    return this.request(url, options, cb);
+  }
+&nbsp;
+  Neo4jRestful.prototype.post = function(url, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = 'POST' ) );
+    return this.request(url, options, cb);
+  }
+  Neo4jRestful.prototype.put = function(url, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = 'PUT' ) );
+    return this.request(url, options, cb);
+  }
+&nbsp;
+  Neo4jRestful.prototype.delete = function(url, options, cb) {
+    var args;
+    ( ( args = helpers.sortOptionsAndCallbackArguments(options, cb) ) &amp;&amp; ( options = args.options ) &amp;&amp; ( cb = args.callback ) &amp;&amp; ( options.method = 'DELETE' ) );
+    return this.request(url, options, cb);
+  }
+&nbsp;
+  Neo4jRestful.prototype.log = function(){ /* &gt; /dev/null */ };
+&nbsp;
+  Neo4jRestful.prototype.createObjectFromResponseData = function(responseData, Class) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((responseData === null) || (responseData === ''))
+<span class="cstat-no" title="statement not covered" >      return null;</span>
+    var uri = (responseData) ? responseData.self : null;
+    var Node = Neo4jRestful.Node;
+    var Relationship = Neo4jRestful.Relationship;
+    var Path = Neo4jRestful.Path;
+    if (typeof Class !== 'function')
+      Class = Node;
+    if (uri) {
+      if (/\/db\/data\/node\/[0-9]+\/*$/.test(uri)) {
+        // we have a node or an inheriated class
+        var n = new Class();
+        n = n.populateWithDataFromResponse(responseData);
+        return n;
+      } else <span class="missing-if-branch" title="else path not taken" >E</span>if (/\/db\/data\/relationship\/[0-9]+\/*$/.test(uri)) {
+        // we have a relationship
+        var r = new Relationship();
+        r = r.populateWithDataFromResponse(responseData);
+        return r;
+      }
+    }
+    else {
+      if ((_.isNumber(responseData.length))&amp;&amp;(_.isString(responseData.start))) {
+        // we have a path
+        var p = new Path();
+        p = p.populateWithDataFromResponse(responseData);
+        return p;
+      }
+    }
+    return responseData;
+  }
+&nbsp;
+  Neo4jRestful.prototype.responseTime = function() {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if ((this._request_on_ &gt; 0) &amp;&amp; (this._response_on_ &gt; 0)) {
+      return this._response_on_ - this._request_on_;
+    } else {
+<span class="cstat-no" title="statement not covered" >      return null;</span>
+    }
+  }
+&nbsp;
+  Neo4jRestful.prototype.responseTimeAsString = function() {
+    var time = this.responseTime();
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (time) {
+      return Math.floor(time/10)/100 + '[s]';
+    } else {
+<span class="cstat-no" title="statement not covered" >      return '';</span>
+    }
+  }
+&nbsp;
+  Neo4jRestful.prototype.onConnectionError = <span class="fstat-no" title="function not covered" >function(/* err, self */) {</span>
+    // overwrite with your own function to decide what to do if no connection can be established
+    /* /dev/null */
+  }
+&nbsp;
+  Neo4jRestful.prototype.singleton = function() {
+    // creates a new instanced copy of this client
+    return new Neo4jRestful(this._connectionString());
+  }
+&nbsp;
+  Neo4jRestful.create = <span class="fstat-no" title="function not covered" >function(url, options) {</span>
+<span class="cstat-no" title="statement not covered" >    return new Neo4jRestful(url, options);</span>
+  }
+&nbsp;
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof window === 'object')
+<span class="cstat-no" title="statement not covered" >    window.Neo4jRestful = Neo4jRestful;</span>
+&nbsp;
+  return Neo4jRestful;
+};
+&nbsp;
+<span class="missing-if-branch" title="else path not taken" >E</span>if (typeof window !== 'object') {
+  // nodejs
+  module.exports = exports = {
+    init: __initNeo4jRestful__
+  };
+} else {
+<span class="cstat-no" title="statement not covered" >  window.Neo4jMapper.initNeo4jRestful = __initNeo4jRestful__;</span>
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon May 25 2015 18:43:30 GMT+0200 (CEST)</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

@@ -1,0 +1,1434 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for src/relationship.js</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../prettify.css">
+    <link rel="stylesheet" href="../base.css">
+    <style type='text/css'>
+        div.coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">src/relationship.js</span></h1>
+    <h2>
+        Statements: <span class="metric">87.69% <small>(228 / 260)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">72.22% <small>(104 / 144)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">97.5% <small>(39 / 40)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">87.69% <small>(228 / 260)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Ignored: <span class="metric"><span class="ignore-none">none</span></span> &nbsp;&nbsp;&nbsp;&nbsp;
+    </h2>
+    <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">src/</a> &#187; relationship.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286
+287
+288
+289
+290
+291
+292
+293
+294
+295
+296
+297
+298
+299
+300
+301
+302
+303
+304
+305
+306
+307
+308
+309
+310
+311
+312
+313
+314
+315
+316
+317
+318
+319
+320
+321
+322
+323
+324
+325
+326
+327
+328
+329
+330
+331
+332
+333
+334
+335
+336
+337
+338
+339
+340
+341
+342
+343
+344
+345
+346
+347
+348
+349
+350
+351
+352
+353
+354
+355
+356
+357
+358
+359
+360
+361
+362
+363
+364
+365
+366
+367
+368
+369
+370
+371
+372
+373
+374
+375
+376
+377
+378
+379
+380
+381
+382
+383
+384
+385
+386
+387
+388
+389
+390
+391
+392
+393
+394
+395
+396
+397
+398
+399
+400
+401
+402
+403
+404
+405
+406
+407
+408
+409
+410
+411
+412
+413
+414
+415
+416
+417
+418
+419
+420
+421
+422
+423
+424
+425
+426
+427
+428
+429
+430
+431
+432
+433
+434
+435
+436
+437
+438
+439
+440
+441
+442
+443
+444
+445
+446
+447
+448
+449
+450
+451
+452
+453
+454
+455
+456
+457
+458
+459
+460
+461
+462
+463
+464</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">30</span>
+<span class="cline-any cline-yes">28</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">30</span>
+<span class="cline-any cline-yes">28</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">29</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">104</span>
+<span class="cline-any cline-yes">30</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">58</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-yes">128</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-yes">62</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">122</span>
+<span class="cline-any cline-yes">122</span>
+<span class="cline-any cline-yes">122</span>
+<span class="cline-any cline-yes">122</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">122</span>
+<span class="cline-any cline-yes">122</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">61</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">125</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">125</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">125</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">125</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">124</span>
+<span class="cline-any cline-yes">124</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-yes">38</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">10</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-yes">32</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-yes">31</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">8</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// # Relationship
+/*
+ * TODO:
+ * * make query mapper from Node available for relationships as well
+ * * make relationships queryable with custom queries
+ */
+&nbsp;
+var __initRelationship__ = function(neo4jrestful, Graph, Node) {
+&nbsp;
+&nbsp;
+  <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof window === 'object') {
+<span class="cstat-no" title="statement not covered" >    var helpers = window.Neo4jMapper.helpers;</span>
+<span class="cstat-no" title="statement not covered" >    var _       = window._;</span>
+  } else {
+    var helpers  = require('./helpers');
+    var _        = require('underscore');
+  }
+&nbsp;
+  // Constructor of Relationship
+  var Relationship = function Relationship(type, data, start, end, id, cb) {
+    this.type = this._type_ = type || null;
+    this.from = {
+      id: null,
+      uri: null
+    };
+    this.to = {
+      id: null,
+      uri: null
+    };
+    this.data = data || {};
+&nbsp;
+    var startID = null;
+    var endID = null;
+&nbsp;
+    if (start)
+      if (Number(start.id))
+        startID = Number(start.id);
+      else if (Number(start))
+        startID = Number(start);
+      else <span class="missing-if-branch" title="else path not taken" >E</span>if (start)
+        // we assume we have a url here
+        this.setPointIdByUri('from', start);
+&nbsp;
+    if (startID)
+      this.setPointUriById('from', startID);
+&nbsp;
+    if (end)
+      if (Number(end.id))
+        endID = Number(end.id);
+      else if (Number(end))
+        endID = Number(end);
+      else <span class="missing-if-branch" title="else path not taken" >E</span>if (end)
+        // we assume we have a url here
+        this.setPointIdByUri('to', end);
+&nbsp;
+    if (endID)
+      this.setPointUriById('to', endID);
+&nbsp;
+    this.fields = _.extend({},{
+      defaults: _.extend({}, this.fields.defaults),
+      indexes: _.extend({}, this.fields.indexes) // TODO: implement
+    });
+&nbsp;
+    this._is_instanced_ = true;
+&nbsp;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof id === 'number') {
+<span class="cstat-no" title="statement not covered" >      this.setUriById(id);</span>
+<span class="cstat-no" title="statement not covered" >      this.id = this._id_ = id;</span>
+    } else {
+      cb = id;
+    }
+    if (typeof cb === 'function') {
+      return this.save(cb);
+    }
+  }
+&nbsp;
+  Relationship.prototype.classification   = 'Relationship'; // only needed for toObject()
+  Relationship.prototype.data             = {};
+  Relationship.prototype.start            = null;
+  Relationship.prototype.type             = null;
+  Relationship.prototype._type_           = null;           // like `_id_` to keep a reference to the legacy type
+  Relationship.prototype.end              = null;
+  Relationship.prototype.from             = null;
+  Relationship.prototype.to               = null;
+  Relationship.prototype.id               = null;
+  Relationship.prototype._id_             = null;
+  Relationship.prototype._hashedData_     = null;
+  Relationship.prototype.uri              = null;
+  Relationship.prototype._response_       = null;
+  Relationship.prototype._is_singleton_   = false;
+  Relationship.prototype._is_persisted_   = false;
+  Relationship.prototype.cypher           = null;
+  Relationship.prototype._is_instanced_   = null;
+  Relationship.prototype.fields = {
+    defaults: {},
+    indexes: {}
+  };
+&nbsp;
+  // should **never** be changed
+  Relationship.prototype.__TYPE__ = 'relationship';
+  Relationship.prototype.__TYPE_IDENTIFIER__ = 'r';
+&nbsp;
+  Relationship.prototype.singleton = function(id) {
+    var relationship = new Relationship();
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof id === 'number') {
+<span class="cstat-no" title="statement not covered" >      this.id = this._id_ = id;</span>
+    }
+    relationship._is_singleton_ = true;
+    // relationship.resetQuery();
+    return relationship;
+  }
+&nbsp;
+  Relationship.singleton = function(id) {
+    return this.prototype.singleton(id);
+  }
+&nbsp;
+  Relationship.prototype.setPointUriById = function(startOrEnd, id) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof startOrEnd !== 'string')
+<span class="cstat-no" title="statement not covered" >      startOrEnd = 'from';</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((startOrEnd !== 'from')&amp;&amp;(startOrEnd !== 'to'))
+<span class="cstat-no" title="statement not covered" >      throw Error("You have to set startOrEnd argument to 'from' or 'to'");</span>
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (_.isNumber(id)) {
+      this[startOrEnd].uri = neo4jrestful.absoluteUrl('/relationship/'+id);
+      this[startOrEnd].id = id;
+    }
+    return this;
+  }
+&nbsp;
+  Relationship.prototype.setPointIdByUri = function(startOrEnd, uri) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (typeof startOrEnd !== 'string')
+<span class="cstat-no" title="statement not covered" >      startOrEnd = 'from';</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((startOrEnd !== 'from')&amp;&amp;(startOrEnd !== 'to'))
+<span class="cstat-no" title="statement not covered" >      throw Error("You have to set startOrEnd argument to 'from' or 'to'");</span>
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (uri.match(/[0-9]+$/)) {
+      this[startOrEnd].uri = uri;
+      this[startOrEnd].id = Number(uri.match(/[0-9]+$/)[0]);
+    }
+  }
+&nbsp;
+  Relationship.prototype.applyDefaultValues = null; // will be initialized
+&nbsp;
+  Relationship.prototype.findById = function(id, cb) {
+    var self = this;
+    <span class="missing-if-branch" title="else path not taken" >E</span>if ( (_.isNumber(Number(id))) &amp;&amp; (typeof cb === 'function') ) {
+      // to reduce calls we'll make a specific restful request for one node
+      return Graph.request().get(this.__TYPE__+'/'+id, function(err, object) {
+        if ((object) &amp;&amp; (typeof self.load === 'function')) {
+          //  &amp;&amp; (typeof node.load === 'function')
+          object.load(cb);
+        } else {
+          cb(err, object);
+        }
+      });
+    }
+<span class="cstat-no" title="statement not covered" >    return this;</span>
+  }
+&nbsp;
+  Relationship.prototype.save = function(cb) {
+    var self = this;
+    self.onBeforeSave(self, function(err) {
+      // don't execute if an error is passed through
+      <span class="missing-if-branch" title="if path not taken" >I</span>if ((typeof err !== 'undefined')&amp;&amp;(err !== null))
+<span class="cstat-no" title="statement not covered" >        cb(err, null);</span>
+      else
+        self.onSave(function(err, relationship, debug) {
+          <span class="missing-if-branch" title="if path not taken" >I</span>if (err)
+<span class="cstat-no" title="statement not covered" >            return cb(err, relationship, debug);</span>
+          else
+            return self.onAfterSave(self, cb, debug);
+        });
+    });
+  }
+&nbsp;
+  Relationship.prototype.onSave = function(cb) {
+    var self = this;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (this._is_singleton_)
+<span class="cstat-no" title="statement not covered" >      return cb(Error('Singleton instances can not be persisted'), null);</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!this.hasValidData())
+<span class="cstat-no" title="statement not covered" >      return cb(Error('relationship does not contain valid data. `'+this.__TYPE__+'.data` must be an object.'));</span>
+    this.resetQuery();
+    this.applyDefaultValues();
+&nbsp;
+    this.id = this._id_;
+&nbsp;
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!this.type)
+<span class="cstat-no" title="statement not covered" >      throw Error("Type for a relationship is mandatory, e.g. `relationship.type = 'KNOW'`");</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((!(this.from))||(isNaN(this.from.id)))
+<span class="cstat-no" title="statement not covered" >      throw Error('Relationship requires a `relationship.from` startnode');</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if ((!(this.to))||(isNaN(this.to.id)))
+<span class="cstat-no" title="statement not covered" >      throw Error('Relationship requires a `relationship.to` endnode');</span>
+&nbsp;
+    if (this.hasId()) {
+&nbsp;
+      if ((this._type_) &amp;&amp; (this.type !== this._type_)) {
+        // type has changed
+        // since we can't update a relationship type (only properties)
+        // we have to create a new relationship and delete the "old" one
+        return Relationship.create(this.type, this.data, this.start, this.end, function(err, relationship, debug) {
+          <span class="missing-if-branch" title="if path not taken" >I</span>if (err) {
+<span class="cstat-no" title="statement not covered" >            return cb(err, relationship, debug);</span>
+          } else {
+            self.remove(function(err, res, debugDelete) {
+              <span class="missing-if-branch" title="if path not taken" >I</span>if (err) {
+<span class="cstat-no" title="statement not covered" >                return cb(err, res, debugDelete);</span>
+              } else {
+                relationship.copyTo(self);
+                return cb(null, self, debug);
+              }
+            })
+          }
+        })
+      }
+&nbsp;
+      // UPDATE properties
+      // url = 'relationship/'+this._id_+'/properties';
+      Graph
+        .start('r = relationship({id})', {
+          id: Number(this.id),
+        })
+        .setWith( { r: this.dataForCypher() } )
+        .return('r')
+        .exec(cb);
+    } else {
+      Graph
+        .start('n = node({from}), m = node({to})', {
+          from: Number(this.from.id),
+          to: Number(this.to.id),
+        })
+        .create([ '(n)-[r: '+helpers.escapeProperty(this.type), this.dataForCypher(), ']-&gt;(m)'])
+        .return('r')
+        .limit(1)
+        .exec(function(err, relationship, debug) {
+          <span class="missing-if-branch" title="if path not taken" >I</span>if ((err) || (!relationship))
+<span class="cstat-no" title="statement not covered" >            return cb(err, relationship, debug);</span>
+          else {
+            relationship.copyTo(self);
+            return cb(null, self, debug);
+          }
+        });
+    }
+  }
+&nbsp;
+  Relationship.prototype.update = function(data, cb) {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (helpers.isObjectLiteral(data)) {
+      this.data = _.extend(this.data, data);
+      data = this.flattenData();
+    } else {
+<span class="cstat-no" title="statement not covered" >      cb = data;</span>
+    }
+    return this.save(cb);
+  }
+&nbsp;
+  Relationship.prototype.populateWithDataFromResponse = function(data, create) {
+    create = (typeof create !== 'undefined') ? <span class="branch-0 cbranch-no" title="branch not covered" >create </span>: false;
+    // if we are working on the prototype object
+    // we won't mutate it and create a new relationship instance insetad
+    var relationship = (this._is_instanced_ !== null) ? this : <span class="branch-1 cbranch-no" title="branch not covered" >new Relationship();</span>
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (create)
+<span class="cstat-no" title="statement not covered" >      relationship = new Relationship();</span>
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (data) {
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (_.isObject(data) &amp;&amp; (!_.isArray(data)))
+        relationship._response_ = data;
+      else
+<span class="cstat-no" title="statement not covered" >        relationship._response_ = data[0];</span>
+      relationship.data = relationship._response_.data;
+      relationship.data = helpers.unflattenObject(this.data);
+      relationship.uri  = relationship._response_.self;
+      relationship.type = relationship._type_ = relationship._response_.type;
+      <span class="missing-if-branch" title="else path not taken" >E</span>if ((relationship._response_.self) &amp;&amp; (relationship._response_.self.match(/[0-9]+$/))) {
+        relationship.id = relationship._id_ = Number(relationship._response_.self.match(/[0-9]+$/)[0]);
+      }
+      <span class="missing-if-branch" title="else path not taken" >E</span>if ((relationship._response_.start) &amp;&amp; (relationship._response_.start.match(/[0-9]+$/))) {
+        relationship.from.uri = relationship.start = relationship._response_.start;
+        relationship.setPointIdByUri('from', relationship._response_.start);
+      }
+      <span class="missing-if-branch" title="else path not taken" >E</span>if ((relationship._response_.end) &amp;&amp; (relationship._response_.end.match(/[0-9]+$/))) {
+        relationship.to.uri = relationship.end = relationship._response_.end;
+        relationship.setPointIdByUri('to', relationship._response_.end);
+      }
+    }
+    relationship._is_persisted_ = true;
+    relationship.isPersisted(true);
+    return relationship;
+  }
+&nbsp;
+  Relationship.prototype.remove = function(cb) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (this._is_singleton_)
+<span class="cstat-no" title="statement not covered" >      return cb(Error("To delete results of a query use delete(). remove() is for removing a relationship."),null);</span>
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (this.hasId()) {
+      return Graph.request().delete('relationship/'+this.id, cb);
+    }
+<span class="cstat-no" title="statement not covered" >    return this;</span>
+  }
+&nbsp;
+  Relationship.prototype.loadFromAndToNodes = function(cb) {
+    var self = this;
+    var attributes = ['from', 'to'];
+    var done = 0;
+    var errors = [];
+    for (var i = 0; i &lt; 2; i++) {
+      (function(point){
+        Node.findById(self[point].id,function(err,node) {
+          self[point] = node;
+          <span class="missing-if-branch" title="if path not taken" >I</span>if (err)
+<span class="cstat-no" title="statement not covered" >            errors.push(err);</span>
+          done++;
+          if (done === 2) {
+            cb((errors.length === 0) ? null : <span class="branch-1 cbranch-no" title="branch not covered" >errors,</span> self);
+          }
+&nbsp;
+        });
+      })(attributes[i]);
+    }
+  }
+&nbsp;
+  Relationship.prototype.load = function(cb) {
+    var self = this;
+    this._onBeforeLoad(self, function(err, relationship){
+      <span class="missing-if-branch" title="if path not taken" >I</span>if (err)
+<span class="cstat-no" title="statement not covered" >        cb(err, relationship);</span>
+      else
+        self._onAfterLoad(relationship, cb);
+    })
+  }
+&nbsp;
+  Relationship.prototype._onBeforeLoad = function(relationship, next) {
+    return this.onBeforeLoad(relationship, function(err, relationship) {
+      <span class="missing-if-branch" title="else path not taken" >E</span>if (relationship.hasId()) {
+        relationship.loadFromAndToNodes(function(err, relationship){
+          next(err, relationship);
+        });
+      } else {
+<span class="cstat-no" title="statement not covered" >        next(null, relationship);</span>
+      }
+    });
+  }
+&nbsp;
+  Relationship.prototype.onBeforeLoad = function(relationship, next) {
+    return next(null, relationship);
+  }
+&nbsp;
+  Relationship.prototype._onAfterLoad = function(relationship, next) {
+    return this.onAfterLoad(relationship, function(err, relationship) {
+      return next(null, relationship);
+    })
+  }
+&nbsp;
+  Relationship.prototype.onAfterLoad = function(relationship, next) {
+    return next(null, relationship);
+  }
+&nbsp;
+  Relationship.prototype.toQuery = function() {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (this.hasId()) {
+      return Graph
+        .start('r = relationship('+this.id+')')
+        .return('r').toQuery();
+    }
+<span class="cstat-no" title="statement not covered" >    return Graph.start('r = relationship(*)').toQuery();</span>
+  }
+&nbsp;
+  Relationship.prototype.toQueryString = Node.prototype.toQueryString;
+&nbsp;
+  Relationship.prototype.toCypherQuery = Node.prototype.toCypherQuery;
+&nbsp;
+  Relationship.prototype.toObject = function() {
+    var o = {
+      id: this.id,
+      classification: this.classification,
+      data: _.clone(this.data),
+      start: this.start,
+      end: this.end,
+      from: _.extend(this.from),
+      to: _.extend(this.to),
+      uri: this.uri,
+      type: this.type
+    };
+    if ( (o.from) &amp;&amp; (typeof o.from.toObject === 'function') )
+      o.from = o.from.toObject();
+    if ( (o.to)   &amp;&amp; (typeof o.to.toObject === 'function') )
+      o.to   = o.to.toObject();
+    return o;
+  }
+&nbsp;
+  Relationship.prototype._hashData_ = function() {
+    <span class="missing-if-branch" title="else path not taken" >E</span>if (this.hasValidData())
+      return helpers.md5(JSON.stringify(this.toObject()));
+    else
+<span class="cstat-no" title="statement not covered" >      return null;</span>
+  }
+&nbsp;
+  Relationship.prototype.onBeforeSave = function(node, next) {
+    next(null, null);
+  }
+&nbsp;
+  Relationship.prototype.onAfterSave = function(relationship, next, debug) {
+    return next(null, relationship, debug);
+  }
+&nbsp;
+  Relationship.prototype.resetQuery = function() {
+    this.cypher = new helpers.CypherQuery();
+    return this;
+  }
+&nbsp;
+  Relationship.prototype._load_hook_reference_  = null;
+&nbsp;
+  /*
+   * Static singleton methods
+   */
+&nbsp;
+  Relationship.findById = function(id, cb) {
+    return Relationship.singleton().findById(id, cb);
+  }
+&nbsp;
+  Relationship.recommendConstructor = <span class="fstat-no" title="function not covered" >function() {</span>
+<span class="cstat-no" title="statement not covered" >    return Relationship;</span>
+  }
+&nbsp;
+&nbsp;
+  /* from Node */
+  Relationship.prototype.applyDefaultValues = Node.prototype.applyDefaultValues
+&nbsp;
+  // Copys only the node's relevant data(s) to another object
+  Relationship.prototype.copyTo = function(r) {
+    r.id = r._id_ = this._id_;
+    r.data   = _.clone(this.data);
+    r.uri = this.uri;
+    r._response_ = _.clone(this._response_);
+    r.from = _.clone(this.from);
+    r.to = _.clone(this.to);
+    r.start = this.start;
+    r.end = this.end;
+    r.type = r._type_ = this._type_;
+    return r;
+  }
+&nbsp;
+  Relationship.prototype.hasValidData     = Node.prototype.hasValidData;
+  Relationship.prototype.flattenData      = Node.prototype.flattenData;
+  Relationship.prototype.setUriById       = Node.prototype.setUriById;
+  Relationship.prototype.isPersisted      = Node.prototype.isPersisted;
+  Relationship.prototype.hasId            = Node.prototype.hasId;
+  Relationship.prototype.dataForCypher    = Node.prototype.dataForCypher;
+&nbsp;
+  Relationship.setDefaultFields            = Node.setDefaultFields;
+  Relationship.setIndexFields              = Node.setIndexFields;
+  Relationship.setUniqueFields             = Node.setUniqueFields;
+  Relationship._setModelFields             = Node._setModelFields;
+&nbsp;
+  Relationship.new = function(type, data, start, end, id, cb) {
+    return new Relationship(type, data, start, end, id, cb);
+  }
+&nbsp;
+  Relationship.create = Relationship.new;
+&nbsp;
+  return neo4jrestful.Relationship = Relationship;
+}
+&nbsp;
+<span class="missing-if-branch" title="else path not taken" >E</span>if (typeof window !== 'object') {
+  module.exports = exports = {
+    init: __initRelationship__
+  }
+} else {
+<span class="cstat-no" title="statement not covered" >  window.Neo4jMapper.initRelationship = __initRelationship__;</span>
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon May 25 2015 18:43:30 GMT+0200 (CEST)</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

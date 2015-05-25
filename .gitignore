@@ -1,11 +1,6 @@
 .DS_Store
 node_modules/*
 npm-debug.log
-# test + code coverage tmp files
 test/*
-src-cov/*
-coverage.lcov
-examples/browser/test_*.js
 .sass-cache/
-apidocs/*
 *.map

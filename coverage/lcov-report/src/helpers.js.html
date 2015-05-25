@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for src/helpers.js</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../prettify.css">
+    <link rel="stylesheet" href="../base.css">
+    <style type='text/css'>
+        div.coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class="header high">
+    <h1>Code coverage report for <span class="entity">src/helpers.js</span></h1>
+    <h2>
+        Statements: <span class="metric">95.86% <small>(139 / 145)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Branches: <span class="metric">90.37% <small>(122 / 135)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Functions: <span class="metric">100% <small>(17 / 17)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Lines: <span class="metric">96.53% <small>(139 / 144)</small></span> &nbsp;&nbsp;&nbsp;&nbsp;
+        Ignored: <span class="metric"><span class="ignore-none">none</span></span> &nbsp;&nbsp;&nbsp;&nbsp;
+    </h2>
+    <div class="path"><a href="../index.html">All files</a> &#187; <a href="index.html">src/</a> &#187; helpers.js</div>
+</div>
+<div class="body">
+<pre><table class="coverage">
+<tr><td class="line-count">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271</td><td class="line-coverage"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1714</span>
+<span class="cline-any cline-yes">439</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1275</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">56</span>
+<span class="cline-any cline-yes">40</span>
+<span class="cline-any cline-yes">16</span>
+<span class="cline-any cline-yes">13</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1123</span>
+<span class="cline-any cline-yes">1123</span>
+<span class="cline-any cline-yes">1123</span>
+<span class="cline-any cline-yes">1123</span>
+<span class="cline-any cline-yes">1132</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">1132</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-yes">1125</span>
+<span class="cline-any cline-yes">92</span>
+<span class="cline-any cline-yes">92</span>
+<span class="cline-any cline-yes">100</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">100</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1033</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1123</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">2096</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2096</span>
+<span class="cline-any cline-yes">1237</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">2898</span>
+<span class="cline-any cline-yes">2898</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">859</span>
+<span class="cline-any cline-yes">1237</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1237</span>
+<span class="cline-any cline-yes">1237</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1237</span>
+<span class="cline-any cline-yes">212</span>
+<span class="cline-any cline-yes">200</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">212</span>
+<span class="cline-any cline-yes">212</span>
+<span class="cline-any cline-yes">212</span>
+<span class="cline-any cline-yes">212</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1237</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">859</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">80</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">79</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">79</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">589</span>
+<span class="cline-any cline-yes">263</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">589</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">589</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-yes">3</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">589</span>
+<span class="cline-any cline-yes">318</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">271</span>
+<span class="cline-any cline-yes">271</span>
+<span class="cline-any cline-yes">222</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">49</span>
+<span class="cline-any cline-yes">271</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">42</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">19</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">40</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">36</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">36</span>
+<span class="cline-any cline-yes">22</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">14</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">59</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">4</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">67</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">67</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">65</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-yes">18</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">92</span>
+<span class="cline-any cline-yes">26</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">66</span>
+<span class="cline-any cline-yes">92</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">110</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">22</span>
+<span class="cline-any cline-yes">2</span>
+<span class="cline-any cline-yes">22</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-yes">20</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">24</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">22</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1275</span>
+<span class="cline-any cline-yes">1275</span>
+<span class="cline-any cline-yes">43</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1275</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">3185</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-yes">12</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-yes">1</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">&nbsp;
+<span class="missing-if-branch" title="if path not taken" >I</span>if (typeof window === 'object') {
+<span class="cstat-no" title="statement not covered" >  var _ = window._;</span>
+} else {
+  var _ = require('underscore');
+}
+&nbsp;
+var isConditionalOperator = /^\$(AND|OR|XOR|NOT|AND\$NOT|OR\$NOT)$/i;
+&nbsp;
+var sortStringAndOptionsArguments = function(string, options) {
+  if (typeof string === 'object') {
+    return { string: null, options: string };
+  }
+  return {
+    string: string || <span class="branch-1 cbranch-no" title="branch not covered" >null,</span>
+    options: options || {}
+  }
+}
+&nbsp;
+var sortOptionsAndCallbackArguments = function(options, callback) {
+  if (typeof options === 'function') {
+    return { options: {}, callback: options };
+  }
+  return {
+    options: options || {},
+    callback: callback
+  }
+}
+&nbsp;
+var sortStringAndCallbackArguments = function(string, callback) {
+  if (typeof string === 'function') {
+    callback = string;
+    string = null;
+  }
+  return {
+    callback: callback,
+    string: string
+  }
+}
+&nbsp;
+var getIdFromObject = function(o) {
+  if ((typeof o === 'object') &amp;&amp; (!isNaN(o._id_)))
+    return o._id_;
+  if (!isNaN(parseInt(o)))
+    return parseInt(o);
+  // else
+  return o.id || null;
+}
+&nbsp;
+// source: https://gist.github.com/penguinboy/762197
+var flattenObject = function(ob, keepNullValues) {
+  var toReturn = {};
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof keepNullValues !== 'boolean')
+    keepNullValues = true;
+  for (var i in ob) {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (!ob.hasOwnProperty(i))
+<span class="cstat-no" title="statement not covered" >      continue;</span>
+    if ((keepNullValues) &amp;&amp; (ob[i] === null)) {
+      toReturn[i] = ob[i];
+    } else if ((typeof ob[i]) === 'object') {
+      var flatObject = flattenObject(ob[i]);
+      for (var x in flatObject) {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!flatObject.hasOwnProperty(x)) <span class="cstat-no" title="statement not covered" >continue;</span>
+&nbsp;
+        toReturn[i + '.' + x] = flatObject[x];
+      }
+    } else {
+      toReturn[i] = ob[i];
+    }
+  }
+  return toReturn;
+};
+&nbsp;
+// source: https://github.com/hughsk/flat/blob/master/index.js
+var unflattenObject = function (target, opts) {
+  var opts = opts || {}
+    , delimiter = opts.delimiter || '.'
+    , result = {}
+&nbsp;
+  if (Object.prototype.toString.call(target) !== '[object Object]') {
+      return target
+  }
+&nbsp;
+  function getkey(key) {
+      var parsedKey = parseInt(key)
+      return (isNaN(parsedKey) ? key : parsedKey)
+  };
+&nbsp;
+  Object.keys(target).forEach(function(key) {
+      var split = key.split(delimiter)
+        , firstNibble
+        , secondNibble
+        , recipient = result
+&nbsp;
+      firstNibble = getkey(split.shift())
+      secondNibble = getkey(split[0])
+&nbsp;
+      while (secondNibble !== undefined) {
+          if (recipient[firstNibble] === undefined) {
+              recipient[firstNibble] = ((typeof secondNibble === 'number') ? [] : {})
+          }
+&nbsp;
+          recipient = recipient[firstNibble]
+          <span class="missing-if-branch" title="else path not taken" >E</span>if (split.length &gt; 0) {
+              firstNibble = getkey(split.shift())
+              secondNibble = getkey(split[0])
+          }
+      }
+&nbsp;
+      // unflatten again for 'messy objects'
+      recipient[firstNibble] = unflattenObject(target[key])
+  });
+&nbsp;
+  return result
+};
+&nbsp;
+var escapeString = function(s) {
+  if (typeof s !== 'string')
+    return s;
+  // trim quotes if exists
+  if ( (/^".+"$/.test(s)) || (/^'.+'$/.test(s)) )
+    s = s.substr(1,s.length-2);
+  return s.replace(/^(['"]{1})/, '\\$1').replace(/([^\\]){1}(['"]{1})/g,'$1\\$2');
+}
+&nbsp;
+var escapeProperty = function(identifier, delimiter) {
+  if (typeof delimiter !== 'string')
+    delimiter = '`';
+  // do we have s.th. like ?! appending
+  var appending = identifier.match(/^(.*)([\?\!]{1})$/) || '';
+  // console.log(appending)
+  if ((appending)&amp;&amp;(appending[2])) {
+    identifier = appending[1];
+    appending = appending[2];
+  }
+  // no escaping if last char is a delimiter or ?, because we expect that the identifier is already escaped somehow
+  if (new RegExp(''+delimiter+'{1}$').test(identifier))
+    return identifier;
+  // remove all delimiters `
+  identifier = identifier.replace(new RegExp(delimiter, 'g'), '');
+  if (/^(.+?)\..+$/.test(identifier))
+    identifier = identifier.replace(/^(.+?)\.(.+)$/, '$1.'+delimiter+'$2'+delimiter);
+  else
+    identifier = delimiter+identifier+delimiter;
+  return identifier + appending;
+}
+&nbsp;
+var valueToStringForCypherQuery = function(value, delimiter) {
+  if (typeof delimiter !== 'string')
+    delimiter = '';
+  if ((value) &amp;&amp; (value.constructor === RegExp)) {
+    value = value.toString().replace(/^\/(\^)*(.+?)\/[ig]*$/, (value.ignoreCase) ? '$1(?i)$2' : '$1$2');
+    // replace `\` with `\\` to keep compatibility with Java regex
+    value = value.replace(/([^\\]{1})\\([^\\]{1})/g, '$1\\\\$2');
+  } else {
+    if ((typeof value === 'undefined') || (value === null))
+      value = 'NULL';
+    else <span class="missing-if-branch" title="if path not taken" >I</span>if (value === NaN)
+      // what would be a good representation of NaN?
+<span class="cstat-no" title="statement not covered" >      value = delimiter+'NaN'+delimiter;</span>
+    else if ((typeof value === 'boolean') || (typeof value === 'number'))
+      value = String(value);
+    else
+      value = delimiter + escapeString(value) + delimiter;
+  }
+&nbsp;
+  return value;
+}
+&nbsp;
+var cypherKeyValueToString = function(key, originalValue, identifier, conditionalParametersObject) {
+  var value = originalValue;
+  var s = ''; // string that will be returned
+  if (typeof conditionalParametersObject !== 'object')
+    conditionalParametersObject = null;
+  if (typeof identifier === 'string') {
+    <span class="missing-if-branch" title="if path not taken" >I</span>if (/^[nmr]\./.test(key))
+      // we have already an identifier
+<span class="cstat-no" title="statement not covered" >      key = key;</span>
+    else if (/[\?\!]$/.test(key))
+      // we have a default statement, escape without ! or ?
+      key = identifier+'.'+key;
+    else
+      key = identifier+'.'+key;
+  }
+  key = escapeProperty(key)
+  if (_.isRegExp(value)) {
+    value = valueToStringForCypherQuery(value);
+    value = ((conditionalParametersObject) &amp;&amp; (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : <span class="branch-1 cbranch-no" title="branch not covered" >value)</span> : "'"+value+"'";
+    s = key + " =~ " + value;
+  }
+  else {
+    // convert to string
+    if ((_.isNumber(value)) || (_.isBoolean(value)))
+      value = ((conditionalParametersObject) &amp;&amp; (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : <span class="branch-1 cbranch-no" title="branch not covered" >value)</span> : valueToStringForCypherQuery(value);
+    // else escape
+    else
+      value = ((conditionalParametersObject) &amp;&amp; (conditionalParametersObject.valuesToParameters)) ? ((conditionalParametersObject.addValue) ? conditionalParametersObject.addValue(value) : value) : "'"+escapeString(value)+"'";
+    s = key + " = " + value;
+  }
+&nbsp;
+  return s;
+}
+&nbsp;
+var extractAttributesFromCondition = function(condition, attributes) {
+  if (typeof attributes === 'undefined')
+    attributes = [];
+  _.each(condition, function(value, key) {
+&nbsp;
+    if (_.isObject(value)) {
+      extractAttributesFromCondition(condition[key], attributes);
+    }
+    if ( (!isConditionalOperator.test(key)) &amp;&amp; (/^[a-zA-Z\_\-\.]+$/.test(key)) ) {
+      // remove identifiers if exists
+      attributes.push(key.replace(/^[nmr]{1}\./,''));
+    }
+  });
+  return _.uniq(attributes);
+}
+&nbsp;
+var constructorNameOfFunction = function(func) {
+  var name = func.constructor.toString().match(/^function\s(.+?)\(/)[1];
+  if (name === 'Function') {
+    name = func.toString().match(/^function\s(.+)\(/)[1]
+  }
+  return name;
+}
+&nbsp;
+var isObjectLiteral = function(data) {
+  return Boolean((typeof data === 'object') &amp;&amp; (data !== null) &amp;&amp; (typeof Object.keys(data).length === 'number'));
+}
+&nbsp;
+var serializeObjectForCypher = function(o, options) {
+  o = this.flattenObject(o);
+  var result = [];
+  <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof options !== 'object')
+    options = {};
+  options = _.defaults(options, {
+    identifierDelimiter: '`',
+    valueDelimiter: "'",
+  });
+  for (var attr in o) {
+    var value = o[attr];
+    result.push(escapeProperty(attr)+' : '+valueToStringForCypherQuery(value, options.valueDelimiter));
+  }
+  return '{ '+result.join(', ')+' }';
+}
+&nbsp;
+var helpers = {
+  sortStringAndOptionsArguments: sortStringAndOptionsArguments,
+  sortOptionsAndCallbackArguments: sortOptionsAndCallbackArguments,
+  sortStringAndCallbackArguments: sortStringAndCallbackArguments,
+  flattenObject: flattenObject,
+  unflattenObject: unflattenObject,
+  extractAttributesFromCondition: extractAttributesFromCondition,
+  getIdFromObject: getIdFromObject,
+  escapeString: escapeString,
+  escapeProperty: escapeProperty,
+  constructorNameOfFunction: constructorNameOfFunction,
+  cypherKeyValueToString: cypherKeyValueToString,
+  valueToStringForCypherQuery: valueToStringForCypherQuery,
+  md5: (typeof window === 'object') ? <span class="branch-0 cbranch-no" title="branch not covered" >window.Neo4jMapper.md5 </span>: require('./lib/md5'),
+  isConditionalOperator: isConditionalOperator,
+  isObjectLiteral: isObjectLiteral,
+  serializeObjectForCypher: serializeObjectForCypher,
+};
+&nbsp;
+<span class="missing-if-branch" title="else path not taken" >E</span>if (typeof window !== 'object') {
+  module.exports = exports = helpers;
+} else {
+<span class="cstat-no" title="statement not covered" >  window.Neo4jMapper.helpers = helpers;</span>
+}</pre></td></tr>
+</table></pre>
+
+</div>
+<div class="footer">
+    <div class="meta">Generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Mon May 25 2015 18:43:30 GMT+0200 (CEST)</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>
