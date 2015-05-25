@@ -1,9 +1,6 @@
 .DS_Store
 node_modules/*
 npm-debug.log
-/src-cov/*
-coverage.lcov
 /docs/*
 /apidocs/*
-/test-js/*
 /coverage/*

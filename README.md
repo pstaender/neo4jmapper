@@ -10,8 +10,6 @@ Written in JavaScript for browser- and serverside usage
 
 See [http://pstaender.github.io/neo4jmapper](http://pstaender.github.io/neo4jmapper) for Documentation and Examples
 
-Try Neo4jMapper against a neo4j-demo-instance via a [coffeesript-console](http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html#http://zeitpulse.com:7480)
-
 ## Installation
 
 ```sh
@@ -21,15 +19,21 @@ Try Neo4jMapper against a neo4j-demo-instance via a [coffeesript-console](http:/
 ## Tests
 
 ```sh
+  $ npm install
   $ npm test
 ```
 
 Beware that a lot of nodes will be written and kept in your database, so avoid running any of these tests + examples on productive instances.
 
-## Usage and Testing in Browser
+## Using Neo4jMapper in a browser
 
-Neo4jMapper is available in modern Browsers (except the streaming feature), but still experimental.
-`npm run compress` will generate a browser-compatible js file. Checkout the tests in the browser by running `npm run prepare` and finally open the testfile `examples/browser/tests.html`. To avoid `access-control-allow-origin` situation ensure that there is no domain mismatch between html file and requested database.
+Since the maintenance for browser- and server-side is too much, the browser support is stopped for now. However Neo4jMapper should still be working in the browser.
+
+## Scripts
+
+  * `$ npm run doc`: Creates a source code documentation (with docco) in `docs/`
+  * `$ make test-coverage`: Creates a code coverage report in `coverage/`
+  * `$ npm run apidocs`: Creates a rudimentary api doc `apidocs/`
 
 ## TODO
 
@@ -43,11 +47,10 @@ Neo4jMapper is available in modern Browsers (except the streaming feature), but 
 
 ### Tested against:
 
-* Neo4j v2
-* Node 0.8 - 0.11 [see Travis CI](https://travis-ci.org/pstaender/neo4jmapper)
-* Chrome (v22+) and Safari (v7+)
+* Neo4j v2 - v2.1
+* Node 0.10 - 0.12 [see Travis CI](https://travis-ci.org/pstaender/neo4jmapper)
 
 ## LICENSE
 
-© 2013 by Philipp Staender under the GNU General Public License
+© 2015 by Philipp Staender under the GNU General Public License
 See in `LICENSE` file for further details.

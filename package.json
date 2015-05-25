@@ -21,13 +21,13 @@
   ],
   "scripts": {
     "test": "make test",
-    "preinstall": "npm i -g coffee-script mocha-lcov-reporter istanbul",
+    "preinstall": "npm i -g coffee-script istanbul",
     "blanket": {
       "pattern": "src"
     },
     "doc": "node_modules/docco/bin/docco src/*.js",
-    "apidocs": "dox-foundation --source src --target apidocs",
-    "prepare": "npm test && npm run doc && make test-coverage && npm run compress"
+    "apidocs": "node_modules/dox-foundation/bin/dox-foundation --source src --target apidocs",
+    "prepare": "npm test; npm run doc; npm run apidocs; make test-coverage"
   },
   "devDependencies": {
     "mocha": "~2.2.5",
@@ -42,11 +42,12 @@
     "optimist": "~0.6.1",
     "benchmark": "~1.0.0",
     "uglify-js": "~2.4.23",
-    "istanbul": "^0.3.14",
+    "istanbul": "~0.3.14",
     "docco": "~0.7.0"
   },
   "dependencies": {
     "JSONStream": "~0.9",
+    "dox-foundation": "^0.5.6",
     "request": "~2.27.0",
     "underscore": "~1.8.3"
   },
