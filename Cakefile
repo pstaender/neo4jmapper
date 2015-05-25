@@ -9,7 +9,6 @@ runCommand = (name, args) ->
 
 task 'assets:watch', 'Watch source files and build JS & CSS', (options) ->
   runCommand 'sass', ['--watch', 'css/']
-  runCommand 'coffee',  ['-cbw', 'js/']
 
 task 'html:generate', 'Generate index.html', ->
   fs = require 'fs'

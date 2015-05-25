@@ -3,8 +3,6 @@
 
 Written in JavaScript for browser- and serverside usage.
 
-[Try Neo4jMapper with the coffeesript-live-console](http://pstaender.github.io/neo4jmapper/examples/browser/console/console.html#http://www.zeitpulse.com:7480)
-
 ### Why another neo4j client?
 
 Neo4jMapper helps to get trivial neo4j-database-tasks quickly done.
@@ -18,9 +16,12 @@ Features:
 
 Neo4jMapper is designed for **Neo4j v2+**.
 
-### Sourcecode inline Documentation
+### Additional resources
 
-[Generated sourcecode documentation, quite incomplete but may give a good introduction to the neo4jmapper models.](docs/)
+  * [Sourcecode documentation, quite incomplete but may give a good introduction to the neo4jmapper models.](docs/)
+  * [APIDocs, also generated from sourcecode](apidocs/)
+  * [CodeCoverage report](coverage/lcov-report/index.html)
+  * [This helpfile in markdown](README.md)
 
 ## How to use
 
