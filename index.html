@@ -10,7 +10,6 @@
 <a href="https://github.com/pstaender/neo4jmapper"><img style="position: absolute; top: 0; left: 0; border: 0;" src="https://s3.amazonaws.com/github/ribbons/forkme_left_gray_6d6d6d.png" alt="Fork me on GitHub"></a>
 <div id="main"><h1 id="neo4jmapper">Neo4jMapper</h1>
 <h2 id="object-modeler-for-neo4j-graphdatabases">Object Modeler for Neo4j Graphdatabases</h2>
-<p>Written in JavaScript for browser- and serverside usage.</p>
 <h3 id="why-another-neo4j-client-">Why another neo4j client?</h3>
 <p>Neo4jMapper helps to get trivial neo4j-database-tasks quickly done.</p>
 <p>Features:</p>
@@ -33,14 +32,9 @@
 <h4 id="nodejs">NodeJS</h4>
 <pre><code class="lang-sh">  $ npm install neo4jmapper
 </code></pre>
-<h4 id="browser">Browser</h4>
-<p>Include <code>examples/browser/neo4jmapper_complete.js</code> in your html-file and ensure that you have included <a href="https://github.com/jashkenas/underscore/blob/master/underscore.js">underscorejs</a> and <a href="https://github.com/visionmedia/superagent/blob/master/superagent.js">superagent</a> as well.</p>
 <h3 id="connect-to-database">Connect to Database</h3>
 <pre><code class="lang-js">  var Neo4jMapper = require(&#39;neo4jmapper&#39;);
   var neo4j = new Neo4jMapper(&#39;http://localhost:7474&#39;);
-</code></pre>
-<p>or in the browser:</p>
-<pre><code class="lang-js">  var neo4j = new window.Neo4jMapper(&#39;http://localhost:7474&#39;);
 </code></pre>
 <p>To use multiple database connections:</p>
 <pre><code class="lang-js">  var neo4j1 = new Neo4jMapper(&#39;http://somewhere:7474&#39;);
@@ -672,8 +666,6 @@ Each model extends on the base <code>Node</code> model but inheriance of other m
 <div id="README"># Neo4jMapper
 ## Object Modeler for Neo4j Graphdatabases
 
-Written in JavaScript for browser- and serverside usage.
-
 ### Why another neo4j client?
 
 Neo4jMapper helps to get trivial neo4j-database-tasks quickly done.
@@ -703,21 +695,12 @@ Neo4jMapper is designed for **Neo4j v2+**.
 ```sh
   $ npm install neo4jmapper
 ```
-#### Browser
-
-Include `examples/browser/neo4jmapper_complete.js` in your html-file and ensure that you have included [underscorejs](https://github.com/jashkenas/underscore/blob/master/underscore.js) and [superagent](https://github.com/visionmedia/superagent/blob/master/superagent.js) as well.
 
 ### Connect to Database
 
 ```js
   var Neo4jMapper = require('neo4jmapper');
   var neo4j = new Neo4jMapper('http://localhost:7474');
-```
-
-or in the browser:
-
-```js
-  var neo4j = new window.Neo4jMapper('http://localhost:7474');
 ```
 
 To use multiple database connections:

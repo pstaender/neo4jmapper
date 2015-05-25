@@ -1,8 +1,6 @@
 # Neo4jMapper
 ## Object Modeler for Neo4j Graphdatabases
 
-Written in JavaScript for browser- and serverside usage.
-
 ### Why another neo4j client?
 
 Neo4jMapper helps to get trivial neo4j-database-tasks quickly done.
@@ -32,21 +30,12 @@ Neo4jMapper is designed for **Neo4j v2+**.
 ```sh
   $ npm install neo4jmapper
 ```
-#### Browser
-
-Include `examples/browser/neo4jmapper_complete.js` in your html-file and ensure that you have included [underscorejs](https://github.com/jashkenas/underscore/blob/master/underscore.js) and [superagent](https://github.com/visionmedia/superagent/blob/master/superagent.js) as well.
 
 ### Connect to Database
 
 ```js
   var Neo4jMapper = require('neo4jmapper');
   var neo4j = new Neo4jMapper('http://localhost:7474');
-```
-
-or in the browser:
-
-```js
-  var neo4j = new window.Neo4jMapper('http://localhost:7474');
 ```
 
 To use multiple database connections:
