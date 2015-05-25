@@ -1,7 +1,7 @@
 {
   "name": "neo4jmapper",
   "description": "Neo4jMapper is a client- and serverside object modeler for Neo4j graphdatabases",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "author": "Philipp Staender <philipp.staender@gmail.com>",
   "homepage": "http://pstaender.github.io/neo4jmapper/",
   "main": "./src/index",
@@ -21,38 +21,34 @@
   ],
   "scripts": {
     "test": "make test",
-    "clean": "find test -maxdepth 1 -name 'test_*.js' -delete -o -name '*.map' -delete",
-    "preinstall": "npm i -g coffee-script mocha-lcov-reporter",
+    "preinstall": "npm i -g coffee-script mocha-lcov-reporter istanbul",
     "blanket": {
       "pattern": "src"
     },
-    "doc": "docco src/*.js",
+    "doc": "node_modules/docco/bin/docco src/*.js",
     "apidocs": "dox-foundation --source src --target apidocs",
-    "benchmark": "coffee benchmark/benchmark.coffee",
-    "compress": "cake clientsidejs:build && uglifyjs examples/browser/neo4jmapper_complete.js -c -o examples/browser/neo4jmapper_complete.min.js",
     "prepare": "npm test && npm run doc && make test-coverage && npm run compress"
   },
   "devDependencies": {
-    "mocha": "~1.9",
-    "expect.js": "~0.2",
-    "should": "~1.2",
-    "source-map-support": "*",
-    "futures": "~2.3.1",
-    "join": "~2.3",
-    "coveralls": "~2.0.16",
+    "mocha": "~2.2.5",
+    "expect.js": "~0.3.1",
+    "should": "~6.0.3",
+    "futures": "~2.3.3",
+    "join": "~2",
     "mocha-lcov-reporter": "0.0.1",
-    "blanket": "~1.1.5",
-    "jscoverage": "~0.3.7",
-    "coffee-script": "~1.6.3",
-    "optimist": "~0.6.0",
+    "blanket": "~1.1.7",
+    "jscoverage": "~0.5.9",
+    "coffee-script": "~1.9.2",
+    "optimist": "~0.6.1",
     "benchmark": "~1.0.0",
-    "uglify-js": "~2.3.6",
-    "docco": "~0.6.2"
+    "uglify-js": "~2.4.23",
+    "istanbul": "^0.3.14",
+    "docco": "~0.7.0"
   },
   "dependencies": {
-    "underscore": "~1.5.2",
-    "JSONStream": "~0.7.1",
-    "request": "~2.27.0"
+    "JSONStream": "~0.9",
+    "request": "~2.27.0",
+    "underscore": "~1.8.3"
   },
   "licenses": {
     "type": "GPL"

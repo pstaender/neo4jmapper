@@ -1,17 +1,9 @@
 .DS_Store
 node_modules/*
 npm-debug.log
-# test + code coverage tmp files
-test/*.js
-test/*.map
-test/coverage.html
-src-cov/*
+/src-cov/*
 coverage.lcov
-docs/*
-examples/browser/neo4jmapper_complete.js
-examples/browser/neo4jmapper_complete.min.js
-examples/browser/test_*.js
-.sass-cache/*
-css/*
-js/*
-apidocs/*
+/docs/*
+/apidocs/*
+/test-js/*
+/coverage/*

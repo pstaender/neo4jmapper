@@ -3,5 +3,10 @@ node_js:
   - "0.11"
   - "0.10"
   - "0.8"
+services:
+  - neo4j
+rvm:
+  - 1.9.3
 before_install:
-  sudo make installneo4j
+  - make install-neo4j
+  - make start-neo4j

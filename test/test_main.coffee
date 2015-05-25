@@ -1,33 +1,20 @@
-# nodejs
-if root?
-  # external modules
-  expect        = require('expect.js')
-  Join          = require('join')
-  _             = require('underscore')
+# external modules
+expect        = require('expect.js')
+Join          = require('join')
+_             = require('underscore')
+require('mocha')
 
-  # load config
-  configForTest = require('./config')
+# load config
+configForTest = require('./config')
 
-  # neo4j mapper modules
-  Neo4j         = require("../#{configForTest.srcFolder}/")
+# neo4j mapper modules
+Neo4j         = require("../src/")
 
-  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client}  = new Neo4j {
-    url: configForTest.neo4jURL
-    onConnectionError: (err) ->
-      throw err
-  }
-# browser
-else
-  _ = window._
-  configForTest = _.extend({
-    doLog: false
-    wipeDatabase: false
-    neo4jURL: 'http://yourserver:0000/'
-  }, configForTest or {})
-  Join = window.Join
-  neo4jmapper = new window.Neo4jMapper(configForTest.neo4jURL)
-  {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client} = neo4jmapper
-  Neo4j = Neo4jMapper
+{Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client}  = new Neo4j {
+  url: configForTest.neo4jURL
+  onConnectionError: (err) ->
+    throw err
+}
 
 client.constructor::log = Graph::log = configForTest.doLog if configForTest.doLog
 
