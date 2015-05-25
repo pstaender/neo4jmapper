@@ -1,7 +1,6 @@
 # nodejs
 if root?
   # external modules
-  require('source-map-support').install()
   expect        = require('expect.js')
   Join          = require('join')
   _             = require('underscore')
@@ -10,7 +9,7 @@ if root?
   configForTest = require('./config')
 
   # neo4j mapper modules
-  Neo4j         = require("../#{configForTest.srcFolder}/index.js")
+  Neo4j         = require("../#{configForTest.srcFolder}/")
 
   {Graph,Node,Relationship,Path,Transaction,Neo4jRestful,helpers,client}  = new Neo4j {
     url: configForTest.neo4jURL

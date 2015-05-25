@@ -4,3 +4,4 @@
 --timeout 20000
 --check-leaks
 --bail
+--compilers coffee:coffee-script/register

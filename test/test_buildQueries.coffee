@@ -1,7 +1,6 @@
 # nodejs
 if root?
   # external modules
-  require('source-map-support').install()
   expect        = require('expect.js')
   Join          = require('join')
   _             = require('underscore')
