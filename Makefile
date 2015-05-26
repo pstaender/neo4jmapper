@@ -2,7 +2,7 @@
 REPORTER = spec
 
 test:
-	@NODE_ENV=test node_modules/mocha/bin/mocha --reporter $(REPORTER)
+	mocha
 
 test-coverage:
 	@NODE_ENV=test node_modules/istanbul/lib/cli.js cover _mocha -- -R $(REPORTER)
