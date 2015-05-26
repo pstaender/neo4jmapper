@@ -1,4 +1,3 @@
-
 Query = require('./query')
 
 class CypherQuery extends Query

@@ -7,7 +7,7 @@ Neo4jMapper   = require("../lib/")
 
 describe 'Building conditional parameters', ->
 
-  it.only 'expect to transform an object with conditional parameters', ->
+  it 'expect to transform an object with conditional parameters', ->
     cp = new ConditionalParameters(
       { $and : [ { "a.name": 1 }, { "b.name": 2} ] }
     )
@@ -29,7 +29,7 @@ describe 'Building conditional parameters', ->
 
 describe 'Building CypherQueries', ->
 
-  it 'expect to build a simple cypher query', ->
+  it.skip 'expect to build a simple cypher query', ->
 
     query = CypherQuery
       .start('start n = node(1), m = node(*), r = relationship(*)')
@@ -40,7 +40,7 @@ describe 'Building CypherQueries', ->
     console.log query.toString()
 
 
-  it 'more', ->
+  it.skip 'more', ->
     query = CypherQuery.start('_start_')
       .match('_match_')
       .onMatch([ '(on)-[r:RELTYPE ', { key1: 'value1', key2: 'value2' }, ']-(match)' ])

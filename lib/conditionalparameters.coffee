@@ -16,12 +16,9 @@ class ConditionalParameters
     if typeof options == 'object'
       @options = options
       # assign some options if they exists to current object
-      if typeof @options.valuesToParameters != 'undefined'
-        @valuesToParameters = @options.valuesToParameters
-      if typeof @options.identifier != 'undefined'
-        @identifier = @options.identifier
-      if typeof @options.operator != 'undefined'
-        @operator = @options.operator
+      @valuesToParameters = @options.valuesToParameters if @options.valuesToParameters?
+      @identifier = @options.identifier if @options.identifier?
+      @operator = @options.operator if @options.operator?
     return
   
   parameterRuleset: ->
@@ -64,11 +61,9 @@ class ConditionalParameters
 
   convert: (condition = @conditions, operator = @operator) ->
     property = null
-    options = _.extend({}, @defaultOptions, @options)
-    if options.firstLevel
-      options.firstLevel = false
-    if options.parametersStartCountAt
-      @parametersStartCountAt = options.parametersStartCountAt
+    options = _.extend({}, ConditionalParameters::options, @options)
+    options.firstLevel = false if options.firstLevel
+    @parametersStartCountAt = options.parametersStartCountAt if options.parametersStartCountAt
     # TODO: if $not : [ {name: 'a'}] ~> NOT (name = a)
     condition = [ condition ] if typeof condition is 'string' or typeof condition is 'object' and not condition.length > 0
     # AND
@@ -118,8 +113,7 @@ class ConditionalParameters
   identifier: 'n'
   conditions: null
   # options are used to prevent overriding object attributes on recursive calls
-  options: null
-  defaultOptions:
+  options:
     firstLevel: true
     identifier: null
   parameters: null

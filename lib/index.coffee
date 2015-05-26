@@ -18,11 +18,10 @@ class Neo4jMapper
 
   constructor: (options = {}) ->
     @client                 = new Neo4jRestful(options)
-    @Node                   = new Node(options, @client)
-    @Graph                  = new Graph(options, @client)
-    @Relationship           = new Relationship(options, @client)
-    @CypherQuery            = new CypherQuery(options, @client)
-    @ConditionalParameters  = new ConditionalParameters()
+    @Node                   = new Node(@client)
+    @Graph                  = new Graph( @client)
+    @Relationship           = new Relationship(@client)
+    # @CypherQuery            = new CypherQuery()
 
 Neo4jMapper.Node                  = Node
 Neo4jMapper.Graph                 = Graph  

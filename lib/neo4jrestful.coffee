@@ -57,29 +57,38 @@ class Neo4jRestful
       delete options.data
     options.method  = options.method.toUpperCase()
     options.headers = _.extend(@header, options.header or options.headers or {})
-    request options, (err, res) ->
-      return cb(err, res) if err
-      if res.statusCode >= 400
+    request options, (err, res) =>
+      @responseCallback(cb, err, res)
 
-        try
-          # console.log(res.body)
-          body = JSON.parse(res.body)
-          errors = for error in body.errors
-            e = new Error(error.message)
-            e.message = error.message
-            e.code = error.code
-            e.statusCode = res.statusCode
-            e
-        catch e
-          e = new Error("Unknown Error (#{res.statusCode})")
-          e.message = res.body
+  processResponseBody: (body) ->
+    data = body
+    data = data.data[0][0] if data.columns?.length is 1
+    data
+
+  responseCallback: (cb, err, res) ->
+    return cb(err, res) if err
+    if res.statusCode >= 400
+      # some error occured
+      try
+        # console.log(res.body)
+        body = JSON.parse(res.body)
+        errors = for error in body.errors
+          e = new Error(error.message)
+          e.message = error.message
+          e.code = error.code
           e.statusCode = res.statusCode
-          errors = [ e ]
-        
-        errors = errors[0] if errors.length is 1
-        
-        return cb(errors, res)
-      else
-        return cb(err, res)
-
+          e
+      catch e
+        e = new Error("Unknown Error (#{res.statusCode})")
+        e.message = res.body
+        e.statusCode = res.statusCode
+        errors = [ e ]
+      
+      errors = errors[0] if errors.length is 1
+      cb(errors, res)
+    else
+      # everything seems to be fine
+      data = if typeof @processResponseBody is 'function' then @processResponseBody(res.body) else res.body
+      cb(err, data, res)
+ 
 module.exports = Neo4jRestful
