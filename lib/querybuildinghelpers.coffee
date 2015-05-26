@@ -1,9 +1,58 @@
+_ = require('underscore')
+
 QueryBuildingHelpers = {}
 
-QueryBuildingHelpers.escapeProperty
+QueryBuildingHelpers.escapeProperty = (identifier, delimiter = '`') ->
+  return identifier
+  # # do we have s.th. like ?! appending
+  # appending = identifier.match(/^(.*)([\?\!]{1})$/) or ''
+  # # console.log(appending)
+  # if appending and appending[2]
+  #   identifier = appending[1]
+  #   appending = appending[2]
+  # # no escaping if last char is a delimiter or ?, because we expect that the identifier is already escaped somehow
+  # if new RegExp('' + delimiter + '{1}$').test(identifier)
+  #   return identifier
+  # # remove all delimiters `
+  # identifier = identifier.replace(new RegExp(delimiter, 'g'), '')
+  # if /^(.+?)\..+$/.test(identifier)
+  #   identifier = identifier.replace(/^(.+?)\.(.+)$/, '$1.' + delimiter + '$2' + delimiter)
+  # else
+  #   identifier = delimiter + identifier + delimiter
+  # identifier + appending
+
 QueryBuildingHelpers.valueToStringForCypherQuery
-QueryBuildingHelpers.cypherKeyValueToString
+
+QueryBuildingHelpers.cypherKeyValueToString = (key, originalValue, identifier, conditionalParametersObject) ->
+  value = originalValue
+  s = ''
+  # string that will be returned
+  if typeof conditionalParametersObject != 'object'
+    conditionalParametersObject = null
+  if typeof identifier == 'string'
+    if /^[nmr]\./.test(key)
+      key = key
+    else if /[\?\!]$/.test(key)
+      key = identifier + '.' + key
+    else
+      key = identifier + '.' + key
+  key = QueryBuildingHelpers.escapeProperty(key)
+  if _.isRegExp(value)
+    value = valueToStringForCypherQuery(value)
+    value = if conditionalParametersObject and conditionalParametersObject.valuesToParameters then (if conditionalParametersObject.addValue then conditionalParametersObject.addValue(value) else value) else '\'' + value + '\''
+    s = key + ' =~ ' + value
+  else
+    # convert to string
+    if _.isNumber(value) or _.isBoolean(value)
+      value = if conditionalParametersObject and conditionalParametersObject.valuesToParameters then (if conditionalParametersObject.addValue then conditionalParametersObject.addValue(value) else value) else valueToStringForCypherQuery(value)
+    else
+      value = if conditionalParametersObject and conditionalParametersObject.valuesToParameters then (if conditionalParametersObject.addValue then conditionalParametersObject.addValue(value) else value) else '\'' + escapeString(value) + '\''
+    s = key + ' = ' + value
+  s
+
 QueryBuildingHelpers.escapeString
+
+
 
 QueryBuildingHelpers.subkeySeperator = '.'
 

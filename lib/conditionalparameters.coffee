@@ -63,20 +63,15 @@ class ConditionalParameters
     # call cypherKeyValueToString with this object context
     QueryBuildingHelpers.cypherKeyValueToString(key, originalValue, identifier, @)
 
-  convert: (condition, operator) ->
+  convert: (condition = @conditions, operator = @operator) ->
     property = null
-    if typeof condition == 'undefined'
-      condition = @conditions
     options = _.extend({}, @defaultOptions, @options)
     if options.firstLevel
       options.firstLevel = false
     if options.parametersStartCountAt
       @parametersStartCountAt = options.parametersStartCountAt
     # TODO: if $not : [ {name: 'a'}] ~> NOT (name = a)
-    if typeof condition == 'string'
-      condition = [ condition ]
-    if typeof operator == 'undefined'
-      operator = @operator
+    condition = [ condition ] if typeof condition is 'string' or typeof condition is 'object' and not condition.length > 0
     # AND
     if typeof condition == 'object'
       for key of condition
@@ -104,8 +99,8 @@ class ConditionalParameters
               if value == k
                 properties.push hasAttribute + value
                 # do we have s.th. like { name: { $IN: [ … ] } }
-              else if typeof value == 'object' and value != null and Object.keys(value).length == 1 and typeof ConditionalParameters.parameterRuleset[Object.keys(value)[0]] == 'function'
-                properties.push hasAttribute + ' ' + (identifierWithProperty or k) + ' ' + ConditionalParameters.parameterRuleset[Object.keys(value)[0]](value[Object.keys(value)[0]])
+              else if typeof value == 'object' and value != null and Object.keys(value).length == 1 and typeof @parameterRuleset[Object.keys(value)[0]] == 'function'
+                properties.push hasAttribute + ' ' + (identifierWithProperty or k) + ' ' + @parameterRuleset[Object.keys(value)[0]](value[Object.keys(value)[0]])
               else
                 properties.push hasAttribute + @cypherKeyValueToString(k, value, if /^[a-zA-Z\_\-]+\./.test(k) then null else options.identifier)
           # merge sub conditions

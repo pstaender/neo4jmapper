@@ -17,16 +17,18 @@ class Neo4jMapper
   CypherQuery:          null
 
   constructor: (options = {}) ->
-    @client       = new Neo4jRestful(options)
-    @Node         = new Node(options, @client)
-    @Graph        = new Graph(options, @client)
-    @Relationship = new Relationship(options, @client)
-    @CypherQuery  = new CypherQuery(options, @client)
+    @client                 = new Neo4jRestful(options)
+    @Node                   = new Node(options, @client)
+    @Graph                  = new Graph(options, @client)
+    @Relationship           = new Relationship(options, @client)
+    @CypherQuery            = new CypherQuery(options, @client)
+    @ConditionalParameters  = new ConditionalParameters()
 
-Neo4jMapper.Node          = Node
-Neo4jMapper.Graph         = Graph  
-Neo4jMapper.Relationship  = Relationship
-Neo4jMapper.CypherQuery   = CypherQuery
-Neo4jMapper.QueryBuildingHelpers = QueryBuildingHelpers
+Neo4jMapper.Node                  = Node
+Neo4jMapper.Graph                 = Graph  
+Neo4jMapper.Relationship          = Relationship
+Neo4jMapper.CypherQuery           = CypherQuery
+Neo4jMapper.QueryBuildingHelpers  = QueryBuildingHelpers
+Neo4jMapper.ConditionalParameters = ConditionalParameters
 
 module.exports = Neo4jMapper
