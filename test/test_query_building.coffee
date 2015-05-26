@@ -1,5 +1,5 @@
 expect        = require('expect.js')
-Join          = require('join')
+# Join          = require('join')
 
 Neo4jMapper   = require("../lib/")
 

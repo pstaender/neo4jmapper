@@ -1,7 +1,4 @@
 expect        = require('expect.js')
-Join          = require('join')
-#_             = require('underscore')
-#require('mocha')
 
 config = {
   url: "http://localhost:7000"
