@@ -8,5 +8,5 @@ services:
 rvm:
   - 1.9.3
 before_install:
-  - make install-neo4j
-  - make start-neo4j
+  - ruby test/neo4j_instances.rb install
+  - ruby test/neo4j_instances.rb start

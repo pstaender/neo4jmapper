@@ -1,7 +1,2 @@
---require should
---reporter spec
---ui bdd
 --timeout 20000
---check-leaks
---bail
 --compilers coffee:coffee-script/register

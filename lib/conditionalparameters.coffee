@@ -38,11 +38,10 @@ class ConditionalParameters
       @$IN value
 
   addValue: (value) ->
-    if !@parameters
-      @parameters = {}
+    @parameters = {} unless @parameters
     property = '_value' + @parametersStartCountAt + @parametersCount() + '_'
     @parameters[property] = value
-    '{' + property + '}'
+    '{ ' + property + ' }'
 
   values: ->
     values = []
@@ -95,7 +94,7 @@ class ConditionalParameters
                 else
                   identifierWithProperty = k
                 identifierWithProperty = QueryBuildingHelpers.escapeProperty(identifierWithProperty)
-              hasAttribute = if identifierWithProperty then 'HAS (' + identifierWithProperty + ') AND ' else ''
+              hasAttribute = ''#if identifierWithProperty then 'HAS (' + identifierWithProperty + ') AND ' else ''
               if value == k
                 properties.push hasAttribute + value
                 # do we have s.th. like { name: { $IN: [ … ] } }

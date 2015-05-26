@@ -9,10 +9,10 @@ describe 'Building conditional parameters', ->
 
   it.only 'expect to transform an object with conditional parameters', ->
     cp = new ConditionalParameters(
-      { $and : [ { a: 1 }, { b: 2} ] }
+      { $and : [ { "a.name": 1 }, { "b.name": 2} ] }
     )
     expect(cp.toString()).to.be(
-      "( ( HAS (a) AND a = {_value00_} AND HAS (b) AND b = {_value01_} ) )"
+      "( ( a.name = { _value00_ } AND b.name = { _value01_ } ) )"
     )
     expect(JSON.stringify(cp.parameters)).to.be(
       '{"_value00_":1,"_value01_":2}'
@@ -21,7 +21,7 @@ describe 'Building conditional parameters', ->
       [ { 'n.city': 'berlin' } , $and: [ { 'n.name': 'peter' }, $not: [ { 'n.name': 'pedro' } ] ] ]
     )
     expect(cp.toString()).to.be(
-      "( HAS (n.city) AND n.city = {_value00_} AND ( HAS (n.name) AND n.name = {_value01_} AND NOT ( HAS (n.name) AND n.name = {_value02_} ) ) )"
+      "( n.city = { _value00_ } AND ( n.name = { _value01_ } AND NOT ( n.name = { _value02_ } ) ) )"
     )
     expect(JSON.stringify(cp.parameters)).to.be(
       '{"_value00_":"berlin","_value01_":"peter","_value02_":"pedro"}'
@@ -29,15 +29,18 @@ describe 'Building conditional parameters', ->
 
 describe 'Building CypherQueries', ->
 
-  it.skip 'expect to build a simple cypher query', ->
+  it 'expect to build a simple cypher query', ->
 
     query = CypherQuery
       .start('start n = node(1), m = node(*), r = relationship(*)')
       .add(' my Customer Query')
       .onCreate(' ON   CREATE whatever')
-      .toString()
+      .end()
+    
+    console.log query.toString()
 
-  it.skip 'more', ->
+
+  it 'more', ->
     query = CypherQuery.start('_start_')
       .match('_match_')
       .onMatch([ '(on)-[r:RELTYPE ', { key1: 'value1', key2: 'value2' }, ']-(match)' ])
