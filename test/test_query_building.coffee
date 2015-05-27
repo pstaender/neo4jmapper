@@ -1,9 +1,7 @@
 expect        = require('expect.js')
 # Join          = require('join')
 
-Neo4jMapper   = require("../lib/")
-
-{CypherQuery,QueryBuildingHelpers,ConditionalParameters} = Neo4jMapper
+{client,Graph,Node,Relationship,ConditionalParameters} = require('./neoj4mapperForTesting')
 
 describe 'Building conditional parameters', ->
 
