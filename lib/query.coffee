@@ -62,7 +62,11 @@ class Query
 
     @parameters = params if params isnt null and typeof params is 'object'
   
-  setParameters: (params) -> @parameters = params
+  setParameters: (params) ->
+    @parameters = params
+    @
+
+  getParameters: -> @parameters
 
   add: (name, data, cb) ->
     if typeof data isnt 'function' and typeof data isnt 'string' and typeof data isnt 'object'

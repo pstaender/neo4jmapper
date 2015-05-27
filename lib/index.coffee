@@ -25,8 +25,10 @@ class Neo4jMapper
 
     @Graph                  = new Graph().setClient(@client)
     @Node                   = new Node().setGraph(@Graph)
+    @Relationship           = new Relationship(@client)
 
-    # @Relationship           = new Relationship(@client)
+    @Graph.Node(@Node)
+    @Graph.Relationship(@Relationship)
 
 
     #@Node.Graph = Graph

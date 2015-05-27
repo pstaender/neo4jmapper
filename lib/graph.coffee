@@ -1,6 +1,8 @@
 CypherQuery = require('./cypherquery')
 
-client = null
+_client_ = null
+_Node_ = null
+_Relationship_ = null
 
 class GraphQuery extends CypherQuery
 
@@ -13,10 +15,10 @@ class GraphQuery extends CypherQuery
 
   execute: (cb) ->
     return @ if typeof cb isnt 'function'
-    if client is null
+    if _client_ is null
       cb(Error("No restful client attached"), null) 
       return @
-    client.post 'db/data/cypher', {
+    _client_.post 'db/data/cypher', {
       data:
         query: @toString()
         params: @parameters
@@ -28,23 +30,42 @@ class GraphQuery extends CypherQuery
 
 class Graph
 
+  constructor: ->
+
+    
+
+    @Node = (Node) ->
+      _Node_ = Node if typeof Node isnt 'undefined'
+      _Node_
+
+    @Relationship = (Relationship) ->
+      _Relationship_ = Relationship if typeof Relationship isnt 'undefined'
+      _Relationship_
+
   query: (data, parameters = {}, cb) ->
     cb = parameters if typeof parameters is 'function'
     query = new GraphQuery(data, parameters, cb)
-    query.client = client
+    query.client = _client_
     query.exec(cb)
     query
 
-  setClient: (cl) ->
-    client = cl
+  setClient: (client) ->
+    _client_ = client
     @
 
-  getClient: ->
-    client
+  getClient: -> _client_
 
-  # client: (cl) ->
-  #   client = cl if typeof client isnt 'undefined'
-  #   client
+  setNode: (Node) ->
+    _Node_ = Node
+    @
+
+  getNode: -> _Node_
+
+  setRelationship: (Relationship) ->
+    _Relationship_ = Relationship
+    @
+
+  getRelationship: -> _Relationship_
 
   start:  (data, cb) -> @query().start(data).exec(cb)
   create: (data, cb) -> @query().start(data).exec(cb)

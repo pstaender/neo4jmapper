@@ -20,28 +20,28 @@ class Node
     # set data
     @setData(data)
 
-    node = {}
-    labels = []
+    _node_ = {}
+    _labels_ = []
     
-    @node = (newNode = null) ->
-      node = newNode if newNode isnt null
-      node
+    @node = (node = null) ->
+      _node_ = node if node isnt null
+      _node_
 
     @labels = (labelOrLabels) =>
       if typeof labelOrLabels isnt 'undefined'
-        # reset labels
-        @label = null
-        labels = []
+        # reset  labels
+        @label   = null
+        _labels_ = []
       #if typeof labelOrLabels is 'undefined'
       #  @checkLabels()
       if typeof labelOrLabels is 'string'
-        @label = labelOrLabels
-        labels = [ labelOrLabels ]
+        @label   = labelOrLabels
+        _labels_ = [ labelOrLabels ]
       else if _.isArray(labelOrLabels)
-        labels = labelOrLabels
-        @label = labelOrLabels[0] or null
+        _labels_ = labelOrLabels
+        @label   = labelOrLabels[0] or null
 
-      labels
+      _labels_
 
     # set label(s)
     @labels(label)
@@ -164,6 +164,57 @@ class Node
     Graph.query(queryString, { id }, @_processQueryResult(cb))
 
   findById: (id, cb) -> @findByID(id, cb)
+
+  createRelationTo: (node, type, data, cb, direction = 'outgoing') ->
+    @createRelation(node, type, direction, data, cb)
+
+  createRelationFrom: (node, type, data, cb, direction = 'incoming') ->
+    @createRelation(node, type, direction, data, cb)
+
+  createRelationBetween: (node, type, data, cb, direction = 'bidirectional') ->
+    @createRelation(node, type, direction, data, cb)
+
+  createRelation: (node, type, direction = 'both', data, cb) ->
+    if typeof data is 'function'
+      cb = data
+      data = {}
+
+    self = @
+    from = @getID()
+    to = if typeof node is 'number' then node else node.getID()
+
+    l_edge = '<-'
+    r_edge = '->'
+
+    if direction is 'outgoing'
+      l_edge = '-'
+    else if direction is 'incoming'
+      r_edge = '-'
+
+    throw new Error("Predecessor needs to have an id") if typeof from isnt 'number'
+    throw new Error("Successor needs to have/be an id") if typeof to isnt 'number'
+    if typeof type is 'string'
+      type = type.replace(/[a-zA-Z\_\-0-9\.]/i,'')
+    throw new Error("Relationtype is mandatory (string with min. 1 character)") if typeof type isnt 'string' or type.trim().length is 0
+    
+    data ?= {}
+
+    queryString = """
+    START a = node({ from }), b = node({ to })
+    CREATE (a)#{l_edge}[r:#{type} { properties }]#{r_edge}(b)
+    RETURN r
+    """
+    Graph
+      .query(queryString)
+      .setParameters({
+        from: from
+        to: to
+        properties: data
+      })
+      .exec (err, r) ->
+
+        # console.log err, self.Relationship()#.createFromResponse(r)
+        cb(null, null) if typeof cb is 'function'
 
   reload: (cb) ->
     id = @getID()
