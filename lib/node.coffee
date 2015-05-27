@@ -4,8 +4,10 @@ Graph = null
 
 class Node
 
+
   label: null
-  labels: []
+  labels: -> []
+  node: -> {}
   id: null
 
   constructor: (data = {}, label = null, cb = null) ->
@@ -14,62 +16,102 @@ class Node
       cb = data
       data = {}
     if typeof label is 'function'
-      db = label
+      cb = label
       label = null
-    # set label(s)
-    @setLabel(label)
     # set data
     @setData(data)
+
+    node = {}
+    labels = []
+    
+    @node = (newNode = null) ->
+      node = newNode if newNode isnt null
+      node
+
+    @labels = (labelOrLabels) ->
+      #if typeof labelOrLabels is 'undefined'
+      #  @checkLabels()
+      if typeof labelOrLabels is 'string'
+        @label = labelOrLabels
+        labels = [ labelOrLabels ]
+      else if _.isArray(labelOrLabels)
+        labels = labelOrLabels
+        @label = labelOrLabels[0]
+      labels
+
+    # set label(s)
+    @labels(label)
+
     @save(cb) if typeof cb is 'function'
 
   create: (data, label, cb)->
     new Node(data, label, cb)
 
-  setGraph: (G) ->
-    Graph =
+  setGraph: (_Graph) ->
+    Graph = _Graph
     @
   
   getGraph: ->
     Graph
 
   save: (cb) ->
+    self = @
     if typeof cb is 'function'
       # build query
       # CREATE (n:Person { name : 'Andres', title : 'Developer' })
-      labels = if @labels?.length > 0 then ':'+@labels.join(':') else ''
-      data = @getData() 
-      attributes = for attr of data
-        "#{attr}: {#{attr}}"
-      dataString = "{ #{attributes.join(', ')} }"
+      labels = if @labels().length > 0 then ':'+@labels().join(':') else ''
+      data = @getData()
+      queryString = """
+      CREATE (n#{labels} { properties })
+      RETURN n
+      """
+      #console.log Graph
+      query = Graph.query queryString, {
+        properties: data
+      }, (err, node) ->
+        return cb(err, node) if err or not _.isObject(node)
+        self.applyNodeFromDatabase node, ->
+          cb(err,self)
+    @
 
-      query = Graph.create("(n#{labels})")
-      console.log query
-      cb(null, null)
+  applyNodeFromDatabase: (node, cb)->
+    if _.isObject(node)
+      @node(node)
+      # self: 'http://localhost:7000/db/data/node/49'
+      id = Number(node.self.replace(/^.+?\/([0-9]+)$/,'$1'))
+      @id = id
+      @setData(node.data)
+
+    cb(null, null) if typeof cb is 'function'
     @
 
   getData: ->
     data = {}
+    prototype = Object.getPrototypeOf(@)
     for attr in Object.getOwnPropertyNames(@)
       # we are sorting out attributes, which exists on prototype
       # e.g. [ 'label', 'labels', 'id' ]
-      data[attr] = @[attr] if typeof @.__proto__[attr] is 'undefined'
+      data[attr] = @[attr] if typeof prototype[attr] is 'undefined'
     data
 
-  checkLabels: ->
-    if typeof @labels isnt 'undefined' and _.isArray(@labels)
-      @label = @labels[0]
-    else if typeof @label is 'string' and not _.isArray(@labels)
-      @labels = [ @label ]
+  # checkLabels: ->
+  #   if _.isArray(@labels())
+  #     @label = @labels()[0]
+  #   else if typeof @label is 'string' and not _.isArray(@labels)
+  #     @labels = [ @label ]
 
-  setLabel: (labelOrLabels) ->
-    if typeof labelOrLabels is 'undefined'
-      @checkLabels()
-    else if typeof labelOrLabels is 'string'
-      @label = labelOrLabels
-      @labels = [ labelOrLabels ]
-    else if _.isArray(labelOrLabels)
-      @labels = labelOrLabels
-      @label = labelOrLabels[0]
+  # setLabel: (labelOrLabels) ->
+  #   if typeof labelOrLabels is 'undefined'
+  #     @checkLabels()
+  #   else if typeof labelOrLabels is 'string'
+  #     @label = labelOrLabels
+  #     @labels = [ labelOrLabels ]
+  #   else if _.isArray(labelOrLabels)
+  #     @labels = labelOrLabels
+  #     @label = labelOrLabels[0]
+
+  reload: ->
+    # load all data (labels)
 
   setData: (data) ->
     excludes = [ "id", "label", "labels" ]
@@ -79,12 +121,6 @@ class Node
         throw Error("data can't contain '#{exclude}' field. Set '#{exclude}' on node object manually") if typeof data[exclude] isnt 'undefined'
       for attr of data
         @[attr] = data[attr]
-    
-
-
-#   constructor: (client) ->    
-# Node.findByID = (id, cb) ->
-
 
 Node.create = Node::create
 

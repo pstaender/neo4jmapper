@@ -9,9 +9,14 @@ class Query
 
   cb: null
   
-  constructor: (data, cb) ->
+  constructor: (data, parameters = {}, cb) ->
     @blocks = []
-    @parameters = {}
+    # if new Query({ name: 'Dave' }, function(err, data) { })
+    if typeof parameters is 'function'
+      cb = parameters
+      @setParameters({})
+    else if _.isObject(parameters)
+      @setParameters(parameters)
     @add(data) if typeof data is 'string'
     @cb = cb   if typeof cb is 'function' 
 
@@ -56,7 +61,8 @@ class Query
     @
 
     @parameters = params if params isnt null and typeof params is 'object'
-  setParameters: (params) ->
+  
+  setParameters: (params) -> @parameters = params
 
   add: (name, data, cb) ->
     if typeof data isnt 'function' and typeof data isnt 'string' and typeof data isnt 'object'

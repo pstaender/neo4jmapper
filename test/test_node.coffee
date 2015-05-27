@@ -29,18 +29,24 @@ describe 'Working with Node', ->
     expect(dave.label).to.be 'Person'
     expect(dave.name).to.be 'Dave'
     expect(dave.labels).to.have.length 1
-    expect(dave.labels[0]).to.be 'Person'
+    expect(dave.id).to.be null
+    expect(dave.labels()[0]).to.be 'Person'
 
     labels = [ 'Person', 'Drummer' ]
     dave = Node.create { name: 'Dave' }, labels
     expect(dave.name).to.be 'Dave'
     expect(dave.label).to.be 'Person'
-    expect(dave.labels).to.be labels
+    expect(dave.id).to.be null
+    expect(dave.labels()).to.be labels
 
   it 'create and persist a node', (done) ->
     Node.create { name: 'Dave' }, 'Person', (err, dave) ->
-      console.log err, dave
-      done()
+      expect(err).to.be null
+      expect(dave.id).to.be.above -10
+      Node.create { name: 'philipp' }, (err, philipp) ->
+        expect(err).to.be null
+        expect(dave.id).to.be.above -10
+        done()
     
     
 

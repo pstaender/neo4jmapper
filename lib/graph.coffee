@@ -28,8 +28,9 @@ class GraphQuery extends CypherQuery
 
 class Graph
 
-  query: (data, cb) ->
-    query = new GraphQuery(data)
+  query: (data, parameters = {}, cb) ->
+    cb = parameters if typeof parameters is 'function'
+    query = new GraphQuery(data, parameters, cb)
     query.client = client
     query.exec(cb)
     query
