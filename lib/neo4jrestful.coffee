@@ -27,7 +27,7 @@ class Neo4jRestful
     throw Error("2nd or 3rd argument must be a callback to send a request") if typeof cb isnt 'function'
     {options,cb}
 
-  _prepareURL: (url) ->
+  _prepareURL: (url = '') ->
     # we don't change the url, if we have an absolute url
     return url if /^http(s)*\:\/\//.test(url)
     server = @server.replace(/\/+$/,'')
@@ -71,22 +71,34 @@ class Neo4jRestful
     return cb(err, res) if err
     if res.statusCode >= 400
       # some error occured
-      try
-        body = JSON.parse(res.body)
-        errors = for error in body.errors
-          e = new Error(error.message)
-          e.message = error.message
-          e.code = error.code
-          e.statusCode = res.statusCode
-          e
-      catch e
-        e = new Error("Unknown Error (#{res.statusCode})")
-        e.message = res.body
-        e.statusCode = res.statusCode
-        errors = [ e ]
+      full = {}
+      if _.isObject(res.body)
+        message = full = res.body 
+      else
+        try
+          message = JSON.parse(res.body)
+        catch e
+          message = full = res.body
+      message = message.message if message?.message
+      e = new Error(message)
+      e.statusCode = res.statusCode
+      e.full = full
+      # try
+      #   body = JSON.parse(res.body)
+      #   errors = for error in body.errors
+      #     e = new Error(error.message)
+      #     e.message = error.message
+      #     e.code = error.code
+      #     e.statusCode = res.statusCode
+      #     e
+      # catch e
+      #   e = new Error("Unknown Error (#{res.statusCode})")
+      #   e.message = res.body
+      #   e.statusCode = res.statusCode
+      #   errors = [ e ]
       
-      errors = errors[0] if errors.length is 1
-      cb(errors, res)
+      #errors = errors[0] if errors.length is 1
+      cb(e, res)
     else
       # everything seems to be fine
       data = if typeof @processResponseBody is 'function' then @processResponseBody(res.body) else res.body

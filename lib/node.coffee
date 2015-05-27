@@ -4,7 +4,6 @@ Graph = null
 
 class Node
 
-
   label: null
   labels: -> []
   node: -> {}
@@ -59,41 +58,80 @@ class Node
   getGraph: ->
     Graph
 
-  save: (cb) ->
-    self = @
-    if typeof cb is 'function'
-      # build query
-      # CREATE (n:Person { name : 'Andres', title : 'Developer' })
-      labels = if @labels().length > 0 then ':'+@labels().join(':') else ''
-      data = @getData()
-      queryString = """
-      CREATE (n#{labels} { properties })
-      RETURN n
-      """
-      query = Graph.query queryString, {
-        properties: data
-      }, @_processQueryResult(cb)
+  setLabels: (labels) ->
+    @labels(labels)
     @
+
+  getLabels: -> @labels()
+
+  setLabel: (label) ->
+    @setLabels(label)
+
+  getLabel: () -> @label or @labels()[0]
+  
+  addLabels: (labels) ->
+    @labels(_.union(@labels(), labels))
+    @
+
+  addLabel: (label) -> @addLabels(_.union(@labels(), [ label ]))
+
+  save: (cb) ->
+    if typeof cb is 'function'
+      # create or update?
+      if @getID() isnt null
+        @update(cb)
+      else
+        @saveAsNew(cb)
+    @
+
+  saveAsNew: (cb) ->
+    # build query
+    # CREATE (n:Person { name : 'Andres', title : 'Developer' })
+    labels = if @labels().length > 0 then ':'+@labels().join(':') else ''
+    data = @getData()
+    queryString = """
+    CREATE (n#{labels} { properties })
+    RETURN n, labels(n)
+    """
+    query = Graph.query queryString, {
+      properties: data
+    }, @_processQueryResult(cb)
+
+  update: (cb) ->
+    data = @getData()
+    id = @getID()
+    unless id
+      cb(new Error('No id on node'), null)
+      return @
+    queryString = """
+    START n=node({ id })
+    SET n = { properties }\n
+    """
+    labels = @labels()
+    if labels.length > 0
+      queryString += """
+      SET n :#{labels.join(':')}\n
+      """
+    queryString += """
+    RETURN n
+    """
+    #console.log queryString, data
+    #throw new Error("TODO: implement")
+    query = Graph.query queryString, {
+      properties: data
+      id: id
+    }, @_processQueryResult(cb)
 
   _processQueryResult: (cb) ->
     self = @
-    loadLabels = true # TODO
-    tempcb = (err, node) ->
+    lambda = (err, node) ->
       return cb(err, node) if err or not _.isObject(node)
-      unless loadLabels
-        self._assignNodeFromDatabase node, ->
-          cb(err,self)
-      else
-        Graph.getClient().get node.labels, (temp_err, labels) ->
-          unless temp_err
-            try
-              labels = JSON.parse(labels)
-              self.labels(labels)
-            catch e
-              labels = labels
-              self.label = labels if typeof labels is 'string'
-          self._assignNodeFromDatabase node, ->
-            cb(err,self)
+      if node?.columns?.length is 2
+        node = node.data[0]
+        self.labels(node[1])
+        node = node[0]
+      self._assignNodeFromDatabase node, ->
+        cb(err,self)
 
   _assignNodeFromDatabase: (node, cb)->
     if _.isObject(node)
@@ -121,32 +159,16 @@ class Node
     throw Error("'id' must be a number") if typeof id isnt 'number'
     queryString = """
     START n=node({id})
-    RETURN n
+    RETURN n, labels(n)
     """
     Graph.query(queryString, { id }, @_processQueryResult(cb))
 
   findById: (id, cb) -> @findByID(id, cb)
 
-
-  # checkLabels: ->
-  #   if _.isArray(@labels())
-  #     @label = @labels()[0]
-  #   else if typeof @label is 'string' and not _.isArray(@labels)
-  #     @labels = [ @label ]
-
-  # setLabel: (labelOrLabels) ->
-  #   if typeof labelOrLabels is 'undefined'
-  #     @checkLabels()
-  #   else if typeof labelOrLabels is 'string'
-  #     @label = labelOrLabels
-  #     @labels = [ labelOrLabels ]
-  #   else if _.isArray(labelOrLabels)
-  #     @labels = labelOrLabels
-  #     @label = labelOrLabels[0]
-
-  # reload: ->
-  #   # load all data (labels)
-  #   id = @node().
+  reload: (cb) ->
+    id = @getID()
+    @findByID(id, cb) if typeof id is 'number' 
+    @
 
   setData: (data) ->
     excludes = [ "id", "label", "labels" ]

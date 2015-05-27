@@ -60,13 +60,65 @@ describe 'Working with Node', ->
 
   it 'expect to find a node by id', (done) ->
     Node.create { name: 'Dave' }, 'Person', (err, dave) ->
-      expect(err).to.be null
-      id = dave.id
+      id = dave.getID()
       expect(id).to.be.above -100
+      expect(dave.id).to.be id
       Node.findByID id, (err, dave) ->
         expect(err).to.be null
         expect(dave.id).to.be id
         done()
-    
+
+  it 'expect to reload a node', (done) ->
+    Node.create { name: 'Dave' }, 'Person', (err, dave) ->
+      id = dave.getID()
+      expect(id).to.be.a 'number'
+      dave.reload (err, reloadedDave) ->
+        expect(reloadedDave.getID()).to.be id
+        expect(reloadedDave.name).to.be 'Dave'
+        done()
+
+  it 'expect to add one ore more labels', ->
+    dave = Node.create({ name: 'Dave' })
+    expect(dave.labels()).to.have.length 0
+    dave.setLabel("Person")
+    expect(dave.labels()).to.have.length 1
+    expect(dave.labels()[0]).to.be "Person"
+    expect(dave.label).to.be "Person"
+    dave.setLabels(["Drummer","Singer"])
+    expect(dave.labels()).to.have.length 2
+    expect(dave.labels().join(',')).to.be "Drummer,Singer"
+    expect(dave.label).to.be "Drummer"
+    dave.addLabel("Person")
+    expect(dave.labels()).to.have.length 3
+    expect(dave.labels().join(',')).to.be "Drummer,Singer,Person"
+    expect(dave.label).to.be "Drummer"
+    dave.addLabels(["Musician","Guitarist"])
+    expect(dave.labels()).to.have.length 5
+    expect(dave.labels().join(',')).to.be "Drummer,Singer,Person,Musician,Guitarist"
+    expect(dave.label).to.be "Drummer"
+
+  it 'expect to update a node', (done) ->
+    Node.create { name: 'Dave', from: 'Seattle' }, 'Person', (err, dave) ->
+      Node.findByID dave.id, (err, foundDave) ->
+        expect(foundDave.id).to.be dave.id
+        expect(foundDave.from).to.be.equal 'Seattle'
+        foundDave.from = 'Los Angeles'
+        foundDave.age = 40
+        foundDave
+          .setLabels(["Musician","Drummer"])
+          .addLabel("Singer")
+          .save (err, updatedDave) ->
+            expect(err).to.be null
+            expect(updatedDave.getID()).to.be foundDave.id
+            expect(updatedDave.id).to.be foundDave.getID()
+            Node.findByID dave.id, (err, node) ->
+              expect(node.age).to.be 40
+              expect(node.name).to.be 'Dave'
+              expect(node.from).to.be 'Los Angeles'
+              expect(node.labels()).to.have.length 4
+              expect(node.labels().join(',')).to.be.equal "Person,Drummer,Musician,Singer"
+              expect(node.label).to.be.equal "Person"
+              expect(JSON.stringify(node.getData())).to.be JSON.stringify(updatedDave.getData())
+              done()
 
   
