@@ -38,9 +38,13 @@ class Graph
   setClient: (cl) ->
     client = cl
     @
-  
+
   getClient: ->
     client
+
+  # client: (cl) ->
+  #   client = cl if typeof client isnt 'undefined'
+  #   client
 
   start:  (data, cb) -> @query().start(data).exec(cb)
   create: (data, cb) -> @query().start(data).exec(cb)

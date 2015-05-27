@@ -28,6 +28,8 @@ class Neo4jRestful
     {options,cb}
 
   _prepareURL: (url) ->
+    # we don't change the url, if we have an absolute url
+    return url if /^http(s)*\:\/\//.test(url)
     server = @server.replace(/\/+$/,'')
     url = url.replace(/^\/+/,'')
     "#{server}/#{url}"
@@ -70,7 +72,6 @@ class Neo4jRestful
     if res.statusCode >= 400
       # some error occured
       try
-        # console.log(res.body)
         body = JSON.parse(res.body)
         errors = for error in body.errors
           e = new Error(error.message)

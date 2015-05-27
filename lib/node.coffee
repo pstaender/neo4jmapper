@@ -28,7 +28,11 @@ class Node
       node = newNode if newNode isnt null
       node
 
-    @labels = (labelOrLabels) ->
+    @labels = (labelOrLabels) =>
+      if typeof labelOrLabels isnt 'undefined'
+        # reset labels
+        @label = null
+        labels = []
       #if typeof labelOrLabels is 'undefined'
       #  @checkLabels()
       if typeof labelOrLabels is 'string'
@@ -36,7 +40,8 @@ class Node
         labels = [ labelOrLabels ]
       else if _.isArray(labelOrLabels)
         labels = labelOrLabels
-        @label = labelOrLabels[0]
+        @label = labelOrLabels[0] or null
+
       labels
 
     # set label(s)
@@ -65,25 +70,43 @@ class Node
       CREATE (n#{labels} { properties })
       RETURN n
       """
-      #console.log Graph
       query = Graph.query queryString, {
         properties: data
-      }, (err, node) ->
-        return cb(err, node) if err or not _.isObject(node)
-        self.applyNodeFromDatabase node, ->
-          cb(err,self)
+      }, @_processQueryResult(cb)
     @
 
-  applyNodeFromDatabase: (node, cb)->
+  _processQueryResult: (cb) ->
+    self = @
+    loadLabels = true # TODO
+    tempcb = (err, node) ->
+      return cb(err, node) if err or not _.isObject(node)
+      unless loadLabels
+        self._assignNodeFromDatabase node, ->
+          cb(err,self)
+      else
+        Graph.getClient().get node.labels, (temp_err, labels) ->
+          unless temp_err
+            try
+              labels = JSON.parse(labels)
+              self.labels(labels)
+            catch e
+              labels = labels
+              self.label = labels if typeof labels is 'string'
+          self._assignNodeFromDatabase node, ->
+            cb(err,self)
+
+  _assignNodeFromDatabase: (node, cb)->
     if _.isObject(node)
       @node(node)
-      # self: 'http://localhost:7000/db/data/node/49'
-      id = Number(node.self.replace(/^.+?\/([0-9]+)$/,'$1'))
-      @id = id
+      @id = @getID()
       @setData(node.data)
-
     cb(null, null) if typeof cb is 'function'
     @
+
+  getID: (url = @node()?.self) ->
+    # self: 'http://localhost:7000/db/data/node/49'
+    id = Number(url?.replace(/^.+?\/([0-9]+)$/,'$1'))
+    if isNaN(id) then null else id
 
   getData: ->
     data = {}
@@ -93,6 +116,17 @@ class Node
       # e.g. [ 'label', 'labels', 'id' ]
       data[attr] = @[attr] if typeof prototype[attr] is 'undefined'
     data
+
+  findByID: (id, cb) ->
+    throw Error("'id' must be a number") if typeof id isnt 'number'
+    queryString = """
+    START n=node({id})
+    RETURN n
+    """
+    Graph.query(queryString, { id }, @_processQueryResult(cb))
+
+  findById: (id, cb) -> @findByID(id, cb)
+
 
   # checkLabels: ->
   #   if _.isArray(@labels())
@@ -110,8 +144,9 @@ class Node
   #     @labels = labelOrLabels
   #     @label = labelOrLabels[0]
 
-  reload: ->
-    # load all data (labels)
+  # reload: ->
+  #   # load all data (labels)
+  #   id = @node().
 
   setData: (data) ->
     excludes = [ "id", "label", "labels" ]
