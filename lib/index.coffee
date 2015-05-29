@@ -27,12 +27,11 @@ class Neo4jMapper
     @Node                   = new Node().setGraph(@Graph)
     @Relationship           = new Relationship(@client)
 
-    @Graph.Node(@Node)
-    @Graph.Relationship(@Relationship)
+    @Graph.setNode(@Node)
+    @Graph.setRelationship(@Relationship)
 
-
-    #@Node.Graph = Graph
-    #@Relationship.Graph = Graph
+    @Node.setGraph(Graph)
+    # @Relationship.setGraph(Graph)
     
     # this is just a shorthand to make other methods easy available
     # on the created Neo4jMapper instance

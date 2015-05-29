@@ -1,15 +1,23 @@
-_ = require('underscore')
+_           = require('underscore')
+GraphObject = require('./graphobject')
 
-Graph = null
+_Graph_ = null
 
-class Node
-
+class Node extends GraphObject
+  
   label: null
   labels: -> []
   node: -> {}
   id: null
+  query: null
+
+  excludedDataFields: [ "id", "label", "labels" ]
+
+  node: (node) ->
+    @dbObject(node)
 
   constructor: (data = {}, label = null, cb = null) ->
+    super
     # sorting arguments; all arguments are optional
     if typeof data is 'function'
       cb = data
@@ -23,9 +31,13 @@ class Node
     _node_ = {}
     _labels_ = []
     
-    @node = (node = null) ->
-      _node_ = node if node isnt null
-      _node_
+    # @node = (node = null) ->
+    #   _node_ = node if node isnt null
+    #   _node_
+
+    # @setNode = (node) ->
+    #   _node_ = node
+    #   @
 
     @labels = (labelOrLabels) =>
       if typeof labelOrLabels isnt 'undefined'
@@ -51,12 +63,19 @@ class Node
   create: (data, label, cb)->
     new Node(data, label, cb)
 
-  setGraph: (_Graph) ->
-    Graph = _Graph
+  createFromResponse: (body) ->
+    n = Node.create(body.data)
+    n.dbObject(body)
+    n.id = n.getID()
+    # todo: labels
+    n
+
+  setGraph: (Graph) ->
+    _Graph_ = Graph
     @
   
-  getGraph: ->
-    Graph
+  getGraph: -> _Graph_
+  Graph: -> _Graph_
 
   setLabels: (labels) ->
     @labels(labels)
@@ -91,11 +110,14 @@ class Node
     data = @getData()
     queryString = """
     CREATE (n#{labels} { properties })
-    RETURN n, labels(n)
+    RETURN n
     """
-    query = Graph.query queryString, {
-      properties: data
-    }, @_processQueryResult(cb)
+    query = _Graph_
+      .query(queryString, {
+        properties: data
+      })
+    @query = query.first @onProcessQueryResult(cb, query)
+    @
 
   update: (cb) ->
     data = @getData()
@@ -115,36 +137,36 @@ class Node
     queryString += """
     RETURN n
     """
-    #console.log queryString, data
     #throw new Error("TODO: implement")
-    query = Graph.query queryString, {
-      properties: data
-      id: id
-    }, @_processQueryResult(cb)
-
-  _processQueryResult: (cb) ->
-    self = @
-    lambda = (err, node) ->
-      return cb(err, node) if err or not _.isObject(node)
-      if node?.columns?.length is 2
-        node = node.data[0]
-        self.labels(node[1])
-        node = node[0]
-      self._assignNodeFromDatabase node, ->
-        cb(err,self)
-
-  _assignNodeFromDatabase: (node, cb)->
-    if _.isObject(node)
-      @node(node)
-      @id = @getID()
-      @setData(node.data)
-    cb(null, null) if typeof cb is 'function'
+    query = _Graph_
+      .query(queryString, {
+        properties: data
+        id: id
+      })
+    @query = query
+      .first @onProcessQueryResult(cb, query)
     @
 
-  getID: (url = @node()?.self) ->
-    # self: 'http://localhost:7000/db/data/node/49'
-    id = Number(url?.replace(/^.+?\/([0-9]+)$/,'$1'))
-    if isNaN(id) then null else id
+  onProcessQueryResult: (cb, query) ->
+    self = @
+    throw new Error("2nd argument must be the query/graph object") unless query
+    return lambda = (err, rows, res) ->
+      # merge labels
+      # console.log 'labels:1', rows
+      if rows?.length
+        for row, i in rows
+          if row.length is 2
+            # we guess, that we have [ n, labels ] as columns
+            labels = rows[i][1]
+            node = rows[i][0]
+            if typeof node.labels is 'function'
+              node.labels(labels)
+              rows[i] = node
+        if rows.length is 1 and query.returnFirst
+          rows = rows[0]
+      # TODO: here!!!
+      #console.log '!!!', err, rows
+      cb(err, rows, res)
 
   getData: ->
     data = {}
@@ -159,9 +181,12 @@ class Node
     throw Error("'id' must be a number") if typeof id isnt 'number'
     queryString = """
     START n=node({id})
-    RETURN n, labels(n)
+    RETURN n
     """
-    Graph.query(queryString, { id }, @_processQueryResult(cb))
+    query = _Graph_
+      .query(queryString, { id })
+    @query = query.first(@onProcessQueryResult(cb,query))
+    @
 
   findById: (id, cb) -> @findByID(id, cb)
 
@@ -204,7 +229,7 @@ class Node
     CREATE (a)#{l_edge}[r:#{type} { properties }]#{r_edge}(b)
     RETURN r
     """
-    Graph
+    @query = _Graph_
       .query(queryString)
       .setParameters({
         from: from
@@ -215,6 +240,27 @@ class Node
 
         # console.log err, self.Relationship()#.createFromResponse(r)
         cb(null, null) if typeof cb is 'function'
+    @
+
+  load: (cb) ->
+    # TODO: check for chached data
+    loadLabels = true
+    id = @getID()
+    if loadLabels and id
+      # caution: if you return a node here, you'll produce a loop because:
+      # Graph processing will call `load` again, `load` will call Graph processing…
+      # Anyhow - to prevent this, set: `query.responseObjects.Node.load = false`
+      query = _Graph_
+        .query("""
+        START n=node({id})
+        RETURN labels(n)
+        """).setParameters({ id })
+      query.first (err, labels) =>
+        @labels(labels)
+        cb(null, @)
+    else
+      cb(null, @)
+    @
 
   reload: (cb) ->
     id = @getID()
@@ -222,7 +268,7 @@ class Node
     @
 
   setData: (data) ->
-    excludes = [ "id", "label", "labels" ]
+    excludes = @excludedDataFields
     if _.isObject(data)
       # check for not allowed fields (since they are used for managing nodes in db)
       for exclude in excludes

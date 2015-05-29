@@ -25,16 +25,20 @@ class DoneWith
 describe 'Initializing a connection', ->
 
   it 'expect to query a Graph with a custom query', (done) ->
-    Graph.query 'MATCH (n) return COUNT(n)', (err, count) ->
-      expect(err).to.be null
-      expect(count).to.be.a 'number'
-      done()
+    Graph
+      .query('MATCH (n) return COUNT(n)')
+      .first (err, count) ->
+        console.log err, count
+        expect(err).to.be null
+        expect(count).to.be.a 'number'
+        done()
 
   it 'expect to query a Graph', (done) ->
 
     Graph
       .match('(n)')
-      .return 'COUNT (n)', (err, count) ->
+      .return('COUNT (n)')
+      .first (err, count) ->
         expect(err).to.be null
         expect(count).to.be.a 'number'
         done()

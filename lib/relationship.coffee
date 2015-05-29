@@ -1,18 +1,24 @@
 _ = require('underscore')
 
+GraphObject = require('./graphobject')
 
 Graph = null
 
-class Relationship
+class Relationship extends GraphObject
 
   type:  null
   start: null
   end:   null
   id:    null
 
-  relationship: ->
+  relationship: (r) ->
+    @dbObject(r)
+
+  #setRelationship: ->
+  #getRelationship: ->
 
   constructor: (start, end, type, data = {}, cb = null) ->
+    super
     # sorting arguments; all arguments are optional
     if typeof data is 'function'
       cb = data
@@ -23,28 +29,33 @@ class Relationship
     @type = type
     @setData(data)
 
-    relationship = {}
+    # _relationship_ = {}
     
-    @relationship = (rel) ->
-      relationship = rel if rel and _.isObject(rel)
-      relationship
+    # @relationship = (rel) ->
+    #   _relationship_ = rel if rel and _.isObject(rel)
+    #   _relationship_
+
+    # @setRelationship = (relationship) ->
+    #   _relationship_ = relationship
+    #   @
+
+    # @getRelationship = -> _relationship_
 
     @save(cb) if typeof cb is 'function'
 
-  create: (start, end, type, data, cb)->
+  create: (start, end, type, data, cb) ->
     new Relationship(start, end, type, data, cb)
 
   createFromResponse: (body) ->
-    _extractNumber = (s) ->
-      number = Number(s?.replace(/^.+?\/([0-9]+)$/,'$1'))
-      if isNaN(number) then null else number
 
-    start = _extractNumber(body.start)
-    end   = _extractNumber(body.end)
+    start = @_extractNumber_(body.start)
+    end   = @_extractNumber_(body.end)
     data  = body.data
-    id    = _extractNumber(body.self)
+    id    = @_extractNumber_(body.self)
     type  = body.type
-    @create(start, end, type, data)
+    
+    r = Relationship.create(start, end, type, data).setRelationship(body)
+    r
 
   setGraph: (_Graph) ->
     Graph = _Graph
@@ -127,10 +138,13 @@ class Relationship
       data[attr] = @[attr] if typeof prototype[attr] is 'undefined'
     data
 
-  # reload: (cb) ->
-  #   id = @getID()
-  #   @findByID(id, cb) if typeof id is 'number' 
-  #   @
+  load: (cb) ->
+    # TODO: check for chached data
+    #loadLabels = true
+    console.log @getRelationship()
+    id = @getID()
+    cb(null, @)
+    @
 
   setData: (data) ->
     excludes = [ "type" ]

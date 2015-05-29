@@ -8,7 +8,22 @@ class Neo4jRestful
     'Content-Type': 'application/json'
   }
   server: ''
-  #credentials: {}
+  
+  debug: (msg, level = 'log', color = null) ->
+    def = 'reset'
+    colors = require('colors') 
+    levels =
+      log: def
+      error: 'red'
+      verbose: 'green'
+      warning: 'orange'
+      info: 'yellow'
+    if color is null
+      color = levels[level] or def
+    if _.isObject(msg)
+      msg = JSON.stringify(msg, null, '  ')
+    msg = colors[color]("[#{level}]\t==> " + msg)
+    console['log'](msg)
 
   constructor: (options = {}) ->
     @header = _.extend(@header, options.header or {})
@@ -60,16 +75,10 @@ class Neo4jRestful
     options.method  = options.method.toUpperCase()
     options.headers = _.extend(@header, options.header or options.headers or {})
     request options, (err, res) =>
-      @responseCallback(cb, err, res)
+      @responseCallback(err, res, cb)
 
-  processResponseBody: (body) ->
-    data = body
-    data = data.data[0][0] if data.columns?.length is 1
-    data
-
-  responseCallback: (cb, err, res) ->
-    return cb(err, res) if err
-    if res.statusCode >= 400
+  onProcessErrorResponse: (err, res, cb) ->
+    lambda = ->
       # some error occured
       full = {}
       if _.isObject(res.body)
@@ -83,25 +92,28 @@ class Neo4jRestful
       e = new Error(message)
       e.statusCode = res.statusCode
       e.full = full
-      # try
-      #   body = JSON.parse(res.body)
-      #   errors = for error in body.errors
-      #     e = new Error(error.message)
-      #     e.message = error.message
-      #     e.code = error.code
-      #     e.statusCode = res.statusCode
-      #     e
-      # catch e
-      #   e = new Error("Unknown Error (#{res.statusCode})")
-      #   e.message = res.body
-      #   e.statusCode = res.statusCode
-      #   errors = [ e ]
-      
-      #errors = errors[0] if errors.length is 1
-      cb(e, res)
+      cb(e, null, res)
+
+  onProcessSuccessfullResponse: (err, res, cb) ->
+    lambda = ->
+      #,res?.body
+      body = res?.body or null
+      cb(err, body, res)
+    # data = res.body
+    # data = data.data[0][0] if data.columns?.length is 1
+    # data
+
+  responseCallback: (err, res, cb) ->
+    return cb(err, res) if err
+    if res.statusCode >= 400 and typeof @onProcessErrorResponse is 'function'
+      @onProcessErrorResponse(err, res, cb)()
+    else if typeof @onProcessSuccessfullResponse is 'function'
+      # everything seems to be fine
+      @onProcessSuccessfullResponse(err, res, cb)()
     else
       # everything seems to be fine
-      data = if typeof @processResponseBody is 'function' then @processResponseBody(res.body) else res.body
-      cb(err, data, res)
+      # data = if typeof @processResponseBody is 'function' then @processResponseBody(res.body) else res.body
+      cb(err, null, res)
+    @
  
 module.exports = Neo4jRestful
