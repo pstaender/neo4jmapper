@@ -17,12 +17,12 @@ Neo4jMapper = (options = {}) ->
 
 
   # Instanciate restful session
-  client                 = new Neo4jRestful(options)
+  client        = new Neo4jRestful(options)
   
   # Apply restful session on classes / models
-  Graph                 = require('./graph')(client)
-  Node                  = require('./node')(Graph)
-  Relationship          = require('./relationship')(Graph)
+  Graph         = require('./graph')(client)
+  Node          = require('./node')(Graph)
+  Relationship  = require('./relationship')(Graph)
 
   # Let Graph work with Node and Relationship objects
   # TODO: Path object
@@ -37,7 +37,7 @@ Neo4jMapper = (options = {}) ->
     client
   }
 
-# this is just a "shorthand" to scope independent Classes / Objects 
+# "shortcut" to scope-independent classes / objects 
 Neo4jMapper.CypherQuery = CypherQuery
 Neo4jMapper.QueryBuildingHelpers = QueryBuildingHelpers
 Neo4jMapper.ConditionalParameters = ConditionalParameters

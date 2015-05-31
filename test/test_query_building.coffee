@@ -1,4 +1,4 @@
-expect        = require('expect.js')
+expect                = require('expect.js')
 
 ConditionalParameters = require('../lib/conditionalparameters')
 CypherQuery           = require('../lib/cypherquery')

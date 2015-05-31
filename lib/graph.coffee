@@ -148,20 +148,6 @@ module.exports = (_client_) ->
 
   class Graph
 
-    # @setNode = (Node) ->
-    #   _Node_ = Node
-    #   @
-
-    # @getNode = -> _Node_
-    # @Node = -> @getNode()
-
-    # @setRelationship = (Relationship) ->
-    #   _Relationship_ = Relationship
-    #   @
-
-    # @getRelationship = -> _Relationship_
-    # @Relationship = -> @getRelationship()
-
     assignResponseMethods: ->
       # assign methods (manually)
       _responseObjects_.Node.load = _Node_::load
@@ -199,5 +185,5 @@ module.exports = (_client_) ->
   Graph.getClient = Graph::getClient
   Graph.assignResponseMethods = Graph::assignResponseMethods
 
-  Graph
+  return Graph
 

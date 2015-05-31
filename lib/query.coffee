@@ -12,7 +12,6 @@ class Query
   
   constructor: (data, parameters = {}, cb) ->
     @blocks = []
-    # if new Query({ name: 'Dave' }, function(err, data) { })
     if typeof parameters is 'function'
       cb = parameters
       @setParameters({})

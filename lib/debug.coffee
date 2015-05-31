@@ -31,7 +31,6 @@ class Debug
       normal: 'reset'
     msg = @prefix + msg
     s = if typeof colors[style] is 'function' then colors[style](msg) else msg
-    # console.log @out
     @out(s) if typeof @out is 'function'
     @
 

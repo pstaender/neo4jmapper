@@ -103,7 +103,6 @@ class Neo4jRestful
       @onProcessSuccessfullResponse(err, res, cb)()
     else
       # everything seems to be fine
-      # data = if typeof @processResponseBody is 'function' then @processResponseBody(res.body) else res.body
       cb(err, null, res)
     @
  

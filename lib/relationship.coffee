@@ -84,7 +84,6 @@ module.exports = (_Graph_) ->
     load: (cb) ->
       self = @
       # TODO: check for chached data
-      # console.log @dbObject()
       id = @getID()
       start = GraphObject._extractNumber_(@dbObject().start) or null
       end   = GraphObject._extractNumber_(@dbObject().end) or null

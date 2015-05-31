@@ -15,9 +15,6 @@ module.exports = (_Graph_) ->
 
     _excludedDataFields_: [ "id", "label", "labels" ]
 
-    # node: (node) ->
-    #   @dbObject(node)
-
     constructor: (data = {}, label = null, cb = null) ->
       super
       # sorting arguments; all arguments are optional
@@ -173,6 +170,7 @@ module.exports = (_Graph_) ->
       data
 
     findByID: (id, cb) ->
+      return @findByIDs(id) if _.isArray(id)
       throw Error("'id' must be a number") if typeof id isnt 'number'
       queryString = """
       START n=node({id})
@@ -186,6 +184,7 @@ module.exports = (_Graph_) ->
 
     findByIDs: (ids, cb) ->
       return @ if typeof cb isnt 'function'
+      # TODO: check for numbers in array
       if not _.isArray(ids)
         cb(Error("ids must be an array"), null)
       else
