@@ -1,5 +1,6 @@
-_ = require('underscore')
+_       = require('underscore')
 request = require('request')
+Debug   = require('./debug')
 
 class Neo4jRestful
 
@@ -9,27 +10,12 @@ class Neo4jRestful
   }
   server: ''
   
-  debug: (msg, level = 'log', color = null) ->
-    def = 'reset'
-    colors = require('colors') 
-    levels =
-      log: def
-      error: 'red'
-      verbose: 'green'
-      warning: 'orange'
-      info: 'yellow'
-    if color is null
-      color = levels[level] or def
-    if _.isObject(msg)
-      msg = JSON.stringify(msg, null, '  ')
-    msg = colors[color]("[#{level}]\t==> " + msg)
-    console['log'](msg)
-
   constructor: (options = {}) ->
     @header = _.extend(@header, options.header or {})
-    @header.user ?= options.user or options.username or ''
-    @header.password ?= options.password or ''
-    @server = options.server
+    user = options.user or options.username or ''
+    password = options.password or ''
+    @setAuth(user, password) if user or password
+    @url = require('url').parse(options.url)
 
   _sortRequestArguments: (url, options = null, cb = null) ->
     if typeof options is 'function'
@@ -45,9 +31,14 @@ class Neo4jRestful
   _prepareURL: (url = '') ->
     # we don't change the url, if we have an absolute url
     return url if /^http(s)*\:\/\//.test(url)
-    server = @server.replace(/\/+$/,'')
+    server = "#{@url.protocol}//#{@url.host}"
     url = url.replace(/^\/+/,'')
     "#{server}/#{url}"
+
+  setAuth: (username = '', password = '') ->
+    auth = "Basic " + new Buffer("#{username}:#{password}").toString('base64')
+    @header.Authorization = auth
+    @
 
   get: (url, options, cb) ->
     {options,cb} = @_sortRequestArguments(url, options, cb)
@@ -74,6 +65,10 @@ class Neo4jRestful
       delete options.data
     options.method  = options.method.toUpperCase()
     options.headers = _.extend(@header, options.header or options.headers or {})
+    debug = new Debug()
+      .log("sending #{options.method} to #{options.uri}", "url")
+      .log("body: #{JSON.stringify(options.body, null, ' ')}", "data")
+      .log("headers: #{JSON.stringify(options.headers, null, ' ')}", "data")
     request options, (err, res) =>
       @responseCallback(err, res, cb)
 
@@ -96,12 +91,8 @@ class Neo4jRestful
 
   onProcessSuccessfullResponse: (err, res, cb) ->
     lambda = ->
-      #,res?.body
       body = res?.body or null
       cb(err, body, res)
-    # data = res.body
-    # data = data.data[0][0] if data.columns?.length is 1
-    # data
 
   responseCallback: (err, res, cb) ->
     return cb(err, res) if err

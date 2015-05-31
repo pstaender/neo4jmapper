@@ -1,5 +1,6 @@
-_ = require('underscore')
-QueryBuildingHelpers = require('./querybuildinghelpers')
+_                     = require('underscore')
+QueryBuildingHelpers  = require('./querybuildinghelpers')
+Debug                 = require('./debug')
 
 class Query
 
@@ -15,7 +16,7 @@ class Query
     if typeof parameters is 'function'
       cb = parameters
       @setParameters({})
-    else if _.isObject(parameters)
+    else if _.isObject(parameters) and not _.isArray(parameters)
       @setParameters(parameters)
     @add(data) if typeof data is 'string'
     @cb = cb   if typeof cb is 'function' 
@@ -58,9 +59,8 @@ class Query
 
   addParameters: (params) ->
     @parameters = _.extend(@parameters, params)
-    @
-
     @parameters = params if params isnt null and typeof params is 'object'
+    @
   
   setParameters: (params) ->
     @parameters = params

@@ -1,6 +1,7 @@
 expect        = require('expect.js')
-
-{client,Graph,Node,Relationship} = require('./neoj4mapperForTesting')
+_             = require('underscore')
+{client,Graph,Node,Relationship} = require('./neoj4mapperForTesting').create()
+Wait = require('../lib/wait')
 
 describe 'Working with Node', ->
 
@@ -42,7 +43,6 @@ describe 'Working with Node', ->
 
   it 'expect to create and persist a node', (done) ->
     Node.create { name: 'Dave' }, 'Person', (err, dave) ->
-      console.log 'expect to create and persist a node'#, #err#, dave
       expect(err).to.be null
       id = dave.getID()
       expect(id).to.be.above -100
@@ -69,11 +69,57 @@ describe 'Working with Node', ->
         expect(dave.id).to.be id
         done()
 
-  it.skip 'expect to reload a node', (done) ->
+  it 'expect to find more than one node', (done) ->
+    wait = new Wait()
+    label = Math.random().toString(36).replace(/[^a-z]+/g, '').toUpperCase() + Math.random().toString(36).replace(/[^a-z]+/g, '').toUpperCase()
+    label = label.substr(0,12)
+    uids = [ Math.round(Math.random()*100000000), Math.round(Math.random()*100000000), Math.round(Math.random()*100000000) ]
+    uids.forEach (uid) ->
+      wait.add (cb) ->
+        Node.create { uid }, label, cb
+
+    wait.done (err, data) ->
+      expect(err).to.be null
+      expect(data).to.have.length 3
+      createdUIDs = [ data[0].uid, data[1].uid, data[2].uid ]
+      expect(createdUIDs.sort().join(',')).to.be uids.sort().join(',')
+
+      Graph.query(
+        """
+          MATCH (n:#{label})
+          RETURN n
+        """
+        ).exec (err, nodes) ->
+          done()
+
+  it 'expect to find more than one node by ids', (done) ->
+    Node.create { name: 'Dave' }, 'FooFighter', (err, dave) ->
+      expect(err).to.be null
+      expect(dave.id).to.be.above = -100
+      Node.create { name: 'Taylor' }, 'FooFighter', (err, taylor) ->
+        expect(err).to.be null
+        expect(taylor.id).to.be.above = -100
+        Node.create { name: 'Chris' }, 'FooFighter', (err, chris) ->
+          expect(err).to.be null
+          expect(chris.id).to.be.above = -100
+          Node.create { name: 'Nate' }, 'FooFighter', (err, nate) ->
+            expect(err).to.be null
+            expect(nate.id).to.be.above = -100
+            ids = [ dave.id, taylor.id, chris.id, nate.id ]
+            Node.findByIDs ids, (err, nodes) ->
+              expect(err).to.be null
+              # console.log err, nodes
+              expect(nodes).to.have.length 4
+              foundIDs = [ nodes[0].id, nodes[1].id, nodes[2].id, nodes[3].id ]
+              expect(foundIDs.sort().join(',')).to.be.equal ids.sort().join(',')
+              done()
+
+  it 'expect to reload a node', (done) ->
+    # TODO: load is no real (re)load
     Node.create { name: 'Dave' }, 'Person', (err, dave) ->
       id = dave.getID()
       expect(id).to.be.a 'number'
-      dave.reload (err, reloadedDave) ->
+      dave.load (err, reloadedDave) ->
         expect(reloadedDave.getID()).to.be id
         expect(reloadedDave.name).to.be 'Dave'
         done()

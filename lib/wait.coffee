@@ -1,4 +1,5 @@
 class Wait
+
   countDone: 0
   errors: []
   data: []

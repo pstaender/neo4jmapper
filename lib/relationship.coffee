@@ -1,160 +1,117 @@
-_ = require('underscore')
-
+_           = require('underscore')
+Wait        = require('./wait')
 GraphObject = require('./graphobject')
+Debug       = require('./debug')
 
-Graph = null
+module.exports = (_Graph_) ->
 
-class Relationship extends GraphObject
+  class Relationship extends GraphObject
 
-  type:  null
-  start: null
-  end:   null
-  id:    null
+    type:  null
+    start: null
+    end:   null
+    id:    null
+    from:  null
+    to:    null
 
-  relationship: (r) ->
-    @dbObject(r)
+    _excludedDataFields_: [ "type", "start", "end", "id", "from", "to" ]
 
-  #setRelationship: ->
-  #getRelationship: ->
+    relationship: (r) ->
+      @dbObject(r)
 
-  constructor: (start, end, type, data = {}, cb = null) ->
-    super
-    # sorting arguments; all arguments are optional
-    if typeof data is 'function'
-      cb = data
+    constructor: (start, end, type, data = {}, cb = null) ->
+      super
+      # sorting arguments; all arguments are optional
+      if typeof data is 'function'
+        cb = data
+        data = {}
+      # set data
+      @start = start
+      @end = end
+      @type = type
+      @setData(data)
+
+      @save(cb) if typeof cb is 'function'
+
+    create: (start, end, type, data, cb) ->
+      new Relationship(start, end, type, data, cb)
+
+    createByResponseData: (body) ->
+
+      start = GraphObject._extractNumber_(body.start)
+      end   = GraphObject._extractNumber_(body.end)
+      data  = body.data
+      id    = GraphObject._extractNumber_(body.self)
+      type  = body.type
+      
+      r = Relationship.create(start, end, type, data).dbObject(body)
+      r.id = r.getID()
+      # throw Error('!')
+      r
+
+    setGraph: (Graph) ->
+      _Graph_ = Graph
+      @
+    
+    getGraph: ->
+      _Graph_
+
+    save: (cb) ->
+      if typeof cb is 'function'
+        # create or update?
+        if @getID() isnt null
+          @update(cb)
+        else
+          @saveAsNew(cb)
+      @
+
+    saveAsNew: (cb) ->
+      throw new Error("TODO: implement")
+
+    update: (cb) ->
+      throw new Error("TODO: implement")
+
+
+    getData: ->
       data = {}
-    # set data
-    @start = start
-    @end = end
-    @type = type
-    @setData(data)
+      prototype = Object.getPrototypeOf(@)
+      for attr in Object.getOwnPropertyNames(@)
+        # we are sorting out attributes, which exists on prototype
+        # e.g. [ 'label', 'labels', 'id' ]
+        data[attr] = @[attr] if typeof prototype[attr] is 'undefined'
+      data
 
-    # _relationship_ = {}
-    
-    # @relationship = (rel) ->
-    #   _relationship_ = rel if rel and _.isObject(rel)
-    #   _relationship_
+    load: (cb) ->
+      self = @
+      # TODO: check for chached data
+      # console.log @dbObject()
+      id = @getID()
+      start = GraphObject._extractNumber_(@dbObject().start) or null
+      end   = GraphObject._extractNumber_(@dbObject().end) or null
 
-    # @setRelationship = (relationship) ->
-    #   _relationship_ = relationship
-    #   @
+      wait = new Wait()
 
-    # @getRelationship = -> _relationship_
+      [start, end].forEach (id) ->
+        queryString = """
+          START n=node({id})
+          RETURN n
+          """
+        query = _Graph_
+          .query(queryString, { id })
+        wait.add (cb) ->
+          query.first(cb)
 
-    @save(cb) if typeof cb is 'function'
+      wait.done (err, result) ->
+        return cb(err, result) if err or result?.length  is 0
+        for node in result
+          if node.id is self.start
+            self.from = node
+          if node.id is self.end
+            self.to = node
+        cb(err, self)
+      
+      @
 
-  create: (start, end, type, data, cb) ->
-    new Relationship(start, end, type, data, cb)
+  Relationship.create = Relationship::create
 
-  createFromResponse: (body) ->
-
-    start = @_extractNumber_(body.start)
-    end   = @_extractNumber_(body.end)
-    data  = body.data
-    id    = @_extractNumber_(body.self)
-    type  = body.type
-    
-    r = Relationship.create(start, end, type, data).setRelationship(body)
-    r
-
-  setGraph: (_Graph) ->
-    Graph = _Graph
-    @
-  
-  getGraph: ->
-    Graph
-
-  save: (cb) ->
-    if typeof cb is 'function'
-      # create or update?
-      if @getID() isnt null
-        @update(cb)
-      else
-        @saveAsNew(cb)
-    @
-
-  saveAsNew: (cb) ->
-    # build query
-    # CREATE (n:Person { name : 'Andres', title : 'Developer' })
-    # labels = if @labels().length > 0 then ':'+@labels().join(':') else ''
-    # data = @getData()
-    # queryString = """
-    # CREATE (n#{labels} { properties })
-    # RETURN n, labels(n)
-    # """
-    # query = Graph.query queryString, {
-    #   properties: data
-    # }, @_processQueryResult(cb)
-
-  update: (cb) ->
-    # data = @getData()
-    # id = @getID()
-    # unless id
-    #   cb(new Error('No id on node'), null)
-    #   return @
-    # queryString = """
-    # START n=node({ id })
-    # SET n = { properties }\n
-    # """
-    # labels = @labels()
-    # if labels.length > 0
-    #   queryString += """
-    #   SET n :#{labels.join(':')}\n
-    #   """
-    # queryString += """
-    # RETURN n
-    # """
-    throw new Error("TODO: implement")
-    # query = Graph.query queryString, {
-    #   properties: data
-    #   id: id
-    # }, @_processQueryResult(cb)
-
-  # _processQueryResult: (cb) ->
-  #   self = @
-  #   lambda = (err, node) ->
-  #     return cb(err, node) if err or not _.isObject(node)
-  #     if node?.columns?.length is 2
-  #       node = node.data[0]
-  #       self.labels(node[1])
-  #       node = node[0]
-  #     self._assignNodeFromDatabase node, ->
-  #       cb(err,self)
-
-  # _assignNodeFromDatabase: (node, cb)->
-  #   if _.isObject(node)
-  #     @node(node)
-  #     @id = @getID()
-  #     @setData(node.data)
-  #   cb(null, null) if typeof cb is 'function'
-  #   @
-
-  getData: ->
-    data = {}
-    prototype = Object.getPrototypeOf(@)
-    for attr in Object.getOwnPropertyNames(@)
-      # we are sorting out attributes, which exists on prototype
-      # e.g. [ 'label', 'labels', 'id' ]
-      data[attr] = @[attr] if typeof prototype[attr] is 'undefined'
-    data
-
-  load: (cb) ->
-    # TODO: check for chached data
-    #loadLabels = true
-    console.log @getRelationship()
-    id = @getID()
-    cb(null, @)
-    @
-
-  setData: (data) ->
-    excludes = [ "type" ]
-    if _.isObject(data)
-      # check for not allowed fields (since they are used for managing nodes in db)
-      for exclude in excludes
-        throw Error("data can't contain '#{exclude}' field. Set '#{exclude}' on node object manually") if typeof data[exclude] isnt 'undefined'
-      for attr of data
-        @[attr] = data[attr]
-
-Relationship.create = Relationship::create
-
-module.exports = Relationship
+  Relationship

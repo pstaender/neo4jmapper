@@ -1,50 +1,46 @@
 Neo4jRestful          = require('./neo4jrestful')
-Node                  = require('./node')
-Graph                 = require('./graph')
-Relationship          = require('./relationship')
 CypherQuery           = require('./cypherquery')
 QueryBuildingHelpers  = require('./querybuildinghelpers')
 ConditionalParameters = require('./conditionalparameters')
+Debug                 = require('./debug')
 
-_            = require('underscore')
+Neo4jMapper = (options = {}) ->
 
-class Neo4jMapper
+  # check options
+  
+  # is Debug activatet?
+  if options.debug
+    Debug::defaultOutput = if typeof options.debug is 'function' then options.debug else console.error
+    new Debug().log("Neo4jMapper() with url: #{options.url}", 'verbose')
+  else
+    Debug::defaultOutput = null
 
-  client:                null
-  Node:                  null
-  Graph:                 null
-  Relationship:          null
-  CypherQuery:           null
-  ConditionalParameters: null
-  QueryBuildingHelpers:  null
 
-  constructor: (options = {}) ->
-    # # Instanciate restful session
-    @client                 = new Neo4jRestful(options)
-    # apply restful session on models
+  # Instanciate restful session
+  client                 = new Neo4jRestful(options)
+  
+  # Apply restful session on classes / models
+  Graph                 = require('./graph')(client)
+  Node                  = require('./node')(Graph)
+  Relationship          = require('./relationship')(Graph)
 
-    @Graph                  = new Graph().setClient(@client)
-    @Node                   = new Node().setGraph(@Graph)
-    @Relationship           = new Relationship(@client)
+  # Let Graph work with Node and Relationship objects
+  # TODO: Path object
+  Graph.setNode(Node)
+  Graph.setRelationship(Relationship)
+  Graph.assignResponseMethods()
 
-    @Graph.setNode(@Node)
-    @Graph.setRelationship(@Relationship)
+  return {
+    Graph,
+    Node,
+    Relationship,
+    client
+  }
 
-    @Node.setGraph(Graph)
-    # @Relationship.setGraph(Graph)
-    
-    # this is just a shorthand to make other methods easy available
-    # on the created Neo4jMapper instance
-    # You could also access them via Neo4jMapper.CypherQuery for instance
-    @CypherQuery            = CypherQuery
-    @QueryBuildingHelpers   = QueryBuildingHelpers
-    @ConditionalParameters  = ConditionalParameters
-
-Neo4jMapper.Node                  = Node
-Neo4jMapper.Graph                 = Graph  
-Neo4jMapper.Relationship          = Relationship
-Neo4jMapper.CypherQuery           = CypherQuery
-Neo4jMapper.QueryBuildingHelpers  = QueryBuildingHelpers
+# this is just a "shorthand" to scope independent Classes / Objects 
+Neo4jMapper.CypherQuery = CypherQuery
+Neo4jMapper.QueryBuildingHelpers = QueryBuildingHelpers
 Neo4jMapper.ConditionalParameters = ConditionalParameters
+Neo4jMapper.Debug = Debug
 
 module.exports = Neo4jMapper
