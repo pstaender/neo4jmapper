@@ -23,6 +23,24 @@ QueryBuildingHelpers.escapeProperty = (identifier, delimiter = '`') ->
 
 QueryBuildingHelpers.valueToStringForCypherQuery
 
+QueryBuildingHelpers.addIdentifiertToObject = (obj, identifier = null, escapeProperty = '') ->
+  return obj unless identifier
+  if _.isObject(obj)
+    if _.isArray(obj)
+      obj.forEach (element, i) ->
+        obj[i] = QueryBuildingHelpers.addIdentifiertToObject(obj[i], identifier, escapeProperty) if _.isObject(obj[i])
+    else
+      for attr of obj
+        if _.isObject(obj[attr])
+          obj[attr] = QueryBuildingHelpers.addIdentifiertToObject(obj[attr], identifier, escapeProperty)
+        else
+          na = attr.trim()
+          if na[0] isnt '$'
+            na = identifier+'.'+escapeProperty+attr+escapeProperty
+            obj[na] = obj[attr]
+            delete obj[attr]
+  obj
+
 QueryBuildingHelpers.cypherKeyValueToString = (key, originalValue, identifier, conditionalParametersObject) ->
   value = originalValue
   s = ''

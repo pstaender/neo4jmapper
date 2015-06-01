@@ -1,12 +1,14 @@
 _                     = require('underscore')
 QueryBuildingHelpers  = require('./querybuildinghelpers')
 Debug                 = require('./debug')
+ConditionalParameters = require('./conditionalparameters')
 
 class Query
 
   blocks: []
   parameters: {}
   blockSeperator: "\n"
+  identifier: ''
 
   cb: null
   
@@ -48,8 +50,21 @@ class Query
       "#{block.name} #{@_dataToString(block.data)}"
     parts.join(@blockSeperator)
 
+  _objectWithConditionalLogicToString: (data, options) ->
+    if _.isObject(data)
+      d = _.extend({}, data)
+      d = QueryBuildingHelpers.addIdentifiertToObject(d, @identifier)
+      #data = Query.flattenObject(data)
+      cp = new ConditionalParameters(d, options)
+      #console.log 'cp', cp, data, cp.toString(), cp.parameters
+      #cp.toString()
+      cp
+    else
+      data
+
+
   _dataToString: (data) ->
-    if typeof data is 'object' and data isnt null
+    if _.isObject(data)
       # TODO: XOR|AND…
       data = Query.flattenObject(data)
       JSON.stringify(data)
@@ -67,13 +82,23 @@ class Query
 
   getParameters: -> @parameters
 
+  setIdentifier: (i) ->
+    @identifier = i
+    @
+
+  getIdentifier: -> @identifier
+
   add: (name, data, cb) ->
     if typeof data isnt 'function' and typeof data isnt 'string' and typeof data isnt 'object'
       @blocks.push({name:'', data: name})
       return @
-    if typeof data is 'function'
+    else if typeof data is 'function'
       cb = data
       data = ''
+    else if typeof data is 'object'
+      cp = @_objectWithConditionalLogicToString(data, { parametersStartCountAt: Object.keys(@parameters).length })
+      data = cp.toString()
+      @addParameters(cp.parameters)
     if typeof cb is 'function'
       @cb = cb
     throw new Error("'name' must be string, `START` for instance") unless typeof name is 'string'

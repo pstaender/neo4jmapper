@@ -9,6 +9,7 @@ class Neo4jRestful
     'Content-Type': 'application/json'
   }
   server: ''
+  _request_: null
   
   constructor: (options = {}) ->
     @header = _.extend(@header, options.header or {})
@@ -16,6 +17,7 @@ class Neo4jRestful
     password = options.password or ''
     @setAuth(user, password) if user or password
     @url = require('url').parse(options.url)
+    @_request_ = {}
 
   _sortRequestArguments: (url, options = null, cb = null) ->
     if typeof options is 'function'
@@ -69,10 +71,13 @@ class Neo4jRestful
       .log("sending #{options.method} to #{options.uri}", "url")
       .log("body: #{JSON.stringify(options.body, null, ' ')}", "data")
       .log("headers: #{JSON.stringify(options.headers, null, ' ')}", "data")
+    @_request_.body = options.body
+    @_request_.headers = options.headers
     request options, (err, res) =>
       @responseCallback(err, res, cb)
 
   onProcessErrorResponse: (err, res, cb) ->
+    self = @
     lambda = ->
       # some error occured
       full = {}
@@ -87,6 +92,8 @@ class Neo4jRestful
       e = new Error(message)
       e.statusCode = res.statusCode
       e.full = full
+      e.query = self._request_.body?.query or null
+      e.params = self._request_.body?.params or null
       cb(e, null, res)
 
   onProcessSuccessfullResponse: (err, res, cb) ->

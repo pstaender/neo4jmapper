@@ -14,7 +14,7 @@ exports.config = config
 
 exports.randomString = (length = 12) ->
   chars = for i in [0..6]
-    Math.random().toString(36).replace(/[^a-z]+/g, '').toUpperCase()
+    Math.random().toString(36).replace(/[^a-z]+/g, '')#.toUpperCase()
   chars.join('').substr(0,length)
 
 exports.randomInteger = (digits = 6) ->

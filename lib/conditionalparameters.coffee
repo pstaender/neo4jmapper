@@ -36,9 +36,10 @@ class ConditionalParameters
 
   addValue: (value) ->
     @parameters = {} unless @parameters
-    property = '_value' + @parametersStartCountAt + @parametersCount() + '_'
+    i = Number(@parametersStartCountAt) + Number(@parametersCount())
+    property = "_value#{i}_"
     @parameters[property] = value
-    '{ ' + property + ' }'
+    "{ #{property} }"
 
   values: ->
     values = []

@@ -1,7 +1,10 @@
-expect        = require('expect.js')
-_             = require('underscore')
-{client,Graph,Node,Relationship} = require('./neoj4mapperForTesting').create()
-Wait = require('../lib/wait')
+expect                = require('expect.js')
+_                     = require('underscore')
+neoj4mapperForTesting = require('./neoj4mapperForTesting')
+Wait                  = require('../lib/wait')
+
+{randomString,randomInteger} = neoj4mapperForTesting
+{client,Graph,Node,Relationship} = neoj4mapperForTesting.create()
 
 describe 'Working with Node', ->
 
@@ -71,9 +74,8 @@ describe 'Working with Node', ->
 
   it 'expect to find more than one node', (done) ->
     wait = new Wait()
-    label = Math.random().toString(36).replace(/[^a-z]+/g, '').toUpperCase() + Math.random().toString(36).replace(/[^a-z]+/g, '').toUpperCase()
-    label = label.substr(0,12)
-    uids = [ Math.round(Math.random()*100000000), Math.round(Math.random()*100000000), Math.round(Math.random()*100000000) ]
+    label = randomString(12).toUpperCase()
+    uids = [ randomInteger(8), randomInteger(8), randomInteger(8) ]
     uids.forEach (uid) ->
       wait.add (cb) ->
         Node.create { uid }, label, cb
@@ -114,6 +116,28 @@ describe 'Working with Node', ->
               expect(foundIDs.sort().join(',')).to.be.equal ids.sort().join(',')
               done()
 
+  it 'expect to find a node by properties and label', (done) ->
+    data =
+      uid: randomInteger(12)
+    label = randomString(12).toUpperCase()
+    Node.create(data).setLabel(label).save (err, node) ->
+      expect(node.id).to.be.above -100
+      n = Node.find("n.uid = { uid }", data).limit 1, (err, found) ->
+        expect(err).to.be null
+        expect(found).to.have.length 1
+        expect(found[0].uid).to.be data.uid
+        #Node.findByLabel(label, )
+        Node.find(data).limit 1, (err, found) ->
+          expect(err).to.be null
+          expect(found).to.have.length 1
+          expect(found[0].uid).to.be data.uid
+          Node.findByLabel label, (err, found) ->
+            expect(err).to.be null
+            expect(found).to.have.length 1
+            expect(found[0].uid).to.be data.uid
+            done()
+
+
   it 'expect to reload a node', (done) ->
     # TODO: load is no real (re)load
     Node.create { name: 'Dave' }, 'Person', (err, dave) ->
@@ -133,15 +157,15 @@ describe 'Working with Node', ->
     expect(dave.label).to.be "Person"
     dave.setLabels(["Drummer","Singer"])
     expect(dave.labels()).to.have.length 2
-    expect(dave.labels().join(',')).to.be "Drummer,Singer"
+    expect(dave.labels().sort().join(',')).to.be "Drummer,Singer"
     expect(dave.label).to.be "Drummer"
     dave.addLabel("Person")
     expect(dave.labels()).to.have.length 3
-    expect(dave.labels().join(',')).to.be "Drummer,Singer,Person"
+    expect(dave.labels().sort().join(',')).to.be "Drummer,Person,Singer"
     expect(dave.label).to.be "Drummer"
     dave.addLabels(["Musician","Guitarist"])
     expect(dave.labels()).to.have.length 5
-    expect(dave.labels().join(',')).to.be "Drummer,Singer,Person,Musician,Guitarist"
+    expect(dave.labels().sort().join(',')).to.be "Drummer,Guitarist,Musician,Person,Singer"
     expect(dave.label).to.be "Drummer"
 
   it 'expect to update a node', (done) ->
@@ -163,8 +187,13 @@ describe 'Working with Node', ->
               expect(node.name).to.be 'Dave'
               expect(node.from).to.be 'Los Angeles'
               expect(node.labels()).to.have.length 4
-              expect(node.labels().join(',')).to.be.equal "Person,Drummer,Musician,Singer"
+              expect(node.labels().sort().join(',')).to.be.equal "Drummer,Musician,Person,Singer"
               expect(node.label).to.be.equal "Person"
               expect(JSON.stringify(node.getData())).to.be JSON.stringify(updatedDave.getData())
               done()
+
+  it.skip 'expect to query Nodes with conditional parameters', (done) ->
+    Node.find( $AND: [ { name: 'Dave Grohl' }, { age: 40 } ]).limit 20, (err, result) ->
+      done()
+
   

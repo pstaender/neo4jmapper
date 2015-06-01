@@ -107,8 +107,9 @@ module.exports = (_Graph_) ->
         .query(queryString, {
           properties: data
         })
+        .setIdentifier('n')
       query = query.first Node::onProcessQueryResult(cb, query)
-      @_query_ = query if @_debug_
+      @_query_ = query
       @
 
     update: (cb) ->
@@ -135,9 +136,10 @@ module.exports = (_Graph_) ->
           properties: data
           id: id
         })
+        .setIdentifier('n')
       query = query
         .first Node::onProcessQueryResult(cb, query)
-      @_query_ = query if @_debug_
+      @_query_ = query
       @
 
     onProcessQueryResult: (cb, query) ->
@@ -179,7 +181,7 @@ module.exports = (_Graph_) ->
       query = _Graph_
         .query(queryString, { id })
       query = query.first(Node::onProcessQueryResult(cb,query))
-      @_query_ = query if @_debug_
+      @_query_ = query
       @
 
     findByIDs: (ids, cb) ->
@@ -188,13 +190,49 @@ module.exports = (_Graph_) ->
       if not _.isArray(ids)
         cb(Error("ids must be an array"), null)
       else
-        query = _Graph_.query("""
-          MATCH n
-          WHERE id(n) IN { ids }
-          RETURN n
-          """, { ids }).exec(cb)
-        @_query_ = query if @_debug_
+        query = _Graph_
+          .query()
+          .match('n')
+          .where('id(n) IN { ids }')
+          .return('n')
+          .setParameters({ ids })
+          #.setIdentifier('n')
+          .exec(cb)
+        @_query_ = query
       @
+
+    find: (where, parameters, cb, label = '') ->
+      if typeof parameters is 'function'
+        #label = cb or ''
+        cb = parameters
+        parameters = {}
+      label = if label then ":#{label}" else ''
+      @_query_ = _Graph_
+        .query()
+        .match("(n#{label})")
+        .setIdentifier('n')
+        .addParameters(parameters)
+      if _.isObject(where) or _.isString(where)
+        @_query_.where(where)
+      else if typeof where is 'function'
+        cb = where
+      
+      @_query_
+        .return('n')
+        .exec(cb)
+      #console.log @_query_.toString()
+      #@_query_
+
+    findByLabel: (label, where, parameters, cb) ->
+      if _.isArray(label)
+        # [ "Person", "Musician" ] -> "Person:Musician"
+        label = label.join(':')
+      if typeof where is 'function'
+        cb = where
+        where = null
+        parameters = {}
+        #console.log cb, where, parameters
+      @find(where, parameters, cb, label)
 
     createRelationTo: (node, type, data, cb, direction = 'outgoing') ->
       @createRelation(node, type, direction, data, cb)
@@ -205,7 +243,7 @@ module.exports = (_Graph_) ->
     createRelationBetween: (node, type, data, cb, direction = 'bidirectional') ->
       @createRelation(node, type, direction, data, cb)
 
-    createRelation: (node, type, direction = 'both', data, cb) ->
+    createRelation: (node, type, direction = 'bidirectional', data, cb) ->
       if typeof data is 'function'
         cb = data
         data = {}
@@ -243,7 +281,7 @@ module.exports = (_Graph_) ->
           properties: data
         })
       query.first(cb) if typeof cb is 'function'
-      @_query_ = query if @_debug_
+      @_query_ = query
       @
 
     load: (cb) ->
@@ -262,7 +300,7 @@ module.exports = (_Graph_) ->
         query.first (err, labels) ->
           self.labels(labels)
           cb(null, self)
-        @_query_ = query if @_debug_
+        @_query_ = query
       else
         cb(null, @)
       @
@@ -272,8 +310,31 @@ module.exports = (_Graph_) ->
     #   @findByID(id, cb) if typeof id is 'number' 
     #   @
 
-  Node.create     = Node::create#(data, label, cb) -> new Node(data, label, cb)
-  Node.findByID   = Node::findByID
-  Node.findByIDs  = Node::findByIDs
+    # TODO: implement
+
+    findOrCreate: (cb) ->
+    remove: (cb) ->
+    removeIncludingRelations: (cb) ->
+    incomingRelations: ->
+    outgoingRelation: ->
+    relations: ->
+    # Node.registerModel
+    # fields:
+    #   indexes:
+    #     email: true
+    #   defaults:
+    #     created_on: ->
+    #       new Date().getTime()
+    # STREAMING
+    # findAll().each
+
+
+  Node.create         = Node::create#(data, label, cb) -> new Node(data, label, cb)
+  Node.findByID       = Node::findByID
+  Node.findById       = Node::findByID
+  Node.findByIDs      = Node::findByIDs
+  Node.find           = Node::find
+  Node.findByLabel    = Node::findByLabel
+  Node.findByLabels   = Node::findByLabels
 
   Node
