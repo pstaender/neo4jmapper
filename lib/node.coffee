@@ -336,5 +336,6 @@ module.exports = (_Graph_) ->
   Node.find           = Node::find
   Node.findByLabel    = Node::findByLabel
   Node.findByLabels   = Node::findByLabels
+  Node.extendModel    = Node::extendModel
 
   Node
